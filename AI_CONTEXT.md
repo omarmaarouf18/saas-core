@@ -1171,6 +1171,18 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - Updated `handlers_test.go` and `list_services_test.go` to explicitly create test services and employee locations.
   - Added unit test `TestMongoDB_EnsureSeedData_OptIn` in `mongodb_test.go` verifying 0 seeded services without `SEED_DEMO_DATA` and 10 seeded services with `SEED_DEMO_DATA=true`.
 
+* **KYC Document Reviewer Access & Support Ticket File Attachments (2026-09-22)**:
+  - **Shared Storage Extraction (`shared/infra/storage`)**: Extracted `LocalStorage`, `DocClaims`, AES-256-GCM encryption/decryption, and HMAC-SHA256 signed URL token generation/validation with claims (`GetSignedURLWithClaims`, `ValidateSignedURLTokenWithClaims`) into compile-time shared package. Aliased in `auth-service/internal/storage`.
+  - **MaxBytesMiddleware 10MB Attachment Rule (`shared/infra/handlerutil`)**: Extended `MaxBytesMiddleware` in `shared/infra/handlerutil/max_bytes.go` to permit up to 10MB request bodies for paths containing `/attachment`.
+  - **KYC Document Admin Access (`services/auth-service`)**: Implemented `GetUserDocuments` (`GET /auth/reviewer/user-documents` and alias `/auth/kyb-kye/user-documents`) allowing reviewers to retrieve fresh signed URLs for identity documents across all user states. Enforces reviewer authentication, mandatory reason (1–1000 characters), and security audit logging (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).
+  - **Support Ticket Attachments Backend (`services/chat-service`)**:
+    - Extended `chat.Message` and MongoDB persistence (`PersistMessage`, `GetHistory`) with attachment metadata (`attachment_key`, `attachment_url`, `attachment_name`, `attachment_type`, `attachment_size`).
+    - Implemented `POST /chat/tickets/{id}/attachment` (`UploadTicketAttachment`) with 10MB limit, multipart parsing, magic-byte MIME sniffing (JPEG, PNG, PDF), participant authorization gate (`canAccessChannel`), AES-256-GCM encrypted disk storage, HMAC signed URL issuance, and real-time WebSocket broadcast.
+    - Implemented `GET /chat/attachments/view` (`ViewAttachment`) with signed token claims verification and live ticket access re-verification against MongoDB before streaming decrypted bytes.
+  - **Reviewer Console Integration (`kyc-reviewer-console`)**: Added proxy endpoints (`/api/documents/user`, `/api/tickets/attachment`, `/api/chat/attachments/view`), User Documents dialog modal with mandatory reason prompt and refresh action, "KYC Docs" buttons in Accounts Directory and Ticket Chat header, and attachment picker, preview bar, and thumbnail/PDF cards in ticket chat (committed and pushed in `9f28f85`).
+  - **Customer Ticket Chat Attachment UI (`frontend/`)**: Added attachment fields and JSON serialization to `ChatMessage`, updated `ApiClient.postMultipart` (stripping conflicting `Content-Type` header, adding fields and `http.Client` test injection), implemented `uploadTicketAttachment` in `ChatProvider`, and added attachment picker button (`key: Key('ticket_chat_attach_button')`), upload flow, image previews, and PDF cards with size labels to `TicketChatScreen`.
+
+
 
 
 

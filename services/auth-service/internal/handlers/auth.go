@@ -136,6 +136,8 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/kye/upload", a.UploadKYE)
 	mux.HandleFunc("/auth/kyb-kye/pending", a.GetPendingKYBKYESubmissions)
 	mux.HandleFunc("/auth/kyb-kye/review", a.ReviewKYBKYESubmissions)
+	mux.HandleFunc("/auth/reviewer/user-documents", a.GetUserDocuments)
+	mux.HandleFunc("/auth/kyb-kye/user-documents", a.GetUserDocuments)
 	mux.HandleFunc("/auth/documents/view", a.ViewDocument)
 	mux.HandleFunc("/auth/accounts", a.GetAccounts)
 	mux.HandleFunc("/auth/accounts/{id}/suspend", a.SuspendAccount)
@@ -2055,6 +2057,127 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 			return
 		}
 	}()
+}
+
+// GET /auth/reviewer/user-documents?user_id=...&reason=...
+func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	reviewer, err := a.authenticateReviewer(r)
+	if err != nil {
+		writeReviewerAuthError(w, err)
+		return
+	}
+
+	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
+	email := strings.TrimSpace(r.URL.Query().Get("email"))
+	if userID == "" && email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id or email is required"})
+		return
+	}
+
+	reason := strings.TrimSpace(r.URL.Query().Get("reason"))
+	if reason == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required for out-of-band document access"})
+		return
+	}
+	if len(reason) > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason exceeds maximum length of 1000 characters"})
+		return
+	}
+
+	ctx := r.Context()
+	var u *models.User
+	if userID != "" {
+		u = a.store.GetByID(ctx, userID)
+	} else {
+		u = a.store.GetByEmail(ctx, email)
+	}
+
+	if u == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	type UserDocumentsResponse struct {
+		UserID           string           `json:"user_id"`
+		Email            string           `json:"email"`
+		Username         string           `json:"username"`
+		Role             models.Role      `json:"role"`
+		KYCStatus        models.KYCStatus `json:"kyc_status,omitempty"`
+		KYEStatus        models.KYCStatus `json:"kye_status,omitempty"`
+		IDFrontURL       string           `json:"id_front_url,omitempty"`
+		IDBackURL        string           `json:"id_back_url,omitempty"`
+		SelfieURL        string           `json:"selfie_url,omitempty"`
+		BusinessProofURL string           `json:"business_proof_url,omitempty"`
+		DocumentErrors   []string         `json:"document_errors,omitempty"`
+	}
+
+	resp := UserDocumentsResponse{
+		UserID:    u.ID,
+		Email:     u.Email,
+		Username:  u.Username,
+		Role:      u.Role,
+		KYCStatus: u.KYCStatus,
+		KYEStatus: u.KYEStatus,
+	}
+
+	clientIP := handlerutil.GetClientIP(r)
+
+	if u.IDFrontDoc != "" {
+		url, err := a.storage.GetSignedURL(ctx, u.IDFrontDoc, 15*time.Minute)
+		if err != nil {
+			// #nosec G706 //nolint:gosec -- u.ID is loaded from DB record
+			log.Printf("[AUTH] Failed to generate signed URL for id_front doc (user %s): %v", u.ID, err)
+			resp.DocumentErrors = append(resp.DocumentErrors, "Failed to load id_front")
+		} else {
+			resp.IDFrontURL = url
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("out-of-band doc access (IDFrontDoc) key: %s reason: %s", u.IDFrontDoc, reason), clientIP)
+		}
+	}
+
+	if u.IDBackDoc != "" {
+		url, err := a.storage.GetSignedURL(ctx, u.IDBackDoc, 15*time.Minute)
+		if err != nil {
+			// #nosec G706 //nolint:gosec -- u.ID is loaded from DB record
+			log.Printf("[AUTH] Failed to generate signed URL for id_back doc (user %s): %v", u.ID, err)
+			resp.DocumentErrors = append(resp.DocumentErrors, "Failed to load id_back")
+		} else {
+			resp.IDBackURL = url
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("out-of-band doc access (IDBackDoc) key: %s reason: %s", u.IDBackDoc, reason), clientIP)
+		}
+	}
+
+	if u.SelfieDoc != "" {
+		url, err := a.storage.GetSignedURL(ctx, u.SelfieDoc, 15*time.Minute)
+		if err != nil {
+			// #nosec G706 //nolint:gosec -- u.ID is loaded from DB record
+			log.Printf("[AUTH] Failed to generate signed URL for selfie doc (user %s): %v", u.ID, err)
+			resp.DocumentErrors = append(resp.DocumentErrors, "Failed to load selfie")
+		} else {
+			resp.SelfieURL = url
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("out-of-band doc access (SelfieDoc) key: %s reason: %s", u.SelfieDoc, reason), clientIP)
+		}
+	}
+
+	if u.BusinessProofDoc != "" {
+		url, err := a.storage.GetSignedURL(ctx, u.BusinessProofDoc, 15*time.Minute)
+		if err != nil {
+			// #nosec G706 //nolint:gosec -- u.ID is loaded from DB record
+			log.Printf("[AUTH] Failed to generate signed URL for business_proof doc (user %s): %v", u.ID, err)
+			resp.DocumentErrors = append(resp.DocumentErrors, "Failed to load business_proof")
+		} else {
+			resp.BusinessProofURL = url
+			handlerutil.ShipSecurityEvent(ctx, "DOCUMENT_VIEWED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("out-of-band doc access (BusinessProofDoc) key: %s reason: %s", u.BusinessProofDoc, reason), clientIP)
+		}
+	}
+
+	handlerutil.ShipSecurityEvent(ctx, "USER_DOCUMENTS_RETRIEVED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("retrieved documents for user %s reason: %s", u.ID, reason), clientIP)
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // GET /auth/documents/view?token=xxx

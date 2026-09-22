@@ -174,6 +174,14 @@ func (s *MongoDB) PersistMessage(ctx context.Context, msg *chat.Message) error {
 		"timestamp":       *msg.CreatedAt,
 	}
 
+	if msg.AttachmentKey != "" {
+		doc["attachment_key"] = msg.AttachmentKey
+		doc["attachment_url"] = msg.AttachmentURL
+		doc["attachment_name"] = msg.AttachmentName
+		doc["attachment_type"] = msg.AttachmentType
+		doc["attachment_size"] = msg.AttachmentSize
+	}
+
 	_, err := s.messages.InsertOne(ctx, doc)
 	if err != nil {
 		return fmt.Errorf("store: failed to insert message: %w", err)
@@ -205,6 +213,11 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 		SenderUsername string    `bson:"sender_username"`
 		Content        string    `bson:"content"`
 		Type           string    `bson:"type"`
+		AttachmentKey  string    `bson:"attachment_key"`
+		AttachmentURL  string    `bson:"attachment_url"`
+		AttachmentName string    `bson:"attachment_name"`
+		AttachmentType string    `bson:"attachment_type"`
+		AttachmentSize int64     `bson:"attachment_size"`
 		Timestamp      time.Time `bson:"timestamp"`
 	}
 	if err := cursor.All(ctx, &dbMsgs); err != nil {
@@ -223,6 +236,11 @@ func (s *MongoDB) GetHistory(ctx context.Context, channel string, limit int64) (
 			SenderUsername: m.SenderUsername,
 			Content:        m.Content,
 			Type:           m.Type,
+			AttachmentKey:  m.AttachmentKey,
+			AttachmentURL:  m.AttachmentURL,
+			AttachmentName: m.AttachmentName,
+			AttachmentType: m.AttachmentType,
+			AttachmentSize: m.AttachmentSize,
 			CreatedAt:      &t,
 		}
 	}

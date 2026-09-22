@@ -2,12 +2,16 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +25,7 @@ import (
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/storage"
 	"github.com/project/shared/infra/tlsutil"
 	"github.com/redis/go-redis/v9"
 )
@@ -47,6 +52,7 @@ type wsMessage struct {
 type Chat struct {
 	hub                    *chat.Hub
 	store                  *store.MongoDB
+	storage                storage.Storage
 	authServiceURL         string
 	userServiceURL         string
 	tokenCache             map[string]cachedToken
@@ -64,7 +70,7 @@ type Chat struct {
 }
 
 // NewChat creates a new Chat handler group.
-func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Chat {
+func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Client, stor ...storage.Storage) *Chat {
 	allowedOrigin := cfg.AllowedOrigin
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000"
@@ -91,9 +97,37 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 	userClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
 	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
+	var chatStorage storage.Storage
+	if len(stor) > 0 && stor[0] != nil {
+		chatStorage = stor[0]
+	} else {
+		var err error
+		chatStorage, err = storage.NewLocalStorageWithPath(
+			cfg.StorageBaseDir,
+			cfg.StorageBaseURL,
+			"/chat/attachments/view",
+			cfg.AttachmentSigningSecret,
+			cfg.AttachmentEncryptionKey,
+			cfg.AppEnv,
+		)
+		if err != nil {
+			log.Printf("[CHAT] Warning: failed to initialize storage with base dir %s (%v) - falling back to temp dir", cfg.StorageBaseDir, err)
+			tmpDir, _ := os.MkdirTemp("", "chat_attachments_*")
+			chatStorage, _ = storage.NewLocalStorageWithPath(
+				tmpDir,
+				cfg.StorageBaseURL,
+				"/chat/attachments/view",
+				cfg.AttachmentSigningSecret,
+				cfg.AttachmentEncryptionKey,
+				cfg.AppEnv,
+			)
+		}
+	}
+
 	return &Chat{
 		hub:                    hub,
 		store:                  s,
+		storage:                chatStorage,
 		authServiceURL:         cfg.AuthServiceURL,
 		userServiceURL:         cfg.UserServiceURL,
 		notificationServiceURL: cfg.NotificationServiceURL,
@@ -127,6 +161,12 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/tickets/accept", c.AdminAcceptTicket)
 	mux.HandleFunc("/chat/admin/tickets/resolve", c.AdminResolveTicket)
 	mux.HandleFunc("/admin/tickets/resolve", c.AdminResolveTicket)
+	mux.HandleFunc("/chat/tickets/{id}/attachment", c.UploadTicketAttachment)
+	mux.HandleFunc("/tickets/{id}/attachment", c.UploadTicketAttachment)
+	mux.HandleFunc("/chat/tickets/attachment", c.UploadTicketAttachment)
+	mux.HandleFunc("/tickets/attachment", c.UploadTicketAttachment)
+	mux.HandleFunc("/chat/attachments/view", c.ViewAttachment)
+	mux.HandleFunc("/attachments/view", c.ViewAttachment)
 }
 
 type cachedToken struct {
@@ -919,4 +959,312 @@ func (c *Chat) isOriginAllowed(origin string) bool {
 		return true
 	}
 	return false
+}
+
+// resolveCaller identifies the caller across support agents, reviewers, and customers.
+func (c *Chat) resolveCaller(r *http.Request) (string, string, error) {
+	token := r.Header.Get("X-Reviewer-Token")
+	if token == "" {
+		token = r.Header.Get("X-Agent-Token")
+	}
+	if token == "" {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+	}
+	if token == "" {
+		token = r.URL.Query().Get("token")
+	}
+	if token == "" {
+		token = r.URL.Query().Get("requester_id")
+	}
+	if token == "" {
+		return "", "", fmt.Errorf("missing authentication token")
+	}
+
+	// 1. Support agent token check
+	agent, err := c.store.GetAgentByToken(r.Context(), token)
+	if err == nil && agent != nil {
+		return agent.ID, "Agent " + agent.ID, nil
+	}
+
+	// 2. Reviewer token check
+	if reviewer, rerr := c.verifyReviewerToken(r.Context(), token); rerr == nil && reviewer != nil {
+		name := reviewer.Name
+		if name == "" {
+			name = "Reviewer " + reviewer.ID
+		}
+		return reviewer.ID, name, nil
+	}
+
+	// 3. User JWT check
+	claims, err := jwtutil.ValidateToken(token)
+	if err == nil && claims != nil {
+		if c.authServiceURL != "" {
+			active, uname, verr := c.verifyToken(claims.UserID)
+			if verr == nil && active {
+				if uname == "" {
+					uname = claims.Email
+				}
+				if uname == "" {
+					uname = claims.UserID
+				}
+				return claims.UserID, uname, nil
+			}
+		}
+		name := claims.Email
+		if name == "" {
+			name = claims.UserID
+		}
+		return claims.UserID, name, nil
+	}
+
+	return "", "", fmt.Errorf("invalid token")
+}
+
+// extractTicketID extracts the ticket ID from PathValue, URL path, query, or form.
+func extractTicketID(r *http.Request) string {
+	if id := r.PathValue("id"); id != "" {
+		return id
+	}
+	path := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		if part == "tickets" && i+1 < len(parts) {
+			candidate := parts[i+1]
+			if candidate != "attachment" && candidate != "mine" && candidate != "accept" && candidate != "resolve" {
+				return candidate
+			}
+		}
+	}
+	if id := r.URL.Query().Get("ticket_id"); id != "" {
+		return id
+	}
+	return r.FormValue("ticket_id")
+}
+
+// UploadTicketAttachment handles file upload for a ticket chat channel.
+// POST /chat/tickets/{id}/attachment
+func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	callerID, callerUsername, err := c.resolveCaller(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: " + err.Error()})
+		return
+	}
+
+	ticketID := extractTicketID(r)
+	if ticketID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ticket_id is required"})
+		return
+	}
+
+	ticket, err := c.store.GetTicket(r.Context(), ticketID)
+	if err != nil || ticket == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "ticket not found"})
+		return
+	}
+
+	allowed, err := c.canAccessChannel(callerID, "ticket:"+ticketID)
+	if err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "service_unavailable", "message": err.Error()})
+		return
+	}
+	if !allowed {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized for this ticket"})
+		return
+	}
+
+	// Bound upload body to 10MB
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	// #nosec G120 //nolint:gosec -- body is bounded by http.MaxBytesReader, preventing memory exhaustion
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		if strings.Contains(err.Error(), "request body too large") || strings.Contains(err.Error(), "too large") {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "file exceeds maximum allowed size of 10MB"})
+			return
+		}
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to parse multipart form: " + err.Error()})
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file is required"})
+		return
+	}
+	defer file.Close()
+
+	if header.Size <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file cannot be empty"})
+		return
+	}
+	if header.Size > 10<<20 {
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "file exceeds maximum allowed size of 10MB"})
+		return
+	}
+
+	// Sniff MIME type
+	sniffBuf := make([]byte, 512)
+	n, err := file.Read(sniffBuf)
+	if err != nil && err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read file: " + err.Error()})
+		return
+	}
+	detectedType := http.DetectContentType(sniffBuf[:n])
+	baseType := strings.TrimSpace(strings.Split(detectedType, ";")[0])
+	if bytes.HasPrefix(sniffBuf[:n], []byte("%PDF-")) {
+		baseType = "application/pdf"
+	}
+
+	if baseType != "image/jpeg" && baseType != "image/png" && baseType != "application/pdf" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported file type: only JPEG, PNG, and PDF files are allowed"})
+		return
+	}
+
+	var reader io.Reader
+	if seeker, ok := file.(io.Seeker); ok {
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			reader = io.MultiReader(bytes.NewReader(sniffBuf[:n]), file)
+		} else {
+			reader = file
+		}
+	} else {
+		reader = io.MultiReader(bytes.NewReader(sniffBuf[:n]), file)
+	}
+
+	filename := filepath.Base(header.Filename)
+	if filename == "" || filename == "." || filename == "/" {
+		filename = "attachment"
+	}
+	key := fmt.Sprintf("tickets/%s/%d_%s", ticketID, time.Now().UnixNano(), filename)
+
+	if err := c.storage.Upload(r.Context(), key, reader, baseType); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to store attachment: " + err.Error()})
+		return
+	}
+
+	claims := storage.DocClaims{
+		Key:      key,
+		TicketID: ticketID,
+		UserID:   callerID,
+	}
+	signedURL, err := c.storage.GetSignedURLWithClaims(r.Context(), "/chat/attachments/view", claims, 24*time.Hour)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate signed URL: " + err.Error()})
+		return
+	}
+
+	content := strings.TrimSpace(r.FormValue("content"))
+	if content == "" {
+		content = header.Filename
+	}
+
+	now := time.Now().UTC()
+	msg := &chat.Message{
+		Channel:        "ticket:" + ticketID,
+		SenderID:       callerID,
+		SenderUsername: callerUsername,
+		Content:        content,
+		Type:           "attachment",
+		AttachmentKey:  key,
+		AttachmentURL:  signedURL,
+		AttachmentName: header.Filename,
+		AttachmentType: baseType,
+		AttachmentSize: header.Size,
+		CreatedAt:      &now,
+	}
+
+	if err := c.store.PersistMessage(r.Context(), msg); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist message: " + err.Error()})
+		return
+	}
+
+	c.hub.Broadcast <- msg
+
+	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_ATTACHMENT_UPLOADED", "chat-service", callerID, ticket.CustomerID, fmt.Sprintf("uploaded attachment %s (key=%s, size=%d, type=%s) for ticket %s", header.Filename, key, header.Size, baseType, ticketID), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, msg)
+}
+
+// ViewAttachment verifies access and streams the decrypted attachment file.
+// GET /chat/attachments/view?token=...
+func (c *Chat) ViewAttachment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	tokenStr := r.URL.Query().Get("token")
+	if tokenStr == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing token query parameter"})
+		return
+	}
+
+	claims, err := c.storage.ValidateSignedURLTokenWithClaims(tokenStr)
+	if err != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired attachment token: " + err.Error()})
+		return
+	}
+
+	// Verify channel access for ticket attachments
+	if claims.TicketID != "" {
+		callerID, _, err := c.resolveCaller(r)
+		checkUser := claims.UserID
+		if err == nil && callerID != "" {
+			checkUser = callerID
+		}
+
+		if checkUser == "" {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "unauthorized attachment access"})
+			return
+		}
+
+		allowed, err := c.canAccessChannel(checkUser, "ticket:"+claims.TicketID)
+		if err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "service_unavailable", "message": err.Error()})
+			return
+		}
+		if !allowed {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "not authorized to view attachments for this ticket"})
+			return
+		}
+	}
+
+	fileRC, err := c.storage.OpenFile(claims.Key)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "attachment not found or failed to decrypt"})
+		return
+	}
+	defer fileRC.Close()
+
+	ext := strings.ToLower(filepath.Ext(claims.Key))
+	contentType := "application/octet-stream"
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	case ".pdf":
+		contentType = "application/pdf"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	filename := filepath.Base(claims.Key)
+	if idx := strings.Index(filename, "_"); idx != -1 {
+		filename = filename[idx+1:]
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filename))
+
+	handlerutil.ShipSecurityEvent(r.Context(), "TICKET_ATTACHMENT_VIEWED", "chat-service", claims.UserID, "", fmt.Sprintf("viewed attachment key=%s ticket=%s", claims.Key, claims.TicketID), handlerutil.GetClientIP(r))
+
+	if _, err := io.Copy(w, fileRC); err != nil {
+		log.Printf("[CHAT] Error streaming attachment: %v", err)
+	}
 }

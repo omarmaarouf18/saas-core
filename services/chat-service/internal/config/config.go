@@ -6,20 +6,25 @@ import (
 )
 
 type Config struct {
-	Port                   string
-	MongoURI               string
-	MongoDatabase          string
-	JWTSecret              string
-	InternalServiceToken   string
-	AuthServiceURL         string
-	UserServiceURL         string
-	NotificationServiceURL string
-	AllowedOrigin          string
-	CloudWatchLogGroup     string
-	TLSCertPath            string
-	TLSKeyPath             string
-	TLSCAPath              string
-	RedisURI               string
+	Port                    string
+	MongoURI                string
+	MongoDatabase           string
+	JWTSecret               string
+	InternalServiceToken    string
+	AuthServiceURL          string
+	UserServiceURL          string
+	NotificationServiceURL  string
+	AllowedOrigin           string
+	CloudWatchLogGroup      string
+	TLSCertPath             string
+	TLSKeyPath              string
+	TLSCAPath               string
+	RedisURI                string
+	AppEnv                  string
+	StorageBaseDir          string
+	StorageBaseURL          string
+	AttachmentEncryptionKey string
+	AttachmentSigningSecret string
 }
 
 func Load() (*Config, error) {
@@ -88,20 +93,53 @@ func Load() (*Config, error) {
 		allowedOrigin = "http://localhost:3000"
 	}
 
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" {
+		appEnv = "production"
+	}
+
+	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")
+	if storageBaseDir == "" {
+		storageBaseDir = "./data/attachments"
+	}
+
+	storageBaseURL := os.Getenv("STORAGE_BASE_URL")
+	if storageBaseURL == "" {
+		storageBaseURL = "/api/v1"
+	}
+
+	attachmentKey := os.Getenv("ATTACHMENT_ENCRYPTION_KEY")
+	if attachmentKey == "" {
+		attachmentKey = os.Getenv("DOCUMENT_ENCRYPTION_KEY")
+	}
+
+	attachmentSecret := os.Getenv("ATTACHMENT_SIGNING_SECRET")
+	if attachmentSecret == "" {
+		attachmentSecret = os.Getenv("DOCUMENT_SIGNING_SECRET")
+	}
+	if attachmentSecret == "" {
+		attachmentSecret = jwtSecret
+	}
+
 	return &Config{
-		Port:                   port,
-		MongoURI:               mongoURI,
-		MongoDatabase:          dbName,
-		JWTSecret:              jwtSecret,
-		InternalServiceToken:   internalServiceToken,
-		AuthServiceURL:         authServiceURL,
-		UserServiceURL:         userServiceURL,
-		NotificationServiceURL: notificationServiceURL,
-		AllowedOrigin:          allowedOrigin,
-		CloudWatchLogGroup:     os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:            tlsCertPath,
-		TLSKeyPath:             tlsKeyPath,
-		TLSCAPath:              tlsCAPath,
-		RedisURI:               redisURI,
+		Port:                    port,
+		MongoURI:                mongoURI,
+		MongoDatabase:           dbName,
+		JWTSecret:               jwtSecret,
+		InternalServiceToken:    internalServiceToken,
+		AuthServiceURL:          authServiceURL,
+		UserServiceURL:          userServiceURL,
+		NotificationServiceURL:  notificationServiceURL,
+		AllowedOrigin:           allowedOrigin,
+		CloudWatchLogGroup:      os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:             tlsCertPath,
+		TLSKeyPath:              tlsKeyPath,
+		TLSCAPath:               tlsCAPath,
+		RedisURI:                redisURI,
+		AppEnv:                  appEnv,
+		StorageBaseDir:          storageBaseDir,
+		StorageBaseURL:          storageBaseURL,
+		AttachmentEncryptionKey: attachmentKey,
+		AttachmentSigningSecret: attachmentSecret,
 	}, nil
 }

@@ -52,6 +52,15 @@ func TestMaxBytesMiddleware_UploadRouteHigherLimit(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(string(rune(len(body)))))
 	})
+	mux.HandleFunc("/chat/tickets/123/attachment", func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "body too large: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(string(rune(len(body)))))
+	})
 
 	// Default limit 1KB, but upload route should allow up to 10MB
 	handler := MaxBytesMiddleware(1024)(mux)
@@ -63,5 +72,13 @@ func TestMaxBytesMiddleware_UploadRouteHigherLimit(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK for upload payload on upload route, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// 50KB payload on attachment route -> 200 OK
+	reqAttach := httptest.NewRequest(http.MethodPost, "/chat/tickets/123/attachment", strings.NewReader(uploadBody))
+	recAttach := httptest.NewRecorder()
+	handler.ServeHTTP(recAttach, reqAttach)
+	if recAttach.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for attachment payload on attachment route, got %d: %s", recAttach.Code, recAttach.Body.String())
 	}
 }

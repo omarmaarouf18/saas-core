@@ -12,16 +12,32 @@ import '../widgets/app_shell.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
+import 'package:file_picker/file_picker.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/themed_success_banner.dart';
 
+class PickedAttachment {
+  final String filename;
+  final List<int> bytes;
+
+  const PickedAttachment({
+    required this.filename,
+    required this.bytes,
+  });
+}
+
+typedef TicketAttachmentPicker = Future<PickedAttachment?> Function(
+    BuildContext context);
+
 class TicketChatScreen extends StatefulWidget {
   final SupportTicket ticket;
+  final TicketAttachmentPicker? onPickAttachment;
 
   const TicketChatScreen({
     super.key,
     required this.ticket,
+    this.onPickAttachment,
   });
 
   @override
@@ -32,8 +48,78 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+  bool _isUploadingAttachment = false;
   late bool _isResolved;
   String? _resolutionNote;
+
+  Future<PickedAttachment?> _defaultPickAttachment(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+        withData: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.bytes != null) {
+          return PickedAttachment(
+            filename: file.name,
+            bytes: file.bytes!,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking file: $e');
+    }
+    return null;
+  }
+
+  Future<void> _pickAndUploadAttachment() async {
+    if (_isSending || _isUploadingAttachment || _isResolved) return;
+    final picker = widget.onPickAttachment ?? _defaultPickAttachment;
+    final picked = await picker(context);
+    if (!mounted || picked == null) return;
+
+    if (picked.bytes.isEmpty) {
+      ThemedSnackBar.showError(context, 'File cannot be empty');
+      return;
+    }
+    if (picked.bytes.length > 10 * 1024 * 1024) {
+      ThemedSnackBar.showError(
+        context,
+        'File exceeds maximum allowed size of 10MB',
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploadingAttachment = true;
+    });
+
+    final chat = Provider.of<ChatProvider>(context, listen: false);
+    try {
+      await chat.uploadTicketAttachment(
+        ticketId: widget.ticket.id,
+        fileBytes: picked.bytes,
+        filename: picked.filename,
+      );
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('Error uploading attachment: $e');
+      if (mounted) {
+        ThemedSnackBar.showError(
+          context,
+          context.l10n.chatFailedSend(friendlyErrorMessage(e)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingAttachment = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -478,14 +564,142 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                   ),
                 ),
               ),
-            Text(
-              message.content,
-              style: AppTypography.bodyMd.copyWith(color: textColor),
+            if (message.attachmentUrl != null &&
+                message.attachmentUrl!.isNotEmpty)
+              _buildAttachmentPreview(context, message, isMe, textColor),
+            if (message.content.isNotEmpty &&
+                (message.attachmentUrl == null ||
+                    message.attachmentUrl!.isEmpty ||
+                    message.content != message.attachmentName))
+              Text(
+                message.content,
+                style: AppTypography.bodyMd.copyWith(color: textColor),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentPreview(
+    BuildContext context,
+    ChatMessage message,
+    bool isMe,
+    Color textColor,
+  ) {
+    final theme = Theme.of(context);
+    final isImage = message.attachmentType?.startsWith('image/') == true ||
+        (message.attachmentName != null &&
+            (message.attachmentName!.toLowerCase().endsWith('.jpg') ||
+                message.attachmentName!.toLowerCase().endsWith('.jpeg') ||
+                message.attachmentName!.toLowerCase().endsWith('.png')));
+
+    if (isImage && message.attachmentUrl != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 220,
+              maxWidth: 280,
+            ),
+            child: Image.network(
+              message.attachmentUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                color: isMe
+                    ? theme.colorScheme.onPrimary.withValues(alpha: 0.15)
+                    : theme.colorScheme.surfaceContainerHighest,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.broken_image_outlined,
+                      size: 20,
+                      color: isMe
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.outline,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        message.attachmentName ?? 'Image',
+                        style: AppTypography.caption.copyWith(color: textColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final isPdf = message.attachmentType == 'application/pdf' ||
+        (message.attachmentName != null &&
+            message.attachmentName!.toLowerCase().endsWith('.pdf'));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: ThemedPanel(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        color: isMe
+            ? theme.colorScheme.onPrimary.withValues(alpha: 0.15)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isPdf ? Icons.picture_as_pdf : Icons.insert_drive_file_outlined,
+              size: 28,
+              color: isMe
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.primary,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    message.attachmentName ?? 'Document',
+                    style: AppTypography.bodySm.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (message.attachmentSize != null &&
+                      message.attachmentSize! > 0)
+                    Text(
+                      _formatFileSize(message.attachmentSize!),
+                      style: AppTypography.caption.copyWith(
+                        color: textColor.withValues(alpha: 0.8),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   Widget _buildInputArea(BuildContext context) {
@@ -533,6 +747,24 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
       ),
       child: Row(
         children: [
+          IconButton(
+            key: const Key('ticket_chat_attach_button'),
+            icon: _isUploadingAttachment
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    Icons.attach_file_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+            tooltip: 'Attach file',
+            onPressed: (_isSending || _isUploadingAttachment || _isResolved)
+                ? null
+                : _pickAndUploadAttachment,
+          ),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: TextField(
               key: const Key('ticket_chat_input_field'),

@@ -153,6 +153,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Validates signed URL token and streams/serves the uploaded document file.",
 		Targets:     "Streams file content.",
 	},
+	"GET /auth/reviewer/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
+	"GET /auth/kyb-kye/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
 	"GET /auth/accounts": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Searches and lists registered accounts with pagination, role and status filters (ADR-0022).",
@@ -279,6 +289,36 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Resolves support ticket globally with mandatory resolution note (ADR-0023).",
 		Targets:     "CAS updates `complaint_tickets` and releases assigned agent.",
+	},
+	"POST /chat/tickets/{id}/attachment": {
+		Permissions: "Ticket Participant JWT OR Reviewer Token",
+		Function:    "Uploads and encrypts file attachment for support ticket chat (JPEG, PNG, PDF up to 10MB).",
+		Targets:     "Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel.",
+	},
+	"POST /tickets/{id}/attachment": {
+		Permissions: "Ticket Participant JWT OR Reviewer Token",
+		Function:    "Alias for /chat/tickets/{id}/attachment; uploads file attachment for support ticket chat.",
+		Targets:     "Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel.",
+	},
+	"POST /chat/tickets/attachment": {
+		Permissions: "Ticket Participant JWT OR Reviewer Token",
+		Function:    "Uploads and encrypts file attachment for support ticket chat with ticket_id form field.",
+		Targets:     "Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel.",
+	},
+	"POST /tickets/attachment": {
+		Permissions: "Ticket Participant JWT OR Reviewer Token",
+		Function:    "Alias for /chat/tickets/attachment; uploads file attachment for support ticket chat.",
+		Targets:     "Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel.",
+	},
+	"GET /chat/attachments/view": {
+		Permissions: "Signed URL Token with live ticket participant access",
+		Function:    "Validates signed token claims and re-verifies live ticket access before streaming decrypted attachment.",
+		Targets:     "Reads `complaint_tickets` collection. Streams decrypted file content.",
+	},
+	"GET /attachments/view": {
+		Permissions: "Signed URL Token with live ticket participant access",
+		Function:    "Alias for /chat/attachments/view; streams decrypted attachment file.",
+		Targets:     "Reads `complaint_tickets` collection. Streams decrypted file content.",
 	},
 
 	// notification-service

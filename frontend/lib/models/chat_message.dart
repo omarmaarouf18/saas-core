@@ -7,6 +7,12 @@ class ChatMessage {
   final String type; // "message", "join", "leave", "location_update"
   final DateTime? createdAt;
 
+  final String? attachmentKey;
+  final String? attachmentUrl;
+  final String? attachmentName;
+  final String? attachmentType;
+  final int? attachmentSize;
+
   ChatMessage({
     this.id,
     required this.channel,
@@ -15,6 +21,11 @@ class ChatMessage {
     required this.content,
     required this.type,
     this.createdAt,
+    this.attachmentKey,
+    this.attachmentUrl,
+    this.attachmentName,
+    this.attachmentType,
+    this.attachmentSize,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -32,6 +43,13 @@ class ChatMessage {
       content: json['content'] ?? '',
       type: json['type'] ?? 'message',
       createdAt: dt,
+      attachmentKey: json['attachment_key']?.toString(),
+      attachmentUrl: json['attachment_url']?.toString(),
+      attachmentName: json['attachment_name']?.toString(),
+      attachmentType: json['attachment_type']?.toString(),
+      attachmentSize: json['attachment_size'] != null
+          ? int.tryParse(json['attachment_size'].toString())
+          : null,
     );
   }
 
@@ -43,5 +61,10 @@ class ChatMessage {
         'content': content,
         'type': type,
         if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+        if (attachmentKey != null) 'attachment_key': attachmentKey,
+        if (attachmentUrl != null) 'attachment_url': attachmentUrl,
+        if (attachmentName != null) 'attachment_name': attachmentName,
+        if (attachmentType != null) 'attachment_type': attachmentType,
+        if (attachmentSize != null) 'attachment_size': attachmentSize,
       };
 }

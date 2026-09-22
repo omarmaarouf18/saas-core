@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`b9f589c`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`a6ed2f9`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -199,6 +199,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/forgot-password`** | `auth-service` | Public | Dispatches password reset OTP code if account exists. | Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields. |
 | **`GET /auth/kyb-kye/pending`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Fetches pending KYB verification submissions (including username). | Reads `users` and `reviewers` collections. |
 | **`POST /auth/kyb-kye/review`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Approves or rejects KYB submissions. | Updates `users` status. Writes `audit_logs` and `reviewers`. |
+| **`GET /auth/kyb-kye/user-documents`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents. | Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`). |
 | **`POST /auth/kyb/upload`** | `auth-service` | Owner JWT | Uploads KYB verification files (ID front/back, selfie, business proof). | Writes uploaded documents to local storage. Updates `users` collection. |
 | **`POST /auth/kye/upload`** | `auth-service` | Employee JWT | Uploads KYE verification files (ID front/back, selfie). | Writes uploaded documents to local storage. Updates `users` collection. |
 | **`POST /auth/login`** | `auth-service` | Public (via Gateway) | Logs in user, dispatches 2FA OTP. | Reads/writes `users` collection (OTP/attempts). Writes `audit_logs`. |
@@ -206,6 +207,7 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
 | **`POST /auth/resend-otp`** | `auth-service` | Public | ResendOTP handles resending a fresh OTP for unconfirmed accounts. | Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields. |
 | **`POST /auth/reset-password`** | `auth-service` | Public | Verifies OTP code and updates user password. | Reads `users` collection by email, updates `password` hash and clears OTP fields. |
+| **`GET /auth/reviewer/user-documents`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason. | Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`). |
 | **`GET /auth/reviewer/verify`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023). | Reads `reviewers` collection. |
 | **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
 | **`GET /auth/user`** | `auth-service` | `X-Internal-Token` OR User JWT | Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred). | Reads `users` collection. |
@@ -215,15 +217,21 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
 | **`POST /admin/tickets/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`POST /admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
+| **`GET /attachments/view`** | `chat-service` | Signed URL Token with live ticket participant access | Alias for /chat/attachments/view; streams decrypted attachment file. | Reads `complaint_tickets` collection. Streams decrypted file content. |
 | **`GET /chat/admin/tickets`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Lists all support tickets globally for ops console oversight (ADR-0023). | Reads `complaint_tickets` collection. Paginated. |
 | **`POST /chat/admin/tickets/accept`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Atomically assigns a pending ticket to a reviewer (CAS) and dispatches customer notification. | CAS updates `complaint_tickets` and dispatches notification via notification-service. |
 | **`POST /chat/admin/tickets/resolve`** | `chat-service` | Reviewer Token & `X-Internal-Token` | Resolves support ticket globally with mandatory resolution note (ADR-0023). | CAS updates `complaint_tickets` and releases assigned agent. |
+| **`GET /chat/attachments/view`** | `chat-service` | Signed URL Token with live ticket participant access | Validates signed token claims and re-verifies live ticket access before streaming decrypted attachment. | Reads `complaint_tickets` collection. Streams decrypted file content. |
 | **`GET /chat/history`** | `chat-service` | Channel Member JWT | Retrieves channel chat history (containing sender_username point-in-time snapshot). | Reads `chat_messages` collection. Downstream: calls `user-service/users/jobs/get`. |
 | **`POST /chat/internal/broadcast-location`** | `chat-service` | `X-Internal-Token` | Broadcasts driver location event. | None. |
 | **`POST /chat/tickets`** | `chat-service` | User JWT | Submits complaint ticket in pending status for reviewer pickup. | Writes `complaint_tickets` collection. |
+| **`POST /chat/tickets/attachment`** | `chat-service` | Ticket Participant JWT OR Reviewer Token | Uploads and encrypts file attachment for support ticket chat with ticket_id form field. | Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel. |
 | **`GET /chat/tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
+| **`POST /chat/tickets/{id}/attachment`** | `chat-service` | Ticket Participant JWT OR Reviewer Token | Uploads and encrypts file attachment for support ticket chat (JPEG, PNG, PDF up to 10MB). | Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel. |
 | **`GET /chat/ws`** | `chat-service` | User JWT OR Agent Token | WebSocket connection upgrade path. | Reads `support_agents` (for agent tokens). Downstream: calls `auth-service/auth/user`. |
+| **`POST /tickets/attachment`** | `chat-service` | Ticket Participant JWT OR Reviewer Token | Alias for /chat/tickets/attachment; uploads file attachment for support ticket chat. | Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel. |
 | **`GET /tickets/mine`** | `chat-service` | User JWT | Lists support tickets submitted by the authenticated customer, sorted newest first. | Queries `complaint_tickets` collection by `customer_id`. Paginated. |
+| **`POST /tickets/{id}/attachment`** | `chat-service` | Ticket Participant JWT OR Reviewer Token | Alias for /chat/tickets/{id}/attachment; uploads file attachment for support ticket chat. | Writes encrypted attachment to local storage. Persists message in `chat_messages`. Broadcasts to WebSocket channel. |
 | **`POST /notifications/broadcast/job-alert`** | `notification-service` | `X-Internal-Token` | Broadcasts job alert to employees. | Dispatches message to SSE clients. |
 | **`GET /notifications/history`** | `notification-service` | User JWT | Returns the authenticated user's persisted notifications, paginated. | Reads `notifications` collection. |
 | **`POST /notifications/read-all`** | `notification-service` | User JWT | Marks all notifications as read for the authenticated user. | Updates `notifications` collection. |

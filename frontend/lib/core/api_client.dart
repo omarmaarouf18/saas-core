@@ -54,16 +54,21 @@ class ApiClient {
     ),
     String? appVersion,
     this.requestTimeout = const Duration(seconds: 30),
+    http.Client? client,
   }) {
     if (appVersion != null && appVersion.isNotEmpty) {
       _appVersion = appVersion;
     }
-    // Setup security overrides for local developer self-signed certificates.
-    final httpClient = HttpClient();
-    httpClient.badCertificateCallback = bypassBadCertificate;
-    // Fail fast when nothing is listening at all (QA audit A5).
-    httpClient.connectionTimeout = const Duration(seconds: 15);
-    _client = io_client.IOClient(httpClient);
+    if (client != null) {
+      _client = client;
+    } else {
+      // Setup security overrides for local developer self-signed certificates.
+      final httpClient = HttpClient();
+      httpClient.badCertificateCallback = bypassBadCertificate;
+      // Fail fast when nothing is listening at all (QA audit A5).
+      httpClient.connectionTimeout = const Duration(seconds: 15);
+      _client = io_client.IOClient(httpClient);
+    }
   }
 
   void setToken(String? token) {
@@ -316,12 +321,19 @@ class ApiClient {
     required String fieldName,
     required List<int> fileBytes,
     required String filename,
+    Map<String, String>? fields,
+    Map<String, String>? headers,
     bool isRetry = false,
   }) async {
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
-      final headers = _getHeaders();
-      request.headers.addAll(headers);
+      final reqHeaders = _getHeaders(extraHeaders: headers);
+      reqHeaders.remove('Content-Type');
+      reqHeaders.remove('content-type');
+      request.headers.addAll(reqHeaders);
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
       request.files.add(
         http.MultipartFile.fromBytes(
           fieldName,
@@ -343,6 +355,8 @@ class ApiClient {
                   fieldName: fieldName,
                   fileBytes: fileBytes,
                   filename: filename,
+                  fields: fields,
+                  headers: headers,
                   isRetry: true,
                 ),
         path: path,

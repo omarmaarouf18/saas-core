@@ -323,6 +323,56 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<ChatMessage?> uploadTicketAttachment({
+    required String ticketId,
+    required List<int> fileBytes,
+    required String filename,
+    String? content,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final fields = <String, String>{};
+      if (content != null && content.trim().isNotEmpty) {
+        fields['content'] = content.trim();
+      }
+      final res = await apiClient.postMultipart(
+        '/chat/tickets/$ticketId/attachment',
+        fieldName: 'file',
+        fileBytes: fileBytes,
+        filename: filename,
+        fields: fields.isNotEmpty ? fields : null,
+      );
+
+      if (res is Map<String, dynamic>) {
+        final msg = ChatMessage.fromJson(res);
+        final isDuplicate = _messages.any((m) {
+          if (m.id != null &&
+              msg.id != null &&
+              m.id!.isNotEmpty &&
+              msg.id!.isNotEmpty) {
+            return m.id == msg.id;
+          }
+          return false;
+        });
+        if (!isDuplicate) {
+          _messages.add(msg);
+        }
+        return msg;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error uploading ticket attachment: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void disconnect() {
     // A6: safe against post-dispose invocation (see _isDisposed note).
     if (_isDisposed) return;
