@@ -40,6 +40,13 @@ RUN apk --no-cache add ca-certificates curl \
 
 COPY --from=build /bin/service /bin/service
 
+WORKDIR /app
+# Pre-create the attachment storage dir with appuser ownership so that a
+# fresh staging_saas_attachments_data named volume mounted at
+# /app/data/attachments inherits writable ownership (the service runs as
+# appuser and attachment uploads fail on EACCES otherwise).
+RUN mkdir -p /app/data/attachments && chown -R appuser:appgroup /app
+
 EXPOSE 3001
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \

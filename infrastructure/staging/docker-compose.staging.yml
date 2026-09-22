@@ -109,6 +109,7 @@ services:
       - ../certs/ca.crt:/app/certs/ca.crt:ro
       - ../certs/chat-service.crt:/app/certs/chat-service.crt:ro
       - ../certs/chat-service.key:/app/certs/chat-service.key:ro
+      - staging_attachments_data:/app/data/attachments
     environment:
       PORT: ${CHAT_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -122,6 +123,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      ATTACHMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
+      ATTACHMENT_SIGNING_SECRET: ${DOCUMENT_SIGNING_SECRET}
+      STORAGE_BASE_DIR: /app/data/attachments
       TLS_CERT_PATH: /app/certs/chat-service.crt
       TLS_KEY_PATH: /app/certs/chat-service.key
       TLS_CA_PATH: /app/certs/ca.crt
@@ -147,6 +151,7 @@ services:
       - ../certs/ca.crt:/app/certs/ca.crt:ro
       - ../certs/auth-service.crt:/app/certs/auth-service.crt:ro
       - ../certs/auth-service.key:/app/certs/auth-service.key:ro
+      - staging_documents_data:/app/data/documents
     environment:
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -160,6 +165,7 @@ services:
       DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      STORAGE_BASE_DIR: /app/data/documents
       OTP_AES_KEY: ${OTP_AES_KEY}
       TLS_CERT_PATH: /app/certs/auth-service.crt
       TLS_KEY_PATH: /app/certs/auth-service.key
@@ -311,6 +317,10 @@ volumes:
     name: staging_saas_caddy_data
   staging_caddy_config:
     name: staging_saas_caddy_config
+  staging_documents_data:
+    name: staging_saas_documents_data
+  staging_attachments_data:
+    name: staging_saas_attachments_data
 
 networks:
   staging-net:

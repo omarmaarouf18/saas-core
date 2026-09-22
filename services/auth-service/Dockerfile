@@ -39,7 +39,11 @@ RUN apk --no-cache add ca-certificates curl \
     && addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app
+# Pre-create the KYB/KYE document storage dir with appuser ownership so that
+# a fresh staging_saas_documents_data named volume mounted at
+# /app/data/documents inherits writable ownership (the service runs as
+# appuser and fail-fasts/fails uploads on EACCES otherwise).
+RUN mkdir -p /app/data/documents && chown -R appuser:appgroup /app
 
 COPY --from=build /bin/service /bin/service
 
