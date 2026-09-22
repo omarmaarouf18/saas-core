@@ -2,6 +2,41 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## KYC Document Reviewer Access & Support Ticket File Attachments
+
+- **Implementation Detail**:
+  - **Shared Storage Extraction (`shared/infra/storage/`)**:
+    - Extracted `LocalStorage`, `DocClaims`, AES-256-GCM cipher, and HMAC-SHA256 signed URL token generation/validation with claims (`GetSignedURLWithClaims`, `ValidateSignedURLTokenWithClaims`) into compile-time shared package. Aliased in `services/auth-service/internal/storage/storage.go`.
+    - Added unit tests in `shared/infra/storage/storage_test.go` verifying encryption/decryption at rest, tampering detection, claims round-trip, and token expiration.
+  - **Shared Handlerutil (`shared/infra/handlerutil/`)**:
+    - Updated `MaxBytesMiddleware` in `shared/infra/handlerutil/max_bytes.go` to permit up to 10MB for request paths containing `/attachment`.
+    - Added test case in `shared/infra/handlerutil/max_bytes_test.go`.
+  - **Auth Service (`services/auth-service/`)**:
+    - `internal/handlers/auth.go`: Implemented `GetUserDocuments` registered under `GET /auth/reviewer/user-documents` and alias `/auth/kyb-kye/user-documents`. Enforces reviewer authentication (`reviewer != nil`), mandatory non-empty audit reason (1–1000 characters), generates fresh signed URLs for all non-empty document slots (`id_front`, `id_back`, `selfie`, `business_proof`) regardless of approval/rejection user status, and emits security events (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).
+    - `internal/handlers/user_documents_test.go`: Added unit tests verifying reviewer authorization, mandatory reason validation, 404 on non-existent users, signed URL issuance, and security event shipping.
+  - **Chat Service (`services/chat-service/`)**:
+    - `internal/chat/hub.go`: Added `AttachmentKey`, `AttachmentURL`, `AttachmentName`, `AttachmentType`, `AttachmentSize` to `Message` struct.
+    - `internal/store/mongodb.go`: Updated `PersistMessage` and `GetHistory` to persist and return attachment fields in MongoDB `chat_messages` collection.
+    - `internal/config/config.go`: Added storage base directory, base URL, encryption key, and signing secret configuration.
+    - `internal/handlers/chat.go`:
+      - Handlers support `storage.Storage` injection via `NewChat`.
+      - Implemented `UploadTicketAttachment` on `POST /chat/tickets/{id}/attachment`, `POST /tickets/{id}/attachment`, `POST /chat/tickets/attachment`, and `POST /tickets/attachment`. Enforces 10MB body limit, multipart form parsing, magic-byte MIME type detection (JPEG, PNG, PDF), channel participant authorization via `canAccessChannel`, AES-256-GCM encrypted storage, signed URL issuance with claims, message persistence, and real-time WebSocket broadcast.
+      - Implemented `ViewAttachment` on `GET /chat/attachments/view` and `GET /attachments/view`. Validates token claims via HMAC-SHA256 and re-verifies live ticket channel access in MongoDB via `canAccessChannel` before streaming decrypted file bytes.
+    - `internal/handlers/attachment_test.go`: Added comprehensive test suite verifying image and PDF upload, 10MB size limit rejection, MIME type validation, participant download, non-participant 403 rejection, and live access revocation.
+  - **Reviewer Console (`kyc-reviewer-console`)**:
+    - `internal/proxy/proxy.go` & `cmd/server/main.go`: Added proxy forwarding for `/api/documents/user`, `/api/tickets/attachment`, `/api/chat/attachments/view`.
+    - `web/index.html`, `web/app.js`, `web/style.css`: Added User Documents modal dialog with mandatory audit reason and refresh action, "KYC Docs" buttons in Accounts Directory and Ticket Chat header, and ticket chat file picker, preview bar, and thumbnail/PDF cards (committed and pushed in `9f28f85`).
+  - **Flutter Mobile Client (`frontend/`)**:
+    - `lib/models/chat_message.dart`: Added attachment fields with full JSON serialization and deserialization.
+    - `lib/core/api_client.dart`: Updated `postMultipart` to strip conflicting `Content-Type` header, support optional form fields, and allow `http.Client` test injection in `ApiClient` constructor.
+    - `lib/providers/chat_provider.dart`: Added `uploadTicketAttachment` method calling `/chat/tickets/{id}/attachment` and appending non-duplicate messages.
+    - `lib/screens/ticket_chat_screen.dart`: Added `PickedAttachment` and `TicketAttachmentPicker` types with `onPickAttachment` constructor callback, attach button (`key: Key('ticket_chat_attach_button')`) in input bar, upload flow with client-side 10MB validation, image thumbnail preview, and PDF document card with formatted file size.
+    - `test/ticket_chat_attachment_test.dart`: Added 6 unit and widget tests covering model serialization, multipart header handling, provider upload, attachment button interaction, PDF card rendering, and resolved ticket input lock.
+  - **Shared Docgen & Application Map**:
+    - Updated `shared/infra/docgen/generator.go` with all new auth-service and chat-service endpoints and regenerated `docs/APPLICATION_MAP.md`.
+- **Commit SHA**: ``8cd086275c39dcb441c75e409574a56e23d9d6d9``
+- **Verification**: Verified via `shared/infra` tests (100% pass), `services/auth-service` tests (100% pass), `services/chat-service` tests (100% pass), `kyc-reviewer-console` Go & Node.js tests (100% pass), `flutter analyze` (0 issues), `flutter test` (568/568 pass), `bash scripts/frontend_composition_gate.sh` (pass), `make docs-check` (pass), and `make ci` (pass).
+
 ## Customer Support Ticket History & Real-Time Chat (GAP-01 & GAP-02)
 
 - **Implementation Detail**:
