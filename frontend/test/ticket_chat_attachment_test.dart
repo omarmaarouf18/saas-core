@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -193,11 +192,9 @@ void main() {
   group('ApiClient postMultipart', () {
     test('removes Content-Type header so multipart boundary is preserved',
         () async {
-      http.Request? capturedRequest;
+      http.BaseRequest? capturedRequest;
       final mockClient = MockClient((request) async {
-        if (request is http.Request) {
-          capturedRequest = request;
-        }
+        capturedRequest = request;
         return http.Response(
           jsonEncode({'id': 'uploaded-1', 'status': 'ok'}),
           200,
@@ -218,6 +215,11 @@ void main() {
 
       expect(res, isA<Map<String, dynamic>>());
       expect(res['id'], equals('uploaded-1'));
+      expect(capturedRequest, isNotNull);
+      expect(capturedRequest!.headers['content-type'],
+          startsWith('multipart/form-data; boundary='));
+      expect(capturedRequest!.headers['Authorization'],
+          equals('Bearer jwt-token-123'));
     });
   });
 
