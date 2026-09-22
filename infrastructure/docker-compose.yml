@@ -14,6 +14,15 @@ services:
     image: mongo:7
     container_name: saas-mongo
     restart: unless-stopped
+    # mongod keeps one file handle per collection/index/connection; the
+    # Docker default nofile soft limit (1024) is exhausted by the test
+    # suites (hundreds of uniquely-named test DBs), causing EMFILE inside
+    # WiredTiger (__wt_block_manager_create) -> fassert/SIGABRT crash-loop.
+    # 64000:64000 is the mongo image's documented recommendation.
+    ulimits:
+      nofile:
+        soft: 64000
+        hard: 64000
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
