@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
+
 	"github.com/project/user-service/internal/models"
 )
 
@@ -392,5 +394,66 @@ func TestMongoDB_EmployeeLocationOperations(t *testing.T) {
 	}
 	if loc.Latitude != 37.7755 || loc.Longitude != -122.4180 {
 		t.Errorf("expected updated coords (37.7755, -122.4180), got (%f, %f)", loc.Latitude, loc.Longitude)
+	}
+}
+
+func TestMongoDB_EnsureSeedData_OptIn(t *testing.T) {
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 1. By default (SEED_DEMO_DATA unset or not "true"), no seed services are inserted.
+	t.Setenv("SEED_DEMO_DATA", "")
+	dbName1 := fmt.Sprintf("saas_user_store_noseed_%d", time.Now().UnixNano())
+	s1, err := NewMongoDB(ctx, mongoURI, dbName1)
+	if err != nil {
+		t.Skipf("Skipping test: MongoDB unreachable at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s1.DropDatabase(context.Background())
+		s1.Close(context.Background())
+	}()
+
+	count1, err := s1.services.CountDocuments(ctx, bson.M{"tenant_id": "seed"})
+	if err != nil {
+		t.Fatalf("failed to count services: %v", err)
+	}
+	if count1 != 0 {
+		t.Fatalf("expected 0 seed services when SEED_DEMO_DATA is unset, got %d", count1)
+	}
+
+	// 2. When SEED_DEMO_DATA="true", exactly 10 seed services are inserted.
+	t.Setenv("SEED_DEMO_DATA", "true")
+	dbName2 := fmt.Sprintf("saas_user_store_seed_%d", time.Now().UnixNano())
+	s2, err := NewMongoDB(ctx, mongoURI, dbName2)
+	if err != nil {
+		t.Fatalf("failed to connect to MongoDB with SEED_DEMO_DATA=true: %v", err)
+	}
+	defer func() {
+		_ = s2.DropDatabase(context.Background())
+		s2.Close(context.Background())
+	}()
+
+	count2, err := s2.services.CountDocuments(ctx, bson.M{"tenant_id": "seed"})
+	if err != nil {
+		t.Fatalf("failed to count services: %v", err)
+	}
+	if count2 != 10 {
+		t.Fatalf("expected 10 seed services when SEED_DEMO_DATA=true, got %d", count2)
+	}
+
+	// Also verify platform config was seeded in both cases
+	cfg1 := s1.GetPlatformConfig(ctx)
+	if cfg1 == nil || cfg1.ID != "global" {
+		t.Errorf("expected platform config to exist in s1 without SEED_DEMO_DATA, got %+v", cfg1)
+	}
+	cfg2 := s2.GetPlatformConfig(ctx)
+	if cfg2 == nil || cfg2.ID != "global" {
+		t.Errorf("expected platform config to exist in s2 with SEED_DEMO_DATA, got %+v", cfg2)
 	}
 }

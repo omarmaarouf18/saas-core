@@ -48,6 +48,19 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 	cfg := &config.Config{}
 	u := NewUserService(s, cfg, rdb)
 
+	for i := 1; i <= 3; i++ {
+		s.CreateService(ctx, &models.Service{
+			ID:               fmt.Sprintf("test-list-svc-%d", i),
+			TenantID:         "test-owner-list",
+			Name:             fmt.Sprintf("Test Service %d", i),
+			Category:         "delivery",
+			TenantBasePrice:  10.0 * float64(i),
+			TenantPricePerKM: 1.0,
+			Latitude:         30.0444,
+			Longitude:        31.2357,
+		})
+	}
+
 	// (a) Out-of-range lat (999) is rejected with 400 invalid_coordinates when near_by=true
 	t.Run("Invalid Latitude Bounds (near_by=true)", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/users/services?near_by=true&lat=999.0&lon=31.2357", nil)
@@ -136,8 +149,8 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("Failed to parse response JSON: %v", err)
 		}
-		if resp.Count > 2 {
-			t.Errorf("Expected at most 2 services with limit=2, got %d", resp.Count)
+		if resp.Count != 2 {
+			t.Errorf("Expected exactly 2 services with limit=2, got %d", resp.Count)
 		}
 	})
 }

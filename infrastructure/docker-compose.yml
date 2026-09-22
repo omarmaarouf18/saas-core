@@ -217,6 +217,7 @@ services:
       TLS_CERT_PATH: /app/certs/user-service.crt
       TLS_KEY_PATH: /app/certs/user-service.key
       TLS_CA_PATH: /app/certs/ca.crt
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
     depends_on:
       mongo:
         condition: service_healthy

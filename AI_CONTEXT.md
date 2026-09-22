@@ -1164,6 +1164,13 @@ Promoted `logic-exploitation` to `main` via fast-forward (`4ab627e..8eca05a`; `o
   - **Item 3 — Cataloged Refactor Backlog**:
     - Added dedicated `## Refactor Backlog` section in `AI_CONTEXT.md` detailing the 5 audit refactoring candidates for deliberate future scheduling (Unified Reviewer Auth, Pagination Helper, `jobs_handlers.go` Decomposition, `AI_CONTEXT.md` History Archival, `app.js` Modularization).
 
+* **Demo-Service Seeding Gating (2026-09-22)**:
+  - Gated demo service seeding in `services/user-service/internal/store/mongodb.go` behind the explicit environment variable `SEED_DEMO_DATA="true"`, defaulting to off.
+  - Preserved separate platform config initialization in `ensurePlatformConfig` across all environments to guarantee system configuration (0% fee, platform-central wallet).
+  - Updated `infrastructure/docker-compose.yml` and `infrastructure/.env.example` to set `SEED_DEMO_DATA=true` for local development while keeping staging and production compose configurations ungated/disabled.
+  - Updated `handlers_test.go` and `list_services_test.go` to explicitly create test services and employee locations.
+  - Added unit test `TestMongoDB_EnsureSeedData_OptIn` in `mongodb_test.go` verifying 0 seeded services without `SEED_DEMO_DATA` and 10 seeded services with `SEED_DEMO_DATA=true`.
+
 
 
 

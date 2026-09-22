@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -66,6 +67,7 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
 	}
+	s.ensurePlatformConfig(ctx)
 	s.ensureSeedData(ctx)
 	log.Printf("[USER-STORE] Connected to MongoDB: %s/%s", uri, dbName)
 	return s, nil
@@ -173,20 +175,7 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	return nil
 }
 
-func (s *MongoDB) ensureSeedData(ctx context.Context) {
-	count, _ := s.services.CountDocuments(ctx, bson.M{})
-	if count == 0 {
-		seeds := seedServices()
-		docs := make([]interface{}, len(seeds))
-		for i := range seeds {
-			docs[i] = seeds[i]
-		}
-		if _, err := s.services.InsertMany(ctx, docs); err != nil {
-			log.Printf("[USER-STORE] Seed insert error: %v", err)
-		} else {
-			log.Printf("[USER-STORE] Seeded %d services", len(seeds))
-		}
-	}
+func (s *MongoDB) ensurePlatformConfig(ctx context.Context) {
 	// Seed platform config (0% fee — SaaS subscription revenue model per ADR-0017).
 	var cfg models.PlatformConfig
 	err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg)
@@ -203,6 +192,25 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 			log.Printf("[ERROR] failed to seed platform wallet: %v", err)
 		}
 		log.Println("[USER-STORE] Platform config seeded (0% fee)")
+	}
+}
+
+func (s *MongoDB) ensureSeedData(ctx context.Context) {
+	if os.Getenv("SEED_DEMO_DATA") != "true" {
+		return
+	}
+	count, _ := s.services.CountDocuments(ctx, bson.M{})
+	if count == 0 {
+		seeds := seedServices()
+		docs := make([]interface{}, len(seeds))
+		for i := range seeds {
+			docs[i] = seeds[i]
+		}
+		if _, err := s.services.InsertMany(ctx, docs); err != nil {
+			log.Printf("[USER-STORE] Seed insert error: %v", err)
+		} else {
+			log.Printf("[USER-STORE] Seeded %d services", len(seeds))
+		}
 	}
 
 	// Seed initial active courier locations for seeded and mock tenants

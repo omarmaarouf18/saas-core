@@ -322,6 +322,14 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 6: CompleteJob Access Control
 	t.Run("CompleteJob Access Control", func(t *testing.T) {
 		ctx := context.Background()
+		s.CreateService(ctx, &models.Service{
+			ID:               "svc-001",
+			TenantID:         "job-owner-888",
+			Name:             "Delivery Service",
+			Category:         "delivery",
+			TenantBasePrice:  10.0,
+			TenantPricePerKM: 1.0,
+		})
 		testJob := &models.Job{
 			ID:            "test-job-888",
 			OwnerID:       "job-owner-888",
@@ -1490,6 +1498,13 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			TenantID:   "kyc-approved-owner",
+			EmployeeID: "active-employee-under-kyc-approved-owner",
+			Latitude:   30.0444,
+			Longitude:  31.2357,
+			UpdatedAt:  time.Now().UTC(),
+		})
 		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
 		reqBody["employee_id"] = tokenActiveEmp
 		body, _ = json.Marshal(reqBody)
@@ -1578,6 +1593,13 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
+		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			TenantID:   "kyc-approved-owner",
+			EmployeeID: "active-employee-under-kyc-approved-owner",
+			Latitude:   30.0444,
+			Longitude:  31.2357,
+			UpdatedAt:  time.Now().UTC(),
+		})
 		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
 		reqBody["employee_id"] = tokenActiveEmp
 		body, _ = json.Marshal(reqBody)
