@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Marketplace Service Cards — Working Hours & Coverage Radius (Public Company Profile Card, Frontend Slice)
+
+- **Implementation Detail**:
+  - **Model (`frontend/lib/models/marketplace_service.dart`)**: `MarketplaceService.fromJson` now parses the owner-configured public profile fields the backend already exposes on `GET /users/services` — `working_hours`, `coverage_radius_km`, `address`, `photo_url` — as nullable optionals, so older payloads and all existing constructor call sites keep working unchanged.
+  - **Card UI (`frontend/lib/screens/customer_marketplace_screen.dart`)**: `_buildServiceCard` renders `working_hours` (`Hours: …`) and `coverage_radius_km` (`Coverage: … km`) rows with schedule/radar icons beside the existing rating row, rendered conditionally (services without the fields show no new rows). `address`/`photo_url` are parsed and available on the model but deliberately NOT rendered on the compact card in this pass.
+  - **Localization**: New ARB keys `workingHoursLine`/`coverageRadiusLine` in `app_en.arb` and Egyptian colloquial `app_ar.arb`, with `flutter gen-l10n` regeneration of the committed `app_localizations_*.dart` files.
+  - **Tests (`frontend/test/customer_marketplace_screen_test.dart`)**: New widget test asserting `fromJson` parses all four fields from a backend-shaped payload and that the card renders both rows via `Key('service_working_hours_text')` / `Key('service_coverage_radius_text')` finders (second unconfigured card proves conditional rendering), with a 360dp overflow guard.
+- **Commit SHA**: ``56e24ac1c0cffe4c32402a586897b9c03e57a5c3``
+- **Verification**: Verified via `flutter analyze` (No issues found!) and `flutter test` (569/569 pass, including the new test). `make docs-check` passes. No backend change, no ADR.
+- **Scope note**: This closes only the customer-visible frontend slice; subscription-driven closed-status (filtering/gating/logging) is specified and implemented separately.
+
 ## KYC Document Reviewer Access & Support Ticket File Attachments
 
 - **Implementation Detail**:
