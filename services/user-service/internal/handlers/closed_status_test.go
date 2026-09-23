@@ -327,3 +327,73 @@ func TestTrackJob_OpenTenantProceeds(t *testing.T) {
 		t.Fatalf("expected 201 for open tenant, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
+
+type capturedSecurityEvent struct {
+	eventType string
+	service   string
+	actorID   string
+	tenantID  string
+}
+
+func TestTrackJob_ClosedBookingAuditEvent(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	s, _, ctx, cleanup := setupClosedStatusHarness(t)
+	defer cleanup()
+	u, _ := trackJobClosedStatusHarness(t, s)
+
+	// The real shipper is a silent no-op without CloudWatch credentials, so
+	// capture via the package seam (restored afterwards; no test here is parallel).
+	var captured []capturedSecurityEvent
+	prev := shipSecurityEventFunc
+	shipSecurityEventFunc = func(_ context.Context, eventType, service, actorID, tenantID, _detail, _clientIP string) {
+		captured = append(captured, capturedSecurityEvent{eventType, service, actorID, tenantID})
+	}
+	defer func() { shipSecurityEventFunc = prev }()
+
+	seedClosedStatusSub(t, s, ctx, "closed-ev-owner", models.PlanPaid, time.Now().UTC().Add(-time.Hour))
+	s.CreateService(ctx, &models.Service{
+		ID: "svc-closed-ev", TenantID: "closed-ev-owner", Name: "Closed Shop",
+		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
+		Latitude: 30.0444, Longitude: 31.2357,
+	})
+	seedClosedStatusSub(t, s, ctx, "open-ev-owner", models.PlanPaid, time.Now().UTC().Add(time.Hour))
+	s.CreateService(ctx, &models.Service{
+		ID: "svc-open-ev", TenantID: "open-ev-owner", Name: "Open Shop",
+		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
+		Latitude: 30.0444, Longitude: 31.2357,
+	})
+
+	tokenClosedCust, _ := jwtutil.GenerateToken("cust-closed", "user", "closed-ev-owner", "cc@example.com")
+	rec := postClosedStatusTrack(t, u, map[string]any{
+		"service_id": "svc-closed-ev", "user_id": tokenClosedCust, "payment_method": "cod",
+		"location":    map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+		"destination": map[string]any{"latitude": 30.05, "longitude": 31.24},
+	})
+	if rec.Code != http.StatusPaymentRequired {
+		t.Fatalf("expected 402 for closed tenant, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if len(captured) != 1 {
+		t.Fatalf("expected exactly 1 audit event on closed rejection, got %d", len(captured))
+	}
+	ev := captured[0]
+	if ev.eventType != "BOOKING_ATTEMPT_CLOSED_BUSINESS" || ev.service != "user-service" {
+		t.Errorf("wrong event identity: %+v", ev)
+	}
+	if ev.actorID != "cust-closed" || ev.tenantID != "closed-ev-owner" {
+		t.Errorf("wrong event attribution (want customer actor, closed tenant target): %+v", ev)
+	}
+
+	// A healthy booking must NOT emit the closed-business event.
+	tokenOpenCust, _ := jwtutil.GenerateToken("cust-open", "user", "open-ev-owner", "co@example.com")
+	rec = postClosedStatusTrack(t, u, map[string]any{
+		"service_id": "svc-open-ev", "user_id": tokenOpenCust, "payment_method": "cod",
+		"location":    map[string]any{"latitude": 30.0444, "longitude": 31.2357},
+		"destination": map[string]any{"latitude": 30.05, "longitude": 31.24},
+	})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 for open tenant, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if len(captured) != 1 {
+		t.Errorf("open booking must not emit BOOKING_ATTEMPT_CLOSED_BUSINESS, events: %+v", captured)
+	}
+}

@@ -1,8 +1,9 @@
 # ADR-0024: Expired-Subscription Closed Status for Marketplace Listing and Booking
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-09-23
 - **Related**: ADR-0017 (Zero-Commission Subscription-Only Revenue Model), verification report 2026-09-23 (public company profile card / closed-status / closed-booking-log gaps)
+- **Implementation**: definition + listing filter + booking gate implemented and tested in the user-service step-3 commit; `BOOKING_ATTEMPT_CLOSED_BUSINESS` audit event and this status flip in the step-4 commit (see `docs/changelog/new-features.md` and `docs/changelog/security-fixes.md`).
 
 ## Context
 

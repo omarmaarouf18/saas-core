@@ -720,18 +720,25 @@ func (u *UserService) enforcePaidTier(w http.ResponseWriter, r *http.Request, te
 	return true
 }
 
+// shipSecurityEventFunc mirrors handlerutil.ShipSecurityEvent. It is a
+// package-level variable (not a direct call) solely so tests can capture the
+// BOOKING_ATTEMPT_CLOSED_BUSINESS audit event — the real shipper is a silent
+// no-op without CloudWatch credentials and therefore unobservable in tests.
+// Production code must never reassign it.
+var shipSecurityEventFunc = handlerutil.ShipSecurityEvent
+
 // rejectIfTenantClosed enforces ADR-0024 on customer-initiated paths (TrackJob).
 // If the tenant is closed (missing/unpaid/expired subscription per
-// Subscription.IsClosed), it writes an HTTP 402 with customer-safe copy that
-// deliberately avoids subscription-tier language, and returns true.
+// Subscription.IsClosed), it ships a BOOKING_ATTEMPT_CLOSED_BUSINESS audit
+// event and writes an HTTP 402 with customer-safe copy that deliberately
+// avoids subscription-tier language, then returns true.
 // Returns false when the tenant is open (no response written).
-// NOTE: the dedicated BOOKING_ATTEMPT_CLOSED_BUSINESS audit event for this
-// rejection path lands as the immediate follow-up commit, not here.
 func (u *UserService) rejectIfTenantClosed(w http.ResponseWriter, r *http.Request, tenantID, actorID string) bool {
 	if err := u.requireTier(r.Context(), tenantID, models.PlanPaid); err != nil {
 		if errors.Is(err, ErrUpgradeRequired) {
-			// #nosec G706 //nolint:gosec -- tenantID is resolved from verified JWT/service record for failure diagnostics
+			// #nosec G706 //nolint:gosec -- tenantID/actorID are resolved from verified JWT/service record for audit diagnostics
 			log.Printf("[USER] Booking rejected: tenant %s is closed (actor %s)", tenantID, actorID)
+			shipSecurityEventFunc(r.Context(), "BOOKING_ATTEMPT_CLOSED_BUSINESS", "user-service", actorID, tenantID, "customer attempted to book a closed business (missing/unpaid/expired subscription)", handlerutil.GetClientIP(r))
 			writeJSON(w, http.StatusPaymentRequired, map[string]string{
 				"error":   "service_unavailable",
 				"message": "This business is temporarily closed and cannot accept new bookings right now.",
