@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Owner Weekly Schedule Editor (ADR-0025, Step 3)
+
+- **Implementation Detail**:
+  - **Editor (`frontend/lib/screens/owner_configuration_screen.dart`)**: New "Weekly Schedule" card section: set-hours entry (defaults to `same_daily`), `same_daily`/`per_day` mode toggle, platform `showTimePicker` dialogs for open/close (12h or 24h presentation per device, always normalized to 24h `HH:mm` before sending), 7 weekday rows with per-day open/close pickers (disabled while off) and off switches, remove-hours button for explicit clear, and GET pre-population that never marks the editor touched (loaded values submit as no-ops).
+  - **Provider (`frontend/lib/providers/owner_provider.dart`)**: `updateOwnerServiceConfig` accepts and sends `schedule_mode`/`open_time`/`close_time`/`per_day_schedule`/`timezone` (nulls omitted from the PUT body, matching the existing field pattern). The screen sends timezone as null so the backend `Africa/Cairo` default applies; untouched editors send none of the 5 fields, touched-but-cleared editors send `schedule_mode: ""`.
+  - **Localization**: New EN + Egyptian-AR `schedule*` keys (section copy, mode labels, open/close/off labels, 7 weekday names) with `flutter gen-l10n` regeneration.
+  - **Tests (`frontend/test/owner_configuration_screen_test.dart`, +4)**: same_daily sends open/close and omits per_day (via dialog-OK flow); per_day sends 7 well-formed entries with Wednesday off; untouched editor omits all 5 fields; pre-populated hours render yet still submit as no-ops.
+- **Commit SHA**: ``77f2fa57215eed6b6f582fedf5accb39c6c3e963``
+- **Verification**: `dart format` clean, `flutter analyze` (No issues found!), `flutter test` full suite 573/573 pass (was 569). `make docs-check` passes.
+- **Scope note**: editor slice only; customer marketplace badge (step 4) follows.
+
 ## Working-Hours Out-of-Service — Backend Schema, Evaluation & Gates (ADR-0025, Step 2)
 
 - **Implementation Detail**:
