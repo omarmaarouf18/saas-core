@@ -52,6 +52,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0021: Standalone KYC/KYB/KYE Reviewer Console](0021-kyc-kyb-kye-reviewer-console.md) — Accepted
 *   [ADR-0022: Reviewer Account Directory, Search, and Account Suspension / Reactivation](0022-account-suspension-and-reviewer-directory.md) — Accepted
 *   [ADR-0023: Modular Operations Console Expansion](0023-modular-ops-console-expansion.md) — Accepted
+*   [ADR-0024: Expired-Subscription Closed Status for Marketplace Listing and Booking](0024-expired-subscription-closed-status.md) — Proposed
 
 
 
