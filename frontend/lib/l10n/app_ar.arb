@@ -94,6 +94,15 @@
   "scheduleDayFri": "الجمعة",
   "scheduleDaySat": "السبت",
   "scheduleDaySun": "الحد",
+  "outOfServiceBadge": "مغلق دلوقتي",
+  "outOfServiceReopensAt": "مغلق دلوقتي — هيفتح الساعة {time}",
+  "@outOfServiceReopensAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "ownerConfigBasePriceLabel": "الفتح / السعر الأساسي ($)",
   "ownerConfigBasePriceHint": "مثلاً: 10.00",
   "ownerConfigBasePriceReq": "السعر الأساسي لازم يكون أكبر من أو يساوي 0.",

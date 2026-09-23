@@ -600,4 +600,157 @@ void main() {
     // 3. Zero RenderFlex overflow on the default viewport.
     expect(tester.takeException(), isNull);
   });
+
+  MarketplaceService outOfServiceCard({
+    required String id,
+    required String name,
+    bool? isOpenNow,
+    String? reopensAt,
+  }) {
+    return MarketplaceService(
+      id: id,
+      tenantId: 'tenant-$id',
+      name: name,
+      category: 'delivery',
+      basePrice: 20.0,
+      tenantBasePrice: 20.0,
+      tenantPricePerKM: 3.5,
+      latitude: 30.0444,
+      longitude: 31.2357,
+      distanceKM: 4.2,
+      finalPrice: 35.0,
+      isOpenNow: isOpenNow,
+      reopensAt: reopensAt == null ? null : DateTime.parse(reopensAt),
+    );
+  }
+
+  testWidgets(
+      'Out-of-service badge renders exact copy when reopens_at is absent',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      outOfServiceCard(id: 'srv-closed', name: 'Night Owl Delivery'),
+    ];
+    // fromJson parses explicit false + explicit null like the backend sends.
+    final parsed = MarketplaceService.fromJson({
+      'id': 'srv-closed',
+      'tenant_id': 'tenant-x',
+      'name': 'Night Owl Delivery',
+      'category': 'delivery',
+      'is_open_now': false,
+      'reopens_at': null,
+      'distance_km': 1.0,
+      'final_price': 10.0,
+    });
+    expect(parsed.isOpenNow, isFalse);
+    expect(parsed.reopensAt, isNull);
+
+    mockMarketplaceProvider.mockServices = [
+      outOfServiceCard(
+          id: 'srv-closed', name: 'Night Owl Delivery', isOpenNow: false),
+    ];
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('service_out_of_service_badge')), findsOneWidget);
+    final badgeText = tester
+        .widget<Text>(find.byKey(const Key('service_out_of_service_text')));
+    expect(badgeText.data, equals('Out of Service'));
+    // Rest of the card stays intact; Book is NOT disabled client-side.
+    expect(find.text('Night Owl Delivery'), findsOneWidget);
+    expect(find.widgetWithText(PrimaryButton, 'Book'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Out-of-service badge appends reopening time when available',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    final parsed = MarketplaceService.fromJson({
+      'id': 'srv-closed-2',
+      'tenant_id': 'tenant-y',
+      'name': 'Early Bird Delivery',
+      'category': 'delivery',
+      'is_open_now': false,
+      'reopens_at': '2030-06-15T10:00:00Z',
+      'distance_km': 1.0,
+      'final_price': 10.0,
+    });
+    expect(parsed.isOpenNow, isFalse);
+    expect(parsed.reopensAt, isNotNull);
+
+    mockMarketplaceProvider.mockServices = [
+      outOfServiceCard(
+        id: 'srv-closed-2',
+        name: 'Early Bird Delivery',
+        isOpenNow: false,
+        reopensAt: '2030-06-15T10:00:00Z',
+      ),
+    ];
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('service_out_of_service_badge')), findsOneWidget);
+    final badgeText = tester
+        .widget<Text>(find.byKey(const Key('service_out_of_service_text')));
+    final text = badgeText.data ?? '';
+    expect(text.startsWith('Out of Service — opens '), isTrue,
+        reason: 'badge must append reopening time, got: $text');
+    expect(text.length > 'Out of Service — opens '.length, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('No badge renders for unknown (null) or open schedules',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    final parsed = MarketplaceService.fromJson({
+      'id': 'srv-plain',
+      'tenant_id': 'tenant-z',
+      'name': 'Plain Delivery',
+      'category': 'delivery',
+      'distance_km': 1.0,
+      'final_price': 10.0,
+    });
+    expect(parsed.isOpenNow, isNull);
+    expect(parsed.reopensAt, isNull);
+
+    mockMarketplaceProvider.mockServices = [
+      outOfServiceCard(id: 'srv-plain', name: 'Plain Delivery'),
+      outOfServiceCard(id: 'srv-open', name: 'Open Delivery', isOpenNow: true),
+    ];
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    // Services look exactly as before this feature: no badge anywhere.
+    expect(find.byKey(const Key('service_out_of_service_badge')), findsNothing);
+    expect(find.byKey(const Key('service_out_of_service_text')), findsNothing);
+    expect(find.text('Plain Delivery'), findsOneWidget);
+    expect(find.text('Open Delivery'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

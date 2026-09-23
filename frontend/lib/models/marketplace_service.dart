@@ -18,6 +18,11 @@ class MarketplaceService {
   final double? coverageRadiusKm;
   final String? address;
   final String? photoUrl;
+  // Hours-based availability (ADR-0025, computed server-side per item).
+  // Both nullable: null/absent means "unknown schedule" and must not
+  // render any badge — the service looks exactly as before this feature.
+  final bool? isOpenNow;
+  final DateTime? reopensAt;
 
   MarketplaceService({
     required this.id,
@@ -35,6 +40,8 @@ class MarketplaceService {
     this.coverageRadiusKm,
     this.address,
     this.photoUrl,
+    this.isOpenNow,
+    this.reopensAt,
   });
 
   factory MarketplaceService.fromJson(Map<String, dynamic> json) {
@@ -58,6 +65,10 @@ class MarketplaceService {
       coverageRadiusKm: (serviceJson['coverage_radius_km'] as num?)?.toDouble(),
       address: serviceJson['address'] as String?,
       photoUrl: serviceJson['photo_url'] as String?,
+      isOpenNow: json['is_open_now'] as bool?,
+      reopensAt: json['reopens_at'] == null
+          ? null
+          : DateTime.tryParse(json['reopens_at'].toString()),
     );
   }
 }

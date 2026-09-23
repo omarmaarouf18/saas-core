@@ -94,6 +94,15 @@
   "scheduleDayFri": "Friday",
   "scheduleDaySat": "Saturday",
   "scheduleDaySun": "Sunday",
+  "outOfServiceBadge": "Out of Service",
+  "outOfServiceReopensAt": "Out of Service — opens {time}",
+  "@outOfServiceReopensAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "ownerConfigBasePriceLabel": "Base Price ($)",
   "ownerConfigBasePriceHint": "e.g. 10.00",
   "ownerConfigBasePriceReq": "Base price must be >= 0.",

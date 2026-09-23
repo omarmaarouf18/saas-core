@@ -662,6 +662,18 @@ abstract class AppLocalizations {
   /// **'Sunday'**
   String get scheduleDaySun;
 
+  /// No description provided for @outOfServiceBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of Service'**
+  String get outOfServiceBadge;
+
+  /// No description provided for @outOfServiceReopensAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of Service — opens {time}'**
+  String outOfServiceReopensAt(String time);
+
   /// No description provided for @ownerConfigBasePriceLabel.
   ///
   /// In en, this message translates to:

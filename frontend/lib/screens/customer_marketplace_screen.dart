@@ -452,6 +452,16 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
     );
   }
 
+  /// Formats a reopen instant for the out-of-service badge using the active
+  /// locale's time format (12h AM/PM in EN, Arabic digits + صباحًا/مساءً
+  /// in AR). Device-local zone; the backend sends an offset-aware instant.
+  String _formatReopensTime(BuildContext context, DateTime reopensAt) {
+    final local = reopensAt.toLocal();
+    return MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(local),
+    );
+  }
+
   Widget _buildServiceCard(
     BuildContext context,
     MarketplaceService service,
@@ -585,6 +595,40 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                         key: const Key('service_coverage_radius_text'),
                         style: AppTypography.bodySm.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // ADR-0025: hours-closed badge. Null/absent is_open_now means
+            // "unknown schedule" and renders nothing. The rest of the card
+            // (including the Book button) is deliberately untouched — the
+            // 402 from TrackJob is the real gate, so a stale badge can
+            // never wrongly block or allow a booking client-side.
+            if (service.isOpenNow == false)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                child: Row(
+                  key: const Key('service_out_of_service_badge'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule_outlined,
+                      size: 14,
+                      color: context.semanticColors.warning,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        service.reopensAt != null
+                            ? l10n.outOfServiceReopensAt(
+                                _formatReopensTime(context, service.reopensAt!))
+                            : l10n.outOfServiceBadge,
+                        key: const Key('service_out_of_service_text'),
+                        style: AppTypography.labelMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: context.semanticColors.warning,
                         ),
                       ),
                     ),

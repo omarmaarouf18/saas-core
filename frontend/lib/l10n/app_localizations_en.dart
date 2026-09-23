@@ -300,6 +300,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDaySun => 'Sunday';
 
   @override
+  String get outOfServiceBadge => 'Out of Service';
+
+  @override
+  String outOfServiceReopensAt(String time) {
+    return 'Out of Service — opens $time';
+  }
+
+  @override
   String get ownerConfigBasePriceLabel => 'Base Price (\$)';
 
   @override

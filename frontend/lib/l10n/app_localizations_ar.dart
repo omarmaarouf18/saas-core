@@ -296,6 +296,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get scheduleDaySun => 'الحد';
 
   @override
+  String get outOfServiceBadge => 'مغلق دلوقتي';
+
+  @override
+  String outOfServiceReopensAt(String time) {
+    return 'مغلق دلوقتي — هيفتح الساعة $time';
+  }
+
+  @override
   String get ownerConfigBasePriceLabel => 'الفتح / السعر الأساسي (\$)';
 
   @override
