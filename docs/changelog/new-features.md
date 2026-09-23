@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Working-Hours Out-of-Service — Backend Schema, Evaluation & Gates (ADR-0025, Step 2)
+
+- **Implementation Detail**:
+  - **Schema (`services/user-service/internal/models/models.go`)**: Additive `ScheduleMode`/`OpenTime`/`CloseTime`/`PerDaySchedule`/`Timezone` on `Service`, `CreateServiceRequest` (plain values), and `UpdateServiceRequest` (pointers, matching the `WorkingHours` pattern). Legacy `working_hours` string untouched; no migration. `ServiceWithPrice` gains computed, non-persisted `is_open_now` (always present) and `reopens_at` (explicit JSON null when unknown/not computable).
+  - **Pure evaluation (`models/schedule.go`)**: `EvaluateServiceSchedule(svc, now)` — unknown or incomplete schedules return open/nil (legacy behavior preserved); `same_daily` windows, overnight ranges spanning midnight, and `per_day` tables with `is_off` days and next-opening search (all-off yields nil reopen). Timezone via `LoadLocation` with `Africa/Cairo` fallback, never an error. `ValidateServiceSchedule` rejects bad modes, malformed/out-of-range `HH:mm`, equal open/close, non-7 or duplicate/bad weekday tables, and stray times without a mode — never silently coerces.
+  - **Write paths (`handlers/services_handlers.go`)**: `CreateService` validates the schedule pre-auth (400 `invalid_schedule` + field message); `UpdateService` validates the effective schedule (stored values overridden by provided ones) and supports explicit clear via `schedule_mode: ""` (companions cleared too). Timezone stored as-is (fallback happens at eval).
+  - **Read/booking paths**: store `ListServices` attaches `is_open_now`/`reopens_at` per item (pure CPU, nothing filtered — opposite rule from ADR-0024); `TrackJob` rejects via `rejectIfHoursClosed` with 402 `outside_working_hours` + "This business is out of service right now." (reopening time appended when computable), placed after the ADR-0024 gates where the service record is available in each path (lookup path runs pre-KYC; owner-token path necessarily post-KYC since the service loads later — still before all dispatch/escrow work). Log-only on rejection (off-hours attempts are routine, not review-worthy anomalies).
+  - **Tests**: table-driven `models/schedule_test.go` (13 evaluation cases incl. overnight both sides, off-day reopen, bad-tz Cairo fallback, DST-robust assertions; 16 validation cases) plus handler wiring `handlers/working_hours_test.go` (listing attaches fields with explicit-null contract, 402 copy + no job record, open/unknown pass-through, create/update 400s + persistence + clear). Full `user-service` module suite passes with zero skips — every pre-existing service fixture (all five fields empty) behaves exactly as before, confirming the unknown-schedule=open contract.
+- **Commit SHA**: ``924df95914651ba9b311d8335fc5b8519c5f1a9f``
+- **Verification**: `gofmt` clean, `go build ./...` + `go vet ./...` clean, `go test ./... -count=1` in `user-service` 100% pass (0 skips) against dedicated no-auth mongo + local redis. `make docs-check` passes.
+- **Scope note**: backend slice only; owner schedule editor (step 3) and marketplace badge (step 4) follow as frontend commits. ADR-0025 flipped Proposed → Accepted in this same commit.
+
 ## Expired-Subscription Closed Status — Listing Filter & Booking Gate (ADR-0024, Steps 1–2)
 
 - **Implementation Detail**:
