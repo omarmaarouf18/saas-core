@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Closed-Booking Audit Event (ADR-0024 Step 4, Accepted)
+
+- **Implementation Detail**: `rejectIfTenantClosed` (`services/user-service/internal/handlers/handlers.go`) now ships `BOOKING_ATTEMPT_CLOSED_BUSINESS` via the existing `handlerutil.ShipSecurityEvent` shape (`user-service`, customer actor ID, closed-tenant target ID, client IP) on every closed-booking rejection, making "customer tried to book an expired business" queryable for analytics and security review. Test seam: package-level `shipSecurityEventFunc` defaulting to the real shipper (production never reassigns it) — required because the real shipper is a silent no-op without CloudWatch credentials and therefore unobservable in tests. `TestTrackJob_ClosedBookingAuditEvent` (`handlers/closed_status_test.go`) asserts exactly one correctly-attributed event on 402 and zero events on a healthy 201. ADR-0024 flipped Proposed → Accepted in the same commit.
+- **Commit SHA**: ``0cb4be3d91ccb3a988888212e3a948f07d97dc44``
+- **Verification**: New regression test passes; full `user-service` module suite re-run green (`go test ./... -count=1`, 100% pass, 0 skips). `make docs-check` passes.
+- **Placement note**: filed here rather than as a third new-features entry because blocked-attempt audit logging is security observability (this file's index explicitly covers audit logging); the customer-facing gating behavior itself was recorded in `new-features.md` with the step-3 commit.
+
 ## requireTier Subscription Expiry Fail-Open Closure (ADR-0024)
 
 - **Vulnerability**: `requireTier` (`services/user-service/internal/handlers/handlers.go`) enforced only `sub.Tier != PlanPaid` and never compared `sub.ExpiresAt` against the current time — anywhere in non-test code. Any tenant whose paid subscription had expired retained every paid capability indefinitely: service creation/updates, wallet deposits, payout requests, reconciliation resolution, live location tracking, and (via the absence of any booking-time check) the ability to accrue new customer bookings and escrow locks. `GET /users/services` additionally listed expired tenants' services to customers with no subscription cross-reference at all.
