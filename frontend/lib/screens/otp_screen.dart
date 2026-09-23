@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -111,13 +112,64 @@ class _OtpScreenState extends State<OtpScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Brand Logo (centered above the verification card)
+                _buildLogo(),
+                const SizedBox(height: AppSpacing.lg),
+
                 // Main Stitch Verification Card
                 _buildOtpCard(auth, l10n),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Professional non-interactive footer (no fabricated URLs)
+                _buildScreenFooter(l10n),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Centered Quick Delivery brand mark rendered from the committed
+  /// `assets/branding/qd_logo.svg` asset. Sized slightly larger than the
+  /// in-card security shield (64dp) so it anchors the visual hierarchy.
+  Widget _buildLogo() {
+    return Center(
+      child: SvgPicture.asset(
+        'assets/branding/qd_logo.svg',
+        key: const Key('otp_qd_logo'),
+        width: 72,
+        height: 72,
+        semanticsLabel: 'Quick Delivery logo',
+      ),
+    );
+  }
+
+  /// Non-interactive professional footer: company name + reassurance line.
+  /// Deliberately plain text — the codebase has no Terms/Privacy/Support
+  /// URL or contact anywhere in `frontend/lib`, so no link is fabricated.
+  Widget _buildScreenFooter(AppLocalizations l10n) {
+    return Column(
+      key: const Key('otp_screen_footer'),
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          l10n.otpFooterBrand,
+          style: AppTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          l10n.otpFooterNote,
+          style: AppTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 

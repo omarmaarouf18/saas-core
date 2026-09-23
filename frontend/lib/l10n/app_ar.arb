@@ -151,6 +151,8 @@
   "otpCodeLabel": "كود التحقق المكون من 6 أرقام",
   "otpSubmitButton": "تأكيد الكود",
   "otpResendButton": "إعادة إرسال الكود",
+  "otpFooterBrand": "Quick Delivery",
+  "otpFooterNote": "متشاركش كود التحقق بتاعك مع أي حد.",
   "forgotPasswordTitle": "إعادة تعيين كلمة السر",
   "forgotPasswordSubtitle": "اكتب إيميلك والكود وكلمة السر الجديدة",
   "forgotPasswordSubmitButton": "تغيير كلمة السر",

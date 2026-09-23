@@ -962,6 +962,18 @@ abstract class AppLocalizations {
   /// **'RESEND CODE'**
   String get otpResendButton;
 
+  /// No description provided for @otpFooterBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Delivery'**
+  String get otpFooterBrand;
+
+  /// No description provided for @otpFooterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Never share your verification code with anyone.'**
+  String get otpFooterNote;
+
   /// No description provided for @forgotPasswordTitle.
   ///
   /// In en, this message translates to:

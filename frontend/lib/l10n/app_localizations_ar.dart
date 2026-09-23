@@ -451,6 +451,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get otpResendButton => 'إعادة إرسال الكود';
 
   @override
+  String get otpFooterBrand => 'Quick Delivery';
+
+  @override
+  String get otpFooterNote => 'متشاركش كود التحقق بتاعك مع أي حد.';
+
+  @override
   String get forgotPasswordTitle => 'إعادة تعيين كلمة السر';
 
   @override

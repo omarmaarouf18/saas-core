@@ -151,6 +151,8 @@
   "otpCodeLabel": "6-Digit OTP Code",
   "otpSubmitButton": "VERIFY CODE",
   "otpResendButton": "RESEND CODE",
+  "otpFooterBrand": "Quick Delivery",
+  "otpFooterNote": "Never share your verification code with anyone.",
   "forgotPasswordTitle": "Reset Password",
   "forgotPasswordSubtitle": "Enter your email and new credentials",
   "forgotPasswordSubmitButton": "RESET PASSWORD",

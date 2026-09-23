@@ -454,6 +454,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpResendButton => 'RESEND CODE';
 
   @override
+  String get otpFooterBrand => 'Quick Delivery';
+
+  @override
+  String get otpFooterNote => 'Never share your verification code with anyone.';
+
+  @override
   String get forgotPasswordTitle => 'Reset Password';
 
   @override
