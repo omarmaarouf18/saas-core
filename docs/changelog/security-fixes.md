@@ -2,6 +2,14 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## requireTier Subscription Expiry Fail-Open Closure (ADR-0024)
+
+- **Vulnerability**: `requireTier` (`services/user-service/internal/handlers/handlers.go`) enforced only `sub.Tier != PlanPaid` and never compared `sub.ExpiresAt` against the current time — anywhere in non-test code. Any tenant whose paid subscription had expired retained every paid capability indefinitely: service creation/updates, wallet deposits, payout requests, reconciliation resolution, live location tracking, and (via the absence of any booking-time check) the ability to accrue new customer bookings and escrow locks. `GET /users/services` additionally listed expired tenants' services to customers with no subscription cross-reference at all.
+- **Fix**: Single nil-safe `Subscription.IsClosed(now)` predicate (`models.go`) now drives `requireTier`, closing all paid gates on expiry at once; the public listing filters closed tenants server-side (`ListServicesOpenOnly`); `TrackJob` rejects closed-tenant bookings with 402 before any employee/KYC/escrow work and creates no job record. Zero-`ExpiresAt` paid rows stay open (documented "no expiry" semantics preserved — no legitimate tenant is newly locked out).
+- **Why this file too**: fail-open authorization on entitlement expiry is a security-boundary fix, not just a feature; the customer-facing gating behavior is recorded separately in `docs/changelog/new-features.md`.
+- **Commit SHA**: ``8a500c246603b680930fdb958c101358f4b24caf``
+- **Verification**: New regression tests in `handlers/closed_status_test.go` (expired-paid rejected, future/zero-expiry paid pass, missing/free/pending/cancelled rejected; expired tenant excluded from listing; closed booking 402 with no job record); full `user-service` module suite passes (159 top-level + 211 subtests, 0 skips). The pre-fix exposure is proven by the same commit's test fallout: eleven pre-existing suites booked successfully with no subscription row of any kind and only pass now with an explicitly seeded open subscription.
+
 ## ResetPassword Per-User Session Invalidation & Raw MongoDB Error Sanitization
 
 - **Severity**: High (Session-hijacking mitigation gap & raw database error leakage; new, previously-unaudited finding distinct from original external report Finding #6)

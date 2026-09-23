@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Expired-Subscription Closed Status — Listing Filter & Booking Gate (ADR-0024, Steps 1–2)
+
+- **Implementation Detail**:
+  - **Closed definition (`services/user-service/internal/models/models.go`)**: New nil-safe `Subscription.IsClosed(now)` single predicate — missing subscription, non-paid tier, or past `ExpiresAt`; zero `ExpiresAt` keeps its documented "no expiry" meaning. `requireTier`'s `PlanPaid` branch delegates to it, so every existing paid gate (`CreateService`, `UpdateService`, wallet deposit, payout request, reconciliation resolve, location updates, internal subscription check) fails closed on expiry with zero per-endpoint edits.
+  - **Listing filter (`store/mongodb.go`, `handlers/services_handlers.go`)**: New `ListServicesOpenOnly` reuses the `ListServices` geo query unchanged and drops closed tenants' services post-query (per-distinct-tenant subscription lookup); the public `GET /users/services` handler serves it, so customers need no client-side logic. Unfiltered `ListServices` is kept for owner/debug use. Accepted limitation (per ADR): pages may come back short when closed tenants occupy slots.
+  - **Booking gate (`handlers/handlers.go`, `handlers/jobs_handlers.go`)**: New `rejectIfTenantClosed` helper writes 402 `service_unavailable` with customer-safe copy ("This business is temporarily closed and cannot accept new bookings right now." — never `upgrade_required`/tier language). `TrackJob` calls it at both tenant-resolution points (owner-JWT path and service-lookup path), before employee verification, payment validation, KYC lookup, dispatch, and escrow locking; no job record is created on rejection.
+  - **Scope boundary (deliberate)**: `OwnerProvider.fetchServices()` uses the same public listing path and no separate owner endpoint exists, so a closed owner's configuration form loads unpopulated; writes were already paid-gated and the subscription renewal path is untouched.
+  - **Tests (`handlers/closed_status_test.go`)**: `TestRequireTier_SubscriptionExpiry` (7-case table), `TestSubscription_IsClosed_Predicate`, `TestListServices_ExcludesClosedTenants` (open/expired/free/nosub tenants; asserts the unfiltered store path still returns all), `TestTrackJob_ClosedTenantRejected` (both paths + copy assertions + no job record), `TestTrackJob_OpenTenantProceeds` (201 pass-through). Pre-existing `TrackJob`/`ListServices` suites that never seeded subscriptions now seed open paid+future fixture subs (test-only maintenance; the owner-spoof security test keeps its 403 by seeding its spoof tenant open).
+- **Commit SHA**: ``8a500c246603b680930fdb958c101358f4b24caf``
+- **Verification**: Verified via `gofmt` (clean), `go build ./...` + `go vet ./...` (clean), and full `go test ./... -count=1` in `user-service` (100% pass, 159 top-level + 211 subtests, 0 skips) against a dedicated no-auth mongo (`--ulimit nofile=64000:64000`, per the repo's own EMFILE fix — a default-ulimit container crashed mid-suite) plus a local redis for the ADR E2E tests. `make docs-check` passes. The dedicated closed-booking audit event is the immediate follow-up commit, not this one.
+- **Scope note**: Step 3 of the closed-status track (ADR-0024 Proposed at this commit); the audit event (step 4) flips the ADR to Accepted.
+
 ## Marketplace Service Cards — Working Hours & Coverage Radius (Public Company Profile Card, Frontend Slice)
 
 - **Implementation Detail**:
