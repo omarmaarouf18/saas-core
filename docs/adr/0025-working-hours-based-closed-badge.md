@@ -1,8 +1,9 @@
 # ADR-0025: Working-Hours-Based Out-of-Service Badge and Booking Gate
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-09-23
 - **Related**: ADR-0024 (Expired-Subscription Closed Status for Marketplace Listing and Booking)
+- **Implementation**: backend schema + evaluation + listing/booking wiring implemented and tested in the user-service step-2 commit; owner schedule editor (step 3) and marketplace badge (step 4) follow as frontend commits (see `docs/changelog/new-features.md`).
 
 ## Context
 

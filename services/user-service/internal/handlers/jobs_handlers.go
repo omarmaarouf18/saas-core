@@ -184,6 +184,15 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// ADR-0025: hours gate for the service-lookup path (svc already loaded).
+	// Runs before employee verification, payment validation, KYC, dispatch,
+	// and escrow work — mirroring the ADR-0024 gate above.
+	if !hasOwnerToken {
+		if u.rejectIfHoursClosed(w, r, svc, req.UserID) {
+			return
+		}
+	}
+
 	// 4. Verify assigned employee is active, has employee role, and belongs to this owner's tenant
 	if req.EmployeeID != "" {
 		resolvedEmployeeID, err := resolveTokenWithRole(req.EmployeeID, "employee")
@@ -267,6 +276,16 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if hasOwnerToken && resolvedOwnerID != svc.TenantID {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "action blocked: owner ID does not match service tenant"})
 		return
+	}
+
+	// ADR-0025: hours gate for the owner-token path. svc is only guaranteed
+	// loaded here (step 6 above), i.e. after the KYC check — unavoidable
+	// without reordering the lookup flow, and still before all dispatch and
+	// escrow work. The lookup path above runs strictly earlier.
+	if hasOwnerToken {
+		if u.rejectIfHoursClosed(w, r, svc, req.UserID) {
+			return
+		}
 	}
 
 	// 8. Auto-dispatch sequential cascade or verify assigned employee location

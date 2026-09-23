@@ -42,6 +42,36 @@ type Service struct {
 	Address          string       `json:"address,omitempty"             bson:"address,omitempty"`
 	WorkingHours     string       `json:"working_hours,omitempty"       bson:"working_hours,omitempty"`
 	CoverageRadiusKM float64      `json:"coverage_radius_km,omitempty"   bson:"coverage_radius_km,omitempty"`
+	// Structured weekly schedule (ADR-0025). Additive: the legacy WorkingHours
+	// free-text string is untouched and remains a display fallback. All five
+	// fields empty means "unknown schedule", which always evaluates as open.
+	ScheduleMode   string        `json:"schedule_mode,omitempty"    bson:"schedule_mode,omitempty"` // "same_daily" | "per_day"
+	OpenTime       string        `json:"open_time,omitempty"        bson:"open_time,omitempty"`     // "HH:mm" 24h, same_daily
+	CloseTime      string        `json:"close_time,omitempty"       bson:"close_time,omitempty"`    // "HH:mm" 24h, same_daily
+	PerDaySchedule []DaySchedule `json:"per_day_schedule,omitempty" bson:"per_day_schedule,omitempty"`
+	Timezone       string        `json:"timezone,omitempty"         bson:"timezone,omitempty"` // IANA, default "Africa/Cairo"
+}
+
+// Schedule mode literals for Service.ScheduleMode (ADR-0025).
+const (
+	ScheduleModeSameDaily = "same_daily"
+	ScheduleModePerDay    = "per_day"
+)
+
+// DefaultServiceTimezone is used when a service has no timezone set or the
+// stored value fails to load (ADR-0025: never fail closed on tz data).
+const DefaultServiceTimezone = "Africa/Cairo"
+
+// Canonical weekday keys for PerDaySchedule (lowercase, Monday-first here
+// only for documentation; evaluation accepts any order but requires all 7).
+var scheduleWeekdays = []string{"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+
+// DaySchedule is one weekday row of a per_day schedule (ADR-0025).
+type DaySchedule struct {
+	Day       string `json:"day"        bson:"day"` // "mon".."sun" (case-insensitive)
+	OpenTime  string `json:"open_time"  bson:"open_time"`
+	CloseTime string `json:"close_time" bson:"close_time"`
+	IsOff     bool   `json:"is_off"     bson:"is_off"`
 }
 
 // ServiceWithPrice wraps a Service with a dynamically computed final price.
@@ -50,6 +80,11 @@ type ServiceWithPrice struct {
 	Service
 	DistanceKM float64 `json:"distance_km"`
 	FinalPrice float64 `json:"final_price"`
+	// Computed at request time, never persisted (ADR-0025). IsOpenNow is
+	// always present; ReopensAt is an explicit JSON null when the next
+	// opening is unknown or not computable.
+	IsOpenNow bool       `json:"is_open_now"`
+	ReopensAt *time.Time `json:"reopens_at"`
 }
 
 // ---------------------------------------------------------------------------
@@ -378,36 +413,46 @@ type CreatePayoutRequestInput struct {
 
 // CreateServiceRequest is the expected JSON body for POST /users/services.
 type CreateServiceRequest struct {
-	OwnerID          string  `json:"owner_id"`
-	OwnerToken       string  `json:"owner_token,omitempty"`
-	Name             string  `json:"name"`
-	Category         string  `json:"category"`
-	TenantBasePrice  float64 `json:"tenant_base_price"`
-	TenantPricePerKM float64 `json:"tenant_price_per_km"`
-	Latitude         float64 `json:"latitude"`
-	Longitude        float64 `json:"longitude"`
-	PhotoURL         string  `json:"photo_url,omitempty"`
-	Address          string  `json:"address,omitempty"`
-	WorkingHours     string  `json:"working_hours,omitempty"`
-	CoverageRadiusKM float64 `json:"coverage_radius_km,omitempty"`
+	OwnerID          string        `json:"owner_id"`
+	OwnerToken       string        `json:"owner_token,omitempty"`
+	Name             string        `json:"name"`
+	Category         string        `json:"category"`
+	TenantBasePrice  float64       `json:"tenant_base_price"`
+	TenantPricePerKM float64       `json:"tenant_price_per_km"`
+	Latitude         float64       `json:"latitude"`
+	Longitude        float64       `json:"longitude"`
+	PhotoURL         string        `json:"photo_url,omitempty"`
+	Address          string        `json:"address,omitempty"`
+	WorkingHours     string        `json:"working_hours,omitempty"`
+	CoverageRadiusKM float64       `json:"coverage_radius_km,omitempty"`
+	ScheduleMode     string        `json:"schedule_mode,omitempty"`
+	OpenTime         string        `json:"open_time,omitempty"`
+	CloseTime        string        `json:"close_time,omitempty"`
+	PerDaySchedule   []DaySchedule `json:"per_day_schedule,omitempty"`
+	Timezone         string        `json:"timezone,omitempty"`
 }
 
 // UpdateServiceRequest is the expected JSON body for PUT/PATCH /users/services or POST /users/services/update.
 type UpdateServiceRequest struct {
-	ID               string   `json:"id"`
-	ServiceID        string   `json:"service_id,omitempty"`
-	OwnerID          string   `json:"owner_id"`
-	OwnerToken       string   `json:"owner_token,omitempty"`
-	Name             string   `json:"name,omitempty"`
-	Category         string   `json:"category,omitempty"`
-	TenantBasePrice  *float64 `json:"tenant_base_price,omitempty"`
-	TenantPricePerKM *float64 `json:"tenant_price_per_km,omitempty"`
-	Latitude         *float64 `json:"latitude,omitempty"`
-	Longitude        *float64 `json:"longitude,omitempty"`
-	PhotoURL         *string  `json:"photo_url,omitempty"`
-	Address          *string  `json:"address,omitempty"`
-	WorkingHours     *string  `json:"working_hours,omitempty"`
-	CoverageRadiusKM *float64 `json:"coverage_radius_km,omitempty"`
+	ID               string         `json:"id"`
+	ServiceID        string         `json:"service_id,omitempty"`
+	OwnerID          string         `json:"owner_id"`
+	OwnerToken       string         `json:"owner_token,omitempty"`
+	Name             string         `json:"name,omitempty"`
+	Category         string         `json:"category,omitempty"`
+	TenantBasePrice  *float64       `json:"tenant_base_price,omitempty"`
+	TenantPricePerKM *float64       `json:"tenant_price_per_km,omitempty"`
+	Latitude         *float64       `json:"latitude,omitempty"`
+	Longitude        *float64       `json:"longitude,omitempty"`
+	PhotoURL         *string        `json:"photo_url,omitempty"`
+	Address          *string        `json:"address,omitempty"`
+	WorkingHours     *string        `json:"working_hours,omitempty"`
+	CoverageRadiusKM *float64       `json:"coverage_radius_km,omitempty"`
+	ScheduleMode     *string        `json:"schedule_mode,omitempty"`
+	OpenTime         *string        `json:"open_time,omitempty"`
+	CloseTime        *string        `json:"close_time,omitempty"`
+	PerDaySchedule   *[]DaySchedule `json:"per_day_schedule,omitempty"`
+	Timezone         *string        `json:"timezone,omitempty"`
 }
 
 // CreateJobRequest is the expected JSON body for POST /users/jobs/track.

@@ -756,6 +756,33 @@ func (u *UserService) rejectIfTenantClosed(w http.ResponseWriter, r *http.Reques
 	return false
 }
 
+// rejectIfHoursClosed enforces ADR-0025 on TrackJob: when the target service
+// carries a complete structured schedule that evaluates as closed right now,
+// the booking is rejected with 402 outside_working_hours (distinct from
+// ADR-0024's service_unavailable so clients can tell the two 402s apart).
+// Unknown/incomplete schedules always evaluate as open, so legacy services
+// pass through unchanged. No audit event is shipped here — unlike
+// subscription closure (an anomaly worth reviewing), off-hours booking
+// attempts are routine twice-daily occurrences; a plain server log suffices.
+// Returns true when rejected (response written), false when open.
+func (u *UserService) rejectIfHoursClosed(w http.ResponseWriter, r *http.Request, svc *models.Service, actorID string) bool {
+	isOpen, reopens := models.EvaluateServiceSchedule(*svc, time.Now().UTC())
+	if isOpen {
+		return false
+	}
+	msg := "This business is out of service right now."
+	if reopens != nil {
+		msg += " Reopens at " + reopens.Format(time.RFC3339) + "."
+	}
+	// #nosec G706 //nolint:gosec -- IDs are resolved from verified JWT/service record for failure diagnostics
+	log.Printf("[USER] Booking rejected: service %s is out of service (actor %s)", svc.ID, actorID)
+	writeJSON(w, http.StatusPaymentRequired, map[string]string{
+		"error":   "outside_working_hours",
+		"message": msg,
+	})
+	return true
+}
+
 // InternalSubscriptionCheck allows internal services (e.g., auth-service) to verify
 // whether a tenant has an active PlanPaid subscription.
 func (u *UserService) InternalSubscriptionCheck(w http.ResponseWriter, r *http.Request) {

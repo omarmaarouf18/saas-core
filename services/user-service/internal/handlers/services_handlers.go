@@ -107,6 +107,15 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	// ADR-0025: validate the structured schedule before auth/KYC work, like
+	// the other malformed-input checks above. Never silently coerce or drop.
+	if err := models.ValidateServiceSchedule(req.ScheduleMode, req.OpenTime, req.CloseTime, req.PerDaySchedule); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_schedule",
+			"message": err.Error(),
+		})
+		return
+	}
 
 	authToken := resolveOwnerAuthToken(r, req.OwnerToken, req.OwnerID)
 	if authToken == "" || req.Name == "" || req.Category == "" {
@@ -171,6 +180,8 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		TenantPricePerKM: req.TenantPricePerKM, Latitude: req.Latitude, Longitude: req.Longitude,
 		PhotoURL: req.PhotoURL, Address: req.Address, WorkingHours: req.WorkingHours,
 		CoverageRadiusKM: req.CoverageRadiusKM,
+		ScheduleMode:     req.ScheduleMode, OpenTime: req.OpenTime, CloseTime: req.CloseTime,
+		PerDaySchedule: req.PerDaySchedule, Timezone: req.Timezone,
 	}
 
 	u.store.CreateService(r.Context(), svc)
@@ -328,6 +339,61 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		updateFields["coverage_radius_km"] = *req.CoverageRadiusKM
+	}
+
+	// ADR-0025: validate the effective schedule (stored values overridden by
+	// provided ones) so partial updates cannot leave a malformed schedule
+	// behind. Clearing schedule_mode to "" returns the service to "unknown"
+	// (always open); stale schedule fields left stored alongside it are inert
+	// because evaluation is governed by the mode.
+	effMode, effOpen, effClose, effPerDay := existing.ScheduleMode, existing.OpenTime, existing.CloseTime, existing.PerDaySchedule
+	if req.ScheduleMode != nil {
+		effMode = *req.ScheduleMode
+	}
+	if req.OpenTime != nil {
+		effOpen = *req.OpenTime
+	}
+	if req.CloseTime != nil {
+		effClose = *req.CloseTime
+	}
+	if req.PerDaySchedule != nil {
+		effPerDay = *req.PerDaySchedule
+	}
+	if effMode == "" {
+		// Explicit (or continuing) unknown schedule: companion fields are
+		// inert because evaluation is governed by the mode, so validation
+		// considers them cleared rather than stray.
+		effOpen, effClose, effPerDay = "", "", nil
+	}
+	if err := models.ValidateServiceSchedule(effMode, effOpen, effClose, effPerDay); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_schedule",
+			"message": err.Error(),
+		})
+		return
+	}
+	if req.ScheduleMode != nil {
+		updateFields["schedule_mode"] = *req.ScheduleMode
+		if *req.ScheduleMode == "" {
+			// Explicit clear: drop the now-inert companion fields too.
+			updateFields["open_time"] = ""
+			updateFields["close_time"] = ""
+			updateFields["per_day_schedule"] = bson.A{}
+		}
+	}
+	if req.OpenTime != nil {
+		updateFields["open_time"] = *req.OpenTime
+	}
+	if req.CloseTime != nil {
+		updateFields["close_time"] = *req.CloseTime
+	}
+	if req.PerDaySchedule != nil {
+		updateFields["per_day_schedule"] = *req.PerDaySchedule
+	}
+	if req.Timezone != nil {
+		// Stored as-is; unloadable values fall back to Africa/Cairo at
+		// evaluation time (ADR-0025), so no write-time rejection here.
+		updateFields["timezone"] = *req.Timezone
 	}
 
 	updated, err := u.store.UpdateServiceFields(r.Context(), existing.ID, existing.TenantID, updateFields)

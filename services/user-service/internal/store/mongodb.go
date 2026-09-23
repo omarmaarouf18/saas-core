@@ -333,8 +333,12 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 		finalPrice := svc.TenantBasePrice + (dist * svc.TenantPricePerKM)
 		finalPrice = math.Round(finalPrice*100) / 100
 		dist = math.Round(dist*100) / 100
+		// ADR-0025: attach hours evaluation per item (pure CPU, no extra I/O);
+		// nothing is filtered here — hours-closed services stay listed.
+		isOpen, reopens := models.EvaluateServiceSchedule(svc, time.Now().UTC())
 		result = append(result, models.ServiceWithPrice{
 			Service: svc, DistanceKM: dist, FinalPrice: finalPrice,
+			IsOpenNow: isOpen, ReopensAt: reopens,
 		})
 	}
 
