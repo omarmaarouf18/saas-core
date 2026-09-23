@@ -454,6 +454,22 @@
       }
     }
   },
+  "workingHoursLine": "مواعيد العمل: {hours}",
+  "@workingHoursLine": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "coverageRadiusLine": "نطاق التغطية: {radius} كم",
+  "@coverageRadiusLine": {
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
   "chooseSearchLocation": "اختار مكان البحث",
   "confirmBookingTitle": "تأكيد الحجز",
   "categoryLine": "الفئة: {category}",

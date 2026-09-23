@@ -1330,6 +1330,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String workingHoursLine(String hours) {
+    return 'مواعيد العمل: $hours';
+  }
+
+  @override
+  String coverageRadiusLine(String radius) {
+    return 'نطاق التغطية: $radius كم';
+  }
+
+  @override
   String get chooseSearchLocation => 'اختار مكان البحث';
 
   @override

@@ -517,4 +517,87 @@ void main() {
     completer.complete(mockGeolocator.mockPosition);
     await tester.pumpAndSettle();
   });
+
+  testWidgets(
+      'Service card parses and renders working hours + coverage radius profile fields',
+      (WidgetTester tester) async {
+    // 1. fromJson parses the backend-shaped payload (fields live on the
+    // embedded Service alongside distance_km/final_price).
+    final parsed = MarketplaceService.fromJson({
+      'id': 'srv-1',
+      'tenant_id': 'tenant-1',
+      'name': 'Express Delivery',
+      'category': 'delivery',
+      'base_price': 20.0,
+      'tenant_base_price': 20.0,
+      'tenant_price_per_km': 3.5,
+      'latitude': 30.0444,
+      'longitude': 31.2357,
+      'working_hours': '9am-5pm',
+      'coverage_radius_km': 25.0,
+      'address': 'Downtown Cairo',
+      'photo_url': 'https://example.com/photo.png',
+      'distance_km': 4.2,
+      'final_price': 35.0,
+    });
+    expect(parsed.workingHours, equals('9am-5pm'));
+    expect(parsed.coverageRadiusKm, equals(25.0));
+    expect(parsed.address, equals('Downtown Cairo'));
+    expect(parsed.photoUrl, equals('https://example.com/photo.png'));
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-1',
+        tenantId: 'tenant-1',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+        workingHours: '9am-5pm',
+        coverageRadiusKm: 25.0,
+        address: 'Downtown Cairo',
+        photoUrl: 'https://example.com/photo.png',
+      ),
+      MarketplaceService(
+        id: 'srv-2',
+        tenantId: 'tenant-2',
+        name: 'Budget Ride',
+        category: 'transport',
+        basePrice: 10.0,
+        tenantBasePrice: 10.0,
+        tenantPricePerKM: 2.0,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 1.1,
+        finalPrice: 12.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    // 2. Profile fields render on the configured card only.
+    expect(find.byKey(const Key('service_working_hours_text')), findsOneWidget);
+    expect(find.text('Hours: 9am-5pm'), findsOneWidget);
+    expect(
+        find.byKey(const Key('service_coverage_radius_text')), findsOneWidget);
+    expect(find.text('Coverage: 25.0 km'), findsOneWidget);
+
+    // 3. Zero RenderFlex overflow on the default viewport.
+    expect(tester.takeException(), isNull);
+  });
 }

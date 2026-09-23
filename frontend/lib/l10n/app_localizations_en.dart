@@ -1346,6 +1346,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String workingHoursLine(String hours) {
+    return 'Hours: $hours';
+  }
+
+  @override
+  String coverageRadiusLine(String radius) {
+    return 'Coverage: $radius km';
+  }
+
+  @override
   String get chooseSearchLocation => 'Choose Search Location';
 
   @override

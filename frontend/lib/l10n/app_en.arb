@@ -657,6 +657,22 @@
       }
     }
   },
+  "workingHoursLine": "Hours: {hours}",
+  "@workingHoursLine": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "coverageRadiusLine": "Coverage: {radius} km",
+  "@coverageRadiusLine": {
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
   "chooseSearchLocation": "Choose Search Location",
   "confirmBookingTitle": "Confirm Booking",
   "categoryLine": "Category: {category}",

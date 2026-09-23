@@ -2553,6 +2553,18 @@ abstract class AppLocalizations {
   /// **'Est. Price: {price}'**
   String estPriceLine(String price);
 
+  /// No description provided for @workingHoursLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours: {hours}'**
+  String workingHoursLine(String hours);
+
+  /// No description provided for @coverageRadiusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage: {radius} km'**
+  String coverageRadiusLine(String radius);
+
   /// No description provided for @chooseSearchLocation.
   ///
   /// In en, this message translates to:

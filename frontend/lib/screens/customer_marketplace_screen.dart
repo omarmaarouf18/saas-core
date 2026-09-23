@@ -542,6 +542,55 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
+            if (service.workingHours != null &&
+                service.workingHours!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        l10n.workingHoursLine(service.workingHours!),
+                        key: const Key('service_working_hours_text'),
+                        style: AppTypography.bodySm.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (service.coverageRadiusKm != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.radar,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        l10n.coverageRadiusLine("${service.coverageRadiusKm}"),
+                        key: const Key('service_coverage_radius_text'),
+                        style: AppTypography.bodySm.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
