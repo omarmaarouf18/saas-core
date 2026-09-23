@@ -466,6 +466,25 @@ type Subscription struct {
 	UpdatedAt   time.Time `json:"updated_at,omitempty"   bson:"updated_at,omitempty"`
 }
 
+// IsClosed reports whether a tenant is closed for public marketplace purposes
+// (ADR-0024): missing subscription, non-paid tier, or past ExpiresAt.
+// Zero ExpiresAt keeps its documented meaning ("zero = no expiry") and stays
+// open while the tier is paid. Nil-safe: a nil subscription is closed.
+// This is the single definition of closed — requireTier, ListServices
+// filtering, and the TrackJob booking gate all delegate to it.
+func (s *Subscription) IsClosed(now time.Time) bool {
+	if s == nil {
+		return true
+	}
+	if s.Tier != PlanPaid {
+		return true
+	}
+	if !s.ExpiresAt.IsZero() && now.After(s.ExpiresAt) {
+		return true
+	}
+	return false
+}
+
 type Rating struct {
 	ID        string    `json:"id"         bson:"_id"`
 	JobID     string    `json:"job_id"     bson:"job_id"`

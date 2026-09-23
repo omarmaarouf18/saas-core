@@ -351,6 +351,36 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 	return result
 }
 
+// ListServicesOpenOnly returns ListServices results excluding services whose
+// tenant is closed (missing/unpaid/expired subscription per ADR-0024).
+// It reuses the ListServices geo query unchanged rather than adding a second
+// query path; closed-ness is evaluated per distinct tenant via the shared
+// models.Subscription.IsClosed predicate. NOTE: filtering is post-query, so a
+// page may come back short (count < limit) when closed tenants occupy slots —
+// accepted per ADR-0024 (closed tenants are expected to be rare; pushing the
+// tenant set into the Mongo filter would cost an unbounded subscriptions scan
+// per listing request). The unfiltered ListServices remains for owner/debug use.
+func (s *MongoDB) ListServicesOpenOnly(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64, limit, offset int64) []models.ServiceWithPrice {
+	all := s.ListServices(ctx, sortBy, nearBy, refLat, refLon, maxDistKm, limit, offset)
+	if len(all) == 0 {
+		return all
+	}
+	now := time.Now().UTC()
+	closed := make(map[string]bool, len(all))
+	open := make([]models.ServiceWithPrice, 0, len(all))
+	for _, svc := range all {
+		isClosed, seen := closed[svc.TenantID]
+		if !seen {
+			isClosed = s.GetSubscription(ctx, svc.TenantID).IsClosed(now)
+			closed[svc.TenantID] = isClosed
+		}
+		if !isClosed {
+			open = append(open, svc)
+		}
+	}
+	return open
+}
+
 // ---------------------------------------------------------------------------
 // Job operations
 // ---------------------------------------------------------------------------

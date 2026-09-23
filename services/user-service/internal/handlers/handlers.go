@@ -675,6 +675,8 @@ func (u *UserService) fetchUserRole(ctx context.Context, userID string) (string,
 }
 
 // requireTier enforces that a tenant has at least the minimum subscription tier.
+// Per ADR-0024 the PlanPaid check delegates to Subscription.IsClosed, so a
+// paid tier with a past ExpiresAt is rejected exactly like a wrong tier.
 func (u *UserService) requireTier(ctx context.Context, tenantID string, min models.PlanTier) error {
 	if u.requireTierHook != nil {
 		if err := u.requireTierHook(ctx, tenantID, min); err != nil {
@@ -685,13 +687,9 @@ func (u *UserService) requireTier(ctx context.Context, tenantID string, min mode
 		return nil
 	}
 	sub := u.store.GetSubscription(ctx, tenantID)
-	var currentTier models.PlanTier = models.PlanFree
-	if sub != nil {
-		currentTier = sub.Tier
-	}
 
 	if min == models.PlanPaid {
-		if currentTier != models.PlanPaid {
+		if sub.IsClosed(time.Now().UTC()) {
 			return ErrUpgradeRequired
 		}
 	}
@@ -720,6 +718,35 @@ func (u *UserService) enforcePaidTier(w http.ResponseWriter, r *http.Request, te
 		return false
 	}
 	return true
+}
+
+// rejectIfTenantClosed enforces ADR-0024 on customer-initiated paths (TrackJob).
+// If the tenant is closed (missing/unpaid/expired subscription per
+// Subscription.IsClosed), it writes an HTTP 402 with customer-safe copy that
+// deliberately avoids subscription-tier language, and returns true.
+// Returns false when the tenant is open (no response written).
+// NOTE: the dedicated BOOKING_ATTEMPT_CLOSED_BUSINESS audit event for this
+// rejection path lands as the immediate follow-up commit, not here.
+func (u *UserService) rejectIfTenantClosed(w http.ResponseWriter, r *http.Request, tenantID, actorID string) bool {
+	if err := u.requireTier(r.Context(), tenantID, models.PlanPaid); err != nil {
+		if errors.Is(err, ErrUpgradeRequired) {
+			// #nosec G706 //nolint:gosec -- tenantID is resolved from verified JWT/service record for failure diagnostics
+			log.Printf("[USER] Booking rejected: tenant %s is closed (actor %s)", tenantID, actorID)
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{
+				"error":   "service_unavailable",
+				"message": "This business is temporarily closed and cannot accept new bookings right now.",
+			})
+			return true
+		}
+		// #nosec G706 //nolint:gosec -- tenantID is logged for failure diagnostics
+		log.Printf("[USER] Subscription verification failed for owner %s: %v", tenantID, err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "internal_error",
+			"message": "could not verify subscription status",
+		})
+		return true
+	}
+	return false
 }
 
 // InternalSubscriptionCheck allows internal services (e.g., auth-service) to verify

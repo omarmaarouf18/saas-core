@@ -27,6 +27,8 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-b01-repro"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	cust1ID := "cust1-b01-repro"
 	cust2ID := "cust2-b01-repro"
 	svcID := "svc-b01-repro"
@@ -140,6 +142,8 @@ func TestRepro_B02_CourierInReconciliationExcludedFromOffers(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-b02-repro"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-b02-repro"
 	svcID := "svc-b02-repro"
 

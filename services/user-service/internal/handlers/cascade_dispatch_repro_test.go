@@ -30,6 +30,8 @@ func TestCascade_TrackJob_CreatesPendingDispatchWithoutPricing(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-cascade-create"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-cascade-create"
 	empID := "emp-under-tenant-cascade-create"
 	svcID := "svc-cascade-create"
@@ -116,6 +118,8 @@ func TestCascade_TrackJob_ZeroCouriers_ReturnsUnavailableNot422(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-zero-couriers"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-zero-couriers"
 	svcID := "svc-zero-couriers"
 
@@ -174,6 +178,8 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 
 	ctx := context.Background()
 	ownerID := "tenant-cascade-adv"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-cascade-adv"
 	empClose := "emp-close-under-tenant-cascade-adv"
 	empFar := "emp-far-under-tenant-cascade-adv"
@@ -317,6 +323,8 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-race-two-jobs"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	empSolo := "emp-solo-under-tenant-race-two-jobs"
 	empBackup := "emp-backup-under-tenant-race-two-jobs"
 	svcID := "svc-race-two-jobs"
@@ -432,6 +440,8 @@ func TestCascade_Race2_BoundaryExpiry(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-race-boundary"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	empID := "emp-under-tenant-race-boundary"
 	svcID := "svc-race-boundary"
 
@@ -506,6 +516,8 @@ func TestCascade_Race3_StaleCourierLocation_AutoDeclines(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-stale-loc"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	empStale := "emp-stale-under-tenant-stale-loc"
 	empFresh := "emp-fresh-under-tenant-stale-loc"
 	svcID := "svc-stale-loc"
@@ -591,6 +603,8 @@ func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T)
 
 	ctx := context.Background()
 	ownerID := "tenant-cancel-cascade"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	emp1 := "emp1-under-tenant-cancel-cascade"
 	emp2 := "emp2-under-tenant-cancel-cascade"
 	svcID := "svc-cancel-cascade"
@@ -721,6 +735,8 @@ func TestCascade_OfferedCourierCanViewJobDetails_F01(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-f01-view"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-f01-view"
 	empOffered := "emp-under-tenant-f01-view-1"
 	empOther := "emp-under-tenant-f01-view-2"
@@ -815,6 +831,8 @@ func TestCascade_CourierDoubleAcceptRace_F02(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-f02-race"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	empID := "emp-under-tenant-f02-race"
 	svcID := "svc-f02-race"
 
@@ -959,6 +977,8 @@ func TestCascade_EscrowLockFailureCancelsJob_F05(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-f05-escrow"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-f05-escrow"
 	emp1 := "emp-under-tenant-f05-escrow-1"
 	emp2 := "emp-under-tenant-f05-escrow-2"

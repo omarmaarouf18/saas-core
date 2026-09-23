@@ -54,7 +54,9 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	services := u.store.ListServices(ctx, sortBy, nearBy, refLat, refLon, radius, limit, offset)
+	// ADR-0024: the public listing excludes closed tenants' services server-side
+	// (missing/unpaid/expired subscription); customers need no client-side logic.
+	services := u.store.ListServicesOpenOnly(ctx, sortBy, nearBy, refLat, refLon, radius, limit, offset)
 	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 

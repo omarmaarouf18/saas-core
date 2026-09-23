@@ -101,6 +101,8 @@ func TestTrackJob_ProposedPriceCentRounded(t *testing.T) {
 		return
 	}
 	ownerID := "owner-money-track"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	custID := "cust-money-track"
 	s.CreateService(ctx, &models.Service{
 		ID: "svc-money", TenantID: ownerID, Name: "Transport Svc", Category: "transport",

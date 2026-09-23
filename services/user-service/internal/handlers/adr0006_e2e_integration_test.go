@@ -46,6 +46,8 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	ownerID := "owner-e2e-adr0006"
 	empID := "emp-e2e-adr0006"
 	custID := "cust-e2e-adr0006"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour)})
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

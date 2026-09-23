@@ -55,6 +55,8 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 	ownerID := "owner-audit-1"
 	custID := "cust-audit-1"
 	empID := "emp-audit-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

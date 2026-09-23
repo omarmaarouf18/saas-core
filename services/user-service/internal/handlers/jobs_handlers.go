@@ -107,6 +107,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = resolvedUserID
 
+	// ADR-0024: reject bookings against a closed tenant before any
+	// employee/KYC/escrow work begins (owner-token path: tenant from JWT).
+	if hasOwnerToken {
+		if u.rejectIfTenantClosed(w, r, resolvedOwnerID, resolvedUserID) {
+			return
+		}
+	}
+
 	// Idempotency replay check. Deliberately runs only AFTER the caller's
 	// identity has been resolved from a signed JWT, and keys are namespaced
 	// per user ("idempotency:job:<userID>:<key>") so a known or guessed
@@ -167,6 +175,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		resolvedOwnerID = svc.TenantID
 	}
 	req.OwnerID = resolvedOwnerID
+
+	// ADR-0024: same closed-tenant gate for the service-lookup path
+	// (tenant derived from the service record instead of an owner token).
+	if !hasOwnerToken {
+		if u.rejectIfTenantClosed(w, r, resolvedOwnerID, req.UserID) {
+			return
+		}
+	}
 
 	// 4. Verify assigned employee is active, has employee role, and belongs to this owner's tenant
 	if req.EmployeeID != "" {

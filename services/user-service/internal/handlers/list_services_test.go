@@ -61,6 +61,17 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 		})
 	}
 
+	// ADR-0024: the public listing excludes closed tenants, so the fixture
+	// tenant needs an open subscription (paid, unexpired) for the
+	// below-threshold subtests to observe the seeded services.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		ID:        "sub-test-owner-list",
+		TenantID:  "test-owner-list",
+		Tier:      models.PlanPaid,
+		StartedAt: time.Now().UTC(),
+		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
+	})
+
 	// (a) Out-of-range lat (999) is rejected with 400 invalid_coordinates when near_by=true
 	t.Run("Invalid Latitude Bounds (near_by=true)", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/users/services?near_by=true&lat=999.0&lon=31.2357", nil)

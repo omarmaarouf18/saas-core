@@ -119,6 +119,13 @@ func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) 
 
 	s.CreateService(ctx, &models.Service{ID: svcID, Category: "transport", TenantID: ownerID,
 		TenantBasePrice: 50.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	// ADR-0024: TrackJob rejects closed tenants, so the fixture tenant needs
+	// an open subscription for the booking below to reach the escrow path.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{
+		TenantID:  ownerID,
+		Tier:      models.PlanPaid,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
 
 	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "leak-emp@example.com")
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "leak-cust2@example.com")

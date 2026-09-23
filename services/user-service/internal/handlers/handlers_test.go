@@ -134,6 +134,17 @@ func TestUserServiceHandlers(t *testing.T) {
 	tokenTenant, _ := jwtutil.GenerateToken("tenant-id", "owner", "tenant-id", "tenant@example.com")
 	tokenClientUser, _ := jwtutil.GenerateToken("client-user-123", "user", "client-user-123", "client@example.com")
 
+	// ADR-0024: TrackJob now rejects closed tenants before KYC/validation
+	// work, so fixture owners need open subscriptions for the subtests below
+	// to reach their intended assertions (KYC gating, payment validation,
+	// employee assignment). kyc-pending-owner stays KYC-blocked (403) after
+	// passing the open gate.
+	for _, tenant := range []string{"kyc-approved-owner", "kyc-pending-owner"} {
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+			TenantID: tenant, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
+		})
+	}
+
 	// Test 1: KYC gating blocks CreateService for non-approved owners
 	t.Run("CreateService KYC Gating", func(t *testing.T) {
 		reqBody := map[string]any{
@@ -1778,6 +1789,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		ctx := context.Background()
 		tokenEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner-zeroval", "employee", "kyc-approved-owner-zeroval", "employee@example.com")
 		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-zeroval", "owner", "kyc-approved-owner-zeroval", "owner@example.com")
+		// ADR-0024: open subscription so TrackJob passes the closed-tenant gate
+		// and reaches the zero-escrow rollback path under test.
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "kyc-approved-owner-zeroval", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 
 		// 1. Setup service
 		testSvc := &models.Service{
@@ -2445,6 +2459,10 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// (c) Customer books with a mismatched owner token -> rejected
 		tokenOtherOwner, _ := jwtutil.GenerateToken("other-owner", "owner", "other-owner", "other@example.com")
+		// ADR-0024: keep other-owner open so the spoofing attempt reaches the
+		// tenant-match check (403) instead of the closed-tenant gate (402);
+		// closed-tenant rejection itself is covered by the closed-status tests.
+		_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "other-owner", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 		reqBodySpoofToken := map[string]any{
 			"owner_id":       tokenOtherOwner, // valid token but for a different owner!
 			"user_id":        tokenClientUser,
@@ -3693,6 +3711,8 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 	u := NewUserService(s, cfg, rdb)
 
 	ownerID := "rec-owner-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	userID := "rec-user-1"
 	serviceID := "svc-rec-1"
 
@@ -3858,6 +3878,8 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 	u := NewUserService(s, cfg, rdb)
 
 	ownerID := "idem-owner-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	userID := "idem-user-1"
 	serviceID := "svc-idem-1"
 
@@ -4457,6 +4479,8 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 	u2 := NewUserService(s, cfg, rdb2)
 
 	ownerID := "redis-owner-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	userID := "redis-user-1"
 	serviceID := "redis-svc-1"
 
@@ -4554,6 +4578,8 @@ func TestNegotiableTransportPricing(t *testing.T) {
 	}()
 
 	ownerID := "kyc-approved-owner-transport-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	empID := "emp-transport-1"
 	custID := "cust-transport-1"
 	unrelatedID := "unrelated-user-1"
@@ -6358,6 +6384,8 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 	u := NewUserService(s, cfg, rdb)
 
 	victimOwnerID := "idem-victim-owner-1"
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: victimOwnerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
 	victimUserID := "idem-victim-user-1"
 	serviceID := "idem-svc-1"
 

@@ -402,6 +402,9 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 	ownerID := "tenant-no-courier"
 	svcID := "svc-no-courier"
 
+	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
+	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+
 	s.CreateService(ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
