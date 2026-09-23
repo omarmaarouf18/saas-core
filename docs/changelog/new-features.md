@@ -2,6 +2,12 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## OTP Email Security Disclaimer (Resend Dispatcher)
+
+- **Implementation Detail**: Copy-only extension in `services/auth-service/internal/otp/resend_dispatcher.go` (`Dispatch`): both `Html` (as a second `<p>`) and `Text` bodies now append "If you did not request this code, you can safely ignore this email — no account changes will be made." after the existing code/expiry sentence. EN-only by precedent — the OTP Subject/Html/Text were already EN-only and no Arabic copy exists anywhere in the auth-service OTP path. Subject, From, 5-minute expiry, and dispatch/error-handling logic untouched; the existing `html.EscapeString(codeClean)` sanitization pattern is kept and no new interpolation was introduced (the disclaimer is static text).
+- **Commit SHA**: ``b5be5510b8ffde55ad9e3a0e9b5417da5432500c``
+- **Verification**: `TestResendDispatcher_Dispatch_Success` extended with disclaimer-substring assertions for both Html and Text alongside the pre-existing code assertions (nothing replaced). `gofmt -l` clean, `go build ./...` / `go vet ./...` clean, full `auth-service` module `go test ./...` green (all packages ok, incl. handlers 25.2s suite).
+
 ## OTP Screen Visual Redesign (Logo + Professional Footer)
 
 - **Implementation Detail**:
