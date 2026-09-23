@@ -11,6 +11,7 @@ import '../providers/employee_jobs_provider.dart';
 import '../providers/employee_location_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/cancel_job_dialog.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/route_timeline.dart';
@@ -940,6 +941,12 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   Widget _buildJobCard(Job job) {
     final l10n = AppLocalizations.of(context)!;
     final isActive = job.status.toLowerCase().trim() == 'active';
+    // Same rule as the assigned-jobs filter in build(): any assigned job
+    // that isn't already completed/cancelled may be cancelled by the
+    // employee with a recorded reason (including mid-trip actives).
+    final normalizedStatus = job.status.toLowerCase().trim();
+    final isCancellable =
+        normalizedStatus != 'completed' && normalizedStatus != 'cancelled';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -1176,9 +1183,51 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ],
               ],
             ),
+            if (isCancellable) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SecondaryButton(
+                key: Key('employee_cancel_job_button_${job.id}'),
+                text: l10n.ownerHomeCancelJob,
+                icon: Icons.cancel_outlined,
+                isOutlined: true,
+                onPressed: () => _confirmAndCancelJob(job),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// Employee-initiated cancellation with a recorded reason. Mirrors the
+  /// COD/non-COD success messaging used by job_status_screen so escrow
+  /// releases stay legible to the cancelling party, then refreshes the
+  /// assigned-jobs list.
+  Future<void> _confirmAndCancelJob(Job job) async {
+    final l10n = AppLocalizations.of(context)!;
+    await CancelJobDialog.show(
+      context,
+      jobId: job.id,
+      onConfirm: (reason) async {
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        final jobsProvider =
+            Provider.of<EmployeeJobsProvider>(context, listen: false);
+        await jobsProvider.cancelJob(
+          jobId: job.id,
+          reason: reason,
+          employeeToken: auth.token!,
+        );
+        if (!mounted) return;
+        final isNonCod = job.paymentMethod.toLowerCase() != 'cod' &&
+            job.status.toLowerCase() != 'pending_dispatch';
+        ThemedSnackBar.showSuccess(
+          context,
+          isNonCod
+              ? l10n.ownerHomeJobCancelledEscrowRefunded
+              : l10n.ownerHomeJobCancelled,
+        );
+        await _refreshJobs();
+      },
     );
   }
 

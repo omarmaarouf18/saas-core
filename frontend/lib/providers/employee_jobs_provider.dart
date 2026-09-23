@@ -201,6 +201,71 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String employeeToken,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      const msg = 'cancel_reason_required';
+      _error = msg;
+      notifyListeners();
+      throw ApiClientException(msg, statusCode: 400);
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/cancel', {
+        'job_id': jobId,
+        'reason': trimmedReason,
+        'requester_id': employeeToken,
+      });
+
+      final index = _jobs.indexWhere((j) => j.id == jobId);
+      if (index != -1) {
+        final existing = _jobs[index];
+        _jobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'cancelled',
+          location: existing.location,
+          destination: existing.destination,
+          currentLocation: existing.currentLocation,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: trimmedReason,
+          lockedEscrowAmount: existing.lockedEscrowAmount,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+          agreedPrice: existing.agreedPrice,
+          priceProposalExpiresAt: existing.priceProposalExpiresAt,
+          currentOfferedEmployeeId: existing.currentOfferedEmployeeId,
+          offerExpiresAt: existing.offerExpiresAt,
+          offeredEmployeeIds: existing.offeredEmployeeIds,
+          createdAt: existing.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      if (res is Map<String, dynamic>) return res;
+      return {'message': 'job cancelled successfully', 'status': 'cancelled'};
+    } catch (e) {
+      debugPrint('Error cancelling job: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

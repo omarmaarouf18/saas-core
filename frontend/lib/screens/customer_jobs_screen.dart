@@ -8,6 +8,9 @@ import '../providers/marketplace_provider.dart';
 import '../widgets/list_screen_template.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
+import '../widgets/cancel_job_dialog.dart';
+import '../widgets/themed_success_banner.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
@@ -279,6 +282,10 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
     final isCancelled = job.status.toLowerCase() == 'cancelled';
     final isUnavailable = job.status.toLowerCase() == 'unavailable';
     final isPendingDispatch = job.status.toLowerCase() == 'pending_dispatch';
+    final isPending = job.status.toLowerCase() == 'pending';
+    // Same eligibility rule as job_status_screen's cancel button so the
+    // list card and the detail screen never disagree about cancellability.
+    final isCancellable = isPending || isPendingDispatch;
     final isInTransit =
         !isCompleted && !isCancelled && !isUnavailable && !isPendingDispatch;
 
@@ -382,9 +389,52 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 job.cancellationReason != null &&
                 job.cancellationReason!.isNotEmpty)
               _buildCancellationReason(job.cancellationReason!),
+
+            // List-card cancel entry point (detail screen keeps its own).
+            if (isCancellable) ...[
+              const SizedBox(height: AppSpacing.xs),
+              SecondaryButton(
+                key: Key('customer_cancel_job_button_${job.id}'),
+                text: l10n.ownerHomeCancelJob,
+                icon: Icons.cancel_outlined,
+                isOutlined: true,
+                onPressed: () => _confirmAndCancelJob(context, job),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// Customer-initiated cancellation from the list card. Reuses the
+  /// existing MarketplaceProvider.cancelJob and mirrors job_status_screen's
+  /// COD/non-COD success messaging, then reloads the customer's jobs.
+  Future<void> _confirmAndCancelJob(BuildContext cardContext, Job job) async {
+    final l10n = cardContext.l10n;
+    await CancelJobDialog.show(
+      cardContext,
+      jobId: job.id,
+      onConfirm: (reason) async {
+        final auth = Provider.of<AuthProvider>(cardContext, listen: false);
+        final marketplace =
+            Provider.of<MarketplaceProvider>(cardContext, listen: false);
+        await marketplace.cancelJob(
+          jobId: job.id,
+          reason: reason,
+          userToken: auth.token!,
+        );
+        if (!mounted) return;
+        final isNonCod = job.paymentMethod.toLowerCase() != 'cod' &&
+            job.status.toLowerCase() != 'pending_dispatch';
+        ThemedSnackBar.showSuccess(
+          context,
+          isNonCod
+              ? l10n.ownerHomeJobCancelledEscrowRefunded
+              : l10n.ownerHomeJobCancelled,
+        );
+        await _loadCustomerJobs();
+      },
     );
   }
 
