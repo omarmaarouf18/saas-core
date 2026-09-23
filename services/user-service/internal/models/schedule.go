@@ -12,6 +12,15 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	// Embedded IANA time zone database (ADR-0025 functional fix): the
+	// production image (alpine:3.20, no tzdata, no Go toolchain) has no
+	// system zoneinfo, so without this import every LoadLocation below
+	// fails and evaluation silently degrades to UTC — a 09:00-21:00 Cairo
+	// business then reads closed all morning with "reopens 09:00Z"
+	// (noon Cairo). Embedding makes Africa/Cairo resolve everywhere the
+	// binary runs, independent of host zoneinfo.
+	_ "time/tzdata"
 )
 
 // parseHHMM validates a 24-hour "HH:mm" string and returns minutes since

@@ -198,3 +198,31 @@ func TestValidateServiceSchedule(t *testing.T) {
 		})
 	}
 }
+
+// Regression test for the production missing-zoneinfo failure found by the
+// ADR-0025 functional verification protocol ("9 to 9" owner edit vs
+// "closed, reopens at 12" customer order): the alpine:3.20 production image
+// ships no zoneinfo and no Go toolchain, so without embedded tzdata every
+// LoadLocation fails and evaluation silently degrades to UTC — a 09:00-21:00
+// Cairo business then reads closed all morning with reopens 09:00Z, which a
+// Cairo device renders as noon.
+//
+// This test pins the contract that Africa/Cairo (and its fallback) must
+// never degrade to UTC. On hosts with system zoneinfo it passes with or
+// without the fix; in zoneinfo-less environments (bare alpine:3.20,
+// i.e. production) it FAILS unless time/tzdata is embedded. Verified both
+// directions by running the compiled package tests inside bare alpine:3.20.
+func TestLoadScheduleLocation_NeverDegradesToUTC(t *testing.T) {
+	for _, tz := range []string{"Africa/Cairo", "", "Bogus/Zone"} {
+		if loc := loadScheduleLocation(tz); loc == time.UTC {
+			t.Errorf("loadScheduleLocation(%q) degraded to UTC; Africa/Cairo must always resolve (embed time/tzdata)", tz)
+		}
+	}
+	// Cairo must actually behave like Cairo at a fixed instant (EEST, UTC+3
+	// on 2026-09-23), not just be non-UTC.
+	loc := loadScheduleLocation("Africa/Cairo")
+	_, offset := time.Date(2026, 9, 23, 12, 0, 0, 0, loc).Zone()
+	if offset != 3*3600 {
+		t.Errorf("Africa/Cairo offset on 2026-09-23 = %d, want 10800 (EEST)", offset)
+	}
+}
