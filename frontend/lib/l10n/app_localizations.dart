@@ -3879,6 +3879,12 @@ abstract class AppLocalizations {
   /// **'Route Logged'**
   String get routeLoggedLabel;
 
+  /// No description provided for @routeDestinationNotSetYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination not set yet'**
+  String get routeDestinationNotSetYet;
+
   /// No description provided for @workerStatusChangedSuccessMsg.
   ///
   /// In en, this message translates to:

@@ -2066,6 +2066,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get routeLoggedLabel => 'تم تسجيل المسار';
 
   @override
+  String get routeDestinationNotSetYet => 'الوجهة لسه متحددتش';
+
+  @override
   String get workerStatusChangedSuccessMsg => 'تم تغيير الحالة بنجاح.';
 
   @override

@@ -4,6 +4,12 @@ class JobLocation {
 
   JobLocation({required this.latitude, required this.longitude});
 
+  /// Shared, testable "lat, lon" formatter for per-job route display
+  /// (e.g. RouteTimeline detail lines). Fixed 4-decimal precision matches
+  /// the coordinate rendering precedent in customer_marketplace_screen.
+  String formatCoordinates() =>
+      '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+
   factory JobLocation.fromJson(Map<String, dynamic> json) {
     return JobLocation(
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,

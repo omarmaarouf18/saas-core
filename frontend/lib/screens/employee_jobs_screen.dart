@@ -848,9 +848,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             ),
             RouteTimeline(
               pickupAddress: l10n.pickupLocationLabel,
-              pickupDetail: l10n.clientAddressConfirmedLabel,
+              pickupDetail: job.location.formatCoordinates(),
               dropoffAddress: l10n.deliveryDestinationLabel,
-              dropoffDetail: l10n.employeeJobsDestinationCoordinates,
+              dropoffDetail: job.destination?.formatCoordinates() ??
+                  l10n.routeDestinationNotSetYet,
               distanceText: l10n.standardRouteLabel,
               timeText: l10n.matchingCourierLabel,
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
@@ -989,9 +990,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             // Route Timeline Card Module
             RouteTimeline(
               pickupAddress: l10n.pickupLocationLabel,
-              pickupDetail: l10n.clientAddressConfirmedLabel,
+              pickupDetail: job.location.formatCoordinates(),
               dropoffAddress: l10n.deliveryDestinationLabel,
-              dropoffDetail: l10n.employeeJobsDestinationCoordinates,
+              dropoffDetail: job.destination?.formatCoordinates() ??
+                  l10n.routeDestinationNotSetYet,
               distanceText: job.lockedEscrowAmount != null
                   ? l10n.ownerHomeCreditsAmount(
                       job.lockedEscrowAmount!.toStringAsFixed(0))

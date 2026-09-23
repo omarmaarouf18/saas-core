@@ -2098,6 +2098,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeLoggedLabel => 'Route Logged';
 
   @override
+  String get routeDestinationNotSetYet => 'Destination not set yet';
+
+  @override
   String get workerStatusChangedSuccessMsg => 'Successfully changed status.';
 
   @override
