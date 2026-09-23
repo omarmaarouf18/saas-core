@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Marketplace Out-of-Service Badge (ADR-0025, Step 4)
+
+- **Implementation Detail**:
+  - **Model (`frontend/lib/models/marketplace_service.dart`)**: `fromJson` parses nullable `is_open_now`/`reopens_at` (RFC3339 → `DateTime.tryParse`); null/absent means unknown schedule and must not render any badge.
+  - **Badge (`frontend/lib/screens/customer_marketplace_screen.dart`)**: `_buildServiceCard` renders an `is_open_now == false` row (`key: Key('service_out_of_service_badge')`) with warning styling: exact `outOfServiceBadge` text ("Out of Service" / "مغلق دلوقتي"), or the composed `outOfServiceReopensAt` string with locale-formatted time (`MaterialLocalizations.formatTimeOfDay`, so EN shows 12h AM/PM and AR shows Arabic digits + صباحًا/مساءً) when `reopens_at` is present. Nothing else on the card changes and the Book button stays enabled — the TrackJob 402 is the real gate, keeping behavior correct even with a stale badge.
+  - **Localization**: New `outOfServiceBadge` + `outOfServiceReopensAt` (with `{time}` placeholder) keys in EN + AR with `flutter gen-l10n` regeneration.
+  - **Tests (`frontend/test/customer_marketplace_screen_test.dart`, +3)**: exact badge copy without reopen time (plus fromJson false/null parsing), composed reopen-time text, and null/true schedules rendering no badge with cards otherwise unchanged. 360dp overflow guards included.
+- **Commit SHA**: ``623f32b6bee42aa643592ee88ae0fd5d2bc2589d``
+- **Verification**: `dart format` clean, `flutter analyze` (No issues found!), `flutter test` full suite 576/576 pass (was 573), goldens byte-identical (badge only renders on data the fixtures omit). `make docs-check` passes.
+- **Scope note**: closes ADR-0025 (ADR Proposed in step 1, Accepted in step 2, editor in step 3, badge here).
+
 ## Owner Weekly Schedule Editor (ADR-0025, Step 3)
 
 - **Implementation Detail**:
