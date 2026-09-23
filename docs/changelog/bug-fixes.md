@@ -4,6 +4,15 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Missing Timezone Database in Production Image Broke Working-Hours Evaluation (ADR-0025)
+
+- **Symptom**: Owner sets hours 9–9 in the config screen and save looks fine, but a customer order reports the business closed with a mismatched reopen time (e.g. noon).
+- **Root Cause**: Not a code-logic bug at any seam — the real owner-screen interaction yields a byte-exact `same_daily` 09:00/21:00 payload (proven via widget-driven capture), `UpdateService` persists it verbatim, and the evaluator/listing/TrackJob all agree at real local time. The fault is environmental: the `alpine:3.20` production image ships no zoneinfo and no Go toolchain, so `time.LoadLocation("Africa/Cairo")` fails in prod and `loadScheduleLocation` silently degrades to UTC. A 09:00–21:00 Cairo business then reads closed all morning with reopens 09:00Z, which Cairo devices render as noon. Unit/integration tests never caught it because dev/CI hosts (and the Go toolchain's bundled `zoneinfo.zip`) resolve Cairo fine — including inside `golang:1.26.6-alpine`, which misled one reproduction attempt.
+- **Fix (`services/user-service/internal/models/schedule.go`)**: `import _ "time/tzdata"` embeds the IANA database in the binary so `Africa/Cairo` resolves everywhere the binary runs, independent of host zoneinfo. No other service uses `LoadLocation`, so no other binary needs the import; no Dockerfile change needed.
+- **Regression Test (`TestLoadScheduleLocation_NeverDegradesToUTC`, `models/schedule_test.go`)**: Pins the contract that Cairo (and its fallback) never degrade to UTC plus the EEST offset at a reference instant. Proven fail-first (`--- FAIL: TestLoadScheduleLocation_NeverDegradesToUTC`) and post-fix pass by running the compiled package tests inside bare `alpine:3.20`; full models suite also passes there post-fix.
+- **Commit SHA**: ``dc96a95e38d052444085980baf7dd7d68702e1d4``
+- **Verification**: `gofmt`/`go build`/`go vet` clean; full `go test ./... -count=1` in `user-service` 100% pass (0 skips) against dedicated no-auth mongo + local redis; scratch reproduction files removed before committing.
+
 ## Tier 1 Behavioral Audit Remediations (Resource Leaks, Rating Lockout, Money Flow Retry, and Chat Deduplication)
 
 - **Implementation Detail**:
