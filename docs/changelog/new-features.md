@@ -2,6 +2,16 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## OTP Screen Visual Redesign (Logo + Professional Footer)
+
+- **Implementation Detail**:
+  - **Logo (`frontend/lib/screens/otp_screen.dart`)**: Centered Quick Delivery brand mark (`SvgPicture.asset('assets/branding/qd_logo.svg')`, `Key('otp_qd_logo')`, 72x72 with semantics label) rendered above the verification card on the screen's main content column. Uses the already-committed `frontend/assets/branding/qd_logo.svg` asset — a search of the local machine's Documents/Downloads/Pictures folders found no newer/different QD logo image file, so nothing was overwritten. Required adding the `flutter_svg: ^2.3.0` dependency and declaring the asset in `frontend/pubspec.yaml` (previously only `assets/fonts/` was declared).
+  - **Footer**: Non-interactive professional footer (`Key('otp_screen_footer')`) below the card: company name line ("Quick Delivery") + reassurance line ("Never share your verification code with anyone."). Verified via grep that no Terms/Privacy/Support URL or contact exists anywhere in `frontend/lib`, so no link was fabricated. New `otpFooterBrand`/`otpFooterNote` strings in EN + Egyptian-AR (`متشاركش كود التحقق بتاعك مع أي حد.`) with `flutter gen-l10n` regeneration.
+  - **Design system**: Logo sizing/spacing and footer typography (`AppTypography.caption`) and colors (`Theme.of(context).colorScheme.onSurfaceVariant`) follow the existing `theme.dart` tokens and this screen's established `Theme.of(context)` pattern; no new visual language introduced. `OtpPinInput` input logic deliberately untouched (already fully token-compliant), so no shared-widget change applies.
+  - **Tests (`frontend/test/otp_screen_redesign_test.dart`, +5)**: logo renders by Key with the exact committed asset path and sits above the card headline; footer copy + brand render and sit below the resend button; AR-locale footer copy; OTP-entry/resend/verify affordances unchanged (6 PIN boxes, Verify + Resend handlers attached); incomplete-code validation error still surfaces. Existing `auth_screens_test.dart` + `otp_rtl_arabic_test.dart` re-run clean as baseline.
+- **Commit SHA**: ``d8cf1059fe4e2c0ffa10cbea932e6cc620eaf3d1``
+- **Verification**: `dart format --set-exit-if-changed lib/` clean, `flutter analyze` (No issues found!), `flutter test` full suite 581/581 pass (was 576 + 5 new). Only the 2 OTP goldens regenerated (`otp_screen_mobile_360x800.png`, `otp_screen_dark_mobile_360x800.png`) for the intentional layout change; all other goldens byte-identical.
+
 ## Marketplace Out-of-Service Badge (ADR-0025, Step 4)
 
 - **Implementation Detail**:
