@@ -566,6 +566,102 @@ abstract class AppLocalizations {
   /// **'Enter a valid radius > 0.'**
   String get ownerConfigRadiusReq;
 
+  /// No description provided for @scheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Schedule'**
+  String get scheduleTitle;
+
+  /// No description provided for @scheduleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell customers when you\'re open. Leave unset to stay listed as always open.'**
+  String get scheduleSubtitle;
+
+  /// No description provided for @scheduleSetBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Set working hours'**
+  String get scheduleSetBtn;
+
+  /// No description provided for @scheduleRemoveBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove hours'**
+  String get scheduleRemoveBtn;
+
+  /// No description provided for @scheduleModeSameDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Same every day'**
+  String get scheduleModeSameDaily;
+
+  /// No description provided for @scheduleModePerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Different per day'**
+  String get scheduleModePerDay;
+
+  /// No description provided for @scheduleOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens'**
+  String get scheduleOpenLabel;
+
+  /// No description provided for @scheduleCloseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Closes'**
+  String get scheduleCloseLabel;
+
+  /// No description provided for @scheduleOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get scheduleOffLabel;
+
+  /// No description provided for @scheduleDayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get scheduleDayMon;
+
+  /// No description provided for @scheduleDayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get scheduleDayTue;
+
+  /// No description provided for @scheduleDayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get scheduleDayWed;
+
+  /// No description provided for @scheduleDayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get scheduleDayThu;
+
+  /// No description provided for @scheduleDayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get scheduleDayFri;
+
+  /// No description provided for @scheduleDaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get scheduleDaySat;
+
+  /// No description provided for @scheduleDaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get scheduleDaySun;
+
   /// No description provided for @ownerConfigBasePriceLabel.
   ///
   /// In en, this message translates to:

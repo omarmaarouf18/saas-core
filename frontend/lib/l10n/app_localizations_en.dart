@@ -251,6 +251,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigRadiusReq => 'Enter a valid radius > 0.';
 
   @override
+  String get scheduleTitle => 'Weekly Schedule';
+
+  @override
+  String get scheduleSubtitle =>
+      'Tell customers when you\'re open. Leave unset to stay listed as always open.';
+
+  @override
+  String get scheduleSetBtn => 'Set working hours';
+
+  @override
+  String get scheduleRemoveBtn => 'Remove hours';
+
+  @override
+  String get scheduleModeSameDaily => 'Same every day';
+
+  @override
+  String get scheduleModePerDay => 'Different per day';
+
+  @override
+  String get scheduleOpenLabel => 'Opens';
+
+  @override
+  String get scheduleCloseLabel => 'Closes';
+
+  @override
+  String get scheduleOffLabel => 'Off';
+
+  @override
+  String get scheduleDayMon => 'Monday';
+
+  @override
+  String get scheduleDayTue => 'Tuesday';
+
+  @override
+  String get scheduleDayWed => 'Wednesday';
+
+  @override
+  String get scheduleDayThu => 'Thursday';
+
+  @override
+  String get scheduleDayFri => 'Friday';
+
+  @override
+  String get scheduleDaySat => 'Saturday';
+
+  @override
+  String get scheduleDaySun => 'Sunday';
+
+  @override
   String get ownerConfigBasePriceLabel => 'Base Price (\$)';
 
   @override

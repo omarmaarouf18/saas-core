@@ -294,6 +294,11 @@ class OwnerProvider extends ChangeNotifier {
     double? coverageRadiusKm,
     double? latitude,
     double? longitude,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
   }) async {
     _isLoading = true;
     _error = null;
@@ -318,6 +323,13 @@ class OwnerProvider extends ChangeNotifier {
       }
       if (latitude != null) body['latitude'] = latitude;
       if (longitude != null) body['longitude'] = longitude;
+      if (scheduleMode != null) body['schedule_mode'] = scheduleMode;
+      if (openTime != null) body['open_time'] = openTime;
+      if (closeTime != null) body['close_time'] = closeTime;
+      if (perDaySchedule != null) {
+        body['per_day_schedule'] = perDaySchedule;
+      }
+      if (timezone != null) body['timezone'] = timezone;
 
       final res = await apiClient.put('/users/services', body);
       await fetchServices();

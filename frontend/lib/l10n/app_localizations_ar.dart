@@ -247,6 +247,55 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigRadiusReq => 'اكتب نطاق تغطية صحيح أكبر من 0.';
 
   @override
+  String get scheduleTitle => 'مواعيد الأسبوع';
+
+  @override
+  String get scheduleSubtitle =>
+      'عرف العملاء انت فاتح امتى. سيبها فاضية وهتفضل ظاهر انك فاتح على طول.';
+
+  @override
+  String get scheduleSetBtn => 'حدد مواعيد العمل';
+
+  @override
+  String get scheduleRemoveBtn => 'امسح المواعيد';
+
+  @override
+  String get scheduleModeSameDaily => 'نفس المواعيد كل يوم';
+
+  @override
+  String get scheduleModePerDay => 'مواعيد مختلفة لكل يوم';
+
+  @override
+  String get scheduleOpenLabel => 'الفتح';
+
+  @override
+  String get scheduleCloseLabel => 'القفل';
+
+  @override
+  String get scheduleOffLabel => 'قافل';
+
+  @override
+  String get scheduleDayMon => 'الاتنين';
+
+  @override
+  String get scheduleDayTue => 'التلات';
+
+  @override
+  String get scheduleDayWed => 'الأربع';
+
+  @override
+  String get scheduleDayThu => 'الخميس';
+
+  @override
+  String get scheduleDayFri => 'الجمعة';
+
+  @override
+  String get scheduleDaySat => 'السبت';
+
+  @override
+  String get scheduleDaySun => 'الحد';
+
+  @override
   String get ownerConfigBasePriceLabel => 'الفتح / السعر الأساسي (\$)';
 
   @override

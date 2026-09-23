@@ -26,6 +26,21 @@ import 'kyc_document_upload_screen.dart';
 
 typedef ImagePickerCallback = Future<String?> Function(BuildContext context);
 
+/// One per-day schedule row (ADR-0025). Times are null until picked;
+/// isOff rows ignore their times server-side.
+class _ScheduleDayRow {
+  final String day;
+  TimeOfDay? open;
+  TimeOfDay? close;
+  bool isOff;
+  _ScheduleDayRow({
+    required this.day,
+    this.open,
+    this.close,
+    this.isOff = false,
+  });
+}
+
 class OwnerConfigurationScreen extends StatefulWidget {
   final ImagePickerCallback? onPickImage;
   const OwnerConfigurationScreen({super.key, this.onPickImage});
@@ -53,6 +68,39 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   String? _errorMessage;
   bool _isInitialized = false;
   Map<String, dynamic>? _existingService;
+
+  // Weekly schedule editor state (ADR-0025). _scheduleTouched tracks owner
+  // intent: pre-population from GET never sets it, so an untouched editor
+  // sends none of the 5 schedule fields (unknown schedule stays unknown).
+  // A touched editor with null mode sends schedule_mode:"" (explicit clear).
+  bool _scheduleTouched = false;
+  String? _scheduleMode; // 'same_daily' | 'per_day' | null
+  TimeOfDay? _sameOpen;
+  TimeOfDay? _sameClose;
+  List<_ScheduleDayRow> _dayRows = [];
+
+  static const List<String> _weekdayKeys = [
+    'mon',
+    'tue',
+    'wed',
+    'thu',
+    'fri',
+    'sat',
+    'sun'
+  ];
+
+  static String toHHmm(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  static TimeOfDay? parseHHmm(String? s) {
+    if (s == null) return null;
+    final m = RegExp(r'^(\d{2}):(\d{2})$').firstMatch(s.trim());
+    if (m == null) return null;
+    final h = int.parse(m.group(1)!);
+    final mi = int.parse(m.group(2)!);
+    if (h > 23 || mi > 59) return null;
+    return TimeOfDay(hour: h, minute: mi);
+  }
 
   Future<void> _pickImage() async {
     if (widget.onPickImage != null) {
@@ -117,6 +165,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
         _pricePerKmController.text =
             match['tenant_price_per_km']?.toString() ?? '';
         _photoUrlController.text = match['photo_url']?.toString() ?? '';
+        _populateSchedule(match);
         final rawLat = match['latitude'];
         final rawLon = match['longitude'];
         _latitude = (rawLat as num?)?.toDouble() ?? 30.0444;
@@ -219,6 +268,55 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     );
   }
 
+  /// Pre-populates the schedule editor from a GET service map (ADR-0025).
+  /// Never marks the editor touched: loaded values submit as no-ops unless
+  /// the owner edits them. Malformed stored data degrades to untouched.
+  void _populateSchedule(Map<String, dynamic> match) {
+    _scheduleTouched = false;
+    _scheduleMode = null;
+    _sameOpen = null;
+    _sameClose = null;
+    _dayRows = [];
+    final mode = match['schedule_mode']?.toString();
+    if (mode == 'same_daily') {
+      final o = parseHHmm(match['open_time']?.toString());
+      final c = parseHHmm(match['close_time']?.toString());
+      if (o != null && c != null) {
+        _scheduleMode = mode;
+        _sameOpen = o;
+        _sameClose = c;
+      }
+    } else if (mode == 'per_day') {
+      final raw = match['per_day_schedule'];
+      if (raw is List && raw.length == 7) {
+        final rows = <_ScheduleDayRow>[];
+        final seen = <String>{};
+        var valid = true;
+        for (final e in raw) {
+          if (e is! Map) {
+            valid = false;
+            break;
+          }
+          final day = e['day']?.toString().toLowerCase() ?? '';
+          if (!_weekdayKeys.contains(day) || !seen.add(day)) {
+            valid = false;
+            break;
+          }
+          rows.add(_ScheduleDayRow(
+            day: day,
+            open: parseHHmm(e['open_time']?.toString()),
+            close: parseHHmm(e['close_time']?.toString()),
+            isOff: e['is_off'] == true,
+          ));
+        }
+        if (valid) {
+          _scheduleMode = mode;
+          _dayRows = rows;
+        }
+      }
+    }
+  }
+
   Future<void> _submitForm() async {
     final l10n = context.l10n;
     setState(() {
@@ -280,6 +378,34 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           _existingService?['service_id']?.toString() ??
           '';
 
+      // Weekly schedule payload (ADR-0025). Untouched editors send none of
+      // the 5 fields (unknown stays unknown); a touched-but-cleared editor
+      // sends schedule_mode:"" (explicit clear); timezone is left null so
+      // the backend default (Africa/Cairo) applies.
+      String? scheduleMode;
+      String? openTime;
+      String? closeTime;
+      List<Map<String, dynamic>>? perDaySchedule;
+      if (_scheduleTouched) {
+        if (_scheduleMode == null) {
+          scheduleMode = '';
+        } else if (_scheduleMode == 'same_daily') {
+          scheduleMode = 'same_daily';
+          if (_sameOpen != null) openTime = toHHmm(_sameOpen!);
+          if (_sameClose != null) closeTime = toHHmm(_sameClose!);
+        } else {
+          scheduleMode = 'per_day';
+          perDaySchedule = _dayRows
+              .map((r) => {
+                    'day': r.day,
+                    'open_time': r.open != null ? toHHmm(r.open!) : '',
+                    'close_time': r.close != null ? toHHmm(r.close!) : '',
+                    'is_off': r.isOff,
+                  })
+              .toList();
+        }
+      }
+
       if (serviceId.isNotEmpty) {
         await ownerProvider.updateOwnerServiceConfig(
           serviceId: serviceId,
@@ -294,6 +420,10 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           coverageRadiusKm: radius,
           latitude: _latitude,
           longitude: _longitude,
+          scheduleMode: scheduleMode,
+          openTime: openTime,
+          closeTime: closeTime,
+          perDaySchedule: perDaySchedule,
         );
       } else {
         await ownerProvider.createService(
@@ -374,11 +504,15 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   _buildLocationOperationsCard(l10n),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Section 3: Pricing Structure Card (Stitch Reference)
+                  // Section 3: Weekly Schedule Card (ADR-0025)
+                  _buildScheduleCard(l10n),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Section 4: Pricing Structure Card (Stitch Reference)
                   _buildPricingStructureCard(l10n),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // Section 4: Primary Save Action Button
+                  // Section 5: Primary Save Action Button
                   _buildSaveButton(l10n),
                 ],
               ),
@@ -778,6 +912,293 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
               return null;
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  String _dayLabel(AppLocalizations l10n, String day) {
+    switch (day) {
+      case 'mon':
+        return l10n.scheduleDayMon;
+      case 'tue':
+        return l10n.scheduleDayTue;
+      case 'wed':
+        return l10n.scheduleDayWed;
+      case 'thu':
+        return l10n.scheduleDayThu;
+      case 'fri':
+        return l10n.scheduleDayFri;
+      case 'sat':
+        return l10n.scheduleDaySat;
+      case 'sun':
+      default:
+        return l10n.scheduleDaySun;
+    }
+  }
+
+  Future<void> _pickScheduleTime({
+    required TimeOfDay initial,
+    required ValueChanged<TimeOfDay> onPicked,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _scheduleTouched = true;
+        onPicked(picked);
+      });
+    }
+  }
+
+  String _timeText(TimeOfDay? t, String fallback) =>
+      t == null ? fallback : toHHmm(t);
+
+  Widget _buildScheduleCard(AppLocalizations l10n) {
+    return ThemedCard(
+      borderRadius: AppRadius.md,
+      padding: AppSpacing.lg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ThemedPanel(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  width: 36,
+                  height: 36,
+                  child: const Center(
+                    child: Icon(
+                      Icons.schedule_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                  )),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.scheduleTitle,
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      l10n.scheduleSubtitle,
+                      style: AppTypography.caption.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(
+            height: AppSpacing.lg,
+            color: AppColors.outlineVariant,
+          ),
+          if (_scheduleMode == null)
+            SecondaryButton(
+              key: const Key('schedule_set_hours_button'),
+              icon: Icons.schedule_outlined,
+              text: l10n.scheduleSetBtn,
+              isOutlined: true,
+              isFullWidth: false,
+              onPressed: () {
+                setState(() {
+                  _scheduleTouched = true;
+                  _scheduleMode = 'same_daily';
+                  _sameOpen ??= const TimeOfDay(hour: 9, minute: 0);
+                  _sameClose ??= const TimeOfDay(hour: 17, minute: 0);
+                });
+              },
+            )
+          else ...[
+            SegmentedButton<String>(
+              key: const Key('schedule_mode_toggle'),
+              segments: [
+                ButtonSegment(
+                  value: 'same_daily',
+                  label: Text(
+                    l10n.scheduleModeSameDaily,
+                    key: const Key('schedule_mode_same_daily_button'),
+                    style: AppTypography.labelLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ButtonSegment(
+                  value: 'per_day',
+                  label: Text(
+                    l10n.scheduleModePerDay,
+                    key: const Key('schedule_mode_per_day_button'),
+                    style: AppTypography.labelLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              selected: {_scheduleMode!},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _scheduleTouched = true;
+                  _scheduleMode = selection.first;
+                  if (_scheduleMode == 'same_daily') {
+                    _sameOpen ??= const TimeOfDay(hour: 9, minute: 0);
+                    _sameClose ??= const TimeOfDay(hour: 17, minute: 0);
+                  } else {
+                    if (_dayRows.isEmpty) {
+                      _dayRows = _weekdayKeys
+                          .map((d) => _ScheduleDayRow(
+                                day: d,
+                                open: const TimeOfDay(hour: 9, minute: 0),
+                                close: const TimeOfDay(hour: 17, minute: 0),
+                              ))
+                          .toList();
+                    }
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (_scheduleMode == 'same_daily') ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: SecondaryButton(
+                      key: const Key('schedule_open_time_button'),
+                      icon: Icons.access_time,
+                      text:
+                          '${l10n.scheduleOpenLabel}: ${_timeText(_sameOpen, '--:--')}',
+                      isOutlined: true,
+                      isFullWidth: true,
+                      onPressed: () => _pickScheduleTime(
+                        initial:
+                            _sameOpen ?? const TimeOfDay(hour: 9, minute: 0),
+                        onPicked: (t) => _sameOpen = t,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: SecondaryButton(
+                      key: const Key('schedule_close_time_button'),
+                      icon: Icons.access_time,
+                      text:
+                          '${l10n.scheduleCloseLabel}: ${_timeText(_sameClose, '--:--')}',
+                      isOutlined: true,
+                      isFullWidth: true,
+                      onPressed: () => _pickScheduleTime(
+                        initial:
+                            _sameClose ?? const TimeOfDay(hour: 17, minute: 0),
+                        onPicked: (t) => _sameClose = t,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              for (final row in _dayRows) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          _dayLabel(l10n, row.day),
+                          style: AppTypography.bodyMd.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: SecondaryButton(
+                          key: Key('schedule_day_${row.day}_open_button'),
+                          text: _timeText(row.open, '--:--'),
+                          isOutlined: true,
+                          isFullWidth: true,
+                          onPressed: row.isOff
+                              ? null
+                              : () => _pickScheduleTime(
+                                    initial: row.open ??
+                                        const TimeOfDay(hour: 9, minute: 0),
+                                    onPicked: (t) => row.open = t,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        flex: 3,
+                        child: SecondaryButton(
+                          key: Key('schedule_day_${row.day}_close_button'),
+                          text: _timeText(row.close, '--:--'),
+                          isOutlined: true,
+                          isFullWidth: true,
+                          onPressed: row.isOff
+                              ? null
+                              : () => _pickScheduleTime(
+                                    initial: row.close ??
+                                        const TimeOfDay(hour: 17, minute: 0),
+                                    onPicked: (t) => row.close = t,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.scheduleOffLabel,
+                            style: AppTypography.labelMd.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                          Switch(
+                            key: Key('schedule_day_${row.day}_off_switch'),
+                            value: row.isOff,
+                            onChanged: (v) {
+                              setState(() {
+                                _scheduleTouched = true;
+                                row.isOff = v;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: SecondaryButton(
+                key: const Key('schedule_remove_button'),
+                text: l10n.scheduleRemoveBtn,
+                isOutlined: true,
+                isFullWidth: false,
+                onPressed: () {
+                  setState(() {
+                    // Touched stays true: submit sends schedule_mode:""
+                    // (explicit clear) rather than sending nothing.
+                    _scheduleMode = null;
+                  });
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );

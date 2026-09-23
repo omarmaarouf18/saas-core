@@ -106,6 +106,11 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
     double? coverageRadiusKm,
     double? latitude,
     double? longitude,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
   }) async {
     updateCalled = true;
     lastUpdatePayload = {
@@ -121,6 +126,11 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
       'coverage_radius_km': coverageRadiusKm,
       'latitude': latitude,
       'longitude': longitude,
+      'schedule_mode': scheduleMode,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'per_day_schedule': perDaySchedule,
+      'timezone': timezone,
     };
 
     if (shouldFailUpdate) {
@@ -165,6 +175,57 @@ Widget createOwnerConfigApp({
       home: homeScreen ?? const OwnerConfigurationScreen(),
     ),
   );
+}
+
+({MockOwnerProviderForConfigTest mock, Widget app}) buildScheduleApp({
+  required List<dynamic> services,
+}) {
+  final apiClient = ApiClient();
+  final mock =
+      MockOwnerProviderForConfigTest(apiClient, mockServices: services);
+  final auth = MockAuthProviderForConfigTest(apiClient);
+  final app = MultiProvider(
+    providers: [
+      ChangeNotifierProvider<AuthProvider>.value(value: auth),
+      ChangeNotifierProvider<OwnerProvider>.value(value: mock),
+      ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+    ],
+    child: const MaterialApp(
+      locale: Locale('en'),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: OwnerConfigurationScreen(),
+    ),
+  );
+  return (mock: mock, app: app);
+}
+
+Map<String, dynamic> scheduleBaseService() => {
+      'id': 'svc-sched-1',
+      'tenant_id': 'owner-config-1',
+      'name': 'Sched Shop',
+      'category': 'delivery',
+      'coverage_radius_km': 20.0,
+      'tenant_base_price': 10.0,
+      'tenant_price_per_km': 1.0,
+      'latitude': 30.0444,
+      'longitude': 31.2357,
+    };
+
+Future<void> pickTimeDialogOk(WidgetTester tester, Key buttonKey) async {
+  final btn = find.byKey(buttonKey);
+  await tester.ensureVisible(btn);
+  await tester.tap(btn);
+  await tester.pumpAndSettle();
+  expect(find.byType(TimePickerDialog), findsOneWidget);
+  await tester.tap(find.text('OK'));
+  await tester.pumpAndSettle();
+  expect(find.byType(TimePickerDialog), findsNothing);
 }
 
 void main() {
@@ -491,5 +552,133 @@ void main() {
 
     // 2. Warning banner must be present
     expect(find.byKey(const Key('owner_config_kyc_banner')), findsOneWidget);
+  });
+
+  testWidgets(
+      'Schedule editor: same_daily sends open/close and omits per_day_schedule',
+      (WidgetTester tester) async {
+    final built = buildScheduleApp(services: [scheduleBaseService()]);
+    await tester.pumpWidget(built.app);
+    await tester.pumpAndSettle();
+
+    // Open the editor, accept the default 09:00 / 17:00 via dialog OK.
+    await tester
+        .ensureVisible(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.tap(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.pumpAndSettle();
+    await pickTimeDialogOk(tester, const Key('schedule_open_time_button'));
+    await pickTimeDialogOk(tester, const Key('schedule_close_time_button'));
+
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    final payload = built.mock.lastUpdatePayload!;
+    expect(payload['schedule_mode'], equals('same_daily'));
+    expect(payload['open_time'], equals('09:00'));
+    expect(payload['close_time'], equals('17:00'));
+    expect(payload['per_day_schedule'], isNull);
+    expect(payload['timezone'], isNull);
+  });
+
+  testWidgets('Schedule editor: per_day sends 7 well-formed entries',
+      (WidgetTester tester) async {
+    final built = buildScheduleApp(services: [scheduleBaseService()]);
+    await tester.pumpWidget(built.app);
+    await tester.pumpAndSettle();
+
+    await tester
+        .ensureVisible(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.tap(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Different per day'));
+    await tester.tap(find.text('Different per day'));
+    await tester.pumpAndSettle();
+
+    final wedSwitch = find.byKey(const Key('schedule_day_wed_off_switch'));
+    await tester.ensureVisible(wedSwitch);
+    await tester.tap(wedSwitch);
+    await tester.pumpAndSettle();
+
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    final payload = built.mock.lastUpdatePayload!;
+    expect(payload['schedule_mode'], equals('per_day'));
+    expect(payload['open_time'], isNull);
+    expect(payload['close_time'], isNull);
+    final perDay = payload['per_day_schedule'] as List;
+    expect(perDay.length, equals(7));
+    final days = perDay.map((e) => (e as Map)['day'] as String).toList();
+    expect(days.toSet(),
+        equals({'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'}));
+    for (final e in perDay) {
+      final m = e as Map;
+      if (m['day'] == 'wed') {
+        expect(m['is_off'], isTrue);
+      } else {
+        expect(m['is_off'], isFalse);
+        expect(m['open_time'], equals('09:00'));
+        expect(m['close_time'], equals('17:00'));
+      }
+    }
+  });
+
+  testWidgets(
+      'Schedule editor: untouched editor sends none of the 5 schedule fields',
+      (WidgetTester tester) async {
+    final built = buildScheduleApp(services: [scheduleBaseService()]);
+    await tester.pumpWidget(built.app);
+    await tester.pumpAndSettle();
+
+    // Editor present but never opened.
+    expect(find.byKey(const Key('schedule_set_hours_button')), findsOneWidget);
+
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    final payload = built.mock.lastUpdatePayload!;
+    for (final k in [
+      'schedule_mode',
+      'open_time',
+      'close_time',
+      'per_day_schedule',
+      'timezone'
+    ]) {
+      expect(payload[k], isNull, reason: 'field $k must be omitted');
+    }
+  });
+
+  testWidgets(
+      'Schedule editor: pre-populates stored hours without marking touched',
+      (WidgetTester tester) async {
+    final svc = scheduleBaseService();
+    svc['schedule_mode'] = 'same_daily';
+    svc['open_time'] = '08:00';
+    svc['close_time'] = '20:00';
+    final built = buildScheduleApp(services: [svc]);
+    await tester.pumpWidget(built.app);
+    await tester.pumpAndSettle();
+
+    // Stored values render; set-hours button is gone (mode active).
+    expect(find.text('Opens: 08:00'), findsOneWidget);
+    expect(find.text('Closes: 20:00'), findsOneWidget);
+    expect(find.byKey(const Key('schedule_set_hours_button')), findsNothing);
+
+    // Submitting without touching sends nothing (loaded != intent).
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    final payload = built.mock.lastUpdatePayload!;
+    expect(payload['schedule_mode'], isNull);
+    expect(payload['per_day_schedule'], isNull);
   });
 }
