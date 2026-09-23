@@ -67,8 +67,8 @@ func (r *ResendDispatcher) Dispatch(destination, code string) error {
 		From:    fromClean,
 		To:      []string{destClean},
 		Subject: "Your Quick Delivery Verification Code",
-		Html:    fmt.Sprintf("<p>Your verification code is: <strong>%s</strong>. It expires in 5 minutes.</p>", escapedCode),
-		Text:    fmt.Sprintf("Your verification code is: %s. It expires in 5 minutes.", codeClean),
+		Html:    fmt.Sprintf("<p>Your verification code is: <strong>%s</strong>. It expires in 5 minutes.</p><p>If you did not request this code, you can safely ignore this email — no account changes will be made.</p>", escapedCode),
+		Text:    fmt.Sprintf("Your verification code is: %s. It expires in 5 minutes. If you did not request this code, you can safely ignore this email — no account changes will be made.", codeClean),
 	}
 
 	sent, err := r.client.Emails.SendWithContext(ctx, params)

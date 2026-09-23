@@ -55,6 +55,13 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 		if !strings.Contains(req.Text, otpCode) {
 			t.Errorf("expected Text payload to contain code %s, got %s", otpCode, req.Text)
 		}
+		const otpDisclaimer = "If you did not request this code, you can safely ignore this email"
+		if !strings.Contains(req.Html, otpDisclaimer) {
+			t.Errorf("expected HTML payload to contain disclaimer %q, got %s", otpDisclaimer, req.Html)
+		}
+		if !strings.Contains(req.Text, otpDisclaimer) {
+			t.Errorf("expected Text payload to contain disclaimer %q, got %s", otpDisclaimer, req.Text)
+		}
 
 		// Respond with 200 OK and Resend ID
 		w.Header().Set("Content-Type", "application/json")
