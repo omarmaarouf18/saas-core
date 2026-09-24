@@ -13,6 +13,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
 import 'package:frontend/screens/employee_jobs_screen.dart';
+import 'package:frontend/screens/job_status_screen.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 
 class _MockAuth extends AuthProvider {
@@ -275,6 +276,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('cancel_reason_input')), findsOneWidget);
+      // Explicit negative: the inner Cancel button must win the gesture
+      // arena — the card's JobStatusScreen navigation must NOT also fire.
+      // (Mirrors the find.byType(JobStatusScreen) convention in
+      // customer_jobs_screen_test.dart's positive navigation test.)
+      expect(find.byType(JobStatusScreen), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
