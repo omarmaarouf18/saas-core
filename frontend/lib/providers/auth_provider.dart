@@ -14,11 +14,16 @@ class AuthProvider extends ChangeNotifier {
   String? _token;
   bool _isLoading = false;
   String? _error;
+  // HTTP status of the most recent failed auth call, if the failure carried
+  // one (e.g. 429 lockout on verify-code). Screens branch on this for
+  // status-specific messaging; cleared alongside _error.
+  int? _lastErrorStatusCode;
 
   UserProfile? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int? get lastErrorStatusCode => _lastErrorStatusCode;
   bool get isAuthenticated => _token != null;
 
   AuthProvider(this.apiClient, {PushNotificationService? pushService})
@@ -127,6 +132,7 @@ class AuthProvider extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    _lastErrorStatusCode = null;
     notifyListeners();
   }
 
@@ -270,23 +276,53 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Resets the user's password using the received 6-digit OTP code.
-  Future<bool> resetPassword(
-      String email, String otp, String newPassword) async {
+  /// Phase 1 of the two-phase reset (ADR-0026): verifies the 6-digit code
+  /// for [email] via POST /auth/reset-password/verify-code. Returns true on
+  /// success (the code is consumed server-side; do not carry it forward).
+  /// On failure [_error] holds the server message and [lastErrorStatusCode]
+  /// the HTTP status (notably 429 when locked out).
+  Future<bool> verifyResetCode(String email, String otp) async {
     _isLoading = true;
     _error = null;
+    _lastErrorStatusCode = null;
+    notifyListeners();
+
+    try {
+      await apiClient.post('/auth/reset-password/verify-code', {
+        'email': email,
+        'otp': otp,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Verify reset code error: $e');
+      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Phase 2 of the two-phase reset (ADR-0026): sets the new password for an
+  /// email that already completed verifyResetCode. Carries NO raw code — the
+  /// server enforces its stored otp_verified flag + deadline.
+  Future<bool> resetPassword(String email, String newPassword) async {
+    _isLoading = true;
+    _error = null;
+    _lastErrorStatusCode = null;
     notifyListeners();
 
     try {
       await apiClient.post('/auth/reset-password', {
         'email': email,
-        'otp': otp,
         'new_password': newPassword,
       });
       return true;
     } catch (e) {
       debugPrint('Reset password error: $e');
       _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return false;
     } finally {
       _isLoading = false;

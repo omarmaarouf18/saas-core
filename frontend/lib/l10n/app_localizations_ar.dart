@@ -466,6 +466,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get forgotPasswordSubmitButton => 'تغيير كلمة السر';
 
   @override
+  String get forgotPasswordStep1Subtitle =>
+      'اكتب الإيميل بتاع حسابك — وهنبعتلك كود تحقق.';
+
+  @override
+  String get forgotPasswordSendCodeButton => 'ابعت الكود';
+
+  @override
+  String get newPasswordSubtitle => 'اختار كلمة السر الجديدة.';
+
+  @override
+  String get resetSessionExpiredMsg =>
+      'الجلسة دي انتهت. ابدأ من خطوة الإيميل عشان توصلك كود جديد.';
+
+  @override
   String get customerHomeGreeting => 'أهلاً بك،';
 
   @override

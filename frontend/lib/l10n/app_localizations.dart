@@ -992,6 +992,30 @@ abstract class AppLocalizations {
   /// **'RESET PASSWORD'**
   String get forgotPasswordSubmitButton;
 
+  /// No description provided for @forgotPasswordStep1Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email — we\'ll send a verification code.'**
+  String get forgotPasswordStep1Subtitle;
+
+  /// No description provided for @forgotPasswordSendCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'SEND CODE'**
+  String get forgotPasswordSendCodeButton;
+
+  /// No description provided for @newPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your new password.'**
+  String get newPasswordSubtitle;
+
+  /// No description provided for @resetSessionExpiredMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset session has expired. Please restart from the email step to get a new code.'**
+  String get resetSessionExpiredMsg;
+
   /// No description provided for @customerHomeGreeting.
   ///
   /// In en, this message translates to:

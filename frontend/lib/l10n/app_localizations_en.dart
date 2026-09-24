@@ -469,6 +469,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPasswordSubmitButton => 'RESET PASSWORD';
 
   @override
+  String get forgotPasswordStep1Subtitle =>
+      'Enter your account email — we\'ll send a verification code.';
+
+  @override
+  String get forgotPasswordSendCodeButton => 'SEND CODE';
+
+  @override
+  String get newPasswordSubtitle => 'Choose your new password.';
+
+  @override
+  String get resetSessionExpiredMsg =>
+      'This reset session has expired. Please restart from the email step to get a new code.';
+
+  @override
   String get customerHomeGreeting => 'Welcome back,';
 
   @override

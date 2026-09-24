@@ -237,7 +237,7 @@ void main() {
     expect(auth.error, 'email exists');
   });
 
-  test('forgotPassword / resendOtp / resetPassword round-trip', () async {
+  test('forgotPassword / verifyResetCode / resetPassword round-trip', () async {
     final (auth, _) = makeAuth(handler: (req) {
       if (req.uri.path.endsWith('/auth/resend-otp')) {
         return MockHttpResponse(200, jsonBody: {'dev_otp': '555000'});
@@ -245,10 +245,17 @@ void main() {
       if (req.uri.path.endsWith('/auth/forgot-password')) {
         return MockHttpResponse(200, jsonBody: {'dev_otp': '321321'});
       }
+      if (req.uri.path.endsWith('/auth/reset-password/verify-code')) {
+        expect(jsonDecode(req.body!), {
+          'email': 'e@x.dev',
+          'otp': '321321',
+        });
+        return MockHttpResponse(200,
+            jsonBody: {'status': 'success', 'message': 'ok'});
+      }
       expect(req.uri.path, endsWith('/auth/reset-password'));
       expect(jsonDecode(req.body!), {
         'email': 'e@x.dev',
-        'otp': '321321',
         'new_password': 'brandNew9',
       });
       return MockHttpResponse(200, jsonBody: {'message': 'ok'});
@@ -257,7 +264,8 @@ void main() {
 
     expect(await auth.resendOtp('e@x.dev'), '555000');
     expect(await auth.forgotPassword('e@x.dev'), '321321');
-    expect(await auth.resetPassword('e@x.dev', '321321', 'brandNew9'), isTrue);
+    expect(await auth.verifyResetCode('e@x.dev', '321321'), isTrue);
+    expect(await auth.resetPassword('e@x.dev', 'brandNew9'), isTrue);
   });
 
   test('resetPassword failure returns false with the backend reason', () async {
@@ -266,10 +274,22 @@ void main() {
             MockHttpResponse(401, jsonBody: {'error': 'invalid OTP'}));
     await pump();
 
-    final ok = await auth.resetPassword('e@x.dev', '000000', 'whatever1');
+    final ok = await auth.resetPassword('e@x.dev', 'whatever1');
 
     expect(ok, isFalse);
     expect(auth.error, contains('invalid OTP'));
+  });
+
+  test('verifyResetCode failure records the status code for 429 UX', () async {
+    final (auth, _) = makeAuth(
+        handler: (req) => MockHttpResponse(429,
+            jsonBody: {'error': 'too many attempts for this email.'}));
+    await pump();
+
+    final ok = await auth.verifyResetCode('e@x.dev', '000000');
+
+    expect(ok, isFalse);
+    expect(auth.lastErrorStatusCode, 429);
   });
 
   test('logout calls the backend, wipes secure storage, clears state',
