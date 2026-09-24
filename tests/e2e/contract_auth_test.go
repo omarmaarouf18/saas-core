@@ -479,36 +479,60 @@ func TestContract_AuthService(t *testing.T) {
 
 	t.Run("POST_Auth_Reset_Password", func(t *testing.T) {
 		_ = FlushAllAuthRateLimits(ctx, cfg.RedisURI)
+		verifyURL := fmt.Sprintf("%s/api/v1/auth/reset-password/verify-code", cfg.GatewayURL)
 		resetURL := fmt.Sprintf("%s/api/v1/auth/reset-password", cfg.GatewayURL)
 
-		// Negative: Missing fields -> 400
-		respMissing, _, err := PostJSON(ctx, resetURL, "", map[string]string{
+		// Negative: missing fields on verify-code -> 400
+		respMissing, _, err := PostJSON(ctx, verifyURL, "", map[string]string{
 			"email": signupEmail,
 		})
 		if err != nil {
 			t.Fatalf("Request failed: %v", err)
 		}
 		if respMissing.StatusCode != http.StatusBadRequest {
-			t.Errorf("Expected 400 for missing fields, got %d", respMissing.StatusCode)
+			t.Errorf("Expected 400 for missing fields on verify-code, got %d", respMissing.StatusCode)
 		}
 
-		// Negative: Invalid OTP -> 401
-		respBad, _, err := PostJSON(ctx, resetURL, "", map[string]string{
-			"email":        signupEmail,
-			"otp":          "999999",
-			"new_password": "NewPassword123!",
+		// Negative: wrong OTP on verify-code -> 401, no reset_token issued
+		respBadOTP, _, err := PostJSON(ctx, verifyURL, "", map[string]string{
+			"email": signupEmail,
+			"otp":   "999999",
 		})
 		if err != nil {
 			t.Fatalf("Request failed: %v", err)
 		}
-		if respBad.StatusCode != http.StatusUnauthorized {
-			t.Errorf("Expected 401 for wrong reset OTP, got %d", respBad.StatusCode)
+		if respBadOTP.StatusCode != http.StatusUnauthorized {
+			t.Errorf("Expected 401 for wrong reset OTP on verify-code, got %d", respBadOTP.StatusCode)
 		}
 
 		_ = FlushAllAuthRateLimits(ctx, cfg.RedisURI)
 
-		// Happy Path: Valid OTP -> 200 OK
-		respGood, body, err := PostJSON(ctx, resetURL, "", map[string]string{
+		// Phase 1 happy path: correct OTP -> 200 + reset_token
+		respVerify, verifyBody, err := PostJSON(ctx, verifyURL, "", map[string]string{
+			"email": signupEmail,
+			"otp":   resetOTP,
+		})
+		if err != nil {
+			t.Fatalf("Request failed: %v", err)
+		}
+		if respVerify.StatusCode != http.StatusOK {
+			t.Fatalf("Expected 200 OK from verify-code, got %d: %s", respVerify.StatusCode, string(verifyBody))
+		}
+		var verifyResp struct {
+			ResetToken string `json:"reset_token"`
+		}
+		if err := json.Unmarshal(verifyBody, &verifyResp); err != nil {
+			t.Fatalf("Failed to parse verify-code response: %v", err)
+		}
+		if verifyResp.ResetToken == "" {
+			t.Fatalf("Expected non-empty reset_token from verify-code, got empty")
+		}
+
+		// Negative: phase 2 with the RAW OTP instead of the possession token -> 401
+		// (this is exactly the shape the old stale test used to send — keep this
+		// as an explicit regression guard so the old contract can never silently
+		// become accepted again)
+		respRawOTP, _, err := PostJSON(ctx, resetURL, "", map[string]string{
 			"email":        signupEmail,
 			"otp":          resetOTP,
 			"new_password": "NewPassword123!",
@@ -516,8 +540,36 @@ func TestContract_AuthService(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Request failed: %v", err)
 		}
+		if respRawOTP.StatusCode != http.StatusUnauthorized {
+			t.Errorf("Expected 401 when phase 2 is called with the raw OTP instead of reset_token, got %d", respRawOTP.StatusCode)
+		}
+
+		// Phase 2 happy path: correct reset_token -> 200 OK
+		respGood, body, err := PostJSON(ctx, resetURL, "", map[string]string{
+			"email":        signupEmail,
+			"reset_token":  verifyResp.ResetToken,
+			"new_password": "NewPassword123!",
+		})
+		if err != nil {
+			t.Fatalf("Request failed: %v", err)
+		}
 		if respGood.StatusCode != http.StatusOK {
 			t.Fatalf("Expected 200 OK, got %d: %s", respGood.StatusCode, string(body))
+		}
+
+		// Negative: reusing the same reset_token a second time -> must fail
+		// (single-use token — confirms the possession-token binding fix from
+		// commit 213210b actually holds)
+		respReuse, _, err := PostJSON(ctx, resetURL, "", map[string]string{
+			"email":        signupEmail,
+			"reset_token":  verifyResp.ResetToken,
+			"new_password": "AnotherPassword456!",
+		})
+		if err != nil {
+			t.Fatalf("Request failed: %v", err)
+		}
+		if respReuse.StatusCode == http.StatusOK {
+			t.Errorf("Expected reset_token reuse to be rejected, but got 200 OK — token is not single-use")
 		}
 	})
 
