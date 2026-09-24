@@ -115,6 +115,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/resend-otp", a.ResendOTP)
 	mux.HandleFunc("/auth/verify-otp", a.VerifyOTP)
 	mux.HandleFunc("/auth/forgot-password", a.ForgotPassword)
+	mux.HandleFunc("/auth/reset-password/verify-code", a.VerifyResetCode)
 	mux.HandleFunc("/auth/reset-password", a.ResetPassword)
 	mux.HandleFunc("/auth/refresh", a.Refresh)
 	mux.HandleFunc("/auth/employee/toggle", a.ToggleEmployee)
@@ -2895,10 +2896,97 @@ func (a *Auth) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // ---------------------------------------------------------------------------
-// POST /auth/reset-password
+// POST /auth/reset-password/verify-code (ADR-0026 phase 1)
 // ---------------------------------------------------------------------------
 
-// ResetPassword validates the reset OTP code and updates the user's password.
+// VerifyResetCode validates a password-reset OTP code WITHOUT changing the
+// password or issuing any session/token. On success it only confirms code
+// validity (the store atomically consumes the code and sets otp_verified).
+// The new password is set later via POST /auth/reset-password, which checks
+// the stored otp_verified flag. This must NOT be confused with a.VerifyOTP
+// (auth.go VerifyOTP), which serves the login/signup 2FA flow and issues
+// JWTs — a reset code must never become an authentication grant.
+//
+// Accepts: { "email", "otp" }
+func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed, use POST",
+		})
+		return
+	}
+
+	var req models.VerifyResetCodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON body: " + err.Error(),
+		})
+		return
+	}
+
+	if req.Email == "" || req.OTP == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "email and otp are required",
+		})
+		return
+	}
+
+	clientIP := a.getClientIP(r)
+
+	// Rate limiting check on client IP — BEFORE any OTP comparison.
+	if locked, remaining := a.limiter.IsLocked(clientIP); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts from this IP. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	// Rate limiting check on Email — BEFORE any OTP comparison.
+	if locked, remaining := a.limiter.IsLocked(req.Email); locked {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many attempts for this email. Please try again in %.0f seconds.", remaining.Seconds()),
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	// Validate OTP against MongoDB via store.VerifyOTP (atomically consumes
+	// the code and sets otp_verified on success). Every failure cause —
+	// unknown email, wrong code, expired code, no code pending — returns an
+	// error here and maps to the SAME generic response below (no oracle).
+	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid or expired OTP code",
+		})
+		return
+	}
+
+	// Reset limiter on successful code verification
+	a.limiter.Reset(clientIP)
+	a.limiter.Reset(req.Email)
+
+	log.Printf("[AUTH] Password reset code verified for email=%s", req.Email)
+
+	// Success indicator ONLY — no token, session, or user object.
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "success",
+		"message": "reset code verified",
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /auth/reset-password (ADR-0026 phase 2)
+// ---------------------------------------------------------------------------
+
+// ResetPassword sets a new password for an email that already completed
+// phase 1 (POST /auth/reset-password/verify-code). It accepts NO raw OTP
+// code; instead it requires the stored otp_verified flag to be true and the
+// stored otp_expires_at deadline (inherited from code send time) to be
+// unpassed. On success the flag and OTP fields are cleared so the
+// verification cannot be reused for a second reset.
 func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
@@ -2915,9 +3003,9 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.OTP == "" || req.NewPassword == "" {
+	if req.Email == "" || req.NewPassword == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "email, otp, and new_password are required",
+			"error": "email and new_password are required",
 		})
 		return
 	}
@@ -2942,27 +3030,33 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Validate OTP against MongoDB via store.VerifyOTP
-	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+	// Phase-2 gate (ADR-0026): no raw code is accepted here. The email must
+	// have completed phase 1 (stored otp_verified == true) within the stored
+	// otp_expires_at deadline inherited from code send time. All three
+	// failure causes — unknown email, never verified, verified too long
+	// ago — record rate-limit failures and return the SAME generic error
+	// (no account/verification-state oracle).
+	user := a.store.GetByEmail(ctx, req.Email)
+	if user == nil || !user.OTPVerified {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "invalid or expired OTP code",
+			"error": "invalid or expired reset verification",
+		})
+		return
+	}
+	if !user.OTPExpiresAt.IsZero() && user.OTPExpiresAt.Before(time.Now()) {
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid or expired reset verification",
 		})
 		return
 	}
 
-	// Reset limiter on successful OTP verification
+	// Reset limiter on successful verification check
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
-
-	user := a.store.GetByEmail(ctx, req.Email)
-	if user == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{
-			"error": "user not found",
-		})
-		return
-	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {

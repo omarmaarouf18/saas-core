@@ -144,10 +144,17 @@ type ForgotPasswordRequest struct {
 	Email string `json:"email"`
 }
 
-// ResetPasswordRequest is the expected JSON body for POST /auth/reset-password.
+// VerifyResetCodeRequest is the expected JSON body for POST /auth/reset-password/verify-code (ADR-0026 phase 1).
+type VerifyResetCodeRequest struct {
+	Email string `json:"email"`
+	OTP   string `json:"otp"`
+}
+
+// ResetPasswordRequest is the expected JSON body for POST /auth/reset-password (ADR-0026 phase 2).
+// It carries NO raw OTP code: the email must already have completed phase 1
+// (stored otp_verified == true within otp_expires_at) before this call.
 type ResetPasswordRequest struct {
 	Email       string `json:"email"`
-	OTP         string `json:"otp"`
 	NewPassword string `json:"new_password"`
 }
 

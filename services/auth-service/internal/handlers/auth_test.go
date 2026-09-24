@@ -3095,14 +3095,21 @@ func TestResetPassword_Success(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	// Set OTP
+	// Set OTP, then complete phase 1 (verify-code) before phase 2
 	otpCode := "654321"
 	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
 		t.Fatalf("Failed to set OTP: %v", err)
 	}
+	verifyBody := fmt.Sprintf(`{"email":%q,"otp":%q}`, email, otpCode)
+	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
+	verifyRec := httptest.NewRecorder()
+	a.VerifyResetCode(verifyRec, verifyReq)
+	if verifyRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
 
-	// Execute ResetPassword
-	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":%q}`, email, otpCode, newPassword)
+	// Execute ResetPassword (phase 2 carries no raw code)
+	resetBody := fmt.Sprintf(`{"email":%q,"new_password":%q}`, email, newPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
@@ -3128,7 +3135,7 @@ func TestResetPassword_Success(t *testing.T) {
 	}
 }
 
-// TestResetPassword_InvalidOrExpiredOTP_RateLimiting verifies invalid OTP is rejected with generic error and records failure
+// TestResetPassword_InvalidOrExpiredOTP_RateLimiting verifies an unverified reset is rejected with generic error and records failure
 func TestResetPassword_InvalidOrExpiredOTP_RateLimiting(t *testing.T) {
 	a, mongoStore, cleanup := setupTestAuth(t)
 	if a == nil {
@@ -3150,20 +3157,20 @@ func TestResetPassword_InvalidOrExpiredOTP_RateLimiting(t *testing.T) {
 	_ = mongoStore.CreateUser(ctx, user)
 	_ = mongoStore.SetOTP(ctx, email, "123456")
 
-	// Call ResetPassword with WRONG OTP
-	resetBody := fmt.Sprintf(`{"email":%q,"otp":"000000","new_password":"NewPassword123"}`, email)
+	// Call ResetPassword WITHOUT completing phase 1 (code never verified)
+	resetBody := fmt.Sprintf(`{"email":%q,"new_password":"NewPassword123"}`, email)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
 
 	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("Expected 401 Unauthorized for wrong OTP, got %d. Body: %s", rec.Code, rec.Body.String())
+		t.Fatalf("Expected 401 Unauthorized for unverified reset, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
 	var resp map[string]string
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	if resp["error"] != "invalid or expired OTP code" {
-		t.Errorf("Expected generic 'invalid or expired OTP code' error message, got %q", resp["error"])
+	if resp["error"] != "invalid or expired reset verification" {
+		t.Errorf("Expected generic 'invalid or expired reset verification' error message, got %q", resp["error"])
 	}
 
 	// Verify rate limiter recorded failure on email
@@ -3187,7 +3194,7 @@ func TestResetPassword_PasswordPolicyCheck(t *testing.T) {
 	}
 	defer cleanup()
 
-	body := `{"email":"test@example.com","otp":"123456","new_password":""}`
+	body := `{"email":"test@example.com","new_password":""}`
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
@@ -3198,12 +3205,12 @@ func TestResetPassword_PasswordPolicyCheck(t *testing.T) {
 
 	var resp map[string]string
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	if resp["error"] != "email, otp, and new_password are required" {
-		t.Errorf("Expected 'email, otp, and new_password are required' error, got %q", resp["error"])
+	if resp["error"] != "email and new_password are required" {
+		t.Errorf("Expected 'email and new_password are required' error, got %q", resp["error"])
 	}
 }
 
-// TestResetPassword_OTPReusePrevention verifies an OTP cannot be reused for a second reset-password call
+// TestResetPassword_OTPReusePrevention verifies a phase-1 verification cannot be reused for a second reset-password call
 func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	a, mongoStore, cleanup := setupTestAuth(t)
 	if a == nil {
@@ -3225,7 +3232,16 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	_ = mongoStore.CreateUser(ctx, user)
 	_ = mongoStore.SetOTP(ctx, email, "888999")
 
-	resetBody := fmt.Sprintf(`{"email":%q,"otp":"888999","new_password":"NewPassword1"}`, email)
+	// Phase 1: verify the code once before phase 2
+	verifyBody := fmt.Sprintf(`{"email":%q,"otp":"888999"}`, email)
+	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
+	verifyRec := httptest.NewRecorder()
+	a.VerifyResetCode(verifyRec, verifyReq)
+	if verifyRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
+
+	resetBody := fmt.Sprintf(`{"email":%q,"new_password":"NewPassword1"}`, email)
 
 	// Call 1: First attempt -> 200 OK
 	req1 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
@@ -3235,12 +3251,12 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 		t.Fatalf("Expected 200 OK for first reset attempt, got %d. Body: %s", rec1.Code, rec1.Body.String())
 	}
 
-	// Call 2: Second attempt with SAME OTP -> 401 Unauthorized
+	// Call 2: Second attempt with the SAME (now-cleared) verification -> 401 Unauthorized
 	req2 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec2 := httptest.NewRecorder()
 	a.ResetPassword(rec2, req2)
 	if rec2.Code != http.StatusUnauthorized {
-		t.Fatalf("Expected 401 Unauthorized for reused OTP, got %d. Body: %s", rec2.Code, rec2.Body.String())
+		t.Fatalf("Expected 401 Unauthorized for reused verification, got %d. Body: %s", rec2.Code, rec2.Body.String())
 	}
 }
 
@@ -3300,13 +3316,20 @@ func TestResetPassword_SessionInvalidation(t *testing.T) {
 	// Ensure token issuance timestamp is strictly before the reset timestamp
 	time.Sleep(1 * time.Second)
 
-	// Set OTP and reset password
+	// Set OTP, complete phase 1, then reset password (phase 2)
 	otpCode := "123456"
 	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
 		t.Fatalf("Failed to set OTP: %v", err)
 	}
+	verifyBody := fmt.Sprintf(`{"email":%q,"otp":%q}`, email, otpCode)
+	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
+	verifyRec := httptest.NewRecorder()
+	a.VerifyResetCode(verifyRec, verifyReq)
+	if verifyRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":%q}`, email, otpCode, newPassword)
+	resetBody := fmt.Sprintf(`{"email":%q,"new_password":%q}`, email, newPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
@@ -3368,14 +3391,23 @@ func TestResetPassword_DBErrorGenericMessage(t *testing.T) {
 	if err := mongoStore.DatabaseForTesting().RunCommand(ctx, bson.D{
 		{Key: "collMod", Value: "users"},
 		{Key: "validator", Value: bson.M{
-			"otp_verified": true, // VerifyOTP sets otp_verified: true (passes), UpdateUser sets otp_verified: false (fails validation)
+			"otp_verified": true, // VerifyResetCode sets otp_verified: true (passes), UpdateUser sets otp_verified: false (fails validation)
 		}},
 		{Key: "validationAction", Value: "error"},
 	}).Err(); err != nil {
 		t.Fatalf("Failed to set collMod validator on users collection: %v", err)
 	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"otp":%q,"new_password":"NewPassword123"}`, email, otpCode)
+	// Complete phase 1 first so the failure lands in ResetPassword's UpdateUser (not the verification gate)
+	verifyBody := fmt.Sprintf(`{"email":%q,"otp":%q}`, email, otpCode)
+	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
+	verifyRec := httptest.NewRecorder()
+	a.VerifyResetCode(verifyRec, verifyReq)
+	if verifyRec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
+	}
+
+	resetBody := fmt.Sprintf(`{"email":%q,"new_password":"NewPassword123"}`, email)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
