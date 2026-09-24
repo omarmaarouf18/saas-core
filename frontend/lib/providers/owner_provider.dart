@@ -464,6 +464,40 @@ class OwnerProvider extends ChangeNotifier {
     }
   }
 
+  /// Responds to an employee's pending cancellation request (ADR-0027):
+  /// [decision] is "accept" (job is cancelled via the shared backend path)
+  /// or "decline" (job continues with the employee assigned). Refreshes the
+  /// owner jobs list so the resolved request state is visible.
+  Future<Map<String, dynamic>> respondCancellation({
+    required String jobId,
+    required String decision,
+    required String ownerToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/respond-cancellation', {
+        'job_id': jobId,
+        'decision': decision,
+        'requester_id': ownerToken,
+      });
+
+      await fetchOwnerJobs(ownerToken);
+
+      if (res is Map<String, dynamic>) return res;
+      return {'message': 'cancellation request resolved', 'job_id': jobId};
+    } catch (e) {
+      debugPrint('Error responding to cancellation request: $e');
+      _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

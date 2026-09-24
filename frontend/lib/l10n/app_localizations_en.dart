@@ -749,6 +749,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelJobConfirm => 'Confirm Cancel';
 
   @override
+  String get cancelRequestHeader => 'Request Cancellation';
+
+  @override
+  String get cancelRequestBodyLong =>
+      'Please provide a reason for requesting cancellation. Your request will be sent to the business owner for approval — the job stays active until they respond.';
+
+  @override
+  String get cancelRequestConfirm => 'Send Request';
+
+  @override
+  String get cancelRequestPendingBanner =>
+      'Cancellation requested — waiting for owner approval.';
+
+  @override
+  String get cancelRequestRejectedBanner =>
+      'The business owner declined your cancellation request. You remain assigned to this job.';
+
+  @override
+  String get cancelRequestSentMsg =>
+      'Cancellation request sent to the business owner.';
+
+  @override
+  String get employeeRequestCancelButton => 'Request Cancellation';
+
+  @override
+  String get ownerCancelRequestTitle => 'Employee requested cancellation';
+
+  @override
+  String get ownerCancelRequestApprove => 'Approve Cancellation';
+
+  @override
+  String get ownerCancelRequestDecline => 'Decline Request';
+
+  @override
+  String get ownerCancelRequestResolved => 'Request resolved.';
+
+  @override
   String get locationPermissionDeniedDefault =>
       'Location permission denied. Defaulting to Cairo.';
 

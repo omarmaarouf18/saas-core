@@ -743,6 +743,42 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancelJobConfirm => 'تأكيد الإلغاء';
 
   @override
+  String get cancelRequestHeader => 'طلب إلغاء الشحنة';
+
+  @override
+  String get cancelRequestBodyLong =>
+      'اكتب سبب طلب الإلغاء. الطلب هيتبعت لصاحب الشغل للموافقة — والطلب هيفضل شغال لحد ما يرد.';
+
+  @override
+  String get cancelRequestConfirm => 'ابعت الطلب';
+
+  @override
+  String get cancelRequestPendingBanner =>
+      'طلبت الإلغاء — مستني موافقة صاحب الشغل.';
+
+  @override
+  String get cancelRequestRejectedBanner =>
+      'صاحب الشغل رفض طلب الإلغاء بتاعك. انت لسه مسئول عن الطلب ده.';
+
+  @override
+  String get cancelRequestSentMsg => 'اتبعت طلب الإلغاء لصاحب الشغل.';
+
+  @override
+  String get employeeRequestCancelButton => 'طلب الإلغاء';
+
+  @override
+  String get ownerCancelRequestTitle => 'الموظف طلب الإلغاء';
+
+  @override
+  String get ownerCancelRequestApprove => 'الموافقة على الإلغاء';
+
+  @override
+  String get ownerCancelRequestDecline => 'رفض الطلب';
+
+  @override
+  String get ownerCancelRequestResolved => 'تم التعامل مع الطلب.';
+
+  @override
   String get locationPermissionDeniedDefault =>
       'تم رفض إذن الموقع. تم التعيين على القاهرة افتراضياً.';
 

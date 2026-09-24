@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
+import '../core/api_client.dart';
+import '../core/error_messages.dart';
 import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -17,6 +19,7 @@ import '../widgets/rating_summary_card.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/dashboard_screen_template.dart';
+import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
@@ -100,6 +103,35 @@ class _HomeScreenState extends State<HomeScreen> {
       final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
       await ownerProvider.fetchDashboardData(auth.token!);
       await ownerProvider.fetchOwnerJobs(auth.token!);
+    }
+  }
+
+  /// Responds to an employee's pending cancellation request (ADR-0027).
+  /// A late response (request already expired) surfaces the server's
+  /// specific explanation rather than failing silently or showing a
+  /// generic conflict string: 409 bodies on this flow are curated,
+  /// actionable messages, so the raw text is preferred there.
+  Future<void> _respondCancellationRequest(
+    OwnerProvider ownerProvider,
+    AuthProvider auth,
+    AppLocalizations l10n,
+    String jobId,
+    String decision,
+  ) async {
+    try {
+      await ownerProvider.respondCancellation(
+        jobId: jobId,
+        decision: decision,
+        ownerToken: auth.token!,
+      );
+      if (!mounted) return;
+      ThemedSnackBar.showSuccess(context, l10n.ownerCancelRequestResolved);
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is ApiClientException && e.statusCode == 409
+          ? e.message
+          : friendlyErrorMessage(e);
+      ThemedSnackBar.showError(context, message);
     }
   }
 
@@ -1203,6 +1235,92 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      // Pending employee cancellation request (ADR-0027):
+                      // reason + approve/decline inline on the owner's job
+                      // card. Late responses (already expired) surface the
+                      // server message instead of failing silently.
+                      if (job.cancellationRequestStatus == 'pending') ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        ThemedCard(
+                          key: Key('owner_cancel_request_${job.id}'),
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.sm,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.mark_email_unread_outlined,
+                                    size: AppIconSize.sm,
+                                    color: AppColors.warning,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.ownerCancelRequestTitle,
+                                      style: AppTypography.labelLg.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.xxs),
+                              Text(
+                                l10n.employeeJobsCancellationReason(
+                                    job.cancellationRequestReason ?? ''),
+                                style: AppTypography.bodySm.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SecondaryButton(
+                                      key: Key(
+                                          'decline_cancel_request_button_${job.id}'),
+                                      text: l10n.ownerCancelRequestDecline,
+                                      icon: Icons.close,
+                                      isOutlined: true,
+                                      onPressed: () =>
+                                          _respondCancellationRequest(
+                                              ownerProvider,
+                                              auth,
+                                              l10n,
+                                              job.id,
+                                              'decline'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: PrimaryButton(
+                                      key: Key(
+                                          'approve_cancel_request_button_${job.id}'),
+                                      text: l10n.ownerCancelRequestApprove,
+                                      icon: Icons.check,
+                                      isDestructive: true,
+                                      onPressed: () =>
+                                          _respondCancellationRequest(
+                                              ownerProvider,
+                                              auth,
+                                              l10n,
+                                              job.id,
+                                              'accept'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (canCancel) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(

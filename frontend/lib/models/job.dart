@@ -44,6 +44,9 @@ class Job {
   final String? currentOfferedEmployeeId;
   final DateTime? offerExpiresAt;
   final List<String>? offeredEmployeeIds;
+  final String? cancellationRequestReason;
+  final DateTime? cancellationRequestedAt;
+  final String? cancellationRequestStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -68,6 +71,9 @@ class Job {
     this.currentOfferedEmployeeId,
     this.offerExpiresAt,
     this.offeredEmployeeIds,
+    this.cancellationRequestReason,
+    this.cancellationRequestedAt,
+    this.cancellationRequestStatus,
     this.createdAt,
     this.updatedAt,
   });
@@ -104,6 +110,11 @@ class Job {
       offeredEmployeeIds: json['offered_employee_ids'] != null
           ? List<String>.from(json['offered_employee_ids'])
           : null,
+      cancellationRequestReason: json['cancellation_request_reason'],
+      cancellationRequestedAt: json['cancellation_requested_at'] != null
+          ? DateTime.tryParse(json['cancellation_requested_at'])
+          : null,
+      cancellationRequestStatus: json['cancellation_request_status'],
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,

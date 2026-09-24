@@ -33,9 +33,9 @@ class _MockAuth extends AuthProvider {
 
 class _MockEmployeeJobs extends EmployeeJobsProvider {
   final List<Job> initialJobs;
-  bool cancelJobCalled = false;
-  String? lastCancelledJobId;
-  String? lastCancelledReason;
+  bool requestCancellationCalled = false;
+  String? lastRequestJobId;
+  String? lastRequestReason;
   int fetchAssignedJobsCalls = 0;
 
   _MockEmployeeJobs(super.apiClient, {this.initialJobs = const []});
@@ -52,15 +52,18 @@ class _MockEmployeeJobs extends EmployeeJobsProvider {
   }
 
   @override
-  Future<Map<String, dynamic>> cancelJob({
+  Future<Map<String, dynamic>> requestCancellation({
     required String jobId,
     required String reason,
     required String employeeToken,
   }) async {
-    cancelJobCalled = true;
-    lastCancelledJobId = jobId;
-    lastCancelledReason = reason;
-    return {'message': 'job cancelled successfully', 'status': 'cancelled'};
+    requestCancellationCalled = true;
+    lastRequestJobId = jobId;
+    lastRequestReason = reason;
+    return {
+      'message': 'cancellation request submitted for owner approval',
+      'cancellation_request_status': 'pending'
+    };
   }
 }
 
@@ -146,7 +149,9 @@ Widget _customerApp(_MockMarketplace marketplace) {
   );
 }
 
-Job _job(String id, String status, {String paymentMethod = 'cod'}) => Job(
+Job _job(String id, String status,
+        {String paymentMethod = 'cod', String? cancellationRequestStatus}) =>
+    Job(
       id: id,
       ownerId: 'owner-1',
       employeeId: 'emp-1',
@@ -156,6 +161,7 @@ Job _job(String id, String status, {String paymentMethod = 'cod'}) => Job(
       location: JobLocation(latitude: 30.0444, longitude: 31.2357),
       destination: JobLocation(latitude: 30.05, longitude: 31.24),
       paymentMethod: paymentMethod,
+      cancellationRequestStatus: cancellationRequestStatus,
     );
 
 Future<void> _confirmDialogWithReason(
@@ -168,8 +174,8 @@ Future<void> _confirmDialogWithReason(
 }
 
 void main() {
-  group('B1: employee job-card cancel button', () {
-    testWidgets('Cancel button visible for active/pending, absent when done',
+  group('B1: employee job-card cancellation request (ADR-0027)', () {
+    testWidgets('Request button visible for active/pending, absent when done',
         (WidgetTester tester) async {
       final apiClient = ApiClient();
       final jobs = _MockEmployeeJobs(apiClient, initialJobs: [
@@ -190,7 +196,7 @@ void main() {
       expect(btn.onPressed, isNotNull);
     });
 
-    testWidgets('Completed/cancelled jobs render no cancel button',
+    testWidgets('Completed/cancelled jobs render no request button',
         (WidgetTester tester) async {
       final apiClient = ApiClient();
       final jobs = _MockEmployeeJobs(apiClient, initialJobs: [
@@ -206,7 +212,7 @@ void main() {
           findsNothing);
     });
 
-    testWidgets('Confirming dialog cancels and refreshes the list',
+    testWidgets('Confirming dialog sends a request, not an immediate cancel',
         (WidgetTester tester) async {
       final apiClient = ApiClient();
       final jobs = _MockEmployeeJobs(apiClient, initialJobs: [
@@ -221,13 +227,55 @@ void main() {
       await tester.tap(btn);
       await tester.pumpAndSettle();
 
+      // Request-flow copy (not the immediate-cancel copy).
+      expect(find.text('Request Cancellation'), findsWidgets);
       await _confirmDialogWithReason(tester, 'Vehicle broke down');
 
-      expect(jobs.cancelJobCalled, isTrue);
-      expect(jobs.lastCancelledJobId, 'job-emp-active');
-      expect(jobs.lastCancelledReason, 'Vehicle broke down');
+      expect(jobs.requestCancellationCalled, isTrue);
+      expect(jobs.lastRequestJobId, 'job-emp-active');
+      expect(jobs.lastRequestReason, 'Vehicle broke down');
       expect(jobs.fetchAssignedJobsCalls, greaterThan(0));
-      expect(find.text('Job cancelled successfully.'), findsOneWidget);
+      expect(find.text('Cancellation request sent to the business owner.'),
+          findsOneWidget);
+    });
+
+    testWidgets('Pending request hides the button and shows pending state',
+        (WidgetTester tester) async {
+      final apiClient = ApiClient();
+      final jobs = _MockEmployeeJobs(apiClient, initialJobs: [
+        _job('job-emp-pending-req', 'active',
+            cancellationRequestStatus: 'pending'),
+      ]);
+      await tester.pumpWidget(_employeeApp(jobs));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(
+              const Key('employee_cancel_job_button_job-emp-pending-req')),
+          findsNothing);
+      expect(
+          find.byKey(
+              const Key('employee_cancel_request_pending_job-emp-pending-req')),
+          findsOneWidget);
+    });
+
+    testWidgets('Rejected request shows the outcome and re-offers the button',
+        (WidgetTester tester) async {
+      final apiClient = ApiClient();
+      final jobs = _MockEmployeeJobs(apiClient, initialJobs: [
+        _job('job-emp-rejected', 'active',
+            cancellationRequestStatus: 'rejected'),
+      ]);
+      await tester.pumpWidget(_employeeApp(jobs));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(
+              const Key('employee_cancel_request_rejected_job-emp-rejected')),
+          findsOneWidget);
+      expect(
+          find.byKey(const Key('employee_cancel_job_button_job-emp-rejected')),
+          findsOneWidget);
     });
   });
 

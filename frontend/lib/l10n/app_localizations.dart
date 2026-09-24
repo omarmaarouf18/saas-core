@@ -1503,6 +1503,72 @@ abstract class AppLocalizations {
   /// **'Confirm Cancel'**
   String get cancelJobConfirm;
 
+  /// No description provided for @cancelRequestHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Cancellation'**
+  String get cancelRequestHeader;
+
+  /// No description provided for @cancelRequestBodyLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a reason for requesting cancellation. Your request will be sent to the business owner for approval — the job stays active until they respond.'**
+  String get cancelRequestBodyLong;
+
+  /// No description provided for @cancelRequestConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Request'**
+  String get cancelRequestConfirm;
+
+  /// No description provided for @cancelRequestPendingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation requested — waiting for owner approval.'**
+  String get cancelRequestPendingBanner;
+
+  /// No description provided for @cancelRequestRejectedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The business owner declined your cancellation request. You remain assigned to this job.'**
+  String get cancelRequestRejectedBanner;
+
+  /// No description provided for @cancelRequestSentMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation request sent to the business owner.'**
+  String get cancelRequestSentMsg;
+
+  /// No description provided for @employeeRequestCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Cancellation'**
+  String get employeeRequestCancelButton;
+
+  /// No description provided for @ownerCancelRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee requested cancellation'**
+  String get ownerCancelRequestTitle;
+
+  /// No description provided for @ownerCancelRequestApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve Cancellation'**
+  String get ownerCancelRequestApprove;
+
+  /// No description provided for @ownerCancelRequestDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Request'**
+  String get ownerCancelRequestDecline;
+
+  /// No description provided for @ownerCancelRequestResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Request resolved.'**
+  String get ownerCancelRequestResolved;
+
   /// No description provided for @locationPermissionDeniedDefault.
   ///
   /// In en, this message translates to:

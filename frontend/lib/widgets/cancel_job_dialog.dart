@@ -11,16 +11,30 @@ class CancelJobDialog extends StatefulWidget {
   final String jobId;
   final Future<void> Function(String reason) onConfirm;
 
+  /// Optional request-flow copy overrides (ADR-0027): when set, the dialog
+  /// presents itself as a cancellation REQUEST subject to owner approval
+  /// rather than an immediate cancellation. Null (default) keeps the
+  /// legacy immediate-cancel copy used by the owner/customer paths.
+  final String? titleText;
+  final String? bodyText;
+  final String? confirmText;
+
   const CancelJobDialog({
     super.key,
     required this.jobId,
     required this.onConfirm,
+    this.titleText,
+    this.bodyText,
+    this.confirmText,
   });
 
   static Future<bool?> show(
     BuildContext context, {
     required String jobId,
     required Future<void> Function(String reason) onConfirm,
+    String? titleText,
+    String? bodyText,
+    String? confirmText,
   }) {
     return showDialog<bool>(
       context: context,
@@ -28,6 +42,9 @@ class CancelJobDialog extends StatefulWidget {
       builder: (context) => CancelJobDialog(
         jobId: jobId,
         onConfirm: onConfirm,
+        titleText: titleText,
+        bodyText: bodyText,
+        confirmText: confirmText,
       ),
     );
   }
@@ -53,14 +70,14 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
     final isReasonEmpty = _reasonController.text.trim().isEmpty;
 
     return AlertDialog(
-      title: Text(l10n.cancelJobHeader(widget.jobId)),
+      title: Text(widget.titleText ?? l10n.cancelJobHeader(widget.jobId)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.cancelReasonRequiredLong,
+              widget.bodyText ?? l10n.cancelReasonRequiredLong,
               style: AppTypography.bodyMd.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -92,7 +109,7 @@ class _CancelJobDialogState extends State<CancelJobDialog> {
         ),
         PrimaryButton(
           key: const Key('confirm_cancel_button'),
-          text: l10n.cancelJobConfirm,
+          text: widget.confirmText ?? l10n.cancelJobConfirm,
           isFullWidth: false,
           isDestructive: true,
           isLoading: _isSubmitting,

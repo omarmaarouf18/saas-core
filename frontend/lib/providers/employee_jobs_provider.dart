@@ -201,7 +201,12 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> cancelJob({
+  /// Requests cancellation of an assigned job (ADR-0027): the employee asks,
+  /// the owner approves. This REPLACES the old direct cancelJob (removed —
+  /// employees can no longer cancel through POST /users/jobs/cancel).
+  /// On success the local entry is marked with the pending request state
+  /// (status UNCHANGED — the trip continues until the owner responds).
+  Future<Map<String, dynamic>> requestCancellation({
     required String jobId,
     required String reason,
     required String employeeToken,
@@ -219,7 +224,7 @@ class EmployeeJobsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await apiClient.post('/users/jobs/cancel', {
+      final res = await apiClient.post('/users/jobs/request-cancellation', {
         'job_id': jobId,
         'reason': trimmedReason,
         'requester_id': employeeToken,
@@ -234,12 +239,12 @@ class EmployeeJobsProvider extends ChangeNotifier {
           employeeId: existing.employeeId,
           userId: existing.userId,
           serviceId: existing.serviceId,
-          status: 'cancelled',
+          status: existing.status,
           location: existing.location,
           destination: existing.destination,
           currentLocation: existing.currentLocation,
           paymentMethod: existing.paymentMethod,
-          cancellationReason: trimmedReason,
+          cancellationReason: existing.cancellationReason,
           lockedEscrowAmount: existing.lockedEscrowAmount,
           suggestedPrice: existing.suggestedPrice,
           proposedPrice: existing.proposedPrice,
@@ -249,15 +254,21 @@ class EmployeeJobsProvider extends ChangeNotifier {
           currentOfferedEmployeeId: existing.currentOfferedEmployeeId,
           offerExpiresAt: existing.offerExpiresAt,
           offeredEmployeeIds: existing.offeredEmployeeIds,
+          cancellationRequestReason: trimmedReason,
+          cancellationRequestedAt: DateTime.now(),
+          cancellationRequestStatus: 'pending',
           createdAt: existing.createdAt,
           updatedAt: DateTime.now(),
         );
       }
 
       if (res is Map<String, dynamic>) return res;
-      return {'message': 'job cancelled successfully', 'status': 'cancelled'};
+      return {
+        'message': 'cancellation request submitted for owner approval',
+        'cancellation_request_status': 'pending'
+      };
     } catch (e) {
-      debugPrint('Error cancelling job: $e');
+      debugPrint('Error requesting cancellation: $e');
       _error = friendlyErrorMessage(e);
       rethrow;
     } finally {

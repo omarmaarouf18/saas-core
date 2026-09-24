@@ -1183,14 +1183,50 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 ],
               ],
             ),
-            if (isCancellable) ...[
+            // Cancellation-request states (ADR-0027): a live pending request
+            // replaces the button; a rejected outcome stays visible.
+            if (job.cancellationRequestStatus == 'pending') ...[
+              const SizedBox(height: AppSpacing.sm),
+              ThemedPanel(
+                  key: Key('employee_cancel_request_pending_${job.id}'),
+                  color: AppColors.warning.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.defaultBorder,
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.3)),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    l10n.cancelRequestPendingBanner,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.warning,
+                    ),
+                  )),
+            ] else if (job.cancellationRequestStatus == 'rejected') ...[
+              const SizedBox(height: AppSpacing.sm),
+              ThemedPanel(
+                  key: Key('employee_cancel_request_rejected_${job.id}'),
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.defaultBorder,
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    l10n.cancelRequestRejectedBanner,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.error,
+                    ),
+                  )),
+            ],
+            if (isCancellable &&
+                job.cancellationRequestStatus != 'pending') ...[
               const SizedBox(height: AppSpacing.sm),
               SecondaryButton(
                 key: Key('employee_cancel_job_button_${job.id}'),
-                text: l10n.ownerHomeCancelJob,
+                text: l10n.employeeRequestCancelButton,
                 icon: Icons.cancel_outlined,
                 isOutlined: true,
-                onPressed: () => _confirmAndCancelJob(job),
+                onPressed: () => _requestCancellation(job),
               ),
             ],
           ],
@@ -1199,32 +1235,31 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     );
   }
 
-  /// Employee-initiated cancellation with a recorded reason. Mirrors the
-  /// COD/non-COD success messaging used by job_status_screen so escrow
-  /// releases stay legible to the cancelling party, then refreshes the
-  /// assigned-jobs list.
-  Future<void> _confirmAndCancelJob(Job job) async {
+  /// Employee-initiated cancellation REQUEST (ADR-0027): sends the reason
+  /// to the business owner for approval via the request-cancellation
+  /// endpoint. The job is NOT cancelled here — it stays assigned until the
+  /// owner responds, then the assigned-jobs list is refreshed.
+  Future<void> _requestCancellation(Job job) async {
     final l10n = AppLocalizations.of(context)!;
     await CancelJobDialog.show(
       context,
       jobId: job.id,
+      titleText: l10n.cancelRequestHeader,
+      bodyText: l10n.cancelRequestBodyLong,
+      confirmText: l10n.cancelRequestConfirm,
       onConfirm: (reason) async {
         final auth = Provider.of<AuthProvider>(context, listen: false);
         final jobsProvider =
             Provider.of<EmployeeJobsProvider>(context, listen: false);
-        await jobsProvider.cancelJob(
+        await jobsProvider.requestCancellation(
           jobId: job.id,
           reason: reason,
           employeeToken: auth.token!,
         );
         if (!mounted) return;
-        final isNonCod = job.paymentMethod.toLowerCase() != 'cod' &&
-            job.status.toLowerCase() != 'pending_dispatch';
         ThemedSnackBar.showSuccess(
           context,
-          isNonCod
-              ? l10n.ownerHomeJobCancelledEscrowRefunded
-              : l10n.ownerHomeJobCancelled,
+          l10n.cancelRequestSentMsg,
         );
         await _refreshJobs();
       },
