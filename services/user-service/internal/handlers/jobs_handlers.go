@@ -21,6 +21,10 @@ import (
 
 const EmployeeLocationFreshnessWindow = 5 * time.Minute
 
+// CancellationRequestExpiry is the owner-response window for an employee's
+// cancellation request (ADR-0027), measured from CancellationRequestedAt.
+const CancellationRequestExpiry = 15 * time.Minute
+
 var (
 	ErrNoCouriersAvailable         = errors.New("no couriers available")
 	ErrEmployeeLocationUnavailable = errors.New("employee location unavailable")
@@ -925,6 +929,9 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	u.checkLazyPriceProposalExpiry(ctx, job)
 	if u.checkCascadeOfferExpiry(ctx, job) {
+		job = u.store.GetJob(ctx, id)
+	}
+	if u.checkLazyCancellationRequestExpiry(ctx, job) {
 		job = u.store.GetJob(ctx, id)
 	}
 
@@ -2650,6 +2657,123 @@ func (u *UserService) broadcastJobAlert(job *models.Job, svc *models.Service) {
 // POST /users/jobs/cancel
 // ---------------------------------------------------------------------------
 
+// cancelExecError carries the exact HTTP status/body a cancellation
+// execution failure must produce. Both CancelJob and the
+// cancellation-request accept path map through writeCancellationError,
+// so the owner/customer responses stay byte-identical to the legacy
+// CancelJob behavior while sharing one money-moving implementation.
+type cancelExecError struct {
+	status int
+	body   map[string]string
+}
+
+func (e *cancelExecError) Error() string { return e.body["error"] }
+
+func writeCancellationError(w http.ResponseWriter, err error) {
+	var ce *cancelExecError
+	if errors.As(err, &ce) {
+		writeJSON(w, ce.status, ce.body)
+		return
+	}
+	writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+}
+
+// executeJobCancellation performs the money + status + courier-lock + audit
+// work of cancelling a job. Shared by CancelJob (owner/customer direct path)
+// and the cancellation-request accept path (ADR-0027) — one implementation,
+// never duplicated. Callers perform their own auth, state, and CAS gating;
+// on success the job is cancelled with reason recorded.
+func (u *UserService) executeJobCancellation(ctx context.Context, job *models.Job, reason, actorID string, isOwner bool, clientIP string) error {
+	// State-specific cancellation rules (moved verbatim from CancelJob).
+	switch job.Status {
+	case models.JobStatusCompleted:
+		return &cancelExecError{status: http.StatusConflict, body: map[string]string{"error": "job already completed"}}
+	case models.JobStatusCancelled:
+		return &cancelExecError{status: http.StatusConflict, body: map[string]string{"error": "job already cancelled"}}
+	case models.JobStatusActive:
+		// Active jobs can only be cancelled by the owner
+		if !isOwner {
+			// FLAGGED: Customers cannot directly cancel active/in-progress jobs. This prevents them from cancelling
+			// out from under an employee who is already working. They must go through a complaint ticket.
+			return &cancelExecError{status: http.StatusForbidden, body: map[string]string{
+				"error": "customer-initiated cancellation of active jobs is not allowed. Please open a complaint ticket.",
+			}}
+		}
+	case models.JobStatusPending, models.JobStatusPendingDispatch:
+		// Both owner and customer can cancel pending or pending_dispatch jobs.
+	}
+
+	// Refund escrow if not COD and not pending_dispatch (escrow is not locked for pending_dispatch jobs until courier acceptance)
+	if job.Status != models.JobStatusPendingDispatch && job.PaymentMethod != "cod" {
+		svc := u.store.GetServiceByID(ctx, job.ServiceID)
+		if svc == nil {
+			return &cancelExecError{status: http.StatusInternalServerError, body: map[string]string{"error": "service not found for job"}}
+		}
+		// Refund exactly the amount locked at booking time — see comment below.
+		// (Recomputing a price here is intentionally not done: see ADR/commit
+		// history around 2a3712d and the CompleteJob fallback fix for why
+		// recomputed distance-based pricing must never silently substitute for
+		// the locked escrow amount.)
+		var amount float64
+
+		if job.LockedEscrowAmount == 0 {
+			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)
+			handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", actorID, job.OwnerID, fmt.Sprintf("CancelJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), clientIP)
+			return &cancelExecError{status: http.StatusBadRequest, body: map[string]string{
+				"error":   "escrow_amount_unrecorded",
+				"message": "This job has no recorded locked escrow amount. Refund aborted for security.",
+			}}
+		}
+
+		// Refund exactly the amount that was locked for THIS job at booking
+		// time. Recomputing from current service pricing (above) would strand
+		// the residual (LockedEscrowAmount - amount) in escrow forever on a
+		// cancelled job if the owner repriced the service mid-job. Refunding
+		// the exact locked amount both prevents drawing down other jobs'
+		// escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
+		amount = job.LockedEscrowAmount
+
+		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+			return &cancelExecError{status: http.StatusInternalServerError, body: map[string]string{"error": "failed to refund escrow: " + err.Error()}}
+		}
+	}
+
+	if job.PaymentMethod == "cod" || job.Status == models.JobStatusPendingDispatch {
+		// COD jobs hold no escrow, and pending_dispatch jobs have not locked escrow yet;
+		// the non-money cancel applies directly.
+		if err := u.store.CancelJob(ctx, job.ID, reason); err != nil {
+			if strings.Contains(err.Error(), "not in a cancellable state") {
+				return &cancelExecError{status: http.StatusConflict, body: map[string]string{"error": err.Error()}}
+			}
+			return &cancelExecError{status: http.StatusInternalServerError, body: map[string]string{"error": "failed to cancel job: " + err.Error()}}
+		}
+	} else {
+		// Non-COD: RefundEscrow above performed the guarded money transition
+		// and flipped the job to cancelled; stamp the caller's reason through
+		// the narrow reason-only operation (QA audit Q5).
+		if err := u.store.SetCancellationReason(ctx, job.ID, reason); err != nil {
+			return &cancelExecError{status: http.StatusInternalServerError, body: map[string]string{"error": "failed to record cancellation reason: " + err.Error()}}
+		}
+	}
+
+	if job.EmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
+	}
+	if job.CurrentOfferedEmployeeID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.CurrentOfferedEmployeeID, job.ID)
+	}
+
+	// Clear any cancellation-request state: a directly-cancelled job must not
+	// keep a stale "pending" request (best-effort; never fails the cancel).
+	_ = u.store.ClearCancellationRequest(ctx, job.ID)
+
+	// Audit-log job cancellation
+	handlerutil.ShipSecurityEvent(ctx, "JOB_CANCELLED", "user-service", actorID, job.OwnerID, fmt.Sprintf("cancelled job %s, reason: %s", job.ID, reason), clientIP)
+
+	return nil
+}
+
 func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
 	if limited, remaining := u.cancelJobLimiter.CheckAndRecord(ip); limited {
@@ -2731,7 +2855,10 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	var resolvedRequester string
 	if !isInternal {
 		var err error
-		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
+		// ADR-0027: employees no longer cancel directly — they submit a
+		// cancellation request (POST /users/jobs/request-cancellation) for
+		// owner approval. Owner and customer/user paths are unchanged.
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "user", "customer")
 		if err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
 			return
@@ -2759,7 +2886,304 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// State-specific cancellation rules
+	// Money + status + lock + audit work lives in the shared implementation
+	// (also used by the cancellation-request accept path).
+	if err := u.executeJobCancellation(ctx, job, req.Reason, resolvedRequester, isOwner, handlerutil.GetClientIP(r)); err != nil {
+		writeCancellationError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "job cancelled successfully",
+		"job_id":  job.ID,
+		"status":  models.JobStatusCancelled,
+	})
+}
+
+// checkLazyCancellationRequestExpiry evaluates the 15-minute owner-response
+// window for a pending employee cancellation request (ADR-0027), mirroring
+// checkLazyPriceProposalExpiry: no background job, checked whenever the job
+// is next read. On expiry the employee's assignment is released and the job
+// returns to fresh-dispatch state via advanceCascade — the trip itself is
+// NOT cancelled (timeout ≠ approval). Returns true when the job was
+// terminally handled (or raced) so callers refresh their read.
+func (u *UserService) checkLazyCancellationRequestExpiry(ctx context.Context, job *models.Job) bool {
+	if job == nil {
+		return false
+	}
+	if job.CancellationRequestStatus != "pending" {
+		return false
+	}
+	if job.CancellationRequestedAt == nil {
+		return false
+	}
+	if job.Status != models.JobStatusActive && job.Status != models.JobStatusAwaitingPriceResponse {
+		return false
+	}
+	if time.Now().UTC().Before(job.CancellationRequestedAt.Add(CancellationRequestExpiry)) {
+		return false
+	}
+
+	departedID := job.EmployeeID
+
+	// Money leg first: return locked escrow to the owner wallet. Aborting
+	// here on failure changes nothing, so the next read retries cleanly.
+	// (RefundEscrow is cancel-coupled and unusable — it would cancel the
+	// trip; RollbackEscrow is wallet-only and the record is zeroed below.)
+	if job.LockedEscrowAmount > 0 {
+		if err := u.performRollbackEscrow(ctx, job.OwnerID, job.LockedEscrowAmount); err != nil {
+			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+			log.Printf("[ERROR] Failed to roll back escrow for cancellation-request expiry on job %s: %v", job.ID, err)
+			return false
+		}
+	}
+
+	// Exclude the departed courier from the next cascade round so a
+	// DIFFERENT employee is found.
+	excluded := make([]string, 0, len(job.OfferedEmployeeIDs)+1)
+	for _, id := range job.OfferedEmployeeIDs {
+		if id != "" && id != departedID {
+			excluded = append(excluded, id)
+		}
+	}
+	if departedID != "" {
+		excluded = append(excluded, departedID)
+	}
+
+	if err := u.store.ExpireCancellationRequest(ctx, job.ID, excluded); err != nil {
+		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
+			// Lost a race with an owner response (or a concurrent expiry):
+			// the job already moved — caller must refresh, nothing to apply.
+			return true
+		}
+		// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+		log.Printf("[ERROR] Failed to persist cancellation-request expiry for job %s: %v", job.ID, err)
+		return false
+	}
+
+	// Mutate the in-memory copy to match persisted state (price-version pattern).
+	now := time.Now().UTC()
+	job.Status = models.JobStatusPendingDispatch
+	job.EmployeeID = ""
+	job.CurrentOfferedEmployeeID = ""
+	job.OfferExpiresAt = nil
+	job.OfferedEmployeeIDs = excluded
+	job.ProposedPrice = nil
+	job.ProposedBy = ""
+	job.AgreedPrice = nil
+	job.PriceProposalExpiresAt = nil
+	job.AssignedEmployeeLocation = nil
+	job.LockedEscrowAmount = 0
+	job.CancellationRequestStatus = "expired"
+	job.UpdatedAt = now
+
+	if departedID != "" {
+		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, departedID, job.ID)
+	}
+
+	// Re-dispatch through the REAL cascade (finds the next candidate or
+	// marks unavailable when exhausted — both handled inside).
+	if err := u.advanceCascade(ctx, job); err != nil {
+		// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
+		log.Printf("[ERROR] Failed to re-dispatch job %s after cancellation-request expiry: %v", job.ID, err)
+	}
+
+	u.notifyOwnerCancellationExpired(job, departedID)
+	return true
+}
+
+// notifyCancellationParty sends a fire-and-forget job notification reusing
+// the broadcastCourierAccepted POST /notifications/send shape (goroutine +
+// panic guard + internal token). No new notification system.
+func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, notifType, title, body string) {
+	if job == nil || userID == "" {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[USER] Recovered from panic in notifyCancellationParty: %v", r)
+			}
+		}()
+
+		payload := map[string]any{
+			"type":      notifType,
+			"tenant_id": job.OwnerID,
+			"user_id":   userID,
+			"title":     title,
+			"body":      body,
+			"roles":     []string{role},
+		}
+
+		bodyBytes, err := json.Marshal(payload)
+		if err != nil {
+			return
+		}
+
+		notificationURL := u.notificationServiceURL
+		if notificationURL == "" {
+			notificationURL = "http://notification-service:3004"
+		}
+		url := fmt.Sprintf("%s/notifications/send", notificationURL)
+		// #nosec G704 //nolint:gosec -- notificationURL is trusted internal config
+		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Internal-Token", u.internalServiceToken)
+
+		if u.notificationClient != nil {
+			resp, err := u.notificationClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		} else if u.httpClient != nil {
+			resp, err := u.httpClient.Do(req)
+			if err == nil && resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}()
+}
+
+func (u *UserService) notifyOwnerCancellationRequested(job *models.Job, employeeID, reason string) {
+	u.notifyCancellationParty(job, job.OwnerID, "owner", "cancellation_requested",
+		"Cancellation Requested",
+		fmt.Sprintf("Courier %s requested cancellation of job %s: %s. Respond within 15 minutes.", employeeID, job.ID, reason))
+}
+
+func (u *UserService) notifyEmployeeCancellationResolved(job *models.Job, employeeID, decision string) {
+	body := fmt.Sprintf("Your cancellation request for job %s was declined by the business owner. You remain assigned.", job.ID)
+	if decision == "accept" {
+		body = fmt.Sprintf("Your cancellation request for job %s was approved by the business owner. The job has been cancelled.", job.ID)
+	}
+	u.notifyCancellationParty(job, employeeID, "employee", "cancellation_resolved",
+		"Cancellation Request "+decision, body)
+}
+
+func (u *UserService) notifyOwnerCancellationExpired(job *models.Job, departedID string) {
+	u.notifyCancellationParty(job, job.OwnerID, "owner", "cancellation_request_expired",
+		"Cancellation Request Expired",
+		fmt.Sprintf("The cancellation request window lapsed with no response; courier %s was unassigned and job %s returned to dispatch.", departedID, job.ID))
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/request-cancellation (ADR-0027)
+// ---------------------------------------------------------------------------
+
+func (u *UserService) RequestCancellation(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.requestCancellationLimiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID          string `json:"job_id"`
+		RequesterID    string `json:"requester_id"`
+		RequesterToken string `json:"requester_token"`
+		Reason         string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	// Same reason validation as CancelJob: required, non-empty, ≤500 runes.
+	req.Reason = strings.TrimSpace(req.Reason)
+	if req.Reason == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+	if len([]rune(req.Reason)) > 500 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason cannot exceed 500 characters"})
+		return
+	}
+
+	// Resolve requester: employee role only (internal-service branch mirrors CancelJob).
+	var resolvedRequester string
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	if isInternal {
+		resolvedRequester = req.RequesterID
+		if resolvedRequester == "" {
+			resolvedRequester = req.RequesterToken
+		}
+	} else {
+		requesterToken := r.Header.Get("Authorization")
+		if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+			requesterToken = strings.TrimSpace(requesterToken[7:])
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterToken
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterID
+		}
+		if requesterToken == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
+			return
+		}
+		var err error
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "employee")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+	}
+	if resolvedRequester == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester_id parameter or Authorization header is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	// Evaluate lazy expiries first (price + cancellation), then refresh the
+	// read so all checks below run on current state (GetJob pattern).
+	lazyFired := u.checkLazyPriceProposalExpiry(ctx, job)
+	if u.checkLazyCancellationRequestExpiry(ctx, job) {
+		lazyFired = true
+	}
+	if lazyFired {
+		job = u.store.GetJob(ctx, req.JobID)
+		if job == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			return
+		}
+	}
+
+	// Only the ASSIGNED employee may request (offered-but-unaccepted
+	// couriers already have the decline path).
+	if job.EmployeeID == "" || resolvedRequester != job.EmployeeID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned employee can request cancellation"})
+		return
+	}
+
+	// Assignable statuses only (mirrors CancelJob's state-rule style).
 	switch job.Status {
 	case models.JobStatusCompleted:
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed"})
@@ -2767,91 +3191,222 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	case models.JobStatusCancelled:
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already cancelled"})
 		return
-	case models.JobStatusActive:
-		// Active jobs can only be cancelled by the owner
-		if !isOwner {
-			// FLAGGED: Customers cannot directly cancel active/in-progress jobs. This prevents them from cancelling
-			// out from under an employee who is already working. They must go through a complaint ticket.
-			writeJSON(w, http.StatusForbidden, map[string]string{
-				"error": "customer-initiated cancellation of active jobs is not allowed. Please open a complaint ticket.",
-			})
-			return
-		}
-	case models.JobStatusPending, models.JobStatusPendingDispatch:
-		// Both owner and customer can cancel pending or pending_dispatch jobs.
+	case models.JobStatusActive, models.JobStatusAwaitingPriceResponse:
+		// Requestable.
+	default:
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job_state_changed",
+			"message": "job is not in an assignable state",
+		})
+		return
 	}
 
-	// Refund escrow if not COD and not pending_dispatch (escrow is not locked for pending_dispatch jobs until courier acceptance)
-	if job.Status != models.JobStatusPendingDispatch && job.PaymentMethod != "cod" {
-		svc := u.store.GetServiceByID(ctx, job.ServiceID)
-		if svc == nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service not found for job"})
-			return
-		}
-		// Refund exactly the amount locked at booking time — see comment below.
-		// (Recomputing a price here is intentionally not done: see ADR/commit
-		// history around 2a3712d and the CompleteJob fallback fix for why
-		// recomputed distance-based pricing must never silently substitute for
-		// the locked escrow amount.)
-		var amount float64
-
-		if job.LockedEscrowAmount == 0 {
-			log.Printf("[SECURITY WARNING] LockedEscrowAmount is 0 for non-COD job %s during CancelJob. Refund aborted.", job.ID)
-			handlerutil.ShipSecurityEvent(ctx, "ESCROW_UNRECORDED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("CancelJob aborted: LockedEscrowAmount is 0 for non-COD job %s", job.ID), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error":   "escrow_amount_unrecorded",
-				"message": "This job has no recorded locked escrow amount. Refund aborted for security.",
-			})
-			return
-		}
-
-		// Refund exactly the amount that was locked for THIS job at booking
-		// time. Recomputing from current service pricing (above) would strand
-		// the residual (LockedEscrowAmount - amount) in escrow forever on a
-		// cancelled job if the owner repriced the service mid-job. Refunding
-		// the exact locked amount both prevents drawing down other jobs'
-		// escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
-		amount = job.LockedEscrowAmount
-
-		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund escrow: " + err.Error()})
-			return
-		}
+	if job.CancellationRequestStatus == "pending" {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "cancellation_request_pending",
+			"message": "a cancellation request is already pending for this job",
+		})
+		return
 	}
 
-	if job.PaymentMethod == "cod" || job.Status == models.JobStatusPendingDispatch {
-		// COD jobs hold no escrow, and pending_dispatch jobs have not locked escrow yet;
-		// the non-money cancel applies directly.
-		if err := u.store.CancelJob(ctx, job.ID, req.Reason); err != nil {
-			if strings.Contains(err.Error(), "not in a cancellable state") {
-				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
-				return
+	now := time.Now().UTC()
+	if err := u.store.SubmitCancellationRequest(ctx, job.ID, req.Reason, now); err != nil {
+		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
+			// Lost a race: re-read to tell already-pending apart from moved state.
+			if refreshed := u.store.GetJob(ctx, job.ID); refreshed != nil {
+				if refreshed.CancellationRequestStatus == "pending" {
+					writeJSON(w, http.StatusConflict, map[string]string{
+						"error":   "cancellation_request_pending",
+						"message": "a cancellation request is already pending for this job",
+					})
+					return
+				}
 			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "job status changed while submitting the cancellation request",
+			})
 			return
 		}
-	} else {
-		// Non-COD: RefundEscrow above performed the guarded money transition
-		// and flipped the job to cancelled; stamp the caller's reason through
-		// the narrow reason-only operation (QA audit Q5).
-		if err := u.store.SetCancellationReason(ctx, job.ID, req.Reason); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record cancellation reason: " + err.Error()})
-			return
-		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to submit cancellation request: " + err.Error()})
+		return
 	}
 
-	if job.EmployeeID != "" {
-		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
-	}
-	if job.CurrentOfferedEmployeeID != "" {
-		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, job.CurrentOfferedEmployeeID, job.ID)
-	}
-
-	// Audit-log job cancellation
-	handlerutil.ShipSecurityEvent(ctx, "JOB_CANCELLED", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("cancelled job %s, reason: %s", job.ID, req.Reason), handlerutil.GetClientIP(r))
+	u.notifyOwnerCancellationRequested(job, resolvedRequester, req.Reason)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message": "job cancelled successfully",
+		"message":                     "cancellation request submitted for owner approval",
+		"job_id":                      job.ID,
+		"cancellation_request_status": "pending",
+	})
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/jobs/respond-cancellation (ADR-0027)
+// ---------------------------------------------------------------------------
+
+func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request) {
+	ip := handlerutil.GetIP(r)
+	if limited, remaining := u.respondCancellationLimiter.CheckAndRecord(ip); limited {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
+		})
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID          string `json:"job_id"`
+		Decision       string `json:"decision"` // "accept" or "decline" (RespondPrice vocabulary)
+		RequesterID    string `json:"requester_id,omitempty"`
+		RequesterToken string `json:"requester_token,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	decision := strings.ToLower(strings.TrimSpace(req.Decision))
+	if decision != "accept" && decision != "decline" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_decision",
+			"message": "decision must be 'accept' or 'decline'",
+		})
+		return
+	}
+
+	// Resolve requester: owner role only (internal-service branch mirrors CancelJob).
+	var resolvedRequester string
+	isInternal := u.internalServiceToken != "" &&
+		subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1
+	if isInternal {
+		resolvedRequester = req.RequesterID
+		if resolvedRequester == "" {
+			resolvedRequester = req.RequesterToken
+		}
+	} else {
+		requesterToken := r.Header.Get("Authorization")
+		if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+			requesterToken = strings.TrimSpace(requesterToken[7:])
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
+		if requesterToken == "" {
+			requesterToken = r.URL.Query().Get("requester_id")
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterToken
+		}
+		if requesterToken == "" {
+			requesterToken = req.RequesterID
+		}
+		if requesterToken == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
+			return
+		}
+		var err error
+		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner")
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			return
+		}
+	}
+	if resolvedRequester == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	// Evaluate lazy expiries first: if OUR request just expired, this
+	// response is late by definition — fall through to the expired no-op.
+	lazyFired := u.checkLazyPriceProposalExpiry(ctx, job)
+	if u.checkLazyCancellationRequestExpiry(ctx, job) {
+		lazyFired = true
+	}
+	if lazyFired {
+		job = u.store.GetJob(ctx, req.JobID)
+		if job == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			return
+		}
+	}
+
+	if resolvedRequester != job.OwnerID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the job owner can respond to a cancellation request"})
+		return
+	}
+
+	// CAS gate on pending: a late response landing after lazy expiry (or a
+	// racing second response) misses instead of re-applying.
+	newStatus := "rejected"
+	if decision == "accept" {
+		newStatus = "approved"
+	}
+	if err := u.store.CASCancellationRequestStatus(ctx, job.ID, newStatus); err != nil {
+		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
+			if refreshed := u.store.GetJob(ctx, job.ID); refreshed != nil {
+				if refreshed.CancellationRequestStatus == "expired" {
+					writeJSON(w, http.StatusConflict, map[string]string{
+						"error":   "cancellation_request_expired",
+						"message": "this cancellation request already expired and was auto-resolved",
+					})
+					return
+				}
+			}
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job_state_changed",
+				"message": "cancellation request was already resolved",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to resolve cancellation request: " + err.Error()})
+		return
+	}
+
+	employeeID := job.EmployeeID
+
+	if decision == "decline" {
+		u.notifyEmployeeCancellationResolved(job, employeeID, "declined")
+		writeJSON(w, http.StatusOK, map[string]any{
+			"message":                     "cancellation request declined; job continues with the assigned employee",
+			"job_id":                      job.ID,
+			"cancellation_request_status": "rejected",
+		})
+		return
+	}
+
+	// Accept: execute the real cancellation through the SHARED implementation
+	// (refund/escrow path, reason, locks, audit) with the employee's
+	// original reason — never duplicated here. Owner-authorized by construction.
+	if err := u.executeJobCancellation(ctx, job, job.CancellationRequestReason, resolvedRequester, true, handlerutil.GetClientIP(r)); err != nil {
+		// Best-effort revert of the CAS gate so the request is not stuck
+		// approved on a non-cancelled job; the cancel failure itself is
+		// what the caller sees.
+		if rerr := u.store.ReopenCancellationRequest(ctx, job.ID); rerr != nil {
+			log.Printf("[ERROR] Failed to reopen cancellation request for job %s after cancellation failure: %v", job.ID, rerr)
+		}
+		writeCancellationError(w, err)
+		return
+	}
+
+	u.notifyEmployeeCancellationResolved(job, employeeID, "approved")
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "cancellation request approved; job cancelled",
 		"job_id":  job.ID,
 		"status":  models.JobStatusCancelled,
 	})

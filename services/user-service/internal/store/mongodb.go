@@ -588,6 +588,138 @@ func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, propose
 	return nil
 }
 
+// SubmitCancellationRequest records an employee's cancellation request with
+// CAS: exactly one live ("pending") request may exist. The filter pins both
+// the assignable statuses and the not-pending precondition, so concurrent
+// double-submits collapse to a single winner.
+func (s *MongoDB) SubmitCancellationRequest(ctx context.Context, id, reason string, requestedAt time.Time) error {
+	filter := bson.M{
+		"_id":    id,
+		"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusAwaitingPriceResponse}},
+		"$or": []bson.M{
+			{"cancellation_request_status": bson.M{"$exists": false}},
+			{"cancellation_request_status": bson.M{"$ne": "pending"}},
+		},
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter,
+		bson.M{"$set": bson.M{
+			"cancellation_request_reason": reason,
+			"cancellation_requested_at":   requestedAt,
+			"cancellation_request_status": "pending",
+			"updated_at":                  time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: submit cancellation request: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("cancellation_request_state_changed: job %q not in an assignable status or a cancellation request is already pending", id)
+	}
+	return nil
+}
+
+// CASCancellationRequestStatus flips a pending request to a terminal state
+// ("approved", "rejected") or to "expired". The filter carries the expected
+// pre-state so a late owner response landing after lazy expiry (or a racing
+// second response) misses instead of re-applying — the UpdateJobPriceProposal
+// job_state_changed pattern.
+func (s *MongoDB) CASCancellationRequestStatus(ctx context.Context, id, newStatus string) error {
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id":                         id,
+			"cancellation_request_status": "pending",
+		},
+		bson.M{"$set": bson.M{
+			"cancellation_request_status": newStatus,
+			"updated_at":                  time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: resolve cancellation request: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("cancellation_request_state_changed: job %q has no pending cancellation request", id)
+	}
+	return nil
+}
+
+// ReopenCancellationRequest flips an "approved" request back to "pending".
+// Best-effort revert used only when the accept-path's cancellation execution
+// fails after winning the CAS gate, so the request is not stuck approved on
+// a non-cancelled job.
+func (s *MongoDB) ReopenCancellationRequest(ctx context.Context, id string) error {
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id":                         id,
+			"cancellation_request_status": "approved",
+		},
+		bson.M{"$set": bson.M{
+			"cancellation_request_status": "pending",
+			"updated_at":                  time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: reopen cancellation request: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("cancellation_request_state_changed: job %q has no approved cancellation request to reopen", id)
+	}
+	return nil
+}
+
+// ClearCancellationRequest wipes all cancellation-request fields. Used
+// best-effort after a direct cancellation so a cancelled job never keeps a
+// stale "pending" request.
+func (s *MongoDB) ClearCancellationRequest(ctx context.Context, id string) error {
+	_, err := s.jobs.UpdateOne(ctx,
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{
+			"cancellation_request_reason": "",
+			"cancellation_requested_at":   nil,
+			"cancellation_request_status": "",
+			"updated_at":                  time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: clear cancellation request: %w", err)
+	}
+	return nil
+}
+
+// ExpireCancellationRequest releases one employee's assignment
+// after the request deadline passes WITHOUT cancelling the trip: status
+// returns to pending_dispatch with the departed courier excluded from the
+// next cascade round, negotiation leftovers cleared (AcceptJobOffer
+// recomputes suggested price and re-locks escrow but never overwrites a
+// stale agreed_price), locked escrow zeroed (the wallet leg already ran via
+// RollbackEscrow), and the request marked expired with its reason kept.
+func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excludedOfferedIDs []string) error {
+	filter := bson.M{
+		"_id":                         id,
+		"status":                      bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusAwaitingPriceResponse}},
+		"cancellation_request_status": "pending",
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter,
+		bson.M{"$set": bson.M{
+			"status":                      models.JobStatusPendingDispatch,
+			"employee_id":                 "",
+			"current_offered_employee_id": "",
+			"offer_expires_at":            nil,
+			"offered_employee_ids":        excludedOfferedIDs,
+			"proposed_price":              nil,
+			"proposed_by":                 "",
+			"agreed_price":                nil,
+			"price_proposal_expires_at":   nil,
+			"assigned_employee_location":  nil,
+			"locked_escrow_amount":        0,
+			"cancellation_request_status": "expired",
+			"updated_at":                  time.Now().UTC(),
+		}})
+	if err != nil {
+		return fmt.Errorf("store: expire cancellation request: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return fmt.Errorf("cancellation_request_state_changed: job %q has no pending cancellation request in an assignable status", id)
+	}
+	return nil
+}
+
 func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPrice *float64, status models.JobStatus) error {
 	filter := bson.M{
 		"_id":    id,

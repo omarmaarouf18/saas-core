@@ -71,44 +71,46 @@ return {0, lastUpdateMs}
 
 // UserService holds dependencies for the user-service handlers.
 type UserService struct {
-	store                     *store.MongoDB
-	authServiceURL            string
-	chatServiceURL            string
-	notificationServiceURL    string
-	limiter                   *handlerutil.RateLimiter
-	trackLimiter              *handlerutil.RateLimiter
-	proposePriceLimiter       *handlerutil.RateLimiter
-	respondPriceLimiter       *handlerutil.RateLimiter
-	cancelJobLimiter          *handlerutil.RateLimiter
-	rateJobLimiter            *handlerutil.RateLimiter
-	depositLimiter            *handlerutil.RateLimiter
-	ticketLimiter             *handlerutil.RateLimiter
-	ownerJobsLimiter          *handlerutil.RateLimiter
-	customerJobsLimiter       *handlerutil.RateLimiter
-	ledgerLimiter             *handlerutil.RateLimiter
-	ledgerIPLimiter           *handlerutil.RateLimiter
-	ratingsLimiter            *handlerutil.RateLimiter
-	reconciliationLimiter     *handlerutil.RateLimiter
-	completeJobLimiter        *handlerutil.RateLimiter
-	resolveReconLimiter       *handlerutil.RateLimiter
-	payoutLimiter             *handlerutil.RateLimiter
-	subscriptionLimiter       *handlerutil.RateLimiter
-	acceptOfferLimiter        *handlerutil.RateLimiter
-	declineOfferLimiter       *handlerutil.RateLimiter
-	availableEmployeesLimiter *handlerutil.RateLimiter
-	stopCascadeSweeper        chan struct{}
-	internalServiceToken      string
-	locationThrottleMu        sync.Mutex
-	locationLastUpdate        map[string]time.Time
-	locationInFlight          map[string]bool
-	authClient                *resilience.ResilienceClient
-	chatClient                *resilience.ResilienceClient
-	notificationClient        *resilience.ResilienceClient
-	httpClient                *http.Client
-	appEnv                    string
-	allowTestPaymentBypass    bool
-	electronicPaymentsEnabled bool
-	rdb                       *redis.Client
+	store                      *store.MongoDB
+	authServiceURL             string
+	chatServiceURL             string
+	notificationServiceURL     string
+	limiter                    *handlerutil.RateLimiter
+	trackLimiter               *handlerutil.RateLimiter
+	proposePriceLimiter        *handlerutil.RateLimiter
+	respondPriceLimiter        *handlerutil.RateLimiter
+	cancelJobLimiter           *handlerutil.RateLimiter
+	requestCancellationLimiter *handlerutil.RateLimiter
+	respondCancellationLimiter *handlerutil.RateLimiter
+	rateJobLimiter             *handlerutil.RateLimiter
+	depositLimiter             *handlerutil.RateLimiter
+	ticketLimiter              *handlerutil.RateLimiter
+	ownerJobsLimiter           *handlerutil.RateLimiter
+	customerJobsLimiter        *handlerutil.RateLimiter
+	ledgerLimiter              *handlerutil.RateLimiter
+	ledgerIPLimiter            *handlerutil.RateLimiter
+	ratingsLimiter             *handlerutil.RateLimiter
+	reconciliationLimiter      *handlerutil.RateLimiter
+	completeJobLimiter         *handlerutil.RateLimiter
+	resolveReconLimiter        *handlerutil.RateLimiter
+	payoutLimiter              *handlerutil.RateLimiter
+	subscriptionLimiter        *handlerutil.RateLimiter
+	acceptOfferLimiter         *handlerutil.RateLimiter
+	declineOfferLimiter        *handlerutil.RateLimiter
+	availableEmployeesLimiter  *handlerutil.RateLimiter
+	stopCascadeSweeper         chan struct{}
+	internalServiceToken       string
+	locationThrottleMu         sync.Mutex
+	locationLastUpdate         map[string]time.Time
+	locationInFlight           map[string]bool
+	authClient                 *resilience.ResilienceClient
+	chatClient                 *resilience.ResilienceClient
+	notificationClient         *resilience.ResilienceClient
+	httpClient                 *http.Client
+	appEnv                     string
+	allowTestPaymentBypass     bool
+	electronicPaymentsEnabled  bool
+	rdb                        *redis.Client
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -218,39 +220,41 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		// - user:rate_job (10/min): Job completion rating submissions; 10/min prevents rating spam.
 		// - user:deposit (10/min): Financial deposit attempts; 10/min provides strict financial abuse protection.
 		// - user:ticket (10/min): Support/complaint ticket creation budget reservation.
-		limiter:                   newHandlerLimiter(20, "user:track"),
-		trackLimiter:              newHandlerLimiter(20, "user:track"),
-		proposePriceLimiter:       newHandlerLimiter(20, "user:propose_price"),
-		respondPriceLimiter:       newHandlerLimiter(20, "user:respond_price"),
-		cancelJobLimiter:          newHandlerLimiter(10, "user:cancel_job"),
-		rateJobLimiter:            newHandlerLimiter(10, "user:rate_job"),
-		depositLimiter:            newHandlerLimiter(10, "user:deposit"),
-		ticketLimiter:             newHandlerLimiter(10, "user:ticket"),
-		ownerJobsLimiter:          newHandlerLimiter(60, "user:owner_jobs"),
-		customerJobsLimiter:       newHandlerLimiter(60, "user:customer_jobs"),
-		ledgerLimiter:             newHandlerLimiter(60, "user:ledger"),
-		ledgerIPLimiter:           newHandlerLimiter(60, "user:ledger_ip"),
-		ratingsLimiter:            newHandlerLimiter(30, "user:ratings"),
-		reconciliationLimiter:     newHandlerLimiter(30, "user:reconciliation"),
-		completeJobLimiter:        newHandlerLimiter(30, "user:complete_job"),
-		resolveReconLimiter:       newHandlerLimiter(30, "user:reconciliation_resolve"),
-		payoutLimiter:             newHandlerLimiter(30, "user:payout"),
-		subscriptionLimiter:       newHandlerLimiter(30, "user:subscription"),
-		acceptOfferLimiter:        newHandlerLimiter(30, "user:accept_offer"),
-		declineOfferLimiter:       newHandlerLimiter(30, "user:decline_offer"),
-		availableEmployeesLimiter: newHandlerLimiter(60, "user:available_employees"),
-		stopCascadeSweeper:        make(chan struct{}),
-		internalServiceToken:      cfg.InternalServiceToken,
-		locationLastUpdate:        make(map[string]time.Time),
-		locationInFlight:          make(map[string]bool),
-		rdb:                       rdb,
-		authClient:                authClient,
-		chatClient:                chatClient,
-		notificationClient:        notificationClient,
-		httpClient:                client,
-		appEnv:                    cfg.AppEnv,
-		allowTestPaymentBypass:    cfg.AllowTestPaymentBypass,
-		electronicPaymentsEnabled: cfg.ElectronicPaymentsEnabled,
+		limiter:                    newHandlerLimiter(20, "user:track"),
+		trackLimiter:               newHandlerLimiter(20, "user:track"),
+		proposePriceLimiter:        newHandlerLimiter(20, "user:propose_price"),
+		respondPriceLimiter:        newHandlerLimiter(20, "user:respond_price"),
+		cancelJobLimiter:           newHandlerLimiter(10, "user:cancel_job"),
+		requestCancellationLimiter: newHandlerLimiter(10, "user:request_cancellation"),
+		respondCancellationLimiter: newHandlerLimiter(10, "user:respond_cancellation"),
+		rateJobLimiter:             newHandlerLimiter(10, "user:rate_job"),
+		depositLimiter:             newHandlerLimiter(10, "user:deposit"),
+		ticketLimiter:              newHandlerLimiter(10, "user:ticket"),
+		ownerJobsLimiter:           newHandlerLimiter(60, "user:owner_jobs"),
+		customerJobsLimiter:        newHandlerLimiter(60, "user:customer_jobs"),
+		ledgerLimiter:              newHandlerLimiter(60, "user:ledger"),
+		ledgerIPLimiter:            newHandlerLimiter(60, "user:ledger_ip"),
+		ratingsLimiter:             newHandlerLimiter(30, "user:ratings"),
+		reconciliationLimiter:      newHandlerLimiter(30, "user:reconciliation"),
+		completeJobLimiter:         newHandlerLimiter(30, "user:complete_job"),
+		resolveReconLimiter:        newHandlerLimiter(30, "user:reconciliation_resolve"),
+		payoutLimiter:              newHandlerLimiter(30, "user:payout"),
+		subscriptionLimiter:        newHandlerLimiter(30, "user:subscription"),
+		acceptOfferLimiter:         newHandlerLimiter(30, "user:accept_offer"),
+		declineOfferLimiter:        newHandlerLimiter(30, "user:decline_offer"),
+		availableEmployeesLimiter:  newHandlerLimiter(60, "user:available_employees"),
+		stopCascadeSweeper:         make(chan struct{}),
+		internalServiceToken:       cfg.InternalServiceToken,
+		locationLastUpdate:         make(map[string]time.Time),
+		locationInFlight:           make(map[string]bool),
+		rdb:                        rdb,
+		authClient:                 authClient,
+		chatClient:                 chatClient,
+		notificationClient:         notificationClient,
+		httpClient:                 client,
+		appEnv:                     cfg.AppEnv,
+		allowTestPaymentBypass:     cfg.AllowTestPaymentBypass,
+		electronicPaymentsEnabled:  cfg.ElectronicPaymentsEnabled,
 	}
 	go u.startCascadeSweeper()
 	return u
@@ -295,6 +299,8 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
+	mux.HandleFunc("/users/jobs/request-cancellation", u.RequestCancellation)
+	mux.HandleFunc("/users/jobs/respond-cancellation", u.RespondCancellation)
 	mux.HandleFunc("/users/jobs/propose-price", u.ProposePrice)
 	mux.HandleFunc("/users/jobs/respond-price", u.RespondPrice)
 	mux.HandleFunc("/users/employee/jobs/{id}/accept", u.AcceptJobOffer)

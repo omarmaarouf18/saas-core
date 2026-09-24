@@ -2850,7 +2850,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 		_ = s.CreateJob(ctx, job)
 
-		// Subtest A: Employee of the job attempts to cancel the job -> rejected with 403 Forbidden
+		// Subtest A: Employee of the job attempts direct cancel -> rejected
+		// with 401 Unauthorized (ADR-0027 removed the employee role from
+		// CancelJob; employees must use request-cancellation instead).
 		t.Run("EmployeeAttemptsCancel", func(t *testing.T) {
 			reqBody := map[string]any{
 				"job_id":       job.ID,
@@ -2864,8 +2866,8 @@ func TestUserServiceHandlers(t *testing.T) {
 
 			u.CancelJob(rec, req)
 
-			if rec.Code != http.StatusForbidden {
-				t.Errorf("Expected 403 Forbidden, got %d. Body: %s", rec.Code, rec.Body.String())
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("Expected 401 Unauthorized, got %d. Body: %s", rec.Code, rec.Body.String())
 			}
 		})
 

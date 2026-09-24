@@ -440,7 +440,7 @@ var KnownEndpoints = map[string]struct {
 		Targets:     "Updates `jobs`, writes `wallets`, writes `ledger`.",
 	},
 	"POST /users/jobs/cancel": {
-		Permissions: "Owner or Customer JWT",
+		Permissions: "Owner or Customer JWT (employee role removed per ADR-0027)",
 		Function:    "Cancels an active job and processes escrow refunds. Accepts requester_id (legacy) or requester_token (preferred).",
 		Targets:     "Updates `jobs` collection. Updates `wallets` and `ledger` collections.",
 	},
@@ -614,6 +614,16 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Customer or Employee JWT",
 		Function:    "RespondPrice accepts or declines a price proposal for a transport job.",
 		Targets:     "Updates jobs agreed_price, status (active or cancelled), and cancellation_reason.",
+	},
+	"POST /users/jobs/request-cancellation": {
+		Permissions: "Employee JWT (assigned employee only)",
+		Function:    "RequestCancellation submits an employee cancellation request for owner approval; job status is unchanged.",
+		Targets:     "Updates `jobs` cancellation_request_* fields. Dispatches owner notification.",
+	},
+	"POST /users/jobs/respond-cancellation": {
+		Permissions: "Owner JWT (job owner only)",
+		Function:    "RespondCancellation accepts (cancels via the shared CancelJob implementation) or declines a pending employee cancellation request.",
+		Targets:     "Updates `jobs` collection (CAS on pending), `wallets`/`ledger` on accept, dispatches employee notification.",
 	},
 	"POST /users/employee/jobs/{id}/accept": {
 		Permissions: "Employee JWT",
