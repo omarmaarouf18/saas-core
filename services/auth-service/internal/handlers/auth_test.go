@@ -3095,7 +3095,7 @@ func TestResetPassword_Success(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	// Set OTP, then complete phase 1 (verify-code) before phase 2
+	// Set OTP, then complete phase 1 (verify-code) and capture the token
 	otpCode := "654321"
 	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
 		t.Fatalf("Failed to set OTP: %v", err)
@@ -3107,9 +3107,17 @@ func TestResetPassword_Success(t *testing.T) {
 	if verifyRec.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK on verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
 	}
+	var verifyResp map[string]any
+	if err := json.Unmarshal(verifyRec.Body.Bytes(), &verifyResp); err != nil {
+		t.Fatalf("Failed to decode verify-code response: %v", err)
+	}
+	resetToken, _ := verifyResp["reset_token"].(string)
+	if resetToken == "" {
+		t.Fatalf("Expected reset_token in verify-code response, got %s", verifyRec.Body.String())
+	}
 
-	// Execute ResetPassword (phase 2 carries no raw code)
-	resetBody := fmt.Sprintf(`{"email":%q,"new_password":%q}`, email, newPassword)
+	// Execute ResetPassword (phase 2 presents the possession token)
+	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":%q}`, email, resetToken, newPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
@@ -3232,7 +3240,7 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	_ = mongoStore.CreateUser(ctx, user)
 	_ = mongoStore.SetOTP(ctx, email, "888999")
 
-	// Phase 1: verify the code once before phase 2
+	// Phase 1: verify the code once and capture the token before phase 2
 	verifyBody := fmt.Sprintf(`{"email":%q,"otp":"888999"}`, email)
 	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
 	verifyRec := httptest.NewRecorder()
@@ -3240,8 +3248,16 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 	if verifyRec.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
 	}
+	var verifyResp map[string]any
+	if err := json.Unmarshal(verifyRec.Body.Bytes(), &verifyResp); err != nil {
+		t.Fatalf("Failed to decode verify-code response: %v", err)
+	}
+	resetToken, _ := verifyResp["reset_token"].(string)
+	if resetToken == "" {
+		t.Fatalf("Expected reset_token in verify-code response, got %s", verifyRec.Body.String())
+	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"new_password":"NewPassword1"}`, email)
+	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":"NewPassword1"}`, email, resetToken)
 
 	// Call 1: First attempt -> 200 OK
 	req1 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
@@ -3316,7 +3332,7 @@ func TestResetPassword_SessionInvalidation(t *testing.T) {
 	// Ensure token issuance timestamp is strictly before the reset timestamp
 	time.Sleep(1 * time.Second)
 
-	// Set OTP, complete phase 1, then reset password (phase 2)
+	// Set OTP, complete phase 1, capture the token, then reset (phase 2)
 	otpCode := "123456"
 	if err := mongoStore.SetOTP(ctx, email, otpCode); err != nil {
 		t.Fatalf("Failed to set OTP: %v", err)
@@ -3328,8 +3344,16 @@ func TestResetPassword_SessionInvalidation(t *testing.T) {
 	if verifyRec.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
 	}
+	var verifyResp map[string]any
+	if err := json.Unmarshal(verifyRec.Body.Bytes(), &verifyResp); err != nil {
+		t.Fatalf("Failed to decode verify-code response: %v", err)
+	}
+	resetToken, _ := verifyResp["reset_token"].(string)
+	if resetToken == "" {
+		t.Fatalf("Expected reset_token in verify-code response, got %s", verifyRec.Body.String())
+	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"new_password":%q}`, email, newPassword)
+	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":%q}`, email, resetToken, newPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)
@@ -3398,7 +3422,8 @@ func TestResetPassword_DBErrorGenericMessage(t *testing.T) {
 		t.Fatalf("Failed to set collMod validator on users collection: %v", err)
 	}
 
-	// Complete phase 1 first so the failure lands in ResetPassword's UpdateUser (not the verification gate)
+	// Complete phase 1 first (capture the token) so the failure lands in
+	// ResetPassword's UpdateUser (not the token gate)
 	verifyBody := fmt.Sprintf(`{"email":%q,"otp":%q}`, email, otpCode)
 	verifyReq := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(verifyBody))
 	verifyRec := httptest.NewRecorder()
@@ -3406,8 +3431,16 @@ func TestResetPassword_DBErrorGenericMessage(t *testing.T) {
 	if verifyRec.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", verifyRec.Code, verifyRec.Body.String())
 	}
+	var verifyResp map[string]any
+	if err := json.Unmarshal(verifyRec.Body.Bytes(), &verifyResp); err != nil {
+		t.Fatalf("Failed to decode verify-code response: %v", err)
+	}
+	resetToken, _ := verifyResp["reset_token"].(string)
+	if resetToken == "" {
+		t.Fatalf("Expected reset_token in verify-code response, got %s", verifyRec.Body.String())
+	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"new_password":"NewPassword123"}`, email)
+	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":"NewPassword123"}`, email, resetToken)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
 	rec := httptest.NewRecorder()
 	a.ResetPassword(rec, req)

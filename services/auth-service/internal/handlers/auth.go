@@ -2900,12 +2900,14 @@ func (a *Auth) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 // VerifyResetCode validates a password-reset OTP code WITHOUT changing the
-// password or issuing any session/token. On success it only confirms code
-// validity (the store atomically consumes the code and sets otp_verified).
-// The new password is set later via POST /auth/reset-password, which checks
-// the stored otp_verified flag. This must NOT be confused with a.VerifyOTP
-// (auth.go VerifyOTP), which serves the login/signup 2FA flow and issues
-// JWTs — a reset code must never become an authentication grant.
+// password or issuing any session/token. On success it mints a single-use,
+// short-lived phase-2 reset token (returned raw exactly once, in this
+// response) and stores only its hash — the store atomically consumes the
+// code and writes the token fields in one write. The new password is set
+// later via POST /auth/reset-password, which requires that token. This must
+// NOT be confused with a.VerifyOTP (auth.go VerifyOTP), which serves the
+// login/signup 2FA flow and issues JWTs — a reset code must never become
+// an authentication grant.
 //
 // Accepts: { "email", "otp" }
 func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
@@ -2951,11 +2953,13 @@ func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Validate OTP against MongoDB via store.VerifyOTP (atomically consumes
-	// the code and sets otp_verified on success). Every failure cause —
-	// unknown email, wrong code, expired code, no code pending — returns an
-	// error here and maps to the SAME generic response below (no oracle).
-	if err := a.store.VerifyOTP(ctx, req.Email, req.OTP); err != nil {
+	// Validate OTP against MongoDB and mint the phase-2 token atomically
+	// (code consumed + token hash/expiry written in one update). Every
+	// failure cause — unknown email, wrong code, expired code, no code
+	// pending — returns an error here and maps to the SAME generic response
+	// below (no oracle).
+	rawToken, err := a.store.VerifyOTPAndIssueResetToken(ctx, req.Email, req.OTP)
+	if err != nil {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
@@ -2970,10 +2974,12 @@ func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[AUTH] Password reset code verified for email=%s", req.Email)
 
-	// Success indicator ONLY — no token, session, or user object.
+	// The raw token is returned EXACTLY once, here — never logged, never
+	// persisted. No session, no user object.
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":  "success",
-		"message": "reset code verified",
+		"status":      "success",
+		"message":     "reset code verified",
+		"reset_token": rawToken,
 	})
 }
 
@@ -2981,12 +2987,14 @@ func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
 // POST /auth/reset-password (ADR-0026 phase 2)
 // ---------------------------------------------------------------------------
 
-// ResetPassword sets a new password for an email that already completed
-// phase 1 (POST /auth/reset-password/verify-code). It accepts NO raw OTP
-// code; instead it requires the stored otp_verified flag to be true and the
-// stored otp_expires_at deadline (inherited from code send time) to be
-// unpassed. On success the flag and OTP fields are cleared so the
-// verification cannot be reused for a second reset.
+// ResetPassword sets a new password for the holder of a live phase-1 reset
+// token (POST /auth/reset-password/verify-code). It accepts NO raw OTP
+// code, and the email alone is NOT sufficient: the caller must present the
+// single-use token, proving it is the same party that supplied the correct
+// OTP. The token's own short expiry (from verification time) is the only
+// deadline — otp_expires_at no longer gates this endpoint. On success the
+// token (and the OTP fields) are cleared so the token cannot be reused for
+// a second reset.
 func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
@@ -3030,22 +3038,14 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Phase-2 gate (ADR-0026): no raw code is accepted here. The email must
-	// have completed phase 1 (stored otp_verified == true) within the stored
-	// otp_expires_at deadline inherited from code send time. All three
-	// failure causes — unknown email, never verified, verified too long
-	// ago — record rate-limit failures and return the SAME generic error
-	// (no account/verification-state oracle).
-	user := a.store.GetByEmail(ctx, req.Email)
-	if user == nil || !user.OTPVerified {
-		a.limiter.RecordFailure(clientIP)
-		a.limiter.RecordFailure(req.Email)
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "invalid or expired reset verification",
-		})
-		return
-	}
-	if !user.OTPExpiresAt.IsZero() && user.OTPExpiresAt.Before(time.Now()) {
+	// Phase-2 gate (ADR-0026 as amended): possession of a live reset token.
+	// An empty/missing token is NOT a distinct 400 path — it falls through
+	// to the same generic 401 as a wrong or expired one, so the endpoint
+	// never distinguishes "no token" from "bad token". All failure causes —
+	// unknown email, no token issued, wrong token, expired token — record
+	// rate-limit failures and return the SAME generic error (no oracle).
+	user, err := a.store.VerifyResetToken(ctx, req.Email, req.ResetToken)
+	if err != nil {
 		a.limiter.RecordFailure(clientIP)
 		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
@@ -3066,13 +3066,16 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update password and ensure OTP fields are cleared so OTP cannot be reused
+	// Update password and clear the token + OTP fields so neither the token
+	// nor the code can be reused for a second reset (single-use).
 	update := bson.M{
 		"$set": bson.M{
-			"password":       string(hashedPassword),
-			"otp_code":       "",
-			"otp_verified":   false,
-			"otp_expires_at": time.Time{},
+			"password":               string(hashedPassword),
+			"otp_code":               "",
+			"otp_verified":           false,
+			"otp_expires_at":         time.Time{},
+			"reset_token_hash":       "",
+			"reset_token_expires_at": time.Time{},
 		},
 	}
 

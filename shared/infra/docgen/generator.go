@@ -100,13 +100,13 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /auth/reset-password": {
 		Permissions: "Public",
-		Function:    "Sets a new password for an email that completed verify-code (requires stored otp_verified within otp_expires_at; accepts no raw code).",
-		Targets:     "Reads `users` collection by email, updates `password` hash and clears OTP fields.",
+		Function:    "Sets a new password presenting the single-use phase-2 reset token minted by verify-code (email alone is never sufficient).",
+		Targets:     "Reads `users` collection by email, verifies token digest + expiry, updates `password` hash and clears token/OTP fields.",
 	},
 	"POST /auth/reset-password/verify-code": {
 		Permissions: "Public",
-		Function:    "VerifyResetCode validates a password-reset OTP code WITHOUT changing the password or issuing any token/session (success indicator only).",
-		Targets:     "Reads `users` collection by email, atomically consumes `otp_code` and sets `otp_verified`. Dual-keyed rate limiting on client IP + email.",
+		Function:    "VerifyResetCode validates a password-reset OTP code and mints a single-use phase-2 reset token (returned raw once; only its hash is stored). Issues no session.",
+		Targets:     "Reads `users` collection by email, atomically consumes `otp_code`, sets `otp_verified` + `reset_token_hash`/`reset_token_expires_at`. Dual-keyed rate limiting on client IP + email.",
 	},
 	"POST /auth/logout": {
 		Permissions: "Bearer JWT",

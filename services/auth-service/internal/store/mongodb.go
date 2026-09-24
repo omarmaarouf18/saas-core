@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -470,7 +471,16 @@ func (s *MongoDB) SetOTP(ctx context.Context, email, otp string) error {
 
 	result, err := s.users.UpdateOne(ctx,
 		bson.M{"email": email},
-		bson.M{"$set": bson.M{"otp_code": encrypted, "otp_verified": false, "otp_expires_at": expiresAt}},
+		bson.M{"$set": bson.M{
+			"otp_code":       encrypted,
+			"otp_verified":   false,
+			"otp_expires_at": expiresAt,
+			// A fresh code invalidates any previously issued phase-2 reset
+			// token (rotation on resend): the old token's holder must
+			// re-verify, never ride out the old token's window.
+			"reset_token_hash":       "",
+			"reset_token_expires_at": time.Time{},
+		}},
 	)
 	if err != nil {
 		return fmt.Errorf("store: set OTP: %w", err)
@@ -485,6 +495,69 @@ func (s *MongoDB) SetOTP(ctx context.Context, email, otp string) error {
 // the plaintext code submitted by the user. This ensures the /verify
 // endpoint functions identically to the production flow.
 func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
+	return s.consumeOTP(ctx, email, otp, nil)
+}
+
+// ResetTokenTTL is the independent lifetime of a phase-2 password-reset
+// token, measured from successful phase-1 verification — NOT from code send
+// time (otp_expires_at is the wrong clock for this: it would let a verified
+// but abandoned reset stay exploitable for the remainder of the original
+// send-to-expiry window).
+const ResetTokenTTL = 10 * time.Minute
+
+// VerifyOTPAndIssueResetToken validates the phase-1 code exactly like
+// VerifyOTP, and — in the SAME atomic FindOneAndUpdate — mints a
+// single-use phase-2 reset token: 32 crypto/rand bytes (base64url),
+// stored as a SHA-256 hex digest (raw value never persisted, same
+// principle as the OTP ciphertext), expiring ResetTokenTTL after
+// verification. The atomic consume means the ciphertext race protection
+// (resend supersede / racing verifier) extends to the token fields for
+// free: no second write, no window where the code is consumed but the
+// token is missing. Returns the RAW token for the one response that may
+// carry it; callers must never log or persist it.
+func (s *MongoDB) VerifyOTPAndIssueResetToken(ctx context.Context, email, otp string) (string, error) {
+	var entropy [32]byte
+	if _, err := rand.Read(entropy[:]); err != nil {
+		return "", fmt.Errorf("store: reset token entropy failed: %w", err)
+	}
+	raw := base64.RawURLEncoding.EncodeToString(entropy[:])
+	if err := s.consumeOTP(ctx, email, otp, bson.M{
+		"reset_token_hash":       hashToken(raw),
+		"reset_token_expires_at": time.Now().Add(ResetTokenTTL),
+	}); err != nil {
+		return "", err
+	}
+	return raw, nil
+}
+
+// VerifyResetToken checks a presented phase-2 token against the stored
+// digest and its independent expiry. Unknown email, no token issued,
+// wrong token, and expired token ALL return an error the caller maps to
+// the same generic response (no oracle). The presented digest is computed
+// unconditionally, before the user lookup branches.
+func (s *MongoDB) VerifyResetToken(ctx context.Context, email, token string) (*models.User, error) {
+	presented := hashToken(token)
+	user := s.GetByEmail(ctx, email)
+	if user == nil {
+		return nil, fmt.Errorf("no reset token for %q", email)
+	}
+	if user.ResetTokenHash == "" {
+		return nil, fmt.Errorf("no reset token for %q", email)
+	}
+	if subtle.ConstantTimeCompare([]byte(presented), []byte(user.ResetTokenHash)) != 1 {
+		return nil, fmt.Errorf("invalid reset token")
+	}
+	if user.ResetTokenExpiresAt.IsZero() || user.ResetTokenExpiresAt.Before(time.Now()) {
+		return nil, fmt.Errorf("reset token expired")
+	}
+	return user, nil
+}
+
+// consumeOTP holds the shared verify-and-consume core: fetch, decrypt,
+// constant-time compare, then atomically consume ONLY if the stored
+// ciphertext is still exactly what was validated. extraSet, when non-nil,
+// is merged into the same atomic update (phase-2 token minting).
+func (s *MongoDB) consumeOTP(ctx context.Context, email, otp string, extraSet bson.M) error {
 	// Fetch the user to get the encrypted OTP.
 	user := s.GetByEmail(ctx, email)
 	if user == nil {
@@ -520,9 +593,15 @@ func (s *MongoDB) VerifyOTP(ctx context.Context, email, otp string) error {
 	//     correctly rejecting the superseded code;
 	//   - a competing verifier clears it first -> this consume misses too,
 	//     so one code can never yield two successes (QA audit Q7).
+	// Any extraSet fields (e.g. the phase-2 reset token) ride in this same
+	// write, inheriting the race protection with no second round trip.
+	setFields := bson.M{"otp_verified": true, "otp_code": ""}
+	for k, v := range extraSet {
+		setFields[k] = v
+	}
 	res := s.users.FindOneAndUpdate(ctx,
 		bson.M{"email": email, "otp_code": user.OTPCode},
-		bson.M{"$set": bson.M{"otp_verified": true, "otp_code": ""}},
+		bson.M{"$set": setFields},
 	)
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {

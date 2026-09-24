@@ -250,12 +250,16 @@ void main() {
           'email': 'e@x.dev',
           'otp': '321321',
         });
-        return MockHttpResponse(200,
-            jsonBody: {'status': 'success', 'message': 'ok'});
+        return MockHttpResponse(200, jsonBody: {
+          'status': 'success',
+          'message': 'ok',
+          'reset_token': 'tok-possession-9',
+        });
       }
       expect(req.uri.path, endsWith('/auth/reset-password'));
       expect(jsonDecode(req.body!), {
         'email': 'e@x.dev',
+        'reset_token': 'tok-possession-9',
         'new_password': 'brandNew9',
       });
       return MockHttpResponse(200, jsonBody: {'message': 'ok'});
@@ -264,8 +268,11 @@ void main() {
 
     expect(await auth.resendOtp('e@x.dev'), '555000');
     expect(await auth.forgotPassword('e@x.dev'), '321321');
-    expect(await auth.verifyResetCode('e@x.dev', '321321'), isTrue);
-    expect(await auth.resetPassword('e@x.dev', 'brandNew9'), isTrue);
+    expect(await auth.verifyResetCode('e@x.dev', '321321'), 'tok-possession-9');
+    expect(auth.resetToken, 'tok-possession-9');
+    expect(await auth.resetPassword('e@x.dev', 'tok-possession-9', 'brandNew9'),
+        isTrue);
+    expect(auth.resetToken, isNull);
   });
 
   test('resetPassword failure returns false with the backend reason', () async {
@@ -274,7 +281,7 @@ void main() {
             MockHttpResponse(401, jsonBody: {'error': 'invalid OTP'}));
     await pump();
 
-    final ok = await auth.resetPassword('e@x.dev', 'whatever1');
+    final ok = await auth.resetPassword('e@x.dev', 'tok-1', 'whatever1');
 
     expect(ok, isFalse);
     expect(auth.error, contains('invalid OTP'));
@@ -286,9 +293,9 @@ void main() {
             jsonBody: {'error': 'too many attempts for this email.'}));
     await pump();
 
-    final ok = await auth.verifyResetCode('e@x.dev', '000000');
+    final token = await auth.verifyResetCode('e@x.dev', '000000');
 
-    expect(ok, isFalse);
+    expect(token, isNull);
     expect(auth.lastErrorStatusCode, 429);
   });
 

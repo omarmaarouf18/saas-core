@@ -13,13 +13,14 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import 'reset_password_new_screen.dart';
 
-// Screen 2 of the two-phase reset flow (ADR-0026): verifies the 6-digit
-// code via the new AuthProvider.verifyResetCode (POST
-// /auth/reset-password/verify-code). On success it pushes the new-password
-// screen with the email ONLY — the code is consumed server-side and must
-// not be carried forward. Resend reuses AuthProvider.forgotPassword (the
-// same call as screen 1); the dev-mode OTP banner/auto-fill moved here
-// from the old single screen.
+// Screen 2 of the two-phase reset flow (ADR-0026 as amended): verifies the
+// 6-digit code via the new AuthProvider.verifyResetCode (POST
+// /auth/reset-password/verify-code). On success the provider holds the
+// single-use reset token for phase 2 and this screen pushes the
+// new-password screen — the code is consumed server-side and must not be
+// carried forward. Resend reuses AuthProvider.forgotPassword (the same call
+// as screen 1); the dev-mode OTP banner/auto-fill moved here from the old
+// single screen.
 class ResetPasswordOtpScreen extends StatefulWidget {
   final String email;
   final String? devOtp;
@@ -63,11 +64,11 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
     auth.clearError();
 
     final otp = _otpController.text.trim();
-    final success = await auth.verifyResetCode(widget.email, otp);
+    final token = await auth.verifyResetCode(widget.email, otp);
 
     if (!mounted) return;
 
-    if (!success || auth.error != null) {
+    if (token == null || token.isEmpty || auth.error != null) {
       // 429 vs 401 is a status-code distinction the client may react to:
       // the lockout text (with its wait time) comes straight from the
       // server response. The 401 content itself stays uniform server-side.

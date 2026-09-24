@@ -79,9 +79,14 @@ type User struct {
 	OTPCode           string        `json:"-"                         bson:"otp_code,omitempty"`
 	OTPExpiresAt      time.Time     `json:"-"                         bson:"otp_expires_at,omitempty"`
 	OTPVerified       bool          `json:"otp_verified"              bson:"otp_verified"`
-	CreatedAt         time.Time     `json:"created_at"                bson:"created_at"`
-	DeviceTokens      []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
-	TwoFactorEnabled  *bool         `json:"two_factor_enabled,omitempty" bson:"two_factor_enabled,omitempty"`
+	// Phase-2 possession token (ADR-0026 amendment): SHA-256 hex digest of
+	// the server-minted reset token; the raw value is never persisted and
+	// never serialized. Single-use, 10-minute independent expiry.
+	ResetTokenHash      string        `json:"-" bson:"reset_token_hash,omitempty"`
+	ResetTokenExpiresAt time.Time     `json:"-" bson:"reset_token_expires_at,omitempty"`
+	CreatedAt           time.Time     `json:"created_at"                bson:"created_at"`
+	DeviceTokens        []DeviceToken `json:"device_tokens,omitempty"  bson:"device_tokens,omitempty"`
+	TwoFactorEnabled    *bool         `json:"two_factor_enabled,omitempty" bson:"two_factor_enabled,omitempty"`
 }
 
 // Is2FAEnabled returns whether two-factor authentication is enabled for this user.
@@ -150,11 +155,13 @@ type VerifyResetCodeRequest struct {
 	OTP   string `json:"otp"`
 }
 
-// ResetPasswordRequest is the expected JSON body for POST /auth/reset-password (ADR-0026 phase 2).
-// It carries NO raw OTP code: the email must already have completed phase 1
-// (stored otp_verified == true within otp_expires_at) before this call.
+// ResetPasswordRequest is the expected JSON body for POST /auth/reset-password (ADR-0026 phase 2, as amended).
+// It carries NO raw OTP code. The email alone is NOT sufficient: the
+// caller must present the single-use ResetToken minted by phase 1, proving
+// it is the same party that supplied the correct OTP.
 type ResetPasswordRequest struct {
 	Email       string `json:"email"`
+	ResetToken  string `json:"reset_token"`
 	NewPassword string `json:"new_password"`
 }
 

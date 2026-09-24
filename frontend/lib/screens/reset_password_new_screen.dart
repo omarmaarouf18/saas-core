@@ -12,12 +12,14 @@ import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
 import 'login_screen.dart';
 
-// Screen 3 of the two-phase reset flow (ADR-0026): collects the new
-// password and calls the modified AuthProvider.resetPassword(email,
-// newPassword) — no raw code is sent or needed. On success: success
-// snackbar + navigate to LoginScreen clearing the stack (same as before).
-// On failure (e.g. the otp_verified deadline lapsed while the user sat on
-// this screen) it shows a restart-from-email error — no silent retry loop.
+// Screen 3 of the two-phase reset flow (ADR-0026 as amended): collects the
+// new password and calls the modified AuthProvider.resetPassword(email,
+// resetToken, newPassword) — the token comes from the provider state set by
+// screen 2's verify, never re-derived. No raw code is sent or needed. On
+// success: success snackbar + navigate to LoginScreen clearing the stack
+// (same as before). On failure (e.g. the token expired because the user sat
+// on this screen too long) it shows a restart-from-email error — no silent
+// retry loop.
 class ResetPasswordNewScreen extends StatefulWidget {
   final String email;
 
@@ -31,6 +33,10 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  // True when phase 2 was never armed with a token (deep-link straight to
+  // this screen, or provider state lost): route back to the email step
+  // without firing a doomed request.
+  bool _missingToken = false;
 
   @override
   void dispose() {
@@ -45,8 +51,15 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     auth.clearError();
 
-    final success =
-        await auth.resetPassword(widget.email, _newPasswordController.text);
+    final token = auth.resetToken;
+    if (token == null || token.isEmpty) {
+      setState(() => _missingToken = true);
+      return;
+    }
+    setState(() => _missingToken = false);
+
+    final success = await auth.resetPassword(
+        widget.email, token, _newPasswordController.text);
 
     if (!mounted) return;
 
@@ -101,10 +114,11 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
   }
 
   Widget _buildNewPasswordCard(AuthProvider auth, AppLocalizations l10n) {
-    // A 401 means the stored verification lapsed (or never existed):
-    // explain the restart instead of looping. Any other failure (e.g.
-    // network) surfaces the raw error with a retry.
-    final isVerificationFailure = auth.lastErrorStatusCode == 401;
+    // A 401 means the held token is dead (or was never armed): explain the
+    // restart instead of looping. Any other failure (e.g. network) surfaces
+    // the raw error with a retry.
+    final isVerificationFailure =
+        _missingToken || auth.lastErrorStatusCode == 401;
     return ThemedCard(
       borderRadius: AppRadius.lg,
       topAccentColor: AppColors.secondary,
@@ -117,8 +131,8 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
           _buildHeader(l10n),
           const SizedBox(height: AppSpacing.lg),
 
-          // Server Error Banner (e.g. verification lapsed)
-          if (auth.error != null) ...[
+          // Server Error Banner (e.g. token expired / never armed)
+          if (auth.error != null || _missingToken) ...[
             ThemedErrorBanner(
               key: const Key('reset_password_error_banner'),
               message: isVerificationFailure

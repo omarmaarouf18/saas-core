@@ -82,11 +82,16 @@ class MockAuthApiClient extends ApiClient {
           statusCode: 401,
         );
       }
-      return {'status': 'success', 'message': 'reset code verified'};
+      return {
+        'status': 'success',
+        'message': 'reset code verified',
+        'reset_token': 'tok-test-possession-123',
+      };
     } else if (path == '/auth/reset-password') {
       resetCalls++;
       lastResetBody = Map<String, dynamic>.from(body);
-      if (resetMode == 'expired') {
+      if (resetMode == 'expired' ||
+          body['reset_token'] != 'tok-test-possession-123') {
         throw ApiClientException(
           'invalid or expired reset verification',
           statusCode: 401,
@@ -267,15 +272,24 @@ void main() {
       expect(mockApiClient.resetCalls, 1);
       expect(mockApiClient.lastResetBody!['email'], 'user@example.com');
       expect(mockApiClient.lastResetBody!['new_password'], 'newSecret123');
+      // Possession binding: the phase-2 body carries the minted token, and
+      // neither the raw code nor any legacy otp field.
+      expect(mockApiClient.lastResetBody!['reset_token'],
+          'tok-test-possession-123');
       expect(mockApiClient.lastResetBody!.containsKey('otp'), isFalse);
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('Lapsed verification on screen 3 shows the restart message',
+    testWidgets('Lapsed token on screen 3 shows the restart message',
         (WidgetTester tester) async {
       authProvider = AuthProvider(mockApiClient);
       _largeViewport(tester);
       mockApiClient.resetMode = 'expired';
+      // Arm phase 2 with a real token first, so the failure comes from the
+      // server rejecting the lapsed token (not from a missing one).
+      final token =
+          await authProvider.verifyResetCode('user@example.com', '654321');
+      expect(token, 'tok-test-possession-123');
       await tester.pumpWidget(_flowApp(authProvider,
           home: const ResetPasswordNewScreen(email: 'user@example.com')));
       await tester.pumpAndSettle();
@@ -295,6 +309,32 @@ void main() {
       // Still on screen 3 — no silent loop, no login navigation.
       expect(find.byType(ResetPasswordNewScreen), findsOneWidget);
       expect(find.byType(LoginScreen), findsNothing);
+    });
+
+    testWidgets(
+        'Screen 3 with no held token shows restart without any backend call',
+        (WidgetTester tester) async {
+      authProvider = AuthProvider(mockApiClient);
+      _largeViewport(tester);
+      // Fresh provider: phase 1 never ran (deep-link / lost state).
+      await tester.pumpWidget(_flowApp(authProvider,
+          home: const ResetPasswordNewScreen(email: 'user@example.com')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('reset_new_password_field')), 'newSecret123');
+      await tester.enterText(
+          find.byKey(const Key('reset_confirm_password_field')),
+          'newSecret123');
+      await tester.tap(find.byKey(const Key('submit_new_password_button')));
+      await tester.pumpAndSettle();
+
+      expect(mockApiClient.resetCalls, 0);
+      expect(
+          find.byKey(const Key('reset_password_error_banner')), findsOneWidget);
+      expect(
+          find.textContaining('restart from the email step'), findsOneWidget);
+      expect(find.byType(ResetPasswordNewScreen), findsOneWidget);
     });
   });
 }

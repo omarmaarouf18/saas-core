@@ -8,6 +8,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -242,9 +243,11 @@ func TestVerifyResetCode_UniformErrorResponses(t *testing.T) {
 	}
 }
 
-// TestVerifyResetCode_SuccessCarriesNoToken proves the success body is a bare
-// indicator: no JWT/session/user fields anywhere in it.
-func TestVerifyResetCode_SuccessCarriesNoToken(t *testing.T) {
+// TestVerifyResetCode_SuccessCarriesOnlyResetToken proves the success body
+// carries the single-use reset token and ONLY the token: still no
+// password/session/user object. (Renamed from SuccessCarriesNoToken: the
+// bare-indicator contract was the pre-token design.)
+func TestVerifyResetCode_SuccessCarriesOnlyResetToken(t *testing.T) {
 	a, mongoStore, cleanup := setupTestAuth(t)
 	if a == nil {
 		return
@@ -264,11 +267,20 @@ func TestVerifyResetCode_SuccessCarriesNoToken(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &decoded); err != nil {
 		t.Fatalf("Success body is not JSON: %v", err)
 	}
-	if len(decoded) != 2 {
-		t.Errorf("Expected exactly {status,message} keys, got %v", decoded)
+	// Exactly {status, message, reset_token} — the token is the only
+	// credential-shaped value the endpoint may return.
+	if len(decoded) != 3 {
+		t.Errorf("Expected exactly {status,message,reset_token} keys, got %v", decoded)
+	}
+	token, _ := decoded["reset_token"].(string)
+	if len(token) != 43 {
+		t.Errorf("Expected 43-char base64url token (32 bytes entropy), got %q (%d chars)", token, len(token))
+	}
+	if _, err := base64.RawURLEncoding.DecodeString(token); err != nil {
+		t.Errorf("reset_token is not valid base64url: %v", err)
 	}
 	lowered := strings.ToLower(raw)
-	for _, marker := range []string{"token", "jwt", "bearer", "authorization", "session", "user_id", "username", "password"} {
+	for _, marker := range []string{"jwt", "bearer", "session", "user_id", "username", "password"} {
 		if strings.Contains(lowered, marker) {
 			t.Errorf("Success body must not contain %q: %s", marker, raw)
 		}
@@ -327,12 +339,33 @@ func TestResetPassword_TwoPhaseGate(t *testing.T) {
 			t.Fatalf("Failed to set OTP: %v", err)
 		}
 	}
-	postReset := func(a *Auth, email string) *httptest.ResponseRecorder {
-		body := fmt.Sprintf(`{"email":%q,"new_password":"BrandNewPass1"}`, email)
+	postReset := func(a *Auth, email, token string) *httptest.ResponseRecorder {
+		body := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":"BrandNewPass1"}`, email, token)
 		req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(body))
 		rec := httptest.NewRecorder()
 		a.ResetPassword(rec, req)
 		return rec
+	}
+
+	// captureToken runs phase 1 and returns the raw reset token.
+	captureToken := func(t *testing.T, a *Auth, email string) string {
+		t.Helper()
+		body := fmt.Sprintf(`{"email":%q,"otp":"246810"}`, email)
+		req := httptest.NewRequest("POST", "/auth/reset-password/verify-code", strings.NewReader(body))
+		rec := httptest.NewRecorder()
+		a.VerifyResetCode(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+		var resp map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("Failed to decode verify-code response: %v", err)
+		}
+		token, _ := resp["reset_token"].(string)
+		if token == "" {
+			t.Fatalf("Expected reset_token in verify-code response, got %s", rec.Body.String())
+		}
+		return token
 	}
 
 	t.Run("UnverifiedRejected", func(t *testing.T) {
@@ -343,7 +376,7 @@ func TestResetPassword_TwoPhaseGate(t *testing.T) {
 		defer cleanup()
 		ctx := context.Background()
 		newUser(t, ctx, mongoStore, "gate-unverified@example.com", "user-gate-unv")
-		rec := postReset(a, "gate-unverified@example.com")
+		rec := postReset(a, "gate-unverified@example.com", "")
 		if rec.Code != http.StatusUnauthorized {
 			t.Fatalf("Expected 401 for never-verified reset, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
@@ -363,11 +396,9 @@ func TestResetPassword_TwoPhaseGate(t *testing.T) {
 		ctx := context.Background()
 		email := "gate-fresh@example.com"
 		newUser(t, ctx, mongoStore, email, "user-gate-fresh")
-		if rec := postVerifyCode(a, email, "246810", ""); rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-		if rec := postReset(a, email); rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK for verified+fresh reset, got %d. Body: %s", rec.Code, rec.Body.String())
+		token := captureToken(t, a, email)
+		if rec := postReset(a, email, token); rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200 OK for token-bound reset, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 
@@ -380,20 +411,19 @@ func TestResetPassword_TwoPhaseGate(t *testing.T) {
 		ctx := context.Background()
 		email := "gate-stale@example.com"
 		newUser(t, ctx, mongoStore, email, "user-gate-stale")
-		if rec := postVerifyCode(a, email, "246810", ""); rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK for verify-code, got %d. Body: %s", rec.Code, rec.Body.String())
-		}
-		// Simulate stalling on the new-password screen past the deadline.
+		token := captureToken(t, a, email)
+		// Simulate stalling on the new-password screen past the TOKEN
+		// deadline (the token's own 10-minute clock, not the OTP send time).
 		stalled := mongoStore.GetByEmail(ctx, email)
 		if stalled == nil {
 			t.Fatalf("Failed to fetch user for expiry manipulation")
 		}
-		if err := mongoStore.UpdateUser(ctx, stalled.ID, bson.M{"$set": bson.M{"otp_expires_at": time.Now().Add(-1 * time.Hour)}}); err != nil {
-			t.Fatalf("Failed to backdate otp_expires_at: %v", err)
+		if err := mongoStore.UpdateUser(ctx, stalled.ID, bson.M{"$set": bson.M{"reset_token_expires_at": time.Now().Add(-1 * time.Hour)}}); err != nil {
+			t.Fatalf("Failed to backdate reset_token_expires_at: %v", err)
 		}
-		rec := postReset(a, email)
+		rec := postReset(a, email, token)
 		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("Expected 401 for stale verification, got %d. Body: %s", rec.Code, rec.Body.String())
+			t.Fatalf("Expected 401 for stale token, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 		var resp map[string]string
 		_ = json.Unmarshal(rec.Body.Bytes(), &resp)

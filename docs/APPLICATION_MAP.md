@@ -1,7 +1,7 @@
 # Quick Delivery — Complete Application Map
 
 > [!NOTE]
-> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`e320c85`**.
+> **Reflects Repository State**: This document maps the application architecture, APIs, inter-service connections, and actor flows as of Git commit: **`3354f6b`**.
 > Since the codebase is subject to ongoing development, this map should be regenerated and re-verified via `git rev-parse --short HEAD` after significant routing or security changes.
 
 ---
@@ -206,8 +206,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`POST /auth/logout`** | `auth-service` | Bearer JWT | Logs out user, revokes JWT session. | Writes token JTI to Redis denylist. |
 | **`POST /auth/refresh`** | `auth-service` | Public (via Gateway) | Refreshes active JWT sessions. | None. |
 | **`POST /auth/resend-otp`** | `auth-service` | Public | ResendOTP handles resending a fresh OTP for unconfirmed accounts. | Reads `users` collection by email, updates `otp_code` and `otp_expires_at` fields. |
-| **`POST /auth/reset-password`** | `auth-service` | Public | Sets a new password for an email that completed verify-code (requires stored otp_verified within otp_expires_at; accepts no raw code). | Reads `users` collection by email, updates `password` hash and clears OTP fields. |
-| **`POST /auth/reset-password/verify-code`** | `auth-service` | Public | VerifyResetCode validates a password-reset OTP code WITHOUT changing the password or issuing any token/session (success indicator only). | Reads `users` collection by email, atomically consumes `otp_code` and sets `otp_verified`. Dual-keyed rate limiting on client IP + email. |
+| **`POST /auth/reset-password`** | `auth-service` | Public | Sets a new password presenting the single-use phase-2 reset token minted by verify-code (email alone is never sufficient). | Reads `users` collection by email, verifies token digest + expiry, updates `password` hash and clears token/OTP fields. |
+| **`POST /auth/reset-password/verify-code`** | `auth-service` | Public | VerifyResetCode validates a password-reset OTP code and mints a single-use phase-2 reset token (returned raw once; only its hash is stored). Issues no session. | Reads `users` collection by email, atomically consumes `otp_code`, sets `otp_verified` + `reset_token_hash`/`reset_token_expires_at`. Dual-keyed rate limiting on client IP + email. |
 | **`GET /auth/reviewer/user-documents`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason. | Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`). |
 | **`GET /auth/reviewer/verify`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023). | Reads `reviewers` collection. |
 | **`POST /auth/signup`** | `auth-service` | Public (via Gateway) | Registers a new tenant or user. | Writes `users` collection. Logs OTP code. |
