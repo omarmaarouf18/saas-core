@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -120,15 +121,10 @@ func main() {
 	})
 
 	// ---- Register reverse proxy routes ----
-	for _, route := range cfg.Routes {
+	registerServiceRoutes(mux, cfg.Routes, func(route config.ServiceRoute) (http.Handler, error) {
 		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second)
-		handler, err := proxy.New(route, cfg.GatewaySecret, cfg.TrustedProxyIPs, resilientTransport)
-		if err != nil {
-			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
-		}
-		mux.Handle(route.Prefix, handler)
-		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
-	}
+		return proxy.New(route, cfg.GatewaySecret, cfg.TrustedProxyIPs, resilientTransport)
+	})
 
 	// ---- Wrap with version gate, rate limiting, and logging middleware ----
 	// General bucket: 300 req/min per client IP across all REST routes.
@@ -186,6 +182,35 @@ func main() {
 
 	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
+	}
+}
+
+// registerServiceRoutes mounts one reverse-proxy handler per service route.
+//
+// Every route prefix in config ends with a trailing slash (e.g.
+// "/api/v1/notifications/"), which Go's http.ServeMux treats as a
+// subtree-only registration: a request to the exact bare path
+// ("/api/v1/notifications", the natural REST shape for "the collection")
+// never reaches the handler and instead gets an automatic 3xx redirect
+// to the slashed URL. Method-preserving redirects on non-GET verbs are
+// mishandled by some HTTP clients, and the redirect short-circuits the
+// proxy entirely, so collection-level calls (e.g. DELETE "clear all")
+// break while deeper paths (e.g. DELETE /notifications/{id}) work fine.
+// Registering the exact bare-path companion alongside the subtree pattern
+// makes both shapes proxy directly with no redirect in between, for every
+// HTTP method including OPTIONS and DELETE.
+func registerServiceRoutes(mux *http.ServeMux, routes []config.ServiceRoute, buildHandler func(config.ServiceRoute) (http.Handler, error)) {
+	for _, route := range routes {
+		handler, err := buildHandler(route)
+		if err != nil {
+			log.Fatalf("Failed to create proxy for %s: %v", route.Prefix, err)
+		}
+		mux.Handle(route.Prefix, handler)
+		log.Printf("Route registered: %s → %s (env: %s)", route.Prefix, route.Target, route.EnvKey)
+		if bare := strings.TrimSuffix(route.Prefix, "/"); bare != route.Prefix {
+			mux.Handle(bare, handler)
+			log.Printf("Route registered: %s → %s (env: %s)", bare, route.Target, route.EnvKey)
+		}
 	}
 }
 
