@@ -55,6 +55,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0024: Expired-Subscription Closed Status for Marketplace Listing and Booking](0024-expired-subscription-closed-status.md) — Accepted
 *   [ADR-0025: Working-Hours-Based Out-of-Service Badge and Booking Gate](0025-working-hours-based-closed-badge.md) — Accepted
 *   [ADR-0026: Two-Phase Password Reset (Verify-Code, Then Set-Password)](0026-two-phase-password-reset.md) — Accepted
+*   [ADR-0027: Employee Cancellation-Request Workflow (Owner-Approved)](0027-employee-cancellation-request-workflow.md) — Accepted
 
 
 
