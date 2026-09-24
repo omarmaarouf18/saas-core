@@ -174,7 +174,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Fleet Live Map'), findsOneWidget);
-      expect(find.text('emp-001'), findsOneWidget);
+      // No OwnerProvider roster in this scope: pins the diagnosable
+      // Unknown-ID fallback (resolved names are covered in
+      // owner_fleet_map_names_test.dart).
+      expect(find.text('Unknown: emp-001'), findsOneWidget);
       expect(find.byIcon(Icons.location_on), findsOneWidget);
     });
 
@@ -209,7 +212,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      expect(find.text('emp-001'), findsOneWidget);
+      expect(find.text('Unknown: emp-001'), findsOneWidget);
 
       // Simulate incoming location update event for emp-001 & emp-002
       mockProvider.updateMarkerManually(
@@ -233,8 +236,8 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('emp-001'), findsOneWidget);
-      expect(find.text('emp-002'), findsOneWidget);
+      expect(find.text('Unknown: emp-001'), findsOneWidget);
+      expect(find.text('Unknown: emp-002'), findsOneWidget);
       expect(find.byIcon(Icons.location_on), findsNWidgets(2));
     });
 
@@ -278,29 +281,29 @@ void main() {
       await tester.pumpAndSettle();
 
       // Both markers should be visible in 'All Fleet' view
-      expect(find.text('emp-on-job'), findsOneWidget);
-      expect(find.text('emp-idle'), findsOneWidget);
+      expect(find.text('Unknown: emp-on-job'), findsOneWidget);
+      expect(find.text('Unknown: emp-idle'), findsOneWidget);
 
       // Tap 'On Route' pill
       await tester.tap(find.text('On Route'));
       await tester.pumpAndSettle();
 
-      expect(find.text('emp-on-job'), findsOneWidget);
-      expect(find.text('emp-idle'), findsNothing);
+      expect(find.text('Unknown: emp-on-job'), findsOneWidget);
+      expect(find.text('Unknown: emp-idle'), findsNothing);
 
       // Tap 'Idle' pill
       await tester.tap(find.text('Idle'));
       await tester.pumpAndSettle();
 
-      expect(find.text('emp-on-job'), findsNothing);
-      expect(find.text('emp-idle'), findsOneWidget);
+      expect(find.text('Unknown: emp-on-job'), findsNothing);
+      expect(find.text('Unknown: emp-idle'), findsOneWidget);
 
       // Tap on idle driver marker to view driver card
-      await tester.tap(find.text('emp-idle'));
+      await tester.tap(find.text('Unknown: emp-idle'));
       await tester.pumpAndSettle();
 
-      // Should show 'emp-idle' on both marker and card
-      expect(find.text('emp-idle'), findsNWidgets(2));
+      // Should show the fallback on both marker and card
+      expect(find.text('Unknown: emp-idle'), findsNWidgets(2));
     });
   });
 

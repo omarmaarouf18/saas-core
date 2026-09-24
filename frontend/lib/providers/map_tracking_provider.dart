@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../core/api_client.dart';
@@ -18,6 +18,14 @@ class MapTrackingProvider extends ChangeNotifier {
   final Map<String, EmployeeMarkerData> _employeeMarkers = {};
   JobLocation? _customerJobLocation;
   String? _assignedEmployeeId;
+
+  // Owner-roster name lookup (employeeId -> username), supplied by UI scopes
+  // that hold the OwnerProvider employees list. Markers keep a resolved
+  // employeeName snapshot; this lookup backfills existing markers and is
+  // applied to every marker created afterwards, so names also resolve when
+  // the roster fetch completes AFTER markers already rendered (no permanent
+  // ID fallback from a creation-vs-fetch race).
+  Map<String, String> _employeeNames = const {};
 
   bool _isLoading = false;
   bool _isConnected = false;
@@ -49,6 +57,29 @@ class MapTrackingProvider extends ChangeNotifier {
   String? get subscriptionError => _subscriptionError;
 
   MapTrackingProvider(this.apiClient);
+
+  /// Replaces the roster name lookup and re-resolves every stored marker.
+  /// No-op (no notify) when the lookup is unchanged, so UI scopes may call
+  /// this on every build without scheduling rebuild loops.
+  void setEmployeeNameLookup(Map<String, String> lookup) {
+    if (mapEquals(_employeeNames, lookup)) return;
+    _employeeNames = Map<String, String>.of(lookup);
+    for (final entry in _employeeMarkers.entries) {
+      final current = entry.value;
+      final resolved = _employeeNames[current.employeeId];
+      if (current.employeeName != resolved) {
+        _employeeMarkers[entry.key] = EmployeeMarkerData(
+          employeeId: current.employeeId,
+          employeeName: resolved,
+          jobId: current.jobId,
+          latitude: current.latitude,
+          longitude: current.longitude,
+          updatedAt: current.updatedAt,
+        );
+      }
+    }
+    notifyListeners();
+  }
 
   /// Hydrate initial fleet positions for tenant owner via GET /users/jobs/owner
   Future<void> hydrateOwnerFleet(String ownerToken) async {
@@ -84,6 +115,7 @@ class MapTrackingProvider extends ChangeNotifier {
                   lon != null) {
                 _employeeMarkers[empId] = EmployeeMarkerData(
                   employeeId: empId,
+                  employeeName: _employeeNames[empId],
                   jobId: null,
                   latitude: lat,
                   longitude: lon,
@@ -121,6 +153,7 @@ class MapTrackingProvider extends ChangeNotifier {
               final loc = job.currentLocation ?? job.location;
               _employeeMarkers[empId] = EmployeeMarkerData(
                 employeeId: empId,
+                employeeName: _employeeNames[empId],
                 jobId: job.id,
                 latitude: loc.latitude,
                 longitude: loc.longitude,
@@ -175,6 +208,7 @@ class MapTrackingProvider extends ChangeNotifier {
           final loc = job.currentLocation ?? job.location;
           _employeeMarkers[job.employeeId!] = EmployeeMarkerData(
             employeeId: job.employeeId!,
+            employeeName: _employeeNames[job.employeeId!],
             jobId: job.id,
             latitude: loc.latitude,
             longitude: loc.longitude,
@@ -326,6 +360,7 @@ class MapTrackingProvider extends ChangeNotifier {
 
           _employeeMarkers[empId] = EmployeeMarkerData(
             employeeId: empId,
+            employeeName: _employeeNames[empId] ?? existing?.employeeName,
             jobId: resolvedJobId,
             latitude: lat,
             longitude: lon,

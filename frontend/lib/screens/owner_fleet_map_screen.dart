@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../core/provider_connection_cleanup.dart';
 import '../core/theme.dart';
 import '../models/employee_marker.dart';
 import '../providers/map_tracking_provider.dart';
+import '../providers/owner_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
@@ -33,6 +35,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
   final MapController _mapController = MapController();
   EmployeeMarkerData? _selectedEmployee;
   String _selectedFilter = 'all'; // 'all', 'on_route', 'idle'
+  Map<String, String> _lastAppliedNameLookup = const {};
 
   @override
   void initState() {
@@ -48,6 +51,16 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
         addConnectionTeardown(provider.disconnect);
         provider.hydrateOwnerFleet(widget.token!);
         provider.connectAndSubscribe('fleet:${widget.ownerId}', widget.token!);
+        // Name resolution needs the owner roster: fetch it when this scope
+        // has an OwnerProvider whose list is still empty (e.g. the owner
+        // opened the map before the workers tab). Failures only fall back
+        // to ID display, never break the map.
+        try {
+          final owners = context.read<OwnerProvider?>();
+          if (owners != null && owners.employees.isEmpty) {
+            owners.fetchEmployees(widget.token!);
+          }
+        } catch (_) {}
       }
     });
   }
@@ -64,6 +77,49 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
 
   void _centerOnTarget(LatLng centerPoint) {
     _mapController.move(centerPoint, 13.0);
+  }
+
+  /// Builds the employeeId → username lookup from the already-fetched owner
+  /// roster (GET /auth/employees via OwnerProvider.fetchEmployees). Entries
+  /// without a usable id/username pair are skipped; a missing provider or an
+  /// empty roster yields an empty lookup (markers then show the ID fallback).
+  Map<String, String> _rosterLookup(OwnerProvider? owners) {
+    final lookup = <String, String>{};
+    if (owners == null) return lookup;
+    for (final entry in owners.employees) {
+      if (entry is Map) {
+        final id = entry['id']?.toString() ?? '';
+        final name = (entry['username']?.toString() ?? '').trim();
+        if (id.isNotEmpty && name.isNotEmpty) {
+          lookup[id] = name;
+        }
+      }
+    }
+    return lookup;
+  }
+
+  /// Owner-facing display name: resolved username when the roster has this
+  /// employee, otherwise a diagnosable "Unknown: <truncated-id>" fallback
+  /// (existing `statusUnknown` l10n convention) — never raw "null", never a
+  /// crash, and visually distinct from a real name.
+  String _displayName(EmployeeMarkerData m) {
+    final name = m.employeeName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final id = m.employeeId;
+    final truncated = id.length > 12 ? id.substring(0, 12) : id;
+    return '${context.l10n.statusUnknown}: $truncated';
+  }
+
+  /// Avatar initials: first letter of the resolved username where available,
+  /// otherwise the legacy ID-derived characters.
+  String _avatarInitials(EmployeeMarkerData m) {
+    final name = m.employeeName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return AppTypography.uppercaseLabel(name.substring(0, 1));
+    }
+    return m.employeeId.length > 2
+        ? AppTypography.uppercaseLabel(m.employeeId.substring(0, 2))
+        : 'DR';
   }
 
   @override
@@ -85,6 +141,31 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
       ],
       body: Consumer<MapTrackingProvider>(
         builder: (context, provider, child) {
+          // Resolve roster names post-frame: the lookup is derived from
+          // OwnerProvider (nullable — absent in some test scopes). Applying
+          // it must notify listeners, which is illegal during build, so a
+          // changed lookup is deferred to the end of the frame; the provider
+          // setter itself is also a no-op when unchanged. Names therefore
+          // appear as soon as the roster fetch completes, even if markers
+          // rendered first (no creation-vs-fetch race).
+          final owners = context.watch<OwnerProvider?>();
+          final lookup = _rosterLookup(owners);
+          if (!mapEquals(lookup, _lastAppliedNameLookup)) {
+            _lastAppliedNameLookup = Map<String, String>.of(lookup);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) provider.setEmployeeNameLookup(lookup);
+            });
+          }
+          // Refresh a selected card against the latest marker snapshots so
+          // it never shows a stale pre-resolution instance.
+          if (_selectedEmployee != null) {
+            for (final m in provider.markersList) {
+              if (m.employeeId == _selectedEmployee!.employeeId) {
+                _selectedEmployee = m;
+                break;
+              }
+            }
+          }
           if (provider.isLoading && provider.markersList.isEmpty) {
             return const Center(
               child: ThemedLoadingIndicator(
@@ -201,9 +282,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                           vertical: AppSpacing.xxs,
                         ),
                         child: Text(
-                          m.employeeId.length > 12
-                              ? m.employeeId.substring(0, 12)
-                              : m.employeeId,
+                          _displayName(m),
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.bold,
@@ -426,10 +505,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                         height: 36,
                         child: Center(
                           child: Text(
-                            employee.employeeId.length > 2
-                                ? AppTypography.uppercaseLabel(
-                                    employee.employeeId.substring(0, 2))
-                                : 'DR',
+                            _avatarInitials(employee),
                             style: AppTypography.labelMd.copyWith(
                               color: isOnJob
                                   ? AppColors.secondary
@@ -443,7 +519,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          employee.employeeId,
+                          _displayName(employee),
                           style: AppTypography.titleMd.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
