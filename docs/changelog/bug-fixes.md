@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Unavailable Job Status Keeps a Single Retry CTA (Audit C10)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding C10, `job_status_screen.dart` rendered two identical retry buttons for `unavailable` jobs — one inside `_buildUnavailableBusyCard`, one in `_buildActionButtons` (same `_retryBooking` handler, same `retryBookingAction` copy, shared `_isRetrying` flag). Removed the action-row duplicate (`job_status_unavailable_retry_button`); kept the in-card button (`job_status_retry_button`) because it sits directly under the all-couriers-busy explanation, closest to the failure context. Purely structural — no behavior change, since both were already in sync.
+- **Commit SHA**: ``3020b8a6861211e4844d7a9e774f23810c537fcd``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` (No issues found!), 1 new case in `frontend/test/job_cancellation_test.dart` (in-card retry present, action-row key absent, exactly one `PrimaryButton` on screen), `job_cancellation_test.dart` 12/12 green. No backend changes.
+
 ## Shared Pending Pulse Dot for Dispatch-Search Waits (Audit C9)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding C9, three screens rendered static text while `pending_dispatch` (a minutes-long background search) ran underneath. Root-cause call: one new shared widget `frontend/lib/widgets/pending_pulse_dot.dart` (`PendingPulseDot` — 8px dot, 500ms `repeat(reverse: true)` fade via `AppMotion` tokens, no new dependencies, no custom painters) instead of three bespoke animations, so the signal is identical everywhere and future screens inherit it. Wired at all three sites, each gated on its own pending condition: `job_status_screen.dart` step-1 subtitle (`showPendingPulse` param on `_buildFulfillmentStep`, true only while status is exactly `pending_dispatch` and not cancelled — cleared on assignment); `customer_jobs_screen.dart` fare row next to the existing `matchingCourierLabel` (existing `isPendingDispatch` flag); `customer_job_map_screen.dart` waiting notice (this screen carries no status field — the notice's own markers-empty visibility condition IS the pending gate, so the dot renders and clears with it). Shared-widget note per repo rule: this ADDS a widget (no existing shared widget modified), consumed by exactly these three screens.
