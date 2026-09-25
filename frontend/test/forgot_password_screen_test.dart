@@ -15,6 +15,7 @@ import 'package:frontend/screens/forgot_password_screen.dart';
 import 'package:frontend/screens/reset_password_otp_screen.dart';
 import 'package:frontend/screens/reset_password_new_screen.dart';
 import 'package:frontend/screens/login_screen.dart';
+import 'package:frontend/widgets/secondary_button.dart';
 
 Widget _flowApp(AuthProvider authProvider, {Widget? home}) {
   return MultiProvider(
@@ -402,6 +403,117 @@ void main() {
       expect(
           find.textContaining('restart from the email step'), findsOneWidget);
       expect(find.byType(ResetPasswordNewScreen), findsOneWidget);
+    });
+
+    testWidgets(
+        'A5: lapsed session offers a Back-to-email button that restarts cleanly',
+        (WidgetTester tester) async {
+      authProvider = AuthProvider(mockApiClient);
+      _largeViewport(tester);
+      mockApiClient.resetMode = 'expired';
+      final token =
+          await authProvider.verifyResetCode('user@example.com', '654321');
+      expect(token, 'tok-test-possession-123');
+      await tester.pumpWidget(_flowApp(authProvider,
+          home: const ResetPasswordNewScreen(email: 'user@example.com')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('reset_new_password_field')), 'newSecret123');
+      await tester.enterText(
+          find.byKey(const Key('reset_confirm_password_field')),
+          'newSecret123');
+      await tester.tap(find.byKey(const Key('submit_new_password_button')));
+      await tester.pumpAndSettle();
+
+      // The expired-session banner carries an explicit next action now
+      // (audit A5), not onRetry: null.
+      expect(
+          find.byKey(const Key('reset_password_error_banner')), findsOneWidget);
+      expect(
+          find.byKey(const Key('reset_back_to_email_button')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('reset_back_to_email_button')));
+      await tester.pumpAndSettle();
+
+      // Fresh email step, dead screens cleared off the stack.
+      expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+      expect(find.byType(ResetPasswordNewScreen), findsNothing);
+      expect(find.byType(ResetPasswordOtpScreen), findsNothing);
+    });
+
+    testWidgets('A6: screen-2 footer is a Back-to-email link, not Sign In',
+        (WidgetTester tester) async {
+      authProvider = AuthProvider(mockApiClient);
+      _largeViewport(tester);
+      await tester.pumpWidget(_flowApp(authProvider));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('forgot_password_email_field')),
+          'user@example.com');
+      await tester.tap(find.byKey(const Key('request_reset_code_button')));
+      await tester.pumpAndSettle();
+      _dismissSnackBar(tester);
+      await tester.pump();
+      expect(find.byType(ResetPasswordOtpScreen), findsOneWidget);
+
+      // No misleading Sign-In copy on screen 2; the step-specific Back
+      // link pops exactly one step to the email screen.
+      expect(find.textContaining('Sign In'), findsNothing);
+      expect(find.byKey(const Key('reset_otp_back_link')), findsOneWidget);
+      expect(find.text('Back to email step'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('reset_otp_back_link')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ForgotPasswordScreen), findsOneWidget);
+      expect(find.byType(ResetPasswordOtpScreen), findsNothing);
+    });
+
+    testWidgets('A6: screen-3 footer is a Back-to-code link, not Sign In',
+        (WidgetTester tester) async {
+      authProvider = AuthProvider(mockApiClient);
+      _largeViewport(tester);
+      await tester.pumpWidget(_flowApp(authProvider));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('forgot_password_email_field')),
+          'user@example.com');
+      await tester.tap(find.byKey(const Key('request_reset_code_button')));
+      await tester.pumpAndSettle();
+      _dismissSnackBar(tester);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('verify_reset_code_button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ResetPasswordNewScreen), findsOneWidget);
+
+      expect(find.textContaining('Sign In'), findsNothing);
+      expect(find.byKey(const Key('reset_new_back_link')), findsOneWidget);
+      expect(find.text('Back to code step'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('reset_new_back_link')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ResetPasswordOtpScreen), findsOneWidget);
+      expect(find.byType(ResetPasswordNewScreen), findsNothing);
+    });
+
+    testWidgets(
+        'A8: screen-2 Resend is outlined with refresh icon (Verify stays focal)',
+        (WidgetTester tester) async {
+      authProvider = AuthProvider(mockApiClient);
+      _largeViewport(tester);
+      mockApiClient.returnDevOtp = false;
+      await tester.pumpWidget(_flowApp(authProvider,
+          home: const ResetPasswordOtpScreen(email: 'user@example.com')));
+      await tester.pumpAndSettle();
+
+      final resendFinder = find.byKey(const Key('resend_reset_code_button'));
+      expect(resendFinder, findsOneWidget);
+      final resendButton = tester.widget<SecondaryButton>(resendFinder);
+      expect(resendButton.isOutlined, isTrue);
+      expect(resendButton.icon, Icons.refresh);
     });
   });
 }

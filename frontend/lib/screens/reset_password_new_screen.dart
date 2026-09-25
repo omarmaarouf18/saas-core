@@ -6,10 +6,12 @@ import '../providers/auth_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
+import 'forgot_password_screen.dart';
 import 'login_screen.dart';
 
 // Screen 3 of the two-phase reset flow (ADR-0026 as amended): collects the
@@ -141,6 +143,27 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
               onRetry: isVerificationFailure ? null : _submitReset,
             ),
             const SizedBox(height: AppSpacing.md),
+            // Expired-session recovery (audit A5): the banner explains the
+            // restart, this button performs it — pushing a fresh email step
+            // and clearing the dead code/new-password screens off the stack
+            // instead of stranding the user with no next action.
+            if (isVerificationFailure) ...[
+              SecondaryButton(
+                key: const Key('reset_back_to_email_button'),
+                text: l10n.resetBackToEmailStep,
+                icon: Icons.arrow_back,
+                isOutlined: true,
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => const ForgotPasswordScreen(),
+                    ),
+                    (route) => false,
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
           ],
 
           // New Password Field
@@ -236,19 +259,34 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
     );
   }
 
+  // Audit A6: step-specific Back link — pop() from screen 3 lands on the
+  // code step, so the label says so. The "Sign In" copy lives only on
+  // screen 1, the one place pop() actually returns to Login.
   Widget _buildFooterLink(AppLocalizations l10n) {
     return Center(
       child: InkWell(
+        key: const Key('reset_new_back_link'),
         onTap: () => Navigator.of(context).pop(),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xs),
-          child: Text(
-            "${l10n.signupHasAccount} ${l10n.signupSignIn}",
-            style: AppTypography.bodyMd.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                l10n.resetBackToCodeStep,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

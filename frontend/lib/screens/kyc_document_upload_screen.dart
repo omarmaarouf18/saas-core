@@ -55,6 +55,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   final Map<String, bool> _uploadingSlots = {};
   final Map<String, String?> _slotErrors = {};
   final Map<String, PickedDocumentFile?> _pickedFiles = {};
+  // Audit A10: refresh busy flag — the AppBar button and pull-to-refresh
+  // share _refreshUserData, and both must show a busy state + refuse
+  // re-trigger until the fetch resolves (previously zero feedback).
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -65,8 +69,20 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
   }
 
   Future<void> _refreshUserData() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    await auth.fetchUserProfile();
+    if (_isRefreshing) return;
+    setState(() {
+      _isRefreshing = true;
+    });
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      await auth.fetchUserProfile();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   /// Consolidated bottom sheet picker for camera, gallery, and optional PDF selection.
@@ -349,6 +365,10 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
     required Map<String, dynamic> slot,
     required UserProfile? user,
     required bool isApproved,
+    // Audit A9: only the first incomplete slot keeps the focal
+    // PrimaryButton; remaining incomplete slots render an outlined
+    // SecondaryButton so Verify/Upload attention has one target.
+    required bool isFirstIncomplete,
   }) {
     final slotKey = slot['key'] as String;
     final title = slot['title'] as String;
@@ -554,17 +574,29 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                               : () =>
                                   _handleSlotUpload(slotKey, title, allowPdf),
                         )
-                      : PrimaryButton(
-                          key: ValueKey('btn_upload_$slotKey'),
-                          text: context.l10n.uploadDocumentBtn,
-                          icon: Icons.upload_file,
-                          trailingIcon: Icons.arrow_forward,
-                          isLoading: isUploading,
-                          onPressed: isUploading
-                              ? null
-                              : () =>
-                                  _handleSlotUpload(slotKey, title, allowPdf),
-                        ))
+                      : isFirstIncomplete
+                          ? PrimaryButton(
+                              key: ValueKey('btn_upload_$slotKey'),
+                              text: context.l10n.uploadDocumentBtn,
+                              icon: Icons.upload_file,
+                              trailingIcon: Icons.arrow_forward,
+                              isLoading: isUploading,
+                              onPressed: isUploading
+                                  ? null
+                                  : () => _handleSlotUpload(
+                                      slotKey, title, allowPdf),
+                            )
+                          : SecondaryButton(
+                              key: ValueKey('btn_upload_$slotKey'),
+                              text: context.l10n.uploadDocumentBtn,
+                              icon: Icons.upload_file,
+                              isOutlined: true,
+                              isLoading: isUploading,
+                              onPressed: isUploading
+                                  ? null
+                                  : () => _handleSlotUpload(
+                                      slotKey, title, allowPdf),
+                            ))
                   : const SizedBox.shrink(key: ValueKey('slot_approved')),
             ),
           ],
@@ -621,20 +653,66 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
         },
     ];
 
+    // Audit A9: first incomplete slot key — only it keeps the focal
+    // PrimaryButton; remaining incomplete slots are demoted to outlined
+    // SecondaryButtons in _buildDocumentSlotCard.
+    String? firstIncompleteKey;
+    for (final slot in slots) {
+      final key = slot['key'] as String;
+      final existing = _getExistingDocPath(user, key);
+      final picked = _pickedFiles[key];
+      if ((existing == null || existing.isEmpty) && picked == null) {
+        firstIncompleteKey = key;
+        break;
+      }
+    }
+
     return FormScreenTemplate(
       title: roleTitle,
       actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          tooltip: l10n.tooltipRefreshStatus,
-          onPressed: _refreshUserData,
-        ),
+        // Audit A10: busy state on the manual refresh — an 18px spinner
+        // replaces the button and re-trigger is refused via the
+        // _isRefreshing guard in _refreshUserData until the fetch resolves.
+        // NOTE for audit X-01: this 18px AppBar spinner intentionally stays
+        // a raw CircularProgressIndicator — ThemedLoadingIndicator is a
+        // centered full-size widget and cannot fit AppBar action bounds.
+        _isRefreshing
+            ? const Padding(
+                key: ValueKey('kyc_refresh_busy'),
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : IconButton(
+                key: const Key('kyc_refresh_button'),
+                icon: const Icon(Icons.refresh),
+                tooltip: l10n.tooltipRefreshStatus,
+                onPressed: _refreshUserData,
+              ),
       ],
       onRefresh: _refreshUserData,
       padding: const EdgeInsets.all(AppSpacing.lg),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Profile-refresh failure (audit A4): fetchUserProfile failures
+          // are stored on the provider — surface them here with a retry
+          // instead of rendering a stale KYC status with zero signal.
+          // (Slot upload failures keep their own per-slot banners below;
+          // uploadDocument never touches auth.error, so this banner reads
+          // as refresh-only in practice.)
+          if (auth.error != null) ...[
+            ThemedErrorBanner(
+              key: const Key('kyc_refresh_error_banner'),
+              message: auth.error!,
+              onRetry: _refreshUserData,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+
           // Stitch Status Banner
           _buildStatusBanner(
             displayStatus: displayStatus,
@@ -672,6 +750,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
               slot: slot,
               user: user,
               isApproved: isApproved,
+              isFirstIncomplete: slot['key'] == firstIncompleteKey,
             ),
           ),
         ],

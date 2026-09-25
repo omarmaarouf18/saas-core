@@ -483,6 +483,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'This reset session has expired. Please restart from the email step to get a new code.';
 
   @override
+  String get resetBackToEmailStep => 'Back to email step';
+
+  @override
+  String get resetBackToCodeStep => 'Back to code step';
+
+  @override
   String get customerHomeGreeting => 'Welcome back,';
 
   @override

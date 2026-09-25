@@ -1016,6 +1016,18 @@ abstract class AppLocalizations {
   /// **'This reset session has expired. Please restart from the email step to get a new code.'**
   String get resetSessionExpiredMsg;
 
+  /// No description provided for @resetBackToEmailStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to email step'**
+  String get resetBackToEmailStep;
+
+  /// No description provided for @resetBackToCodeStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to code step'**
+  String get resetBackToCodeStep;
+
   /// No description provided for @customerHomeGreeting.
   ///
   /// In en, this message translates to:

@@ -160,6 +160,8 @@
   "forgotPasswordSendCodeButton": "ابعت الكود",
   "newPasswordSubtitle": "اختار كلمة السر الجديدة.",
   "resetSessionExpiredMsg": "الجلسة دي انتهت. ابدأ من خطوة الإيميل عشان توصلك كود جديد.",
+  "resetBackToEmailStep": "ارجع لخطوة الإيميل",
+  "resetBackToCodeStep": "ارجع لخطوة الكود",
   "customerHomeGreeting": "أهلاً بك،",
   "customerHomeSub": "محتاج تطلب إيه النهاردة؟",
   "customerHomeQuickAccess": "الخدمات",

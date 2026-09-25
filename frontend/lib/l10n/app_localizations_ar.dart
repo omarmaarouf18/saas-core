@@ -480,6 +480,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'الجلسة دي انتهت. ابدأ من خطوة الإيميل عشان توصلك كود جديد.';
 
   @override
+  String get resetBackToEmailStep => 'ارجع لخطوة الإيميل';
+
+  @override
+  String get resetBackToCodeStep => 'ارجع لخطوة الكود';
+
+  @override
   String get customerHomeGreeting => 'أهلاً بك،';
 
   @override

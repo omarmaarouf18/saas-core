@@ -245,16 +245,15 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Secondary Resend Action
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: SecondaryButton(
-              key: const Key('resend_reset_code_button'),
-              text: l10n.otpResendButton,
-              icon: Icons.send_outlined,
-              isLoading: _isResending,
-              onPressed: _resendCode,
-            ),
+          // Secondary Resend Action — outlined and full-width so Verify
+          // stays the single focal CTA, matching otp_screen.dart (audit A8).
+          SecondaryButton(
+            key: const Key('resend_reset_code_button'),
+            text: l10n.otpResendButton,
+            icon: Icons.refresh,
+            isOutlined: true,
+            isLoading: _isResending,
+            onPressed: _resendCode,
           ),
         ],
       ),
@@ -317,19 +316,34 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
         ));
   }
 
+  // Audit A6: step-specific Back link — pop() from screen 2 lands on the
+  // email step, so the label says so. The "Sign In" copy lives only on
+  // screen 1, the one place pop() actually returns to Login.
   Widget _buildFooterLink(AppLocalizations l10n) {
     return Center(
       child: InkWell(
+        key: const Key('reset_otp_back_link'),
         onTap: () => Navigator.of(context).pop(),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xs),
-          child: Text(
-            "${l10n.signupHasAccount} ${l10n.signupSignIn}",
-            style: AppTypography.bodyMd.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                l10n.resetBackToEmailStep,
+                style: AppTypography.bodyMd.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -84,6 +84,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> fetchUserProfile() async {
     if (_token == null) return;
+    // Audit A4: a refresh failure used to vanish into debugPrint with
+    // nothing stored, so screens (KYC status, dashboards) rendered stale
+    // data with zero signal. Store it like every sibling method so the
+    // calling screen can surface a retryable inline banner.
+    _error = null;
+    _lastErrorStatusCode = null;
+    notifyListeners();
     try {
       final res = await apiClient
           .get('/auth/user', queryParams: {'user_token': _token!});
@@ -97,6 +104,9 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Fetch user profile error: $e');
+      _error = friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
+      notifyListeners();
     }
   }
 
