@@ -298,6 +298,7 @@
     * `location_picker_map.dart`
     * `otp_pin_input.dart`
     * `payout_request_dialog.dart`
+    * `pending_pulse_dot.dart`
     * `pill_filter_bar.dart`
     * `primary_button.dart`
     * `rating_summary_card.dart`

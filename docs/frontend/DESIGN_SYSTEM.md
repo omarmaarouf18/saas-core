@@ -129,7 +129,7 @@ This design system provides the visual architecture and component spec for Quick
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 33 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 34 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
@@ -149,6 +149,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
 | `OtpPinInput` | `otp_pin_input.dart` | 6-digit discrete PIN input boxes with auto-advance and clipboard support | `controller`, `onCompleted` | `otp_screen.dart`, `forgot_password_screen.dart` |
 | `PayoutRequestDialog` | `payout_request_dialog.dart` | Owner payout withdrawal request modal with bank/Instapay methods | `withdrawableBalance`, `onPayoutRequested` | `wallet_screen.dart` |
+| `PendingPulseDot` | `pending_pulse_dot.dart` | Looping animated dot signaling an unbounded background wait (dispatch search, polling) | `size`, `color` | `job_status_screen.dart`, `customer_jobs_screen.dart`, `customer_job_map_screen.dart` |
 | `PillFilterBar` | `pill_filter_bar.dart` | Horizontal scrollable category and status filter chips with badge counts | `items`, `selectedValue`, `onSelected` | `customer_jobs_screen.dart`, `notifications_screen.dart`, `owner_history_screen.dart`, `owner_fleet_map_screen.dart` |
 | `PrimaryButton` | `primary_button.dart` | Amber Gold primary CTA button with built-in 600ms tap debounce | `text`, `onPressed`, `isLoading`, `icon`, `isDestructive` | Used across 28 screens |
 | `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `totalReviews` | `home_screen.dart`, `customer_marketplace_screen.dart` |
@@ -168,7 +169,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `label`, `controller`, `validator`, `prefixIcon` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 33 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 34 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 
