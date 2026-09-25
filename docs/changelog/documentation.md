@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## UX_PATTERNS.md Extended with Customer-Group Rules 5–7 (Process/Documentation)
+
+- **Implementation Detail**: This entry is process/documentation, not shippable behavior — no application code changed. Extends `docs/frontend/UX_PATTERNS.md` (created by the Auth-group task) with the three norms actually established by remediating audit group C (Customer) of `docs/frontend/UI_UX_AUDIT_2026-09.md`: Rule 5 (loading vs failure vs empty — three distinct states; a screen branching only on `isEmpty` is presumed incomplete), Rule 6 (dismiss-gesture consistency — input dialogs lock with `barrierDismissible: false`), Rule 7 (background progress indicator — unbounded waits get a lightweight animated signal). Written last, from the Step 1–5 diffs, with every `file:line` citation re-verified against the edited tree before committing. Per the task brief, C10 (one-off structural dedup) was deliberately left uncodified. `AI_CONTEXT.md` + `docs/frontend/STATUS.md` updated in the same commit to mark the Customer group remediated.
+- **Commit SHA**: ``e188206a045fa76d12969a5e9ccaea07bc02a9d0``
+- **Verification**: Docs-only change — no code paths touched. `git show --stat` on the cited commit confirms exactly 3 files; citation re-verification caught no drift (all numbers taken from post-edit grep this session).
+
+---
+
 ## UX_PATTERNS.md Extracted from Audit Auth-Group Fixes (Process/Documentation)
 
 - **Implementation Detail**: This entry is process/documentation, not shippable behavior — no application code changed. New reference doc `docs/frontend/UX_PATTERNS.md` codifies the four interaction norms actually established by remediating audit group A (Auth) of `docs/frontend/UI_UX_AUDIT_2026-09.md`: (1) error display — persistent `ThemedErrorBanner` with `onRetry`, snackbar as transient supplement only (reference: `forgot_password_screen.dart` + Step-1 screens); (2) OTP completion — full-length PIN entry verifies immediately via a call-site `onCompleted` contract guarded by the verify path's in-flight check (Step-2 root-cause call documented: widget-level default rejected, `OtpPinInput` cannot verify); (3) focal action — one `PrimaryButton` per screen state, secondaries outlined (Step-1/Step-3 before/after); (4) busy state — every manual refresh/retry shows busy and locks re-trigger (A10 fix, with the AppBar-spinner size exception recorded against open item X-01). The doc opens by pointing back to the source audit and states its incremental growth discipline explicitly: Confirmation Dialog, Empty State, Skeleton Screens, and later-group patterns get sections only when their fixes land. `docs/frontend/STATUS.md` Known Gaps audit bullet and `AI_CONTEXT.md` updated in the same commit to mark the Auth group remediated.
