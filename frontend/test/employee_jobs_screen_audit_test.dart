@@ -130,6 +130,11 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
   @override
   bool isLoading = false;
 
+  // Audit C2/C3: ChatProvider grew isLoadingHistory; implements-mocks must
+  // declare it or ChatScreen reads crash via noSuchMethod.
+  @override
+  bool isLoadingHistory = false;
+
   @override
   List<ChatMessage> messages = [];
 

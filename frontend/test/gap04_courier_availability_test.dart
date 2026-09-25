@@ -106,6 +106,11 @@ class FakeNotificationsProvider extends ChangeNotifier
 }
 
 class FakeChatProvider extends ChangeNotifier implements ChatProvider {
+  // Audit C2/C3: ChatProvider grew isLoadingHistory; implements-mocks must
+  // declare it or chat-screen reads crash via noSuchMethod.
+  @override
+  bool isLoadingHistory = false;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
