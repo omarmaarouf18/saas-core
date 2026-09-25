@@ -11,6 +11,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/job_status_screen.dart';
 import 'package:frontend/widgets/create_ticket_dialog.dart';
+import 'package:frontend/widgets/pending_pulse_dot.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -307,5 +308,67 @@ void main() {
         reason: 'Snackbar must show the ticket_id returned by the backend');
 
     await tester.pumpAndSettle();
+  });
+
+  group('C9 pending-dispatch animated indicator on JobStatusScreen', () {
+    Job dispatchJob() => Job(
+          id: 'job-dispatch-9',
+          ownerId: 'owner-1',
+          userId: 'cust-1',
+          serviceId: 'service-1',
+          status: 'pending_dispatch',
+          location: JobLocation(latitude: 30.0, longitude: 31.0),
+          paymentMethod: 'cod',
+        );
+
+    Future<void> pumpStatus(WidgetTester tester, Job job) async {
+      final apiClient = ApiClient();
+      final mockChat = MockChatProviderForTest(apiClient);
+      final mockAuth = MockAuthProviderForTest(
+        apiClient,
+        mockUser: UserProfile(
+          id: 'cust-1',
+          email: 'customer@example.com',
+          username: 'CustomerUser',
+          role: 'user',
+        ),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthProvider>.value(value: mockAuth),
+            ChangeNotifierProvider<ChatProvider>.value(value: mockChat),
+            ChangeNotifierProvider<MarketplaceProvider>(
+              create: (_) => MarketplaceProvider(apiClient),
+            ),
+            ChangeNotifierProvider<NotificationsProvider>(
+              create: (_) => NotificationsProvider(apiClient),
+            ),
+          ],
+          child: MaterialApp(
+            home: JobStatusScreen(job: job, enablePolling: false),
+          ),
+        ),
+      );
+      // NOTE: fixed pumps, never pumpAndSettle when the dot is expected —
+      // PendingPulseDot loops forever (same constraint as shimmer).
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('pending_dispatch stepper shows the pulse dot',
+        (WidgetTester tester) async {
+      await pumpStatus(tester, dispatchJob());
+      expect(find.byType(PendingPulseDot), findsOneWidget);
+    });
+
+    testWidgets('assigned job stepper shows no pulse dot',
+        (WidgetTester tester) async {
+      await pumpStatus(tester, activeJob);
+      await tester.pumpAndSettle();
+      expect(find.byType(PendingPulseDot), findsNothing);
+    });
   });
 }

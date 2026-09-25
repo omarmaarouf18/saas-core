@@ -148,7 +148,11 @@ void main() {
       );
 
       await tester.pumpWidget(createCustomerWidget(job: jobWithOffer));
-      await tester.pumpAndSettle();
+      // C9: fixed pumps — the pending-dispatch pulse dot loops forever.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify offered courier card is displayed
       expect(find.byKey(const Key('offered_courier_card')), findsOneWidget);
@@ -181,7 +185,11 @@ void main() {
       );
 
       await tester.pumpWidget(createCustomerWidget(job: jobSearching));
-      await tester.pumpAndSettle();
+      // C9: fixed pumps — the pending-dispatch pulse dot loops forever.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byKey(const Key('offered_courier_card')), findsNothing);
       expect(find.byKey(const Key('early_chat_button')), findsNothing);

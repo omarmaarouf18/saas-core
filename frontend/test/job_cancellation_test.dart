@@ -553,20 +553,30 @@ void main() {
       job: pendingDispatchJob,
       marketplaceProvider: mpProvider,
     ));
-    await tester.pumpAndSettle();
+    // C9: fixed pumps throughout this test — the pending-dispatch pulse
+    // dot loops forever, so pumpAndSettle would time out (same constraint
+    // as SkeletonLoader shimmer). 100ms steps advance dialog transitions.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
 
     final cancelButton = find.byKey(const Key('cancel_job_button'));
     expect(cancelButton, findsOneWidget);
     await tester.ensureVisible(cancelButton);
     await tester.tap(cancelButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('cancel_reason_input')), 'No longer needed');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     await tester.tap(find.byKey(const Key('confirm_cancel_button')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(mpProvider.cancelJobCalled, isTrue);
     expect(mpProvider.lastCancelledJobId, 'job-disp-999');
@@ -606,7 +616,11 @@ void main() {
 
     // Tap Retry
     await tester.tap(retryBtn);
-    await tester.pumpAndSettle();
+    // C9: the fresh booking lands in pending_dispatch (pulse dot loops),
+    // so advance with fixed pumps instead of pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(mpProvider.bookJobCalled, isTrue);
     expect(mpProvider.lastBookJobParams?['serviceId'], 'service-1');

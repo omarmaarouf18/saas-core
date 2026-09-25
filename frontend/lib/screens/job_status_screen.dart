@@ -9,6 +9,7 @@ import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/pending_pulse_dot.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/create_ticket_dialog.dart';
 import '../widgets/entity_avatar.dart';
@@ -723,6 +724,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
             isDone: step > 1 || isCompleted,
             isActive: step == 1 && !isCancelled,
             isLast: false,
+            showPendingPulse:
+                _currentJob.status == 'pending_dispatch' && !isCancelled,
           ),
           _buildFulfillmentStep(
             index: 2,
@@ -757,6 +760,10 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     required bool isDone,
     required bool isActive,
     required bool isLast,
+    // Audit C9: true only while the job is still searching for a courier.
+    // Renders the shared PendingPulseDot under the subtitle; cleared the
+    // moment assignment (or any other status) replaces the wait.
+    bool showPendingPulse = false,
   }) {
     final Color nodeBg = isDone
         ? Theme.of(context).colorScheme.primary
@@ -812,6 +819,12 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (showPendingPulse) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  PendingPulseDot(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
               ],
             ),
           ),

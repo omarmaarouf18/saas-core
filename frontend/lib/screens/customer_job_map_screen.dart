@@ -10,6 +10,7 @@ import '../models/employee_marker.dart';
 import '../models/job.dart';
 import '../providers/map_tracking_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/pending_pulse_dot.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
@@ -286,6 +287,15 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            // Audit C9: this notice only renders while no courier marker
+            // has arrived (markers empty), which is exactly the pending
+            // wait — the dot animates with the notice and clears with it.
+            // (This screen carries no job-status field, so the notice's
+            // own visibility condition is the pending gate.)
+            PendingPulseDot(
+              color: Theme.of(context).colorScheme.primary,
             ),
           ],
         ),

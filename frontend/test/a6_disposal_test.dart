@@ -13,6 +13,7 @@ import 'package:frontend/screens/customer_job_map_screen.dart';
 import 'package:frontend/screens/owner_fleet_map_screen.dart';
 import 'package:frontend/screens/ticket_chat_screen.dart';
 import 'package:frontend/widgets/otp_pin_input.dart';
+import 'package:frontend/widgets/pending_pulse_dot.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -71,6 +72,17 @@ class _SpyMapTrackingProvider extends MapTrackingProvider {
     disconnectCount++;
     super.disconnect();
   }
+}
+
+/// C9 map coverage: stubbed marker list driving the waiting-notice gate
+/// (markers empty → notice + dot; markers present → map, no dot).
+class _C9StubMarkersProvider extends _SpyMapTrackingProvider {
+  List<EmployeeMarkerData> stubMarkers = [];
+
+  _C9StubMarkersProvider(super.apiClient);
+
+  @override
+  List<EmployeeMarkerData> get markersList => stubMarkers;
 }
 
 void main() {
@@ -240,6 +252,57 @@ void main() {
               '_buildPinBox creates FocusNode() inline per box per build; each '
               'keystroke-driven rebuild allocates 6 fresh FocusNodes that are '
               'never disposed');
+    });
+  });
+
+  // C9 waiting-notice indicator. Lives here (not in a map-themed file)
+  // because this file owns the only CustomerJobMapScreen widget harness
+  // (_buildL10nApp + _SpyMapTrackingProvider); there is no dedicated map
+  // screen test file to extend.
+  group('C9: customer job map waiting notice pulses while courier missing', () {
+    testWidgets('notice + pulse dot render with zero markers', (tester) async {
+      final map = _SpyMapTrackingProvider(ApiClient());
+
+      await tester.pumpWidget(
+        _buildL10nApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: map,
+            child: const CustomerJobMapScreen(jobId: 'job-c9', token: 't'),
+          ),
+        ),
+      );
+      // NOTE: fixed pumps, never pumpAndSettle — PendingPulseDot loops
+      // forever (same constraint as SkeletonLoader shimmer).
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(PendingPulseDot), findsOneWidget);
+    });
+
+    testWidgets('notice + pulse dot clear once a marker arrives',
+        (tester) async {
+      final map = _C9StubMarkersProvider(ApiClient())
+        ..stubMarkers = [
+          EmployeeMarkerData(
+            employeeId: 'emp-1',
+            latitude: 30.0,
+            longitude: 31.0,
+            updatedAt: DateTime.now(),
+          ),
+        ];
+
+      await tester.pumpWidget(
+        _buildL10nApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: map,
+            child: const CustomerJobMapScreen(jobId: 'job-c9', token: 't'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PendingPulseDot), findsNothing);
     });
   });
 }

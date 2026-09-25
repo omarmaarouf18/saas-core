@@ -6,6 +6,7 @@ import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/list_screen_template.dart';
+import '../widgets/pending_pulse_dot.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -348,6 +349,12 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                       fontStyle: FontStyle.italic,
                     ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  // Audit C9: animated signal for the unbounded
+                  // dispatch-search wait; gone once assigned.
+                  PendingPulseDot(
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ] else if (isUnavailable) ...[
                   const Spacer(),

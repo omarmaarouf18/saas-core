@@ -10,6 +10,7 @@ import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_jobs_screen.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/screens/job_status_screen.dart';
+import 'package:frontend/widgets/pending_pulse_dot.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -303,12 +304,17 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest(
       marketplaceProvider: mockMarketplace,
     ));
-    await tester.pumpAndSettle();
+    // C9: fixed pumps, never pumpAndSettle — the pending-dispatch pulse
+    // dot loops forever (same constraint as SkeletonLoader shimmer).
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
 
     expect(find.byKey(Key('customer_job_card_${pendingDispatchJob.id}')),
         findsOneWidget);
     expect(find.text("Matching courier..."), findsOneWidget);
     expect(find.text("FINDING COURIER"), findsOneWidget);
+    expect(find.byType(PendingPulseDot), findsOneWidget);
   });
 
   testWidgets(
@@ -340,5 +346,47 @@ void main() {
         find.text(
             "All couriers in your area are currently occupied or unavailable. Please try again shortly."),
         findsOneWidget);
+  });
+
+  group('C9 pending-dispatch animated indicator', () {
+    Job dispatchJob() => Job(
+          id: 'job-dispatch-1',
+          ownerId: 'owner-1',
+          userId: 'cust-1',
+          serviceId: 'service-delivery-1',
+          status: 'pending_dispatch',
+          location: JobLocation(latitude: 30.0444, longitude: 31.2357),
+          paymentMethod: 'cod',
+        );
+
+    // NOTE: fixed pumps, never pumpAndSettle — PendingPulseDot loops
+    // forever (same constraint as SkeletonLoader shimmer).
+    testWidgets('pending_dispatch card shows the pulse dot',
+        (WidgetTester tester) async {
+      final mockMarketplace = MockMarketplaceProviderForTest(ApiClient())
+        ..mockCustomerJobs = [dispatchJob()];
+
+      await tester.pumpWidget(createWidgetUnderTest(
+        marketplaceProvider: mockMarketplace,
+      ));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(PendingPulseDot), findsOneWidget);
+    });
+
+    testWidgets('assigned card shows no pulse dot',
+        (WidgetTester tester) async {
+      final mockMarketplace = MockMarketplaceProviderForTest(ApiClient())
+        ..mockCustomerJobs = [sampleJobActive];
+
+      await tester.pumpWidget(createWidgetUnderTest(
+        marketplaceProvider: mockMarketplace,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PendingPulseDot), findsNothing);
+    });
   });
 }

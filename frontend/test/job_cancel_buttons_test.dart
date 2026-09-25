@@ -291,7 +291,11 @@ void main() {
           _job('job-cust-done', 'completed'),
         ];
       await tester.pumpWidget(_customerApp(marketplace));
-      await tester.pumpAndSettle();
+      // C9: fixed pumps — the pending_dispatch card's pulse dot loops
+      // forever, so settle would time out here.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       expect(
           find.byKey(const Key('customer_cancel_job_button_job-cust-pending')),
