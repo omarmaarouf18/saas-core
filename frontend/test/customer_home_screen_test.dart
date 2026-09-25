@@ -355,15 +355,15 @@ void main() {
           ChangeNotifierProvider<ChatProvider>(
               create: (_) => MockChatProvider()),
         ],
-        child: MaterialApp(
-          localizationsDelegates: const [
+        child: const MaterialApp(
+          localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CustomerHomeScreen(initialTabIndex: 0),
+          home: CustomerHomeScreen(initialTabIndex: 0),
         ),
       ));
       // NOTE: no pumpAndSettle here — the loading skeleton (like every
