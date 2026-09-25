@@ -231,6 +231,56 @@ void main() {
     expect(find.byType(CreateTicketDialog), findsOneWidget);
   });
 
+  testWidgets(
+      'C8: outside tap does not dismiss the job complaint dialog (draft kept)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockChat = MockChatProviderForTest(apiClient);
+    final mockAuth = MockAuthProviderForTest(
+      apiClient,
+      mockUser: UserProfile(
+        id: 'cust-1',
+        email: 'customer@example.com',
+        username: 'CustomerUser',
+        role: 'user',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: mockAuth),
+          ChangeNotifierProvider<ChatProvider>.value(value: mockChat),
+          ChangeNotifierProvider<MarketplaceProvider>(
+            create: (_) => MarketplaceProvider(apiClient),
+          ),
+          ChangeNotifierProvider<NotificationsProvider>(
+            create: (_) => NotificationsProvider(apiClient),
+          ),
+        ],
+        child: MaterialApp(
+          home: JobStatusScreen(job: activeJob, enablePolling: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final complaintButton =
+        find.byKey(const Key('open_complaint_ticket_button'));
+    await tester.ensureVisible(complaintButton);
+    await tester.tap(complaintButton);
+    await tester.pumpAndSettle();
+    expect(find.byType(CreateTicketDialog), findsOneWidget);
+
+    await tester.enterText(
+        find.byKey(const Key('ticket_subject_input')), 'draft subject');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateTicketDialog), findsOneWidget);
+    expect(find.text('draft subject'), findsOneWidget);
+  });
+
   testWidgets('Success snackbar displays the real backend ticket_id',
       (WidgetTester tester) async {
     final apiClient = ApiClient();

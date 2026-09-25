@@ -377,6 +377,35 @@ void main() {
       expect(find.byType(CreateTicketDialog), findsOneWidget);
     });
 
+    testWidgets(
+        'C8: outside tap does not dismiss CreateTicketDialog (typed input kept)',
+        (WidgetTester tester) async {
+      final chatProvider = MockChatProviderForTest(
+        apiClient,
+        mockTickets: [],
+      );
+
+      await tester.pumpWidget(buildTestApp(
+        home: const CustomerTicketsScreen(),
+        authProvider: authProvider,
+        chatProvider: chatProvider,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('create_ticket_fab')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CreateTicketDialog), findsOneWidget);
+
+      // Type before tapping outside: both dialog and draft must survive.
+      await tester.enterText(
+          find.byKey(const Key('ticket_subject_input')), 'draft subject');
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateTicketDialog), findsOneWidget);
+      expect(find.text('draft subject'), findsOneWidget);
+    });
+
     testWidgets('tapping ticket card navigates to TicketChatScreen',
         (WidgetTester tester) async {
       final ticket = SupportTicket(

@@ -1260,6 +1260,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           onPressed: () {
             showDialog(
               context: context,
+              // Audit C8: dialogs collecting user input stay open on
+              // outside tap (matching _BookingDialog and CancelJobDialog)
+              // so typed subject/description is never discarded by
+              // accident.
+              barrierDismissible: false,
               builder: (context) => CreateTicketDialog(
                 contextId: _currentJob.id,
               ),

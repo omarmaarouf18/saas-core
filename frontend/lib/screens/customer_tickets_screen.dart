@@ -50,6 +50,10 @@ class _CustomerTicketsScreenState extends State<CustomerTicketsScreen> {
   Future<void> _openCreateTicketDialog() async {
     final res = await showDialog(
       context: context,
+      // Audit C8: dialogs collecting user input stay open on outside tap
+      // (matching _BookingDialog and CancelJobDialog) so typed
+      // subject/description is never discarded by accident.
+      barrierDismissible: false,
       builder: (context) => const CreateTicketDialog(),
     );
 
