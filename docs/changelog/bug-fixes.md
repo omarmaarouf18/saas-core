@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Ticket Dialogs Locked Against Outside-Tap Dismiss (Audit C8)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding C8, the two `CreateTicketDialog` show sites (`customer_tickets_screen.dart:50-58`, `job_status_screen.dart:1260-1269`) used bare `showDialog`, so an outside tap discarded typed subject/description with no confirmation. Added `barrierDismissible: false` to exactly those two sites, matching the majority convention for input dialogs (`customer_marketplace_screen.dart:755-758`, `cancel_job_dialog.dart:39-41`); the existing Cancel button remains the single exit. `cancel_job_dialog.dart` and all other dialogs untouched per the audit's scope.
+- **Commit SHA**: ``9f7c2efa2418ce59e51507bab00888cfc1ceeb75``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` (No issues found!), 2 new cases (one per site: open dialog, type a draft subject, tap outside at `Offset(10, 10)` — dialog and draft both survive), `customer_tickets_test.dart` + `create_ticket_test.dart` 22/22 green. No backend changes.
+
 ## Customer Home Activity Loading State (Audit C1)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding C1, the recent-activity section rendered the `customerJobsEmpty` card while `fetchCustomerJobs` was in flight (zero loading references in the file). `_buildActiveJobsSection` now takes `marketplace.isLoading` and branches three exclusive states: fetch error + empty → the existing B1-F1 retryable banner (unchanged); loading + empty + no error → two `EmployeeJobCardSkeleton` rows (key `customer_home_activity_skeleton`); jobs present → the list (kept during refresh, stale-while-revalidate, so no flash); loaded-empty + no error → the existing empty card. Skeleton choice: reused `EmployeeJobCardSkeleton` — its title-plus-badge row geometry is the closest existing primitive to the activity card; `MarketplaceCardSkeleton` models booking cards (avatar/price layout) and `HomeDashboardSkeleton` is a full-dashboard skeleton, so neither fits this section. Note the error composition tightened as a side effect: previously the banner co-rendered above the "no orders" card on failure; now error + empty renders the banner alone (the B1-F1 regression test asserts only the banner, still green).
