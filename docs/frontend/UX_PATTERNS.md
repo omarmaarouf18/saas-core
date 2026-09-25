@@ -1,11 +1,12 @@
 # Frontend UX Patterns (Established by Fixing)
 
 > Source: these rules were extracted from the actual diffs that fixed audit
-> group A (Auth) of [UI_UX_AUDIT_2026-09.md](UI_UX_AUDIT_2026-09.md), not
-> written upfront. Each rule cites the reference implementation that proves
-> it. This doc grows incrementally — one section per fixed audit group —
-> so a future reader can trust every rule below is already the codebase
-> norm, not an aspiration.
+> groups A (Auth) and C (Customer) of
+> [UI_UX_AUDIT_2026-09.md](UI_UX_AUDIT_2026-09.md), not written upfront.
+> Each rule cites the reference implementation that proves it. This doc
+> grows incrementally — one section per fixed audit group — so a future
+> reader can trust every rule below is already the codebase norm, not an
+> aspiration.
 
 ## 1. Error display: persistent inline banner, snackbar as supplement only
 
@@ -84,11 +85,76 @@ a raw `CircularProgressIndicator`, because `ThemedLoadingIndicator` is a
 centered full-size widget that cannot fit AppBar action bounds (tracked
 against open audit item X-01's remaining-sites list).
 
+## 5. Loading vs failure vs empty — three distinct states
+
+Every fetch has three outcomes — in-flight, failed, genuinely empty —
+and each renders visually distinctly. A screen that only branches on
+`isEmpty` is presumed incomplete: loading flashes the empty card, and
+failure masquerades as "nothing to show".
+
+Reference implementations (audit group C):
+- Provider flags distinguish in-flight from settled:
+  `chat_provider.dart:25,52,73,98` (`_isLoadingHistory` set/cleared
+  around `fetchChannelHistory`; the pre-existing `_isLoading` was owned
+  by other flows and could never fire these branches).
+- Screens gate the loader on the flag, not on emptiness:
+  `ticket_chat_screen.dart:300` (`isLoading || isLoadingHistory`),
+  `chat_screen.dart:281` (added `isLoadingHistory` arm —
+  `isConnecting` is still false during history fetch),
+  `customer_home_screen.dart:664-670` (activity skeleton while
+  `isLoading && activeJobs.isEmpty`).
+- Failures surface Rule 1's banner with retry instead of the empty
+  render: `ticket_chat_screen.dart:289-294`
+  (`chat.error != null && subscriptionError == null` →
+  `ThemedErrorBanner(onRetry: _connectAndLoad)`, mirroring
+  `chat_screen.dart:262-266`); `rating_screen.dart:38,105,131,136,440-446`
+  (`_otherPartyStatusError` flag → `rating_status_error_banner`
+  instead of the "waiting" visualizer); per-card
+  `customer_marketplace_screen.dart:1309,1333-1361` (`_failed` flag →
+  compact refresh retry instead of `noRatingsLabel`, which is now
+  reserved for genuine zero counts).
+- Home error composition: `customer_home_screen.dart` renders error,
+  loading, list, or empty exclusively — the failure banner no longer
+  co-renders above a contradictory "no orders" card.
+- Send-failure parity: `ticket_chat_screen.dart:200`
+  (`onRetry: _sendMessage`, straight copy of
+  `chat_screen.dart:102-106`).
+
+## 6. Dismiss gesture consistency: input dialogs lock, read-only dialogs may not
+
+Any dialog collecting user input is `barrierDismissible: false` by
+convention — an outside tap must never discard a draft. Read-only or
+confirmation-only dialogs may remain dismissible.
+
+Reference: the two locked outliers
+`customer_tickets_screen.dart:56` and `job_status_screen.dart:1275`
+(both `CreateTicketDialog` sites), matching the pre-existing majority
+`customer_marketplace_screen.dart:757` (`_BookingDialog`) and
+`cancel_job_dialog.dart:41`. The existing Cancel/close buttons remain
+the single exit; no dialog named outside this set was touched.
+
+## 7. Background progress indicator: animate unbounded waits
+
+Any unbounded background wait the user cannot observe directly —
+dispatch searching for a courier, polling, reconnect — gets a
+lightweight animated signal, never static text alone.
+
+Reference: shared `pending_pulse_dot.dart` (`PendingPulseDot`, 8px
+fade loop on `AppMotion` tokens — one widget for all sites, not three
+bespoke animations), wired where each screen's own pending condition
+holds: `job_status_screen.dart:727,766,822-824` (`showPendingPulse`,
+true only while status is exactly `pending_dispatch`),
+`customer_jobs_screen.dart:356` (existing `isPendingDispatch` flag),
+`customer_job_map_screen.dart:297` (the waiting notice itself only
+renders while no marker arrived, so the dot renders and clears with
+it — that screen carries no status field).
+
 ## Scope (what is NOT in this doc yet)
 
-Only the four rules above are established — they are exactly what audit
-group A (A1–A10) put into the codebase. Patterns from later audit
-groups (Confirmation Dialog, Empty State, Skeleton Screens,
-Optimistic UI, Progressive Disclosure, and the rest) get their own
-sections here only when their fixes land, following this same
-extract-after-building discipline.
+Rules 1–4 came from audit group A (A1–A10); Rules 5–7 from audit
+group C (C1–C9). Deliberately unwritten: C10 (duplicate retry CTA —
+a one-off structural dedup, not a reusable pattern), Confirmation
+Dialog, Empty State, Skeleton Screens as a general rule, Optimistic
+UI, and Progressive Disclosure. Later audit groups (employee/owner,
+shared) add their sections here only when their fixes land, following
+this same extract-after-building discipline.
