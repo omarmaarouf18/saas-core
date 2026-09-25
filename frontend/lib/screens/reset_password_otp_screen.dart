@@ -58,9 +58,18 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
   }
 
   Future<void> _verifyCode() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    // In-flight guard: the PIN onCompleted auto-submit (audit A7) and the
+    // Verify button share this path — a completion event landing while a
+    // verify is already in flight (paste + manual tap, or a second
+    // completion keystroke) must not fire a second request.
+    // verifyResetCode holds auth.isLoading for the whole round-trip, and
+    // forgotPassword (resend) does the same, so either in-flight call
+    // blocks a re-entrant verify here. The Verify PrimaryButton additionally
+    // disables itself via isLoading plus its own in-flight lock.
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final auth = Provider.of<AuthProvider>(context, listen: false);
     auth.clearError();
 
     final otp = _otpController.text.trim();
@@ -204,7 +213,12 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
                     controller: _otpController,
                     hasError: state.hasError,
                     onChanged: (code) => state.didChange(code),
-                    onCompleted: (code) => state.didChange(code),
+                    // Same completion contract as otp_screen.dart (audit
+                    // A7): a full 6-digit entry verifies immediately, so a
+                    // user trained by the login OTP screen is not left
+                    // waiting on this screen. Re-entrant completions are
+                    // absorbed by the isLoading guard in _verifyCode.
+                    onCompleted: (_) => _verifyCode(),
                   ),
                   if (state.hasError) ...[
                     const SizedBox(height: AppSpacing.xs),

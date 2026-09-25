@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
 import 'package:frontend/l10n/app_localizations.dart';
@@ -110,6 +111,26 @@ Future<void> _enterOtpBoxes(WidgetTester tester, String code) async {
   }
 }
 
+/// Mock variant that can hold the verify-code response open behind a
+/// [Completer], so a second completion event can be fired mid-flight to
+/// prove the A7 in-flight guard absorbs it.
+class _GatedMockAuthApiClient extends MockAuthApiClient {
+  Completer<Map<String, dynamic>>? verifyGate;
+
+  @override
+  Future<dynamic> post(String path, Map<String, dynamic> body,
+      {bool isRetry = false,
+      Map<String, String>? queryParams,
+      Map<String, String>? headers}) async {
+    if (path == '/auth/reset-password/verify-code' && verifyGate != null) {
+      verifyCalls++;
+      return verifyGate!.future;
+    }
+    return super.post(path, body,
+        isRetry: isRetry, queryParams: queryParams, headers: headers);
+  }
+}
+
 void _largeViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(800, 1400);
   tester.view.devicePixelRatio = 1.0;
@@ -181,13 +202,59 @@ void main() {
           home: const ResetPasswordOtpScreen(email: 'user@example.com')));
       await tester.pumpAndSettle();
 
+      // Audit A7: completing the 6-digit entry auto-submits — no manual
+      // tap needed for the first attempt.
       await _enterOtpBoxes(tester, '000000');
-      await tester.tap(find.byKey(const Key('verify_reset_code_button')));
       await tester.pumpAndSettle();
 
       expect(mockApiClient.verifyCalls, 1);
       expect(find.byKey(const Key('reset_code_error_banner')), findsOneWidget);
       expect(find.text('invalid or expired OTP code'), findsOneWidget);
+      expect(find.byType(ResetPasswordNewScreen), findsNothing);
+
+      // Manual retry through the Verify button still works afterwards.
+      await tester.tap(find.byKey(const Key('verify_reset_code_button')));
+      await tester.pumpAndSettle();
+
+      expect(mockApiClient.verifyCalls, 2);
+      expect(find.byKey(const Key('reset_code_error_banner')), findsOneWidget);
+      expect(find.byType(ResetPasswordNewScreen), findsNothing);
+    });
+
+    testWidgets(
+        'A7: a second completion landing mid-flight does not double-submit',
+        (WidgetTester tester) async {
+      final gatedClient = _GatedMockAuthApiClient();
+      authProvider = AuthProvider(gatedClient);
+      _largeViewport(tester);
+      gatedClient.returnDevOtp = false;
+      await tester.pumpWidget(_flowApp(authProvider,
+          home: const ResetPasswordOtpScreen(email: 'user@example.com')));
+      await tester.pumpAndSettle();
+
+      // Hold the verify response open: the auto-submit from completing the
+      // code stays in flight (auth.isLoading true).
+      gatedClient.verifyGate = Completer<Map<String, dynamic>>();
+      await _enterOtpBoxes(tester, '000000');
+      await tester.pump();
+      expect(gatedClient.verifyCalls, 1);
+
+      // A second completion event (another full-length keystroke) while the
+      // first verify is in flight must be absorbed by the isLoading guard.
+      await tester.enterText(find.byKey(const Key('otp_box_5')), '1');
+      await tester.pump();
+      expect(gatedClient.verifyCalls, 1);
+
+      // Release the held request as a 401: exactly one attempt happened and
+      // the screen surfaces the error banner.
+      gatedClient.verifyGate!.completeError(ApiClientException(
+        'invalid or expired OTP code',
+        statusCode: 401,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(gatedClient.verifyCalls, 1);
+      expect(find.byKey(const Key('reset_code_error_banner')), findsOneWidget);
       expect(find.byType(ResetPasswordNewScreen), findsNothing);
     });
 
