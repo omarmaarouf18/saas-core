@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/location_picker_map.dart';
+import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/dashboard_screen_template.dart';
 import '../widgets/themed_card.dart';
@@ -281,7 +282,12 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           const SizedBox(height: AppSpacing.xl),
 
           // 4. Active Jobs Section (Stitch Active Jobs List)
-          _buildActiveJobsSection(l10n, activeJobs, marketplace.error),
+          _buildActiveJobsSection(
+            l10n,
+            activeJobs,
+            marketplace.error,
+            marketplace.isLoading,
+          ),
         ],
       ),
     );
@@ -607,7 +613,11 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
   }
 
   Widget _buildActiveJobsSection(
-      AppLocalizations l10n, List<dynamic> activeJobs, String? fetchError) {
+    AppLocalizations l10n,
+    List<dynamic> activeJobs,
+    String? fetchError,
+    bool isLoading,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -635,6 +645,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
+        // Three distinct states (audit C1, UX_PATTERNS Rule 5): a fetch is
+        // in-flight, failed, or genuinely empty — each renders differently.
         // A8/B1-F1: surface marketplace fetch failures instead of silently
         // rendering stale/empty activity content.
         if (fetchError != null && activeJobs.isEmpty)
@@ -648,8 +660,20 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                     .fetchCustomerJobs(auth.token!);
               }
             },
-          ),
-        if (activeJobs.isNotEmpty) ...[
+          )
+        else if (isLoading && activeJobs.isEmpty)
+          // Cold start with no cached jobs: skeleton rows matching the
+          // activity-card geometry below (EmployeeJobCardSkeleton's
+          // title-plus-badge rows are the closest existing primitive —
+          // MarketplaceCardSkeleton models booking cards, not this list).
+          const Column(
+            key: Key('customer_home_activity_skeleton'),
+            children: [
+              EmployeeJobCardSkeleton(),
+              EmployeeJobCardSkeleton(),
+            ],
+          )
+        else if (activeJobs.isNotEmpty) ...[
           Column(
             children: activeJobs.map((job) {
               final displayId = job.id.length > 8

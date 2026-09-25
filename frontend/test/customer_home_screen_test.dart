@@ -333,4 +333,109 @@ void main() {
     expect(pickerMap.initialLocation!.longitude,
         equals(LocationPickerMap.cairoDefault.longitude));
   });
+
+  group('C1 activity loading state (three distinct states)', () {
+    Future<void> pumpHome(
+        WidgetTester tester, MockMarketplaceProvider marketplace) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(
+              create: (_) => MockAuthProvider()),
+          ChangeNotifierProvider<MarketplaceProvider>.value(value: marketplace),
+          ChangeNotifierProvider<NotificationsProvider>(
+              create: (_) => MockNotificationsProvider()),
+          ChangeNotifierProvider<ThemeProvider>(
+              create: (_) => MockThemeProvider()),
+          ChangeNotifierProvider<LocaleProvider>(
+              create: (_) => LocaleProvider()),
+          ChangeNotifierProvider<ChatProvider>(
+              create: (_) => MockChatProvider()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const CustomerHomeScreen(initialTabIndex: 0),
+        ),
+      ));
+      // NOTE: no pumpAndSettle here — the loading skeleton (like every
+      // SkeletonLoader shimmer) animates forever, so settle would time out.
+      // Fixed pumps flush the post-frame fetch + provider rebuilds.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Job activeJobFixture() => Job(
+          id: 'job-active-1',
+          ownerId: 'owner-1',
+          employeeId: 'emp-1',
+          userId: 'user-cust-123',
+          serviceId: 'svc-1',
+          status: 'active',
+          location: JobLocation(latitude: 30.0, longitude: 31.0),
+          paymentMethod: 'cod',
+        );
+
+    testWidgets('loading with no cached jobs shows skeleton, not empty card',
+        (WidgetTester tester) async {
+      final marketplace = MockMarketplaceProvider()..isLoading = true;
+      await pumpHome(tester, marketplace);
+
+      // Loading render: skeleton present...
+      expect(find.byKey(const Key('customer_home_activity_skeleton')),
+          findsOneWidget);
+      // ...genuine-empty card absent (previously it flashed here — C1)...
+      expect(find.text('No Orders Found'), findsNothing);
+      // ...and no error banner either.
+      expect(
+          find.byKey(const Key('customer_home_activity_error')), findsNothing);
+    });
+
+    testWidgets('loaded empty shows the empty card, never the skeleton',
+        (WidgetTester tester) async {
+      final marketplace = MockMarketplaceProvider()..isLoading = false;
+      await pumpHome(tester, marketplace);
+
+      expect(find.text('No Orders Found'), findsOneWidget);
+      expect(find.byKey(const Key('customer_home_activity_skeleton')),
+          findsNothing);
+      expect(
+          find.byKey(const Key('customer_home_activity_error')), findsNothing);
+    });
+
+    testWidgets('error takes precedence over loading (banner, no skeleton)',
+        (WidgetTester tester) async {
+      final marketplace = MockMarketplaceProvider()
+        ..isLoading = true
+        ..error = 'Service temporarily unavailable';
+      await pumpHome(tester, marketplace);
+
+      expect(find.byKey(const Key('customer_home_activity_error')),
+          findsOneWidget);
+      expect(find.byKey(const Key('customer_home_activity_skeleton')),
+          findsNothing);
+      expect(find.text('No Orders Found'), findsNothing);
+    });
+
+    testWidgets('cached jobs keep rendering during refresh (no skeleton)',
+        (WidgetTester tester) async {
+      final marketplace = MockMarketplaceProvider()
+        ..isLoading = true
+        ..customerJobs = [activeJobFixture()];
+      await pumpHome(tester, marketplace);
+
+      expect(find.byKey(const Key('customer_home_activity_skeleton')),
+          findsNothing);
+      expect(find.textContaining('QD-JOB-ACT'), findsOneWidget);
+    });
+  });
 }
