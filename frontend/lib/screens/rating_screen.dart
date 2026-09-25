@@ -11,6 +11,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
@@ -30,6 +31,11 @@ class _RatingScreenState extends State<RatingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingOtherStatus = true;
   bool _otherPartyHasRated = false;
+  // Audit C6: distinguishes a failed status check from a genuine
+  // not-yet-rated state. Without this, a network failure rendered the
+  // "waiting for other party" visualizer — indistinguishable from the
+  // other party simply not having rated.
+  bool _otherPartyStatusError = false;
   String _otherPartyName = '';
   String _otherPartyRole = ""; // replaced at runtime (A8)
   String? _otherPartyId;
@@ -96,6 +102,7 @@ class _RatingScreenState extends State<RatingScreen> {
   Future<void> _checkOtherPartyRatingStatus() async {
     setState(() {
       _isLoadingOtherStatus = true;
+      _otherPartyStatusError = false;
     });
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -121,10 +128,12 @@ class _RatingScreenState extends State<RatingScreen> {
       setState(() {
         _otherPartyHasRated = found;
         _isLoadingOtherStatus = false;
+        _otherPartyStatusError = false;
       });
     } catch (e) {
       setState(() {
         _isLoadingOtherStatus = false;
+        _otherPartyStatusError = true;
       });
     }
   }
@@ -428,6 +437,16 @@ class _RatingScreenState extends State<RatingScreen> {
         children: [
           if (_isLoadingOtherStatus)
             ThemedLoadingIndicator(message: l10n.loadingStatus)
+          else if (_otherPartyStatusError)
+            // Audit C6 (UX_PATTERNS Rule 1): the status check itself
+            // failed — render a retryable inline banner instead of the
+            // "waiting for other party" state below. The AppBar refresh
+            // action re-runs the same check, so it doubles as onRetry.
+            ThemedErrorBanner(
+              key: const Key('rating_status_error_banner'),
+              message: l10n.ratingStatusCheckFailed,
+              onRetry: _checkOtherPartyRatingStatus,
+            )
           else if (_otherPartyHasRated) ...[
             ThemedPanel(
                 color: context.semanticColors.success.withValues(alpha: 0.1),

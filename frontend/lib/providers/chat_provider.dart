@@ -18,6 +18,11 @@ class ChatProvider extends ChangeNotifier {
   bool _isConnected = false;
   bool _isConnecting = false;
   bool _isLoading = false;
+  // Audit C2/C3: dedicated history-fetch flag. _isLoading is owned by the
+  // ticket create/attachment flows and is never set around history fetch,
+  // so the screens' loading branches could never fire during it — every
+  // open flashed the empty-conversation placeholder instead.
+  bool _isLoadingHistory = false;
   String? _error;
   String? _subscriptionError;
 
@@ -44,6 +49,7 @@ class ChatProvider extends ChangeNotifier {
   bool get isConnected => _isConnected;
   bool get isConnecting => _isConnecting;
   bool get isLoading => _isLoading;
+  bool get isLoadingHistory => _isLoadingHistory;
   String? get error => _error;
   String? get subscriptionError => _subscriptionError;
   String? get currentChannel => _currentChannel;
@@ -64,6 +70,7 @@ class ChatProvider extends ChangeNotifier {
     _error = null;
     _subscriptionError = null;
     _messages = [];
+    _isLoadingHistory = true;
     notifyListeners();
 
     try {
@@ -88,6 +95,7 @@ class ChatProvider extends ChangeNotifier {
         _subscriptionError = "not authorized for this channel";
       }
     } finally {
+      _isLoadingHistory = false;
       notifyListeners();
     }
   }

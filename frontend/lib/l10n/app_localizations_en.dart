@@ -1862,6 +1862,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.';
 
   @override
+  String get ratingStatusCheckFailed =>
+      'Couldn\'t check whether the other party rated yet. Retry to reload.';
+
+  @override
   String get unbiasedRatingDesc =>
       'Preventing retaliatory or social-pressure ratings.';
 

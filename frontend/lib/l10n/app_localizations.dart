@@ -3471,6 +3471,12 @@ abstract class AppLocalizations {
   /// **'The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.'**
   String get otherPartyNotRatedDesc;
 
+  /// No description provided for @ratingStatusCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check whether the other party rated yet. Retry to reload.'**
+  String get ratingStatusCheckFailed;
+
   /// No description provided for @unbiasedRatingDesc.
   ///
   /// In en, this message translates to:

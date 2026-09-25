@@ -1303,6 +1303,10 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
   double? _avg;
   int? _count;
   bool _loading = true;
+  // Audit C5: distinguishes a failed fetch from a genuine zero rating.
+  // Without this, an outage rendered noRatingsLabel on every card —
+  // indistinguishable from an unrated service.
+  bool _failed = false;
 
   @override
   void initState() {
@@ -1319,21 +1323,43 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
           _avg = (res['average_rating'] as num?)?.toDouble() ?? 0.0;
           _count = (res['count'] as num?)?.toInt() ?? 0;
           _loading = false;
+          _failed = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
+          _failed = true;
         });
       }
     }
+  }
+
+  void _retryLoad() {
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    _loadRating();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const SizedBox.shrink();
+    }
+    if (_failed) {
+      // Compact retry affordance (not the "no ratings" label): a full
+      // Rule-1 banner is too heavy for a per-card row, but the failure
+      // must stay visually distinct from a genuine zero count.
+      return IconButton(
+        icon: const Icon(Icons.refresh, size: 16),
+        tooltip: context.l10n.tooltipRefreshStatus,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        onPressed: _retryLoad,
+      );
     }
     if (_count == null || _count == 0) {
       return Text(

@@ -277,7 +277,14 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ),
                   )
-                : chat.messages.isEmpty && chat.isConnecting
+                : chat.messages.isEmpty &&
+                        (chat.isConnecting || chat.isLoadingHistory)
+                    // Audit C3: during history fetch isConnecting is still
+                    // false (connect starts only after history resolves),
+                    // so without the isLoadingHistory arm the empty state
+                    // below flashed on every open. Loader while history is
+                    // in flight with zero messages and no error; the empty
+                    // state stays reserved for a genuinely empty thread.
                     ? const Center(child: ThemedLoadingIndicator())
                     : chat.messages.isEmpty
                         ? ThemedEmptyState(

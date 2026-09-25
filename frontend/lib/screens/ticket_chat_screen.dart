@@ -192,9 +192,12 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     } catch (e) {
       debugPrint('Error sending ticket message: $e');
       if (mounted) {
+        // Audit C7: one-tap resend parity with chat_screen.dart's
+        // identical send path.
         ThemedSnackBar.showError(
           context,
           context.l10n.chatFailedSend(friendlyErrorMessage(e)),
+          onRetry: _sendMessage,
         );
       }
     } finally {
@@ -278,9 +281,23 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
               ),
             ),
 
+          // History-fetch Error Banner (audit C4, UX_PATTERNS Rule 1):
+          // fetchChannelHistory stores non-403 failures on chat.error —
+          // surface them with a retry instead of rendering the empty
+          // conversation below with zero signal. Exact shape mirrors
+          // chat_screen.dart's equivalent branch.
+          if (chat.error != null && chat.subscriptionError == null)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: ThemedErrorBanner(
+                message: chat.error!,
+                onRetry: _connectAndLoad,
+              ),
+            ),
+
           // Messages Stream
           Expanded(
-            child: chat.isLoading
+            child: (chat.isLoading || chat.isLoadingHistory)
                 ? const Center(child: ThemedLoadingIndicator())
                 : RefreshIndicator(
                     onRefresh: () async {

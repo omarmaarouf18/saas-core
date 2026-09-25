@@ -722,6 +722,7 @@
   "bothRatingsVisibleDesc": "الطرف التاني قيّم. التقييمين بقوا ظاهرين في ملخص البروفايل.",
   "waitingOtherPartyTitle": "مستنيين الطرف التاني...",
   "otherPartyNotRatedDesc": "الطرف التاني لسه ما قيمش. تقييمك هيفضل مخبي لحد ما يقيم.",
+  "ratingStatusCheckFailed": "معرفناش نتأكد الطرف التاني قيّم ولا لأ. دوس إعادة المحاولة.",
   "unbiasedRatingDesc": "منع تقييمات الانتقام أو ضغط الأصحاب.",
   "reliabilityRanksDesc": "التقييمات بتأثر على ترتيب الموثوقية.",
   "windowDeadlineDesc": "قيّم خلال 24 ساعة عشان صوتك يتحسب.",

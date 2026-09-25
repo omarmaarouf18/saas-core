@@ -1837,6 +1837,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'الطرف التاني لسه ما قيمش. تقييمك هيفضل مخبي لحد ما يقيم.';
 
   @override
+  String get ratingStatusCheckFailed =>
+      'معرفناش نتأكد الطرف التاني قيّم ولا لأ. دوس إعادة المحاولة.';
+
+  @override
   String get unbiasedRatingDesc => 'منع تقييمات الانتقام أو ضغط الأصحاب.';
 
   @override

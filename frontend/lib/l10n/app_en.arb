@@ -925,6 +925,7 @@
   "bothRatingsVisibleDesc": "The other party has submitted their rating. Both feedbacks are now visible under profile summary.",
   "waitingOtherPartyTitle": "Waiting for other party...",
   "otherPartyNotRatedDesc": "The other party has not yet rated this transaction. Your ratings will remain hidden until they submit.",
+  "ratingStatusCheckFailed": "Couldn't check whether the other party rated yet. Retry to reload.",
   "unbiasedRatingDesc": "Preventing retaliatory or social-pressure ratings.",
   "reliabilityRanksDesc": "Ratings directly impact platform reliability ranks.",
   "windowDeadlineDesc": "Submit within 24 hours to ensure your score counts.",
