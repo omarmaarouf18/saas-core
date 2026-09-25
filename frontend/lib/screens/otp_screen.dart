@@ -10,6 +10,7 @@ import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import 'home_screen.dart';
 
@@ -27,6 +28,10 @@ class _OtpScreenState extends State<OtpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
   String? _currentDevOtp;
+  // Which action produced the currently displayed provider error ('verify'
+  // or 'resend'). The two failure modes need different retry actions, so
+  // each gets its own banner site below — only one renders at a time.
+  String? _failedAction;
 
   @override
   void initState() {
@@ -51,6 +56,9 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
+      setState(() {
+        _failedAction = 'resend';
+      });
       ThemedSnackBar.showError(
         context,
         auth.error!,
@@ -60,6 +68,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final l10n = AppLocalizations.of(context)!;
       ThemedSnackBar.showSuccess(context, l10n.otpResendSuccessMsg);
       setState(() {
+        _failedAction = null;
         _currentDevOtp = newDevOtp;
         if (newDevOtp != null) {
           _otpController.text = newDevOtp;
@@ -79,6 +88,9 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (auth.error != null) {
+      setState(() {
+        _failedAction = 'verify';
+      });
       ThemedSnackBar.showError(
         context,
         auth.error!,
@@ -196,6 +208,27 @@ class _OtpScreenState extends State<OtpScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // Server Error Banners (persistent; the error snackbars are
+          // transient supplements only). Verify and resend failures carry
+          // different retry actions, so each has its own site — only one
+          // renders at a time. Mirrors reset_password_otp_screen.dart.
+          if (auth.error != null && _failedAction == 'verify') ...[
+            ThemedErrorBanner(
+              key: const Key('otp_verify_error_banner'),
+              message: auth.error!,
+              onRetry: _submit,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          if (auth.error != null && _failedAction == 'resend') ...[
+            ThemedErrorBanner(
+              key: const Key('otp_resend_error_banner'),
+              message: auth.error!,
+              onRetry: _resendCode,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           // 6-Digit PIN Discrete Input Fields
           _buildPinInput(),

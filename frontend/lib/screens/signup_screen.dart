@@ -7,6 +7,7 @@ import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
 import 'otp_screen.dart';
@@ -150,6 +151,18 @@ class _SignupScreenState extends State<SignupScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
+
+          // Server Error Banner (persistent; the error snackbar shown on
+          // submit is a transient supplement only). Mirrors
+          // forgot_password_screen.dart.
+          if (auth.error != null) ...[
+            ThemedErrorBanner(
+              key: const Key('signup_error_banner'),
+              message: auth.error!,
+              onRetry: _submit,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           // Full Name / Username Input Field
           ThemedTextField(

@@ -9,6 +9,7 @@ import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
 import '../widgets/themed_success_banner.dart';
 import 'signup_screen.dart';
@@ -240,6 +241,18 @@ class _LoginScreenState extends State<LoginScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
+
+          // Server Error Banner (persistent; the error snackbar shown on
+          // submit is a transient supplement only). Mirrors
+          // forgot_password_screen.dart.
+          if (auth.error != null) ...[
+            ThemedErrorBanner(
+              key: const Key('login_error_banner'),
+              message: auth.error!,
+              onRetry: _submit,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           // Email Input Field
           ThemedTextField(

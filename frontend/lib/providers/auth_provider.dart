@@ -458,6 +458,10 @@ class AuthProvider extends ChangeNotifier {
     // 3. Clear local token, user, and secure storage
     _token = null;
     _user = null;
+    // 4. Clear any stale provider error so logged-out screens (e.g. the
+    // login inline error banner) never render a previous session's failure.
+    _error = null;
+    _lastErrorStatusCode = null;
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
 
@@ -469,6 +473,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> forceLogout() async {
     _token = null;
     _user = null;
+    // Same stale-error clearing as logout(): logged-out screens must not
+    // render a previous session's provider failure.
+    _error = null;
+    _lastErrorStatusCode = null;
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
     notifyListeners();
