@@ -149,6 +149,7 @@ The detailed project history is distributed across categorized changelog files. 
 *   [Documentation](docs/changelog/documentation.md) — 42 documentation-only updates (e.g. Business Logic Audit Report, Application Map auto-sync, Frontend Consistency Audit, Four-Repo Deployment Map, Documentation Freshness Audits #1 & #2).
 *   [Localization Infrastructure](docs/changelog/localization-infrastructure.md) — 4 entries covering Egyptian Colloquial Arabic (ar_EG) i18n and RTL layout architecture.
 *   [Refactoring](docs/changelog/refactoring.md) — 10 entries documenting handler modularization and architecture alignments.
+*   **UX Pattern Audit 2026-09**: [docs/frontend/UI_UX_AUDIT_2026-09.md](docs/frontend/UI_UX_AUDIT_2026-09.md) — audit-only pass mapping weak areas in all 31 production screens to named design patterns (62 new findings: 11 P1 / 39 P2 / 12 P3, zero duplication of prior audits); no code changed, remediation not started.
 
 ### 2. Explicitly Deferred by Decision
 
