@@ -628,4 +628,35 @@ void main() {
     expect(
         find.text('New booking created, matching courier...'), findsOneWidget);
   });
+
+  group('C10 single retry CTA on unavailable JobStatusScreen', () {
+    testWidgets('exactly one retry button renders (in-card, not action-row)',
+        (WidgetTester tester) async {
+      final apiClient = ApiClient();
+      final mpProvider = MockMarketplaceProviderForTest(apiClient);
+      final unavailableJob = Job(
+        id: 'job-unavail-c10',
+        ownerId: 'owner-1',
+        userId: 'cust-1',
+        serviceId: 'service-1',
+        status: 'unavailable',
+        location: JobLocation(latitude: 30.0, longitude: 31.0),
+        paymentMethod: 'wallet',
+      );
+
+      await tester.pumpWidget(createCustomerWidget(
+        job: unavailableJob,
+        marketplaceProvider: mpProvider,
+      ));
+      await tester.pumpAndSettle();
+
+      // Kept: the retry inside the busy card, directly under the failure
+      // explanation. Removed: the action-row duplicate (same handler/copy
+      // as the kept one, so no behavior change to cover beyond presence).
+      expect(find.byKey(const Key('job_status_retry_button')), findsOneWidget);
+      expect(find.byKey(const Key('job_status_unavailable_retry_button')),
+          findsNothing);
+      expect(find.byType(PrimaryButton), findsOneWidget);
+    });
+  });
 }

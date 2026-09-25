@@ -1173,16 +1173,11 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
     bool isUnavailable,
   ) {
     return [
-      if (isUnavailable) ...[
-        PrimaryButton(
-          key: const Key('job_status_unavailable_retry_button'),
-          text: context.l10n.retryBookingAction,
-          icon: Icons.refresh,
-          isLoading: _isRetrying,
-          onPressed: _isRetrying ? null : () => _retryBooking(),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-      ],
+      // Audit C10: the unavailable-state retry lives once, inside
+      // _buildUnavailableBusyCard directly under the failure explanation
+      // (closest to the failure context). The duplicate that used to sit
+      // here — same handler, copy, and _isRetrying flag — is removed;
+      // purely structural, no behavior change.
       if (isCompleted) ...[
         if (_hasRated)
           ThemedCard(
