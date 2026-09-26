@@ -1875,6 +1875,18 @@ abstract class AppLocalizations {
   /// **'Job cancelled successfully. Escrow refunded to wallet.'**
   String get ownerHomeJobCancelledEscrowRefunded;
 
+  /// No description provided for @ownerCancelJobEscrowWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelling this job will immediately refund \${amount} from locked escrow back to the customer\'s wallet. Please provide a reason for cancellation:'**
+  String ownerCancelJobEscrowWarning(String amount);
+
+  /// No description provided for @ownerCancelJobPlainWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelling this job will stop all delivery activity immediately. Please provide a reason for cancellation:'**
+  String get ownerCancelJobPlainWarning;
+
   /// No description provided for @ownerHistoryTabActivity.
   ///
   /// In en, this message translates to:
@@ -4058,6 +4070,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unfreeze Worker'**
   String get unfreezeWorkerBtn;
+
+  /// No description provided for @freezeWorkerConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze Worker Account?'**
+  String get freezeWorkerConfirmTitle;
+
+  /// No description provided for @freezeWorkerConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Freezing {email} will immediately block their login and hide them from active dispatch. You can unfreeze them at any time from this screen.'**
+  String freezeWorkerConfirmMessage(String email);
+
+  /// No description provided for @unfreezeWorkerConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfreeze Worker Account?'**
+  String get unfreezeWorkerConfirmTitle;
+
+  /// No description provided for @unfreezeWorkerConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfreezing {email} will immediately restore their login access and allow them to receive new dispatches.'**
+  String unfreezeWorkerConfirmMessage(String email);
 
   /// No description provided for @passwordResetSuccessMsg.
   ///

@@ -413,6 +413,15 @@
   "ownerHomeCancelJob": "Cancel Job",
   "ownerHomeJobCancelled": "Job cancelled successfully.",
   "ownerHomeJobCancelledEscrowRefunded": "Job cancelled successfully. Escrow refunded to wallet.",
+  "ownerCancelJobEscrowWarning": "Cancelling this job will immediately refund ${amount} from locked escrow back to the customer's wallet. Please provide a reason for cancellation:",
+  "@ownerCancelJobEscrowWarning": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownerCancelJobPlainWarning": "Cancelling this job will stop all delivery activity immediately. Please provide a reason for cancellation:",
   "ownerHistoryTabActivity": "Activity",
   "ownerHistoryNoActivityTitle": "No Employee Activity Found",
   "ownerHistoryNoActivityDesc": "No tenant audit log events recorded yet.",
@@ -1093,6 +1102,24 @@
   "workerStatusChangedSuccessMsg": "Successfully changed status.",
   "freezeWorkerBtn": "Freeze Worker",
   "unfreezeWorkerBtn": "Unfreeze Worker",
+  "freezeWorkerConfirmTitle": "Freeze Worker Account?",
+  "freezeWorkerConfirmMessage": "Freezing {email} will immediately block their login and hide them from active dispatch. You can unfreeze them at any time from this screen.",
+  "@freezeWorkerConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "unfreezeWorkerConfirmTitle": "Unfreeze Worker Account?",
+  "unfreezeWorkerConfirmMessage": "Unfreezing {email} will immediately restore their login access and allow them to receive new dispatches.",
+  "@unfreezeWorkerConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "passwordResetSuccessMsg": "Password reset successfully! You can now log in with your new password.",
   "enterValidNumberError": "Enter a valid number",
   "priceProposalAcceptedMsg": "Price proposal accepted! Job is now active.",

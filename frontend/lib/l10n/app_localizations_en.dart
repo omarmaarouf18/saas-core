@@ -964,6 +964,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Job cancelled successfully. Escrow refunded to wallet.';
 
   @override
+  String ownerCancelJobEscrowWarning(String amount) {
+    return 'Cancelling this job will immediately refund \$$amount from locked escrow back to the customer\'s wallet. Please provide a reason for cancellation:';
+  }
+
+  @override
+  String get ownerCancelJobPlainWarning =>
+      'Cancelling this job will stop all delivery activity immediately. Please provide a reason for cancellation:';
+
+  @override
   String get ownerHistoryTabActivity => 'Activity';
 
   @override
@@ -2199,6 +2208,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unfreezeWorkerBtn => 'Unfreeze Worker';
+
+  @override
+  String get freezeWorkerConfirmTitle => 'Freeze Worker Account?';
+
+  @override
+  String freezeWorkerConfirmMessage(String email) {
+    return 'Freezing $email will immediately block their login and hide them from active dispatch. You can unfreeze them at any time from this screen.';
+  }
+
+  @override
+  String get unfreezeWorkerConfirmTitle => 'Unfreeze Worker Account?';
+
+  @override
+  String unfreezeWorkerConfirmMessage(String email) {
+    return 'Unfreezing $email will immediately restore their login access and allow them to receive new dispatches.';
+  }
 
   @override
   String get passwordResetSuccessMsg =>

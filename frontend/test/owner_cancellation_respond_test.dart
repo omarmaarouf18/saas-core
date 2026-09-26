@@ -15,6 +15,7 @@ import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
+import 'package:frontend/widgets/cancel_job_dialog.dart';
 import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/secondary_button.dart';
 
@@ -338,6 +339,43 @@ void main() {
       expect(ownerProvider.respondCalls, 1);
       // No silent failure: the expired explanation reaches the owner.
       expect(find.textContaining('already expired'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Owner cancel job dialog shows upfront escrow refund warning (audit E13)',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final apiClient = ApiClient();
+      final escrowJob = Job(
+        id: 'job-escrow-1',
+        ownerId: 'owner-test-1',
+        employeeId: 'emp-1',
+        userId: 'cust-1',
+        serviceId: 'service-1',
+        status: 'active',
+        paymentMethod: 'escrow',
+        lockedEscrowAmount: 75.0,
+        location: JobLocation(latitude: 30.0444, longitude: 31.2357),
+      );
+      final ownerProvider = _MockOwnerRespond(apiClient, mockJobs: [escrowJob]);
+      await tester.pumpWidget(_ownerApp(ownerProvider));
+      await tester.pumpAndSettle();
+
+      final cancelBtn =
+          find.byKey(const Key('cancel_owner_job_button_job-escrow-1'));
+      await tester.ensureVisible(cancelBtn);
+      await tester.tap(cancelBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CancelJobDialog), findsOneWidget);
+      expect(
+        find.textContaining(
+            'Cancelling this job will immediately refund \$75.00 from locked escrow back to the customer\'s wallet.'),
+        findsOneWidget,
+      );
     });
   });
 }

@@ -1352,9 +1352,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.cancel_outlined,
                             isOutlined: true,
                             onPressed: () async {
+                              final isNonCod =
+                                  job.paymentMethod.toLowerCase() != 'cod';
+                              final escrowAmount =
+                                  (job.lockedEscrowAmount != null &&
+                                          job.lockedEscrowAmount! > 0)
+                                      ? job.lockedEscrowAmount!
+                                      : (job.agreedPrice ??
+                                          job.proposedPrice ??
+                                          job.suggestedPrice ??
+                                          0.0);
+                              final bodyText = isNonCod
+                                  ? l10n.ownerCancelJobEscrowWarning(
+                                      escrowAmount.toStringAsFixed(2))
+                                  : l10n.ownerCancelJobPlainWarning;
                               await CancelJobDialog.show(
                                 context,
                                 jobId: job.id,
+                                bodyText: bodyText,
                                 onConfirm: (reason) async {
                                   await ownerProvider.cancelJob(
                                     jobId: job.id,
@@ -1362,9 +1377,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ownerToken: auth.token!,
                                   );
                                   if (context.mounted) {
-                                    final isNonCod =
-                                        job.paymentMethod.toLowerCase() !=
-                                            'cod';
                                     final msg = isNonCod
                                         ? l10n
                                             .ownerHomeJobCancelledEscrowRefunded

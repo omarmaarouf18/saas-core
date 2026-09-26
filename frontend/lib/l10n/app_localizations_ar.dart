@@ -954,6 +954,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم إلغاء الطلب بنجاح واسترجاع المبلغ الضامن للمحفظة.';
 
   @override
+  String ownerCancelJobEscrowWarning(String amount) {
+    return 'إلغاء هذا الطلب سيؤدي فوراً إلى استرداد $amount\$ من الضمان المالي المحجوز إلى محفظة العميل. يرجى توضيح سبب الإلغاء:';
+  }
+
+  @override
+  String get ownerCancelJobPlainWarning =>
+      'إلغاء هذا الطلب سيؤدي فوراً إلى إيقاف جميع أنشطة التوصيل. يرجى توضيح سبب الإلغاء:';
+
+  @override
   String get ownerHistoryTabActivity => 'النشاط';
 
   @override
@@ -2164,6 +2173,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get unfreezeWorkerBtn => 'إعادة تنشيط العامل';
+
+  @override
+  String get freezeWorkerConfirmTitle => 'تجميد حساب العامل؟';
+
+  @override
+  String freezeWorkerConfirmMessage(String email) {
+    return 'تجميد حساب $email سيمنعه فوراً من تسجيل الدخول ويخفيه من مهام التوصيل النشطة. يمكنك إلغاء التجميد في أي وقت من هذه الشاشة.';
+  }
+
+  @override
+  String get unfreezeWorkerConfirmTitle => 'إلغاء تجميد حساب العامل؟';
+
+  @override
+  String unfreezeWorkerConfirmMessage(String email) {
+    return 'إلغاء تجميد حساب $email سيعيد فوراً إمكانية تسجيل الدخول ويسمح له باستلام مهام توصيل جديدة.';
+  }
 
   @override
   String get passwordResetSuccessMsg =>

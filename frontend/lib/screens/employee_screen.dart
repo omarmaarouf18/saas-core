@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/entity_avatar.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/pill_filter_bar.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/status_badge.dart';
@@ -585,6 +586,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
               color: AppColors.outlineVariant,
             ),
             ThemedTextField(
+              key: const Key('toggle_employee_email_input'),
               controller: _togEmailController,
               keyboardType: TextInputType.emailAddress,
               labelText: l10n.employeeEmailLabel,
@@ -634,6 +636,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
             ),
             const SizedBox(height: AppSpacing.md),
             ThemedTextField(
+              key: const Key('toggle_owner_password_input'),
               controller: _togPasswordController,
               obscureText: true,
               isPasswordField: true,
@@ -655,10 +658,29 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   ? null
                   : () async {
                       if (_toggleFormKey.currentState!.validate()) {
+                        final isFreezing = !_togSetActive;
+                        final targetEmail = _togEmailController.text.trim();
+                        final confirmed = await ConfirmActionDialog.show(
+                          context,
+                          title: isFreezing
+                              ? l10n.freezeWorkerConfirmTitle
+                              : l10n.unfreezeWorkerConfirmTitle,
+                          message: isFreezing
+                              ? l10n.freezeWorkerConfirmMessage(targetEmail)
+                              : l10n.unfreezeWorkerConfirmMessage(targetEmail),
+                          confirmLabel: isFreezing
+                              ? l10n.freezeWorkerBtn
+                              : l10n.unfreezeWorkerBtn,
+                          cancelLabel: l10n.cancel,
+                          isDestructive: isFreezing,
+                        );
+
+                        if (confirmed != true || !mounted) return;
+
                         setState(() => _isTogSubmitting = true);
                         try {
                           final res = await ownerProvider.toggleEmployee(
-                            employeeEmail: _togEmailController.text.trim(),
+                            employeeEmail: targetEmail,
                             ownerEmail: auth.user!.email,
                             ownerPassword: _togPasswordController.text,
                             setActive: _togSetActive,

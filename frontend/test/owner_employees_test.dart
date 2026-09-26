@@ -7,6 +7,8 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/screens/employee_screen.dart';
 import 'package:frontend/widgets/status_badge.dart';
+import 'package:frontend/widgets/confirm_action_dialog.dart';
+import 'package:frontend/widgets/primary_button.dart';
 
 class MockApiClientForEmployeesTest extends ApiClient {
   bool shouldFail = false;
@@ -102,6 +104,23 @@ class MockOwnerProviderForEmployeesTest extends OwnerProvider {
     String? userToken,
   }) async {
     fetchAuditLogCalled = true;
+  }
+
+  bool toggleEmployeeCalled = false;
+  String? lastToggledEmail;
+  bool? lastSetActive;
+
+  @override
+  Future<Map<String, dynamic>> toggleEmployee({
+    required String employeeEmail,
+    required String ownerEmail,
+    required String ownerPassword,
+    required bool setActive,
+  }) async {
+    toggleEmployeeCalled = true;
+    lastToggledEmail = employeeEmail;
+    lastSetActive = setActive;
+    return {'message': 'Worker status successfully updated'};
   }
 }
 
@@ -339,5 +358,135 @@ void main() {
     expect(
         find.byKey(const Key('filtered_empty_employees_state')), findsNothing);
     expect(find.text('driver_john'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Freezing worker shows ConfirmActionDialog with consequence explanation; cancel does not call toggleEmployee (audit E14)',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockEmployees = [
+      {
+        'id': 'emp-101',
+        'username': 'driver_john',
+        'email': 'john@company.com',
+        'is_active': true,
+      },
+    ];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    // Scroll to freeze form submit button
+    final submitFinder = find.byKey(const Key('employee_toggle_submit_button'));
+    await tester.ensureVisible(submitFinder);
+
+    // Fill in email and owner password
+    final emailField = find.descendant(
+      of: find.byKey(const Key('toggle_employee_email_input')),
+      matching: find.byType(TextField),
+    );
+    final passwordField = find.descendant(
+      of: find.byKey(const Key('toggle_owner_password_input')),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(emailField);
+    await tester.enterText(emailField, 'john@company.com');
+    await tester.enterText(passwordField, 'secret123');
+    await tester.pumpAndSettle();
+
+    // Toggle switch to Freeze Worker mode (setActive = false)
+    final switchFinder = find.byType(Switch);
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    // Tap Freeze Worker submit button
+    await tester.ensureVisible(submitFinder);
+    await tester.tap(submitFinder);
+    await tester.pumpAndSettle();
+
+    // ConfirmActionDialog is displayed with consequence explanation
+    expect(find.byType(ConfirmActionDialog), findsOneWidget);
+    expect(find.text('Freeze Worker Account?'), findsOneWidget);
+    expect(
+      find.textContaining(
+          'immediately block their login and hide them from active dispatch'),
+      findsOneWidget,
+    );
+
+    // Cancel the dialog
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    // toggleEmployee should NOT have been called
+    expect(find.byType(ConfirmActionDialog), findsNothing);
+    expect(mockOwner.toggleEmployeeCalled, isFalse);
+  });
+
+  testWidgets(
+      'Freezing worker confirms dialog and calls toggleEmployee with setActive: false (audit E14)',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockEmployees = [
+      {
+        'id': 'emp-101',
+        'username': 'driver_john',
+        'email': 'john@company.com',
+        'is_active': true,
+      },
+    ];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    final submitFinder = find.byKey(const Key('employee_toggle_submit_button'));
+    await tester.ensureVisible(submitFinder);
+
+    final emailField = find.descendant(
+      of: find.byKey(const Key('toggle_employee_email_input')),
+      matching: find.byType(TextField),
+    );
+    final passwordField = find.descendant(
+      of: find.byKey(const Key('toggle_owner_password_input')),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(emailField);
+    await tester.enterText(emailField, 'john@company.com');
+    await tester.enterText(passwordField, 'secret123');
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byType(Switch);
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(submitFinder);
+    await tester.tap(submitFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConfirmActionDialog), findsOneWidget);
+    final confirmBtn = find.descendant(
+      of: find.byType(ConfirmActionDialog),
+      matching: find.byType(PrimaryButton),
+    );
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    // toggleEmployee called with setActive = false
+    expect(mockOwner.toggleEmployeeCalled, isTrue);
+    expect(mockOwner.lastToggledEmail, 'john@company.com');
+    expect(mockOwner.lastSetActive, isFalse);
   });
 }
