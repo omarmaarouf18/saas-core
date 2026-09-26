@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Lock Email-Change Dialog Dismiss to Match Money Dialogs (Audit S12/S13)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings S12 and S13, the two-step email-change dialog was the outlier against the deposit/payout/password-dialog majority on both dismiss axes: (S12) `show()` left `barrierDismissible` at its default `true`, so an outside tap discarded the step-2 OTP state (`_targetEmail`) and forced a restart — now `barrierDismissible: false`, keeping the explicit close button as the single exit (consistent-dismiss Rule 6: input-collecting dialogs lock); (S13) the close button popped unconditionally, allowing mid-request dismissal during in-flight `requestEmailChange`/`confirmEmailChange` calls the siblings deliberately prevent — now `onPressed: _isLoading ? null : pop`, mirroring `deposit_funds_dialog.dart`/`payout_request_dialog.dart` exactly.
+- **Commit SHA**: ``4ac6a5d77718c1c47026eb2be97d8b8e2535a0a5``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), `email_change_dialog_test.dart` mock extended with an optional `requestGate` completer + 2 new cases (S12 barrier tap leaves the dialog and step-1 field mounted; S13 close `onPressed` is null mid-submit via fixed-frame pumps, re-enabled with step 2 rendered after release; 9/9 passed). Full `flutter test` suite green via pre-push gate. Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## Keep Payout Cache on Error and Unify Wallet Refresh (Audit S6/S15)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings S6 and S15: (S6) `OwnerProvider.fetchPayoutRequests` wiped `_payoutRequests = []` in its catch, so a transient payout-list failure cleared the cached list and the screen showed the "no payouts" empty state *and* the error banner simultaneously — conflicting signals with the empty state's withdraw CTA active on possibly stale balances — now the catch keeps the last-good list and lets the banner + retry be the sole error signal; (S15) the wallet's three refresh paths had divergent coverage (pull-to-refresh and banner retry refetched dashboard + config + payouts while the ledger empty-state button refetched dashboard only, so a payout-list failure survived the retry placed next to it) — extracted one `_refreshAll()` routine on the screen state and pointed all three call sites at it (distinct from tracked O-07, which is dialog-side).
