@@ -4,6 +4,17 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Owner Configuration Screen Fetch Retry, Inline Validation, Progressive Disclosure, and Visual Hierarchy (Audit E10, E11, E15, E17, E24)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E10, E11, E15, E17, and E24, the owner service configuration experience lacked fetch failure recovery, mixed client-side form validation into top-level network retry banners, lacked inline coordinate error indicators, suffered from form length fatigue, and had flat visual hierarchy:
+  - Fetch Failure & Retry Banner (E10): In `owner_configuration_screen.dart`, added `_fetchError` state and `ThemedErrorBanner(key: Key('owner_config_fetch_error_banner'), message: _fetchError!, onRetry: _loadAndPrepopulate)` displayed when initial service loading fails and services are empty.
+  - Client Validation vs API Error Separation (E11, E15): Separated client-side form validation errors from top network retry banners. Reserved `_errorMessage` banner strictly for API failure responses (`createService` / `updateOwnerServiceConfig`). Added `autovalidateMode: AutovalidateMode.onUserInteraction` across form fields, validated business address and working hours inline (`ownerConfigAddressInvalid`, `ownerConfigHoursInvalid`), made coverage radius inline-required (> 0), and surfaced inline coordinate validation errors (`owner_config_location_inline_error`) directly below the location picker button when latitude/longitude are unset.
+  - Progressive Disclosure for Working Hours (E17): Wrapped the 7-day schedule configuration in an `ExpansionTile(key: Key('schedule_per_day_expansion_tile'), initiallyExpanded: true)` inside a `Material(color: Colors.transparent)` wrapper within `ThemedCard`, preventing vertical form bloat while preserving full customization access.
+  - Visual Hierarchy Elevation (E24): Styled business identity and pricing cards with semantic domain icon badges (`Icons.storefront_outlined`, `Icons.payments_outlined`), semantic top accent and border colors (`topAccentColor`, `borderSide`), and wrapped the primary save action in a dedicated focal container panel (`ThemedPanel`).
+  - Shared Widget: Added `autovalidateMode` parameter to `ThemedTextField` (`frontend/lib/widgets/themed_text_field.dart`), allowing underlying `TextFormField` validation modes to be configured declaratively without modifying default validation behavior elsewhere.
+- **Commit SHA**: ``80f01783e5fc2576a57e6da79781d7ac82413ad9``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean, widget tests added in `owner_configuration_screen_test.dart` (asserting fetch error banner with retry re-fetch, client validation not triggering top retry banner, missing location inline error, and per-day ExpansionTile; 19/19 passed), full golden suite passed 58/58 (`golden_screens_test.dart`). Backend checks (`gofmt -l .`, `shared/infra` tests) green.
+
 ## Upfront Escrow Consequence on Cancel and Worker Freeze Confirmation Dialog (Audit E13/E14)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E13 and E14, destructive owner-side workflows lacked upfront consequence explanations and confirmation guards:
