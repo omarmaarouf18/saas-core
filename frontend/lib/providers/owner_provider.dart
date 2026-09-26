@@ -19,6 +19,12 @@ class OwnerProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  /// Audit S1/S16: true once [fetchDashboardData] has completed successfully
+  /// at least once. Screens use it to distinguish "never hydrated" (render a
+  /// loader, never defaults-as-fact) from "hydrated and refreshing".
+  /// Mirrors the `fetchPlatformConfig` cached-value guard below.
+  bool _dashboardHydrated = false;
+
   double get walletBalance => _walletBalance;
   double get escrowBalance => _escrowBalance;
   double get withdrawableBalance => _withdrawableBalance;
@@ -30,6 +36,7 @@ class OwnerProvider extends ChangeNotifier {
   List<PayoutRequest> get payoutRequests => _payoutRequests;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isDashboardHydrated => _dashboardHydrated;
 
   OwnerProvider(this.apiClient);
 
@@ -56,6 +63,7 @@ class OwnerProvider extends ChangeNotifier {
       final ledgerRes = await apiClient
           .get('/users/ledger', queryParams: {'tenant_id': tenantId});
       _ledgerEntries = ledgerRes['entries'] as List<dynamic>? ?? [];
+      _dashboardHydrated = true;
     } catch (e) {
       debugPrint('Error fetching owner dashboard data: $e');
       _error = friendlyErrorMessage(e);

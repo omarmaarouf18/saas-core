@@ -44,6 +44,19 @@ class MockOwnerProvider extends OwnerProvider {
   @override
   String get subscriptionTier => _currentTier;
 
+  // Audit S1: controllable loading + hydration flags. Defaults keep every
+  // pre-existing case on the settled, hydrated-equivalent branch except the
+  // cold-start fetch assertion below (which relies on hydrated == false).
+  bool mockIsLoading = false;
+
+  @override
+  bool get isLoading => mockIsLoading;
+
+  bool mockDashboardHydrated = false;
+
+  @override
+  bool get isDashboardHydrated => mockDashboardHydrated;
+
   @override
   String? get error => _testError;
 
@@ -380,5 +393,59 @@ void main() {
 
     expect(owner.updateSubscriptionCalled, isTrue);
     expect(owner.lastRequestedTier, 'free');
+  });
+
+  testWidgets('Audit S1: cold start self-hydrates the dashboard slice',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'free');
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    // Unhydrated slice + token present => initState fires the fetch instead
+    // of rendering the default 'free' tier as fact.
+    expect(owner.isDashboardHydrated, isFalse);
+    expect(owner.fetchDashboardCalls, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('Audit S1: hydrated slice is not refetched on open',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'paid')
+      ..mockDashboardHydrated = true;
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(owner.fetchDashboardCalls, equals(0));
+  });
+
+  testWidgets(
+      'Audit S1: loading renders the loader, never default-tier content',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'free')
+      ..mockIsLoading = true;
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pump();
+
+    expect(find.byKey(const Key('subscription_loading_indicator')),
+        findsOneWidget);
+    expect(find.text('YOUR CURRENT PLAN'), findsNothing);
+    expect(find.text('Upgrade to Professional'), findsNothing);
   });
 }

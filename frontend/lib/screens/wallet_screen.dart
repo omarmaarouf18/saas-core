@@ -16,6 +16,7 @@ import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -31,6 +32,13 @@ class _WalletScreenState extends State<WalletScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      // Audit S16: self-hydrate balances/ledger on first paint (guarded like
+      // the refresh path below) so a fresh provider never renders $0.00 as
+      // fact with no loading and no error.
+      if (auth.token != null) {
+        ownerProvider.fetchDashboardData(auth.token!);
+      }
       ownerProvider.fetchPlatformConfig();
       ownerProvider.fetchPayoutRequests();
     });
@@ -335,7 +343,19 @@ class _WalletScreenState extends State<WalletScreen> {
           title: l10n.payoutHistoryTitle,
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (ownerProvider.payoutRequests.isEmpty)
+        // Audit S11: each section gates its empty state on !isLoading so a
+        // mid-fetch list never masquerades as empty; the in-flight window
+        // renders a slim inline loader instead of the "no data" card.
+        if (ownerProvider.payoutRequests.isEmpty && ownerProvider.isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: ThemedLoadingIndicator(
+                key: ValueKey('payout_section_loading'),
+              ),
+            ),
+          )
+        else if (ownerProvider.payoutRequests.isEmpty)
           ThemedCard(
             borderRadius: AppRadius.md,
             padding: AppSpacing.lg,
@@ -375,7 +395,17 @@ class _WalletScreenState extends State<WalletScreen> {
           title: l10n.walletTransactionLedger,
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (ownerProvider.ledgerEntries.isEmpty)
+        // Audit S11: same loading-vs-empty gate as the payout section above.
+        if (ownerProvider.ledgerEntries.isEmpty && ownerProvider.isLoading)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: ThemedLoadingIndicator(
+                key: ValueKey('ledger_section_loading'),
+              ),
+            ),
+          )
+        else if (ownerProvider.ledgerEntries.isEmpty)
           ThemedCard(
             borderRadius: AppRadius.md,
             padding: AppSpacing.lg,

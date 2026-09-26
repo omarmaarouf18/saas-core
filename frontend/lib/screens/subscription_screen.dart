@@ -12,6 +12,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_success_banner.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -23,6 +24,23 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      // Audit S1: self-hydrate on cold start (deep link, fresh provider)
+      // when the dashboard slice was never fetched — otherwise the default
+      // 'free' tier renders as fact with the wrong plan card active, the
+      // wrong CTA enabled, and the pending_payment banner hidden.
+      if (!ownerProvider.isDashboardHydrated && auth.token != null) {
+        ownerProvider.fetchDashboardData(auth.token!);
+      }
+    });
+  }
 
   /// Audit S7: both directions of this money-affecting change route through
   /// a consequence-stating confirmation. Upgrade charges $19.99/mo
@@ -140,135 +158,154 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   const SizedBox(height: AppSpacing.lg),
                 ],
 
-                // 2. Current Plan Status Header Card
-                ThemedCard(
-                  borderRadius: AppRadius.lg,
-                  padding: AppSpacing.lg,
-                  color: AppColors.primaryContainer,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            l10n.yourCurrentPlanBadge,
-                            style: AppTypography.labelLg.copyWith(
-                              color: AppColors.onPrimary.withValues(alpha: 0.7),
-                              letterSpacing: 1.2,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          ThemedPanel(
-                              color: currentTier == 'free'
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh
-                                      .withValues(alpha: 0.3)
-                                  : AppColors.secondary.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: AppSpacing.xxs,
+                // Audit S1: first paint is the loader, never the default
+                // 'free' tier rendered as fact — loading, error, and content
+                // render exclusively, matching the wallet gate below.
+                if (ownerProvider.isLoading) ...[
+                  Center(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                      child: ThemedLoadingIndicator(
+                        key: const Key('subscription_loading_indicator'),
+                        message: l10n.loading,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  // 2. Current Plan Status Header Card
+                  ThemedCard(
+                    borderRadius: AppRadius.lg,
+                    padding: AppSpacing.lg,
+                    color: AppColors.primaryContainer,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              l10n.yourCurrentPlanBadge,
+                              style: AppTypography.labelLg.copyWith(
+                                color:
+                                    AppColors.onPrimary.withValues(alpha: 0.7),
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    currentTier == 'free'
-                                        ? Icons.star_border
-                                        : Icons.stars,
-                                    color: currentTier == 'free'
-                                        ? AppColors.onPrimary
-                                        : AppColors.secondary,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    currentTier == 'free' ? 'BASIC' : 'PRO',
-                                    style: AppTypography.labelSm.copyWith(
-                                      fontWeight: FontWeight.bold,
+                            ),
+                            ThemedPanel(
+                                color: currentTier == 'free'
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHigh
+                                        .withValues(alpha: 0.3)
+                                    : AppColors.secondary
+                                        .withValues(alpha: 0.2),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xl),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: AppSpacing.xxs,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      currentTier == 'free'
+                                          ? Icons.star_border
+                                          : Icons.stars,
                                       color: currentTier == 'free'
                                           ? AppColors.onPrimary
                                           : AppColors.secondary,
+                                      size: 16,
                                     ),
-                                  ),
-                                ],
-                              )),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        AppTypography.uppercaseLabel(currentTier)
-                            .replaceAll('_', ' '),
-                        style: AppTypography.headlineLgMobile.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.onPrimary,
-                        ),
-                      ),
-                      if (currentTier == 'pending_payment') ...[
-                        const SizedBox(height: AppSpacing.md),
-                        ThemedWarningBanner(
-                          message: l10n.pendingActivationNote,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // 3. Section Title
-                Text(
-                  l10n.availablePlansHeader,
-                  style: AppTypography.titleMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // 4. Responsive Pricing Cards (Stitch 2-Card Grid)
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isDesktop = constraints.maxWidth > 700;
-                    if (isDesktop) {
-                      return IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _buildStandardPlanCard(
-                                l10n: l10n,
-                                currentTier: currentTier,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.lg),
-                            Expanded(
-                              child: _buildEnterprisePlanCard(
-                                l10n: l10n,
-                                currentTier: currentTier,
-                              ),
-                            ),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Text(
+                                      currentTier == 'free' ? 'BASIC' : 'PRO',
+                                      style: AppTypography.labelSm.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: currentTier == 'free'
+                                            ? AppColors.onPrimary
+                                            : AppColors.secondary,
+                                      ),
+                                    ),
+                                  ],
+                                )),
                           ],
                         ),
-                      );
-                    }
-                    return Column(
-                      children: [
-                        _buildStandardPlanCard(
-                          l10n: l10n,
-                          currentTier: currentTier,
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          AppTypography.uppercaseLabel(currentTier)
+                              .replaceAll('_', ' '),
+                          style: AppTypography.headlineLgMobile.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onPrimary,
+                          ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildEnterprisePlanCard(
-                          l10n: l10n,
-                          currentTier: currentTier,
-                        ),
+                        if (currentTier == 'pending_payment') ...[
+                          const SizedBox(height: AppSpacing.md),
+                          ThemedWarningBanner(
+                            message: l10n.pendingActivationNote,
+                          ),
+                        ],
                       ],
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // 3. Section Title
+                  Text(
+                    l10n.availablePlansHeader,
+                    style: AppTypography.titleMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 4. Responsive Pricing Cards (Stitch 2-Card Grid)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isDesktop = constraints.maxWidth > 700;
+                      if (isDesktop) {
+                        return IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: _buildStandardPlanCard(
+                                  l10n: l10n,
+                                  currentTier: currentTier,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.lg),
+                              Expanded(
+                                child: _buildEnterprisePlanCard(
+                                  l10n: l10n,
+                                  currentTier: currentTier,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          _buildStandardPlanCard(
+                            l10n: l10n,
+                            currentTier: currentTier,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _buildEnterprisePlanCard(
+                            l10n: l10n,
+                            currentTier: currentTier,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
               ],
             ),
           ),

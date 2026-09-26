@@ -405,6 +405,56 @@ void main() {
 
     expect(ownerProvider.refreshCalls, greaterThanOrEqualTo(1));
   });
+
+  testWidgets(
+      'Audit S16: wallet self-hydrates balances on first paint, never false \$0.00',
+      (WidgetTester tester) async {
+    final fakeApi = FakeApiClientForPayout();
+    final ownerProvider = OwnerProvider(fakeApi);
+    expect(ownerProvider.isDashboardHydrated, isFalse);
+
+    await tester.pumpWidget(createWalletTestWidget(
+      apiClient: fakeApi,
+      ownerProvider: ownerProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    // initState fired the dashboard fetch (guarded on the token, like the
+    // refresh path): balances are real, the slice is marked hydrated.
+    expect(ownerProvider.isDashboardHydrated, isTrue);
+    expect(ownerProvider.walletBalance, 500.0);
+    expect(find.textContaining('500.00'), findsWidgets);
+  });
+
+  testWidgets(
+      'Audit S11: mid-fetch sections render inline loaders, never empty states',
+      (WidgetTester tester) async {
+    final fakeApi = FakeApiClientForPayout();
+    // Cached dashboard slice (balances settled) with a refresh in flight —
+    // the exact S11 flash scenario. The pinned flag holds the mid-fetch
+    // window open; the initState refetch still resolves underneath.
+    final ownerProvider = LoadingPinnedOwnerProvider(fakeApi);
+    await ownerProvider.fetchDashboardData('mock-owner-token');
+    expect(ownerProvider.walletBalance, 500.0);
+
+    await tester.pumpWidget(createWalletTestWidget(
+      apiClient: fakeApi,
+      ownerProvider: ownerProvider,
+    ));
+    // Fixed-frame pumps only: the inline section loaders animate
+    // indefinitely, so pumpAndSettle would time out (same harness note as
+    // the skeleton shimmer in UX_PATTERNS Rule 14).
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(
+        find.byKey(const ValueKey('payout_section_loading')), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('ledger_section_loading')), findsOneWidget);
+    expect(find.text('No payout requests submitted yet.'), findsNothing);
+    expect(find.text('No transactions recorded yet.'), findsNothing);
+  });
 }
 
 class MockOwnerProviderWithCustomError extends OwnerProvider {
@@ -429,4 +479,13 @@ class MockOwnerProviderWithCustomError extends OwnerProvider {
 
   @override
   Future<List<PayoutRequest>> fetchPayoutRequests() async => [];
+}
+
+/// Audit S11: pins the shared in-flight flag so the mid-refresh window is
+/// deterministic without depending on async fetch timing.
+class LoadingPinnedOwnerProvider extends OwnerProvider {
+  LoadingPinnedOwnerProvider(super.apiClient);
+
+  @override
+  bool get isLoading => true;
 }
