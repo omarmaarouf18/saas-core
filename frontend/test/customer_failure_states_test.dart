@@ -282,7 +282,8 @@ void main() {
       // the friendly server-error copy via friendlyErrorMessage.
       expect(find.byType(ThemedErrorBanner), findsOneWidget);
       expect(
-          find.text('Something went wrong on our end. Please try again shortly.'),
+          find.text(
+              'Something went wrong on our end. Please try again shortly.'),
           findsOneWidget);
 
       // Retry re-fires the fetch; flip the mock healthy first.

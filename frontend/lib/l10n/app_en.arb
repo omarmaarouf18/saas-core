@@ -312,6 +312,12 @@
   "ownerCancelRequestApprove": "Approve Cancellation",
   "ownerCancelRequestDecline": "Decline Request",
   "ownerCancelRequestResolved": "Request resolved.",
+  "ownerCancelRequestApproveConfirmTitle": "Approve Cancellation?",
+  "ownerCancelRequestApproveConfirmMessage": "Approving this cancellation request will cancel the job and trigger a full refund of any escrowed funds to the customer.",
+  "ownerCancelRequestDeclineConfirmTitle": "Decline Cancellation Request?",
+  "ownerCancelRequestDeclineConfirmMessage": "Declining this request will keep the job active with the courier currently assigned.",
+  "ownerCancelRequestApproved": "Cancellation request approved. Job cancelled and escrow refunded.",
+  "ownerCancelRequestDeclined": "Cancellation request declined. Courier remains assigned.",
   "locationPermissionDeniedDefault": "Location permission denied. Defaulting to Cairo.",
   "locationFetchError": "Error fetching location: {error}",
   "@locationFetchError": {

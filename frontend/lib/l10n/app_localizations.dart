@@ -1581,6 +1581,42 @@ abstract class AppLocalizations {
   /// **'Request resolved.'**
   String get ownerCancelRequestResolved;
 
+  /// No description provided for @ownerCancelRequestApproveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve Cancellation?'**
+  String get ownerCancelRequestApproveConfirmTitle;
+
+  /// No description provided for @ownerCancelRequestApproveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving this cancellation request will cancel the job and trigger a full refund of any escrowed funds to the customer.'**
+  String get ownerCancelRequestApproveConfirmMessage;
+
+  /// No description provided for @ownerCancelRequestDeclineConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Cancellation Request?'**
+  String get ownerCancelRequestDeclineConfirmTitle;
+
+  /// No description provided for @ownerCancelRequestDeclineConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Declining this request will keep the job active with the courier currently assigned.'**
+  String get ownerCancelRequestDeclineConfirmMessage;
+
+  /// No description provided for @ownerCancelRequestApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation request approved. Job cancelled and escrow refunded.'**
+  String get ownerCancelRequestApproved;
+
+  /// No description provided for @ownerCancelRequestDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation request declined. Courier remains assigned.'**
+  String get ownerCancelRequestDeclined;
+
   /// No description provided for @locationPermissionDeniedDefault.
   ///
   /// In en, this message translates to:

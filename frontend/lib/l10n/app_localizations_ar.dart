@@ -785,6 +785,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerCancelRequestResolved => 'تم التعامل مع الطلب.';
 
   @override
+  String get ownerCancelRequestApproveConfirmTitle => 'الموافقة على الإلغاء؟';
+
+  @override
+  String get ownerCancelRequestApproveConfirmMessage =>
+      'الموافقة على طلب الإلغاء هتلغي المشوار وترجع كل الفلوس المحجوزة للعميل.';
+
+  @override
+  String get ownerCancelRequestDeclineConfirmTitle => 'رفض طلب الإلغاء؟';
+
+  @override
+  String get ownerCancelRequestDeclineConfirmMessage =>
+      'رفض الطلب هيسيب المشوار شغال مع نفس الكابتن.';
+
+  @override
+  String get ownerCancelRequestApproved =>
+      'تمت الموافقة على طلب الإلغاء، واتلغى المشوار واستردت الفلوس.';
+
+  @override
+  String get ownerCancelRequestDeclined =>
+      'تم رفض طلب الإلغاء، والكابتن مستمر في المشوار.';
+
+  @override
   String get locationPermissionDeniedDefault =>
       'تم رفض إذن الموقع. تم التعيين على القاهرة افتراضياً.';
 

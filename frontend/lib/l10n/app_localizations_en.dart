@@ -792,6 +792,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerCancelRequestResolved => 'Request resolved.';
 
   @override
+  String get ownerCancelRequestApproveConfirmTitle => 'Approve Cancellation?';
+
+  @override
+  String get ownerCancelRequestApproveConfirmMessage =>
+      'Approving this cancellation request will cancel the job and trigger a full refund of any escrowed funds to the customer.';
+
+  @override
+  String get ownerCancelRequestDeclineConfirmTitle =>
+      'Decline Cancellation Request?';
+
+  @override
+  String get ownerCancelRequestDeclineConfirmMessage =>
+      'Declining this request will keep the job active with the courier currently assigned.';
+
+  @override
+  String get ownerCancelRequestApproved =>
+      'Cancellation request approved. Job cancelled and escrow refunded.';
+
+  @override
+  String get ownerCancelRequestDeclined =>
+      'Cancellation request declined. Courier remains assigned.';
+
+  @override
   String get locationPermissionDeniedDefault =>
       'Location permission denied. Defaulting to Cairo.';
 

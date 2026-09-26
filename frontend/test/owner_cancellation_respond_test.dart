@@ -14,6 +14,9 @@ import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/home_screen.dart';
+import 'package:frontend/widgets/confirm_action_dialog.dart';
+import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/secondary_button.dart';
 
 class _MockOwnerAuth extends AuthProvider {
   _MockOwnerAuth(super.apiClient);
@@ -185,7 +188,7 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('Approve calls respond with accept and shows success',
+    testWidgets('Approve shows confirm dialog; cancel does not call respond',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
@@ -205,13 +208,64 @@ void main() {
       await tester.tap(btn);
       await tester.pumpAndSettle();
 
+      // Dialog opens with consequences explained
+      expect(find.byType(ConfirmActionDialog), findsOneWidget);
+      expect(find.text('Approve Cancellation?'), findsOneWidget);
+      expect(find.textContaining('trigger a full refund'), findsOneWidget);
+
+      // Cancel button inside dialog does not submit
+      final cancelBtn = find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.byType(SecondaryButton),
+      );
+      await tester.tap(cancelBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ConfirmActionDialog), findsNothing);
+      expect(ownerProvider.respondCalls, 0);
+    });
+
+    testWidgets(
+        'Approve confirms dialog, calls respond with accept, shows specific success',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final apiClient = ApiClient();
+      final ownerProvider = _MockOwnerRespond(apiClient, mockJobs: [
+        _ownerJob('job-req-1',
+            requestStatus: 'pending', reason: 'Family emergency'),
+      ]);
+      await tester.pumpWidget(_ownerApp(ownerProvider));
+      await tester.pumpAndSettle();
+
+      final btn =
+          find.byKey(const Key('approve_cancel_request_button_job-req-1'));
+      await tester.ensureVisible(btn);
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ConfirmActionDialog), findsOneWidget);
+      final confirmBtn = find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.byType(PrimaryButton),
+      );
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
       expect(ownerProvider.respondCalls, 1);
       expect(ownerProvider.lastJobId, 'job-req-1');
       expect(ownerProvider.lastDecision, 'accept');
-      expect(find.text('Request resolved.'), findsOneWidget);
+      expect(
+        find.text(
+            'Cancellation request approved. Job cancelled and escrow refunded.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Decline calls respond with decline',
+    testWidgets(
+        'Decline confirms dialog, calls respond with decline, shows specific success',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
@@ -231,12 +285,28 @@ void main() {
       await tester.tap(btn);
       await tester.pumpAndSettle();
 
+      expect(find.byType(ConfirmActionDialog), findsOneWidget);
+      expect(find.text('Decline Cancellation Request?'), findsOneWidget);
+      expect(find.textContaining('keep the job active with the courier'),
+          findsOneWidget);
+
+      final confirmBtn = find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.byType(PrimaryButton),
+      );
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
       expect(ownerProvider.respondCalls, 1);
       expect(ownerProvider.lastDecision, 'decline');
-      expect(find.text('Request resolved.'), findsOneWidget);
+      expect(
+        find.text('Cancellation request declined. Courier remains assigned.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Late (already-expired) response surfaces the server message',
+    testWidgets(
+        'Late (already-expired) response surfaces the server message after confirm',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
@@ -255,6 +325,14 @@ void main() {
           find.byKey(const Key('approve_cancel_request_button_job-req-1'));
       await tester.ensureVisible(btn);
       await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ConfirmActionDialog), findsOneWidget);
+      final confirmBtn = find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.byType(PrimaryButton),
+      );
+      await tester.tap(confirmBtn);
       await tester.pumpAndSettle();
 
       expect(ownerProvider.respondCalls, 1);

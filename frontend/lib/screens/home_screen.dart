@@ -18,6 +18,7 @@ import '../widgets/themed_success_banner.dart';
 import '../widgets/rating_summary_card.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/cancel_job_dialog.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/dashboard_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -118,6 +119,23 @@ class _HomeScreenState extends State<HomeScreen> {
     String jobId,
     String decision,
   ) async {
+    final isApprove = decision == 'accept';
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: isApprove
+          ? l10n.ownerCancelRequestApproveConfirmTitle
+          : l10n.ownerCancelRequestDeclineConfirmTitle,
+      message: isApprove
+          ? l10n.ownerCancelRequestApproveConfirmMessage
+          : l10n.ownerCancelRequestDeclineConfirmMessage,
+      confirmLabel: isApprove
+          ? l10n.ownerCancelRequestApprove
+          : l10n.ownerCancelRequestDecline,
+      cancelLabel: l10n.cancelActionDefault,
+      isDestructive: isApprove,
+    );
+    if (confirmed != true || !mounted) return;
+
     try {
       await ownerProvider.respondCancellation(
         jobId: jobId,
@@ -125,7 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ownerToken: auth.token!,
       );
       if (!mounted) return;
-      ThemedSnackBar.showSuccess(context, l10n.ownerCancelRequestResolved);
+      final successMsg = isApprove
+          ? l10n.ownerCancelRequestApproved
+          : l10n.ownerCancelRequestDeclined;
+      ThemedSnackBar.showSuccess(context, successMsg);
     } catch (e) {
       if (!mounted) return;
       final message = e is ApiClientException && e.statusCode == 409
