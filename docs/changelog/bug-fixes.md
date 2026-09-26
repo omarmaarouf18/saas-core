@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Restore Notification Dismiss Target to 44px (Audit S14)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S14, the per-card dismiss `IconButton` overrode Material's 48px default down to 24×24px constraints nested inside the card's own navigation tap area, inviting mis-taps in both directions (delete when opening, open when deleting). Restored `BoxConstraints(minWidth: 44, minHeight: 44)` keeping the 16px `AppIconSize.sm` visual and zero padding — same repair shape as the A8 banner-dismiss restoration and the E20–E22 44px convention (Rule 10), now with a stable `dismiss_notification_<id>` key. No shared-widget change (single call site).
+- **Commit SHA**: ``dd746348c3a7243c63f20deaded1bc3697d07149``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), `notifications_screen_test.dart` + 1 new S14 case asserting the 16px visual with ≥44px constraints on both axes. Full `flutter test` suite green via pre-push gate. Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## Lock 2FA-Enable Switch During Round-Trip (Audit S10)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S10, enabling 2FA awaited `auth.toggleTwoFactor(true)` with the switch static for the whole round-trip, so rapid taps queued multiple PATCHes (same defect class as tracked E-05, different control). `SettingsScreen` is now `StatefulWidget` (const constructor and all five call sites unchanged) holding a `_toggling2fa` flag: the enable path sets it around the await (cleared in `finally`), and while set the switch is replaced by a 20px progress indicator (`settings_2fa_toggle_progress`), refusing re-trigger until resolve — mirroring the disable path's existing `_isLoading` handling. The disable flow (confirm + password dialogs) is untouched.
