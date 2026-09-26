@@ -20,6 +20,7 @@ import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/screens/subscription_screen.dart';
 import 'package:frontend/screens/update_required_screen.dart';
 import 'package:frontend/screens/owner_configuration_screen.dart';
+import 'package:frontend/widgets/confirm_action_dialog.dart';
 
 import 'helpers/mock_http_harness.dart';
 
@@ -227,6 +228,16 @@ void main() {
       await tester.ensureVisible(upgradeBtn);
       await tester.pumpAndSettle();
       await tester.tap(upgradeBtn);
+      await tester.pumpAndSettle();
+
+      // Audit S7: one tap only opens the consequence dialog — the failing
+      // call fires on confirm.
+      expect(find.byType(ConfirmActionDialog), findsOneWidget);
+      final confirmBtn = find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.text('Upgrade to Professional'),
+      );
+      await tester.tap(confirmBtn);
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
