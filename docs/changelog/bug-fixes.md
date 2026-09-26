@@ -4,6 +4,15 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Upfront Escrow Consequence on Cancel and Worker Freeze Confirmation Dialog (Audit E13/E14)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E13 and E14, destructive owner-side workflows lacked upfront consequence explanations and confirmation guards:
+  - Owner Cancel Job Dialog (`home_screen.dart:1354–1375`): When an owner initiates cancellation on an active job with locked escrow, the dialog now provides explicit upfront warning copy (`l10n.ownerCancelJobEscrowWarning(amount)`) detailing the immediate automatic customer refund, or plain cancellation consequence (`l10n.ownerCancelJobPlainWarning`) for COD jobs, via the existing `bodyText` parameter on `CancelJobDialog.show`.
+  - Worker Account Freeze/Unfreeze (`employee_screen.dart:656–690`): Wrapped the worker status toggle submission in `ConfirmActionDialog.show`. For freezing (`isFreezing = true`), displays `l10n.freezeWorkerConfirmTitle` and `l10n.freezeWorkerConfirmMessage(targetEmail)` ("Are you sure you want to freeze worker {email}? This will immediately block their login and hide them from active dispatch.") with destructive styling (`isDestructive: true`). For unfreezing, displays `l10n.unfreezeWorkerConfirmTitle` and `l10n.unfreezeWorkerConfirmMessage(targetEmail)`.
+  - Localization: Added `ownerCancelJobEscrowWarning`, `ownerCancelJobPlainWarning`, `freezeWorkerConfirmTitle`, `freezeWorkerConfirmMessage`, `unfreezeWorkerConfirmTitle`, and `unfreezeWorkerConfirmMessage` in `app_en.arb` and Egyptian-AR `app_ar.arb`.
+- **Commit SHA**: ``b1521f897e82fc57ed69f4160b3283b1dfd5b794``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean, widget tests added in `owner_cancellation_respond_test.dart` (asserting upfront escrow warning copy on `CancelJobDialog`, 6/6 passed) and `owner_employees_test.dart` (asserting freeze confirmation dialog presentation, consequence copy, cancel aborting without API call, and confirm dispatching `setActive: false`; 11/11 passed). Full Flutter test suite green.
+
 ## Enforce 44px Minimum Touch Targets Across Shared PillFilterBar, Fleet Map, and Jobs Screen (Audit E20-E22)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E20, E21, and E22, interactive controls on owner and employee screens fell below the standard 44×44px touch target:
