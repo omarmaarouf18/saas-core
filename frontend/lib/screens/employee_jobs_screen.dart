@@ -402,7 +402,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     child: Icon(
                       Icons.badge_outlined,
                       color: Theme.of(context).colorScheme.primary,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     )),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -508,7 +508,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 color: isOnline
                     ? context.semanticColors.success
                     : Theme.of(context).disabledColor,
-                size: 24,
+                size: AppIconSize.md,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -526,7 +526,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                             : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       hasActiveJob
                           ? l10n.courierStatusActiveJobLock
@@ -583,7 +583,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                 Row(
                   children: [
                     Icon(Icons.location_off_outlined,
-                        color: context.semanticColors.warning, size: 20),
+                        color: context.semanticColors.warning,
+                        size: AppIconSize.smMd),
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
@@ -644,7 +645,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     child: const Icon(
                       Icons.bolt_outlined,
                       color: AppColors.secondary,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     )),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -808,7 +809,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                         child: Icon(
                           Icons.radar_rounded,
                           color: Theme.of(context).colorScheme.primary,
-                          size: 20,
+                          size: AppIconSize.smMd,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
@@ -839,7 +840,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     children: [
                       Icon(
                         Icons.timer_outlined,
-                        size: 14,
+                        size: AppIconSize.xs,
                         color: isExpired
                             ? context.semanticColors.danger
                             : context.semanticColors.warning,
@@ -1054,7 +1055,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                         _expandedJobCardIds.contains(job.id)
                             ? Icons.expand_less
                             : Icons.expand_more,
-                        size: 16,
+                        size: AppIconSize.sm,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: AppSpacing.xxs),
@@ -1305,7 +1306,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                size: 14,
+                size: AppIconSize.xs,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.xs),
             Text(

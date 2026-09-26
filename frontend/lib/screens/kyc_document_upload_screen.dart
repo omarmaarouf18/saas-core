@@ -314,7 +314,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                           : (isPending
                               ? AppColors.secondary
                               : Theme.of(context).colorScheme.primary)),
-                  size: 20,
+                  size: AppIconSize.smMd,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(

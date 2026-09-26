@@ -169,7 +169,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: AppMotion.durationMedium,
           curve: Curves.easeOut,
         );
       }
@@ -367,7 +367,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xxs),
           Row(
             children: [
               if (contextId.isNotEmpty) ...[
@@ -376,7 +376,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                   size: AppIconSize.xs,
                   color: theme.colorScheme.primary,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   l10n.ticketContextJob(contextId),
                   style: AppTypography.caption.copyWith(
@@ -391,7 +391,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 size: AppIconSize.xs,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   agent != null
@@ -441,7 +441,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     _resolutionNote != null && _resolutionNote!.isNotEmpty
                         ? "${l10n.ticketResolutionNote}: $_resolutionNote"
@@ -466,7 +466,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
         const SizedBox(height: AppSpacing.xxl),
         Icon(
           Icons.chat_bubble_outline,
-          size: 48,
+          size: AppIconSize.xl,
           color: Theme.of(context).colorScheme.outlineVariant,
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -634,7 +634,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                   children: [
                     Icon(
                       Icons.broken_image_outlined,
-                      size: 20,
+                      size: AppIconSize.smMd,
                       color: isMe
                           ? theme.colorScheme.onPrimary
                           : theme.colorScheme.outline,

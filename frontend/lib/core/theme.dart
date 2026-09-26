@@ -252,6 +252,8 @@ class AppMotion {
 class AppIconSize {
   static const double xs = 14.0; // Compact badge icons, status indicators
   static const double sm = 16.0; // Inline text icons, small button icons
+  static const double smMd =
+      20.0; // Compact button/tile icons (fills the 16-24 gap; UI visual audit 2026-09)
   static const double md =
       24.0; // Standard list tile leading icons, app bar actions
   static const double lg = 32.0; // Featured card icons, metric stat badges

@@ -394,7 +394,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 children: [
                   Icon(
                     Icons.person_outline,
-                    size: 20,
+                    size: AppIconSize.smMd,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.xs),
@@ -600,7 +600,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 children: [
                   Icon(
                     Icons.location_on_outlined,
-                    size: 20,
+                    size: AppIconSize.smMd,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.xs),
@@ -700,7 +700,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     children: [
                       const Icon(
                         Icons.place_outlined,
-                        size: 20,
+                        size: AppIconSize.smMd,
                         color: AppColors.secondary,
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -719,7 +719,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                         icon: Icon(
                           Icons.delete_outline,
                           color: Theme.of(context).colorScheme.error,
-                          size: 20,
+                          size: AppIconSize.smMd,
                         ),
                         onPressed: () => _removeAddress(index),
                       ),

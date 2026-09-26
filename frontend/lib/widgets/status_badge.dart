@@ -170,7 +170,7 @@ class StatusBadge extends StatelessWidget {
       default:
         label = status.isEmpty
             ? l10n.statusUnknown
-            : status.replaceAll('_', ' ').toUpperCase();
+            : AppTypography.uppercaseLabel(status.replaceAll('_', ' '));
         break;
     }
     return StatusBadgeConfig(
@@ -227,7 +227,9 @@ class StatusBadge extends StatelessWidget {
           ],
           Flexible(
             child: Text(
-              config.label.toUpperCase(),
+              // Visual audit 2026-09: route through the sanctioned helper —
+              // value-identical output, keeps the rule enforceable in one place.
+              AppTypography.uppercaseLabel(config.label),
               style: textStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

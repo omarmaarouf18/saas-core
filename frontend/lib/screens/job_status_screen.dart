@@ -411,7 +411,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         children: [
           Icon(
             Icons.access_time_outlined,
-            size: 48,
+            size: AppIconSize.xl,
             color: context.semanticColors.warning,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -650,7 +650,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               child: const Icon(
                 Icons.map_outlined,
                 color: AppColors.secondary,
-                size: 24,
+                size: AppIconSize.md,
               )),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -785,7 +785,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 boxShadow: isActive ? AppElevation.shadowLevel1List : null,
                 width: 32,
                 height: 32,
-                child: Icon(icon, size: 16, color: nodeColor)),
+                child: Icon(icon, size: AppIconSize.sm, color: nodeColor)),
             if (!isLast)
               Container(
                 width: 2,
@@ -843,7 +843,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
           Row(
             children: [
               Icon(Icons.route,
-                  size: 20,
+                  size: AppIconSize.smMd,
                   color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
               Text(
@@ -1190,7 +1190,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 Icon(
                   Icons.check_circle,
                   color: context.semanticColors.success,
-                  size: 20,
+                  size: AppIconSize.smMd,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
@@ -1322,7 +1322,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               children: [
                 Icon(
                   Icons.handshake_outlined,
-                  size: 20,
+                  size: AppIconSize.smMd,
                   color: context.semanticColors.warning,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -1342,13 +1342,13 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                       borderRadius: AppRadius.smBorder,
                       border: Border.all(color: context.semanticColors.warning),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs / 2),
+                          horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.timer_outlined,
-                              size: 14, color: context.semanticColors.warning),
+                              size: AppIconSize.xs,
+                              color: context.semanticColors.warning),
                           const SizedBox(width: AppSpacing.xs),
                           Text(
                             _remainingTimeString,
@@ -1363,7 +1363,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 const SizedBox(width: AppSpacing.xs),
                 Icon(
                   _negotiationExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
+                  size: AppIconSize.smMd,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],

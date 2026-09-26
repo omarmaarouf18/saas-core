@@ -616,7 +616,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     child: Icon(
                       Icons.storefront_outlined,
                       color: AppColors.secondary,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     ),
                   )),
               const SizedBox(width: AppSpacing.sm),
@@ -673,18 +673,18 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                               errorBuilder: (_, __, ___) => Icon(
                                 Icons.business_outlined,
                                 color: Theme.of(context).colorScheme.primary,
-                                size: 32,
+                                size: AppIconSize.lg,
                               ),
                             )
                           : Icon(
                               Icons.image_outlined,
                               color: Theme.of(context).colorScheme.primary,
-                              size: 32,
+                              size: AppIconSize.lg,
                             ))
                       : Icon(
                           Icons.add_a_photo_outlined,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          size: 32,
+                          size: AppIconSize.lg,
                         )),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -790,7 +790,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     child: Icon(
                       Icons.location_on_outlined,
                       color: AppColors.secondary,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     ),
                   )),
               const SizedBox(width: AppSpacing.sm),
@@ -876,7 +876,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                           Icon(
                             Icons.location_on_outlined,
                             color: Theme.of(context).colorScheme.primary,
-                            size: 24,
+                            size: AppIconSize.md,
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(child: coordinateText),
@@ -892,7 +892,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                               Icon(
                                 Icons.location_on_outlined,
                                 color: Theme.of(context).colorScheme.primary,
-                                size: 24,
+                                size: AppIconSize.md,
                               ),
                               const SizedBox(width: AppSpacing.sm),
                               Expanded(child: coordinateText),
@@ -1006,7 +1006,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     child: Icon(
                       Icons.schedule_outlined,
                       color: AppColors.secondary,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     ),
                   )),
               const SizedBox(width: AppSpacing.sm),
@@ -1289,7 +1289,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     child: Icon(
                       Icons.payments_outlined,
                       color: context.semanticColors.success,
-                      size: 20,
+                      size: AppIconSize.smMd,
                     ),
                   )),
               const SizedBox(width: AppSpacing.sm),

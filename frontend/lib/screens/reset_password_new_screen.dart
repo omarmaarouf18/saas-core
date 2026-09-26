@@ -233,7 +233,7 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
               child: Center(
                 child: Icon(
                   Icons.lock_reset,
-                  size: 32,
+                  size: AppIconSize.lg,
                   color: AppColors.secondary,
                 ),
               )),

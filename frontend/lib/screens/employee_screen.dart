@@ -214,7 +214,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         child: Icon(
                           Icons.badge_outlined,
                           color: Theme.of(context).colorScheme.primary,
-                          size: 20,
+                          size: AppIconSize.smMd,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -319,8 +319,8 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                         if (_registerFormKey.currentContext != null) {
                           Scrollable.ensureVisible(
                             _registerFormKey.currentContext!,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
+                            duration: AppMotion.durationMedium,
+                            curve: AppMotion.curveStateChange,
                           );
                         }
                       },
@@ -619,7 +619,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                 child: Icon(
                   Icons.lock_person_outlined,
                   color: Theme.of(context).colorScheme.error,
-                  size: 20,
+                  size: AppIconSize.smMd,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),

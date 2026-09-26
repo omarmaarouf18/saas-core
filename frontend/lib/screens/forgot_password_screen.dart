@@ -189,7 +189,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Center(
                 child: Icon(
                   Icons.lock_reset,
-                  size: 32,
+                  size: AppIconSize.lg,
                   color: AppColors.secondary,
                 ),
               )),

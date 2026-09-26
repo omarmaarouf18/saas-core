@@ -274,7 +274,7 @@ class UpdateRequiredScreen extends StatelessWidget {
             Icon(
               Icons.warning_amber_rounded,
               color: Theme.of(context).colorScheme.error,
-              size: 20,
+              size: AppIconSize.smMd,
             ),
             const SizedBox(width: AppSpacing.xs),
             Expanded(

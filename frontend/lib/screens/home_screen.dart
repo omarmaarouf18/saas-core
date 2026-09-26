@@ -469,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
                   key: const Key('owner_kyc_banner_button'),
-                  icon: const Icon(Icons.upload_file, size: 16),
+                  icon: const Icon(Icons.upload_file, size: AppIconSize.sm),
                   label: Text(l10n.uploadDocumentBtn),
                   onPressed: () {
                     Navigator.of(context).push(
@@ -667,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icon(
                       Icons.trending_up,
                       color: context.semanticColors.success,
-                      size: 14,
+                      size: AppIconSize.xs,
                     ),
                     const SizedBox(width: AppSpacing.xxs),
                     Flexible(
@@ -1008,7 +1008,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: iconBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Icon(icon, color: iconColor, size: 24)),
+                child: Icon(icon, color: iconColor, size: AppIconSize.md)),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(

@@ -223,7 +223,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       Icon(
                         Icons.trending_up,
                         color: context.semanticColors.success,
-                        size: 14,
+                        size: AppIconSize.xs,
                       ),
                       const SizedBox(width: AppSpacing.xxs),
                       Text(
@@ -570,7 +570,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 6,
-                  vertical: 2,
+                  vertical: AppSpacing.xxs,
                 ),
                 child: Text(
                   context.l10n.ledgerJobLine(

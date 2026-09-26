@@ -91,7 +91,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
               if (widget.icon != null) ...[
                 Icon(
                   widget.icon,
-                  size: 20,
+                  size: AppIconSize.smMd,
                   color: buttonColor,
                 ),
                 const SizedBox(width: AppSpacing.base),

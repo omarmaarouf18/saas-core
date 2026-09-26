@@ -158,7 +158,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                           AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
                     ),
                   )
-                : const Icon(Icons.my_location, size: 20),
+                : const Icon(Icons.my_location, size: AppIconSize.smMd),
             label: Text(
               context.l10n.locationPickerUseMyLocation,
               style: AppTypography.labelLg.copyWith(color: AppColors.onPrimary),

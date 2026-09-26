@@ -263,7 +263,7 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Center(
                 child: Icon(
                   Icons.security_outlined,
-                  size: 32,
+                  size: AppIconSize.lg,
                   color: AppColors.secondary,
                 ),
               )),
@@ -402,7 +402,7 @@ class _OtpScreenState extends State<OtpScreen> {
       children: [
         Icon(
           Icons.lock_outline,
-          size: 14,
+          size: AppIconSize.xs,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         Text(

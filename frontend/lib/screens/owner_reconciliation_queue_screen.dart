@@ -192,7 +192,7 @@ class _OwnerReconciliationQueueScreenState
           titleWidget: Row(
             children: [
               const Icon(Icons.assignment,
-                  color: AppColors.secondary, size: 20),
+                  color: AppColors.secondary, size: AppIconSize.smMd),
               const SizedBox(width: AppSpacing.sm),
               Flexible(
                 child: Text(

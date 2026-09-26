@@ -123,8 +123,8 @@ class _ChatScreenState extends State<ChatScreen>
 
     Widget statusIndicator;
     if (chat.subscriptionError != null) {
-      statusIndicator =
-          const Icon(Icons.gpp_bad, color: AppColors.error, size: 14);
+      statusIndicator = const Icon(Icons.gpp_bad,
+          color: AppColors.error, size: AppIconSize.xs);
     } else if (chat.isConnected) {
       statusIndicator = Row(
         mainAxisSize: MainAxisSize.min,
@@ -380,7 +380,7 @@ class _ChatScreenState extends State<ChatScreen>
                             child: Icon(
                               Icons.send_rounded,
                               color: AppColors.onSecondary,
-                              size: 20,
+                              size: AppIconSize.smMd,
                             ),
                           ),
                         ),
@@ -471,7 +471,7 @@ class _ChatScreenState extends State<ChatScreen>
                   const SizedBox(width: AppSpacing.xs),
                   const Icon(
                     Icons.done_all,
-                    size: 14,
+                    size: AppIconSize.xs,
                     color: AppColors.secondary,
                   ),
                 ],

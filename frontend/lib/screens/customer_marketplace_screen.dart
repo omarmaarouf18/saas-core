@@ -20,6 +20,7 @@ import '../widgets/secondary_button.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_panel.dart';
 import '../models/job.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
@@ -139,27 +140,25 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                 Positioned(
                   right: 8,
                   top: 8,
-                  child: ClipRRect(
+                  // Visual audit 2026-09: same ThemedPanel count-badge as the
+                  // home/customer-home/employee-home badges — pixel-identical
+                  // geometry (error fill, smMd radius, xxs padding, 16px min).
+                  child: ThemedPanel(
+                    color: AppColors.error,
                     borderRadius: BorderRadius.circular(AppRadius.radiusSmMd),
-                    child: ColoredBox(
-                      color: AppColors.error,
-                      child: Container(
-                        padding:
-                            const EdgeInsetsDirectional.all(AppSpacing.xxs),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${provider.unreadCount}',
-                          style: AppTypography.labelSm.copyWith(
-                            color: AppColors.onPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                    padding: const EdgeInsetsDirectional.all(AppSpacing.xxs),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: AppTypography.labelSm.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -519,7 +518,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.sm,
-                                  vertical: 2,
+                                  vertical: AppSpacing.xxs,
                                 ),
                                 child: Text(
                                   categoryLabel,
@@ -561,7 +560,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   children: [
                     Icon(
                       Icons.schedule,
-                      size: 14,
+                      size: AppIconSize.xs,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpacing.xs),
@@ -585,7 +584,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   children: [
                     Icon(
                       Icons.radar,
-                      size: 14,
+                      size: AppIconSize.xs,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpacing.xs),
@@ -615,7 +614,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                   children: [
                     Icon(
                       Icons.schedule_outlined,
-                      size: 14,
+                      size: AppIconSize.xs,
                       color: context.semanticColors.warning,
                     ),
                     const SizedBox(width: AppSpacing.xs),
@@ -1086,14 +1085,15 @@ class _BookingDialogState extends State<_BookingDialog> {
                           TextButton.icon(
                             key:
                                 const Key('use_current_location_pickup_button'),
-                            icon: const Icon(Icons.my_location, size: 16),
+                            icon: const Icon(Icons.my_location,
+                                size: AppIconSize.sm),
                             label: Text(l10n.locationPickerUseMyLocation),
                             onPressed: _useCurrentLocationForPickup,
                           ),
                           TextButton.icon(
                             key: const Key('choose_pickup_button'),
                             icon: const Icon(Icons.edit_location_alt_outlined,
-                                size: 16),
+                                size: AppIconSize.sm),
                             label: Text(l10n.changePickupLocationBtn),
                             onPressed: () =>
                                 _openLocationPicker(isPickup: true),
@@ -1147,7 +1147,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                       alignment: AlignmentDirectional.centerEnd,
                       child: OutlinedButton.icon(
                         key: const Key('choose_destination_button'),
-                        icon: const Icon(Icons.map, size: 16),
+                        icon: const Icon(Icons.map, size: AppIconSize.sm),
                         label: Text(hasDestination
                             ? l10n.changeDestinationLocationBtn
                             : l10n.chooseDestinationLocationBtn),
@@ -1354,7 +1354,7 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
       // Rule-1 banner is too heavy for a per-card row, but the failure
       // must stay visually distinct from a genuine zero count.
       return IconButton(
-        icon: const Icon(Icons.refresh, size: 16),
+        icon: const Icon(Icons.refresh, size: AppIconSize.sm),
         tooltip: context.l10n.tooltipRefreshStatus,
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
@@ -1372,7 +1372,8 @@ class _ServiceRatingWidgetState extends State<ServiceRatingWidget> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.star, color: AppColors.secondary, size: 16),
+        const Icon(Icons.star,
+            color: AppColors.secondary, size: AppIconSize.sm),
         const SizedBox(width: AppSpacing.xs),
         Text(
           "${_avg!.toStringAsFixed(1)} ($_count)",

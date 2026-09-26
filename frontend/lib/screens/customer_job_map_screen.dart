@@ -190,7 +190,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
           ThemedPanel(
               color: AppColors.primaryContainer,
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.surface, width: 1.5),
+              border: Border.all(color: AppColors.onPrimary, width: 1.5),
               boxShadow: AppElevation.shadowLevel2List,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
@@ -251,7 +251,7 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
           ThemedPanel(
               color: AppColors.secondary,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.surface, width: 2),
+              border: Border.all(color: AppColors.onPrimary, width: 2),
               padding: const EdgeInsets.all(AppSpacing.xs),
               child: const Icon(
                 Icons.directions_bike,

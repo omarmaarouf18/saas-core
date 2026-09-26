@@ -86,7 +86,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: 20, color: textColor),
+                Icon(widget.icon, size: AppIconSize.smMd, color: textColor),
                 const SizedBox(width: AppSpacing.base),
               ],
               Flexible(
@@ -107,7 +107,8 @@ class _PrimaryButtonState extends State<PrimaryButton> {
               ),
               if (widget.trailingIcon != null) ...[
                 const SizedBox(width: AppSpacing.base),
-                Icon(widget.trailingIcon, size: 20, color: textColor),
+                Icon(widget.trailingIcon,
+                    size: AppIconSize.smMd, color: textColor),
               ],
             ],
           );

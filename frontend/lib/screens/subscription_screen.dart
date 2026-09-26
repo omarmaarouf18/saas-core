@@ -13,6 +13,7 @@ import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -217,7 +218,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                       color: currentTier == 'free'
                                           ? AppColors.onPrimary
                                           : AppColors.secondary,
-                                      size: 16,
+                                      size: AppIconSize.sm,
                                     ),
                                     const SizedBox(width: AppSpacing.xs),
                                     Text(
@@ -253,13 +254,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // 3. Section Title
-                  Text(
-                    l10n.availablePlansHeader,
-                    style: AppTypography.titleMd.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  // 3. Section Title (visual audit 2026-09: shared header —
+                  // title-only renders the same titleMd pixels as the raw
+                  // Text it replaces).
+                  ThemedSectionHeader(
+                    title: l10n.availablePlansHeader,
                   ),
                   const SizedBox(height: AppSpacing.md),
 
@@ -462,7 +461,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       const Icon(
                         Icons.stars,
                         color: AppColors.secondary,
-                        size: 20,
+                        size: AppIconSize.smMd,
                       ),
                     ],
                   ),
@@ -603,7 +602,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         children: [
           Icon(
             icon,
-            size: 20,
+            size: AppIconSize.smMd,
             color: iconColor,
           ),
           const SizedBox(width: AppSpacing.sm),

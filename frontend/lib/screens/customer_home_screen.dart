@@ -369,7 +369,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   child: Icon(
                     Icons.near_me,
                     color: Theme.of(context).colorScheme.primary,
-                    size: 20,
+                    size: AppIconSize.smMd,
                   )),
               const SizedBox(width: AppSpacing.sm),
               // A8/B1-F1: ellipsized within Expanded — this row overflowed

@@ -235,7 +235,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
           child: ThemedTextField(
             controller: _searchController,
             hintText: l10n.customerJobsSearchHint,
-            prefixIcon: const Icon(Icons.search, size: 20),
+            prefixIcon: const Icon(Icons.search, size: AppIconSize.smMd),
             onChanged: (val) {
               setState(() {
                 _searchQuery = val;

@@ -137,17 +137,19 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
         Tab(
           key: const Key('history_tab_activity'),
           text: l10n.ownerHistoryTabActivity,
-          icon: const Icon(Icons.history_outlined, size: 20),
+          icon: const Icon(Icons.history_outlined, size: AppIconSize.smMd),
         ),
         Tab(
           key: const Key('history_tab_jobs'),
           text: l10n.ownerHistoryTabJobs,
-          icon: const Icon(Icons.assignment_turned_in_outlined, size: 20),
+          icon: const Icon(Icons.assignment_turned_in_outlined,
+              size: AppIconSize.smMd),
         ),
         Tab(
           key: const Key('history_tab_ledger'),
           text: l10n.ownerHistoryTabLedger,
-          icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
+          icon: const Icon(Icons.account_balance_wallet_outlined,
+              size: AppIconSize.smMd),
         ),
       ],
     );
@@ -249,7 +251,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
               ),
               Icon(
                 Icons.admin_panel_settings_outlined,
-                size: 20,
+                size: AppIconSize.smMd,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
@@ -582,7 +584,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
               color: color.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: AppIconSize.md),
               ),
             ),
           ),

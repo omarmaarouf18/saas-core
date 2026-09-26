@@ -278,7 +278,8 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
             final isOnJob = m.jobId != null && m.jobId!.isNotEmpty;
             final badgeColor =
                 isOnJob ? AppColors.primary : context.semanticColors.success;
-            final borderColor = isOnJob ? AppColors.secondary : Colors.white;
+            final borderColor =
+                isOnJob ? AppColors.secondary : AppColors.onPrimary;
             final pinColor =
                 isOnJob ? AppColors.secondary : context.semanticColors.success;
 
@@ -379,7 +380,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                           borderRadius: BorderRadius.circular(AppRadius.full),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
-                            vertical: 2,
+                            vertical: AppSpacing.xxs,
                           ),
                           child: Text(
                             "$markersCount",
@@ -505,7 +506,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
             ),
             IconButton(
               key: const Key('empty_fleet_refresh_button'),
-              icon: const Icon(Icons.refresh, size: 20),
+              icon: const Icon(Icons.refresh, size: AppIconSize.smMd),
               tooltip: context.l10n.tooltipRefreshStatus,
               onPressed: () {
                 final provider = context.read<MapTrackingProvider>();

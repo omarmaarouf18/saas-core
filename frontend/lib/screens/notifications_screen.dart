@@ -477,7 +477,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               backgroundColor: iconBgColor,
                               child: Icon(
                                 typeIcon,
-                                size: 16,
+                                size: AppIconSize.sm,
                                 color: iconColor,
                               ),
                             ),
@@ -495,7 +495,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         .surfaceContainerHigh,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.xs,
-                                  vertical: 2,
+                                  vertical: AppSpacing.xxs,
                                 ),
                                 child: Text(
                                   tagLabel,

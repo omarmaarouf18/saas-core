@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Center(
                   child: Icon(
                     Icons.local_shipping,
-                    size: 32,
+                    size: AppIconSize.lg,
                     color: AppColors.secondary,
                   ),
                 )),

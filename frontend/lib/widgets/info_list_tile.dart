@@ -52,7 +52,7 @@ class InfoListTile extends StatelessWidget {
         child: Icon(
           leadingIcon,
           color: iconColor,
-          size: 20,
+          size: AppIconSize.smMd,
         ),
       );
     }

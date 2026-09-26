@@ -455,7 +455,7 @@ class _RatingScreenState extends State<RatingScreen> {
                 child: Icon(
                   Icons.check_circle_outline,
                   color: context.semanticColors.success,
-                  size: 48,
+                  size: AppIconSize.xl,
                 )),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -479,7 +479,7 @@ class _RatingScreenState extends State<RatingScreen> {
               children: [
                 Icon(
                   Icons.visibility_off_outlined,
-                  size: 48,
+                  size: AppIconSize.xl,
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant

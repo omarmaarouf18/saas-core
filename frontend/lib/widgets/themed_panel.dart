@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme.dart';
 
 /// ThemedPanel is the single sanctioned primitive for bespoke decorated
 /// containers inside screens: tinted chips, circular icon badges, callout
@@ -158,7 +159,7 @@ class AnimatedThemedPanel extends ImplicitlyAnimatedWidget {
     this.clipBehavior = Clip.none,
     this.onTap,
     required super.duration,
-    super.curve = Curves.easeInOut,
+    super.curve = AppMotion.curveStateChange,
   });
 
   @override

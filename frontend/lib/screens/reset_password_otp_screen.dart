@@ -272,7 +272,7 @@ class _ResetPasswordOtpScreenState extends State<ResetPasswordOtpScreen> {
               child: Center(
                 child: Icon(
                   Icons.lock_reset,
-                  size: 32,
+                  size: AppIconSize.lg,
                   color: AppColors.secondary,
                 ),
               )),
