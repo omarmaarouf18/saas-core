@@ -573,6 +573,10 @@ class AuthProvider extends ChangeNotifier {
       _user = previousProfile;
       notifyListeners();
       _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      // Audit S5: store the status alongside the message (mirroring
+      // fetchUserProfile/verifyResetCode) so the disable dialog can tell a
+      // 429 lockout from a true 401 instead of blaming the password.
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       rethrow;
     }
   }

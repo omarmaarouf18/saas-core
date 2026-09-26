@@ -40,6 +40,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   String? _errorMessage;
   bool _isInitialized = false;
 
+  /// Audit S4: initial profile-load failure, kept separate from the submit
+  /// scoped [_errorMessage] so each banner keeps its own retry (reload vs
+  /// re-submit).
+  String? _loadError;
+
   @override
   void initState() {
     super.initState();
@@ -50,8 +55,12 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
   Future<void> _loadAndPrepopulate() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Audit S4: the provider stores refresh failures (post-A4) — read the
+    // stored error instead of proceeding silently on a stale profile.
+    String? loadError;
     if (authProvider.user != null) {
       await authProvider.fetchUserProfile();
+      loadError = authProvider.error;
     }
 
     if (mounted) {
@@ -65,8 +74,19 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
       setState(() {
         _isInitialized = true;
+        _loadError = loadError;
       });
     }
+  }
+
+  /// Audit S4: reload retry — re-fetch then repopulate, clearing the stale
+  /// profile signal on success.
+  Future<void> _retryLoad() async {
+    setState(() {
+      _isInitialized = false;
+      _loadError = null;
+    });
+    await _loadAndPrepopulate();
   }
 
   @override
@@ -218,6 +238,17 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                               ? user.suspensionReason!
                               : l10n.accountStatusSuspendedDefaultReason,
                           icon: Icons.block,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+
+                      // Audit S4: initial load failure — re-fetch retry, never
+                      // the submit retry below.
+                      if (_loadError != null) ...[
+                        ThemedErrorBanner(
+                          key: const Key('my_account_load_error_banner'),
+                          message: _loadError!,
+                          onRetry: _retryLoad,
                         ),
                         const SizedBox(height: AppSpacing.md),
                       ],

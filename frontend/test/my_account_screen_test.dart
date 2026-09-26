@@ -63,8 +63,21 @@ class MockAuthProviderForMyAccount extends AuthProvider {
   @override
   String? get token => 'mock-user-token';
 
+  // Audit S4: controllable initial-load failure with a stored provider error,
+  // mirroring the real fetchUserProfile contract (stores _error on failure).
+  int fetchCalls = 0;
+  bool failFetch = false;
+  String fetchErrorMessage = 'Profile sync failed';
+  String? mockStoredError;
+
   @override
-  Future<void> fetchUserProfile() async {}
+  String? get error => mockStoredError;
+
+  @override
+  Future<void> fetchUserProfile() async {
+    fetchCalls++;
+    mockStoredError = failFetch ? fetchErrorMessage : null;
+  }
 
   @override
   Future<bool> updateOwnProfile({
@@ -277,5 +290,65 @@ void main() {
     // 4. Verify success toast and dialog closed
     expect(find.text('Email address updated successfully'), findsOneWidget);
     expect(find.byKey(const Key('new_email_input')), findsNothing);
+  });
+
+  testWidgets(
+      'Audit S4: failed initial load renders its own banner with reload retry',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockAuth = MockAuthProviderForMyAccount(apiClient)..failFetch = true;
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: mockAuth),
+          ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+        ],
+        child: const MaterialApp(home: MyAccountScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(mockAuth.fetchCalls, greaterThanOrEqualTo(1));
+    // Load-failure banner with the stored provider copy ...
+    expect(
+        find.byKey(const Key('my_account_load_error_banner')), findsOneWidget);
+    expect(find.text('Profile sync failed'), findsOneWidget);
+    // ... distinct from the submit-scoped banner, which stays absent.
+    expect(find.byKey(const Key('my_account_error_banner')), findsNothing);
+    // Stale form still renders underneath the warning (editable but warned).
+    expect(find.byKey(const Key('my_account_save_button')), findsOneWidget);
+  });
+
+  testWidgets('Audit S4: reload retry re-fetches and clears the banner',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockAuth = MockAuthProviderForMyAccount(apiClient)..failFetch = true;
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: mockAuth),
+          ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+        ],
+        child: const MaterialApp(home: MyAccountScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const Key('my_account_load_error_banner')), findsOneWidget);
+
+    // Backend recovers, then the user retries the LOAD (not a submit).
+    mockAuth.failFetch = false;
+    final retryButton = find.descendant(
+      of: find.byKey(const Key('my_account_load_error_banner')),
+      matching: find.byType(TextButton),
+    );
+    expect(retryButton, findsOneWidget);
+    await tester.tap(retryButton);
+    await tester.pumpAndSettle();
+
+    expect(mockAuth.fetchCalls, equals(2));
+    expect(find.byKey(const Key('my_account_load_error_banner')), findsNothing);
   });
 }

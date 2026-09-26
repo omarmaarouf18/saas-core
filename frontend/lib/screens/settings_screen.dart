@@ -588,8 +588,16 @@ class _DisableTwoFactorPasswordDialogState
       }
     } catch (e) {
       if (mounted) {
+        // Audit S5: read the stored failure instead of always blaming the
+        // password — a 429 lockout surfaces the server lockout text (with
+        // wait time) and offers no retry (retries extend the lockout);
+        // other non-401 failures surface the stored server/connectivity
+        // copy; only a true 401 keeps the generic wrong-password string.
+        final auth = widget.auth;
         setState(() {
-          _errorMessage = context.l10n.disableTwoFactorPasswordError;
+          _errorMessage = auth.lastErrorStatusCode == 401
+              ? context.l10n.disableTwoFactorPasswordError
+              : (auth.error ?? context.l10n.disableTwoFactorPasswordError);
           _isLoading = false;
         });
       }
@@ -635,8 +643,13 @@ class _DisableTwoFactorPasswordDialogState
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: AppSpacing.sm),
+                // Audit S5: lockout copy gets its own key so tests (and any
+                // future retry logic) can tell it from a wrong-password
+                // failure — mirroring the reset-code lockout banner.
                 ThemedErrorBanner(
-                  key: const Key('disable_2fa_password_error'),
+                  key: Key(widget.auth.lastErrorStatusCode == 429
+                      ? 'disable_2fa_lockout_banner'
+                      : 'disable_2fa_password_error'),
                   message: _errorMessage!,
                 ),
               ],

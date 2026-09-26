@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/error_messages.dart';
 import 'package:frontend/core/theme.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -58,6 +61,20 @@ class MockAuthProvider extends AuthProvider {
   String? lastPassword;
   bool shouldFailToggle = false;
 
+  // Audit S5: controllable failure shape, mirroring the real
+  // toggleTwoFactor contract (stores _error + _lastErrorStatusCode).
+  int toggleFailStatusCode = 401;
+  String toggleFailMessage = 'invalid password';
+  bool toggleFailOffline = false;
+  String? _storedError;
+  int? _storedStatusCode;
+
+  @override
+  String? get error => _storedError;
+
+  @override
+  int? get lastErrorStatusCode => _storedStatusCode;
+
   MockAuthProvider(super.apiClient, this._mockUser);
 
   @override
@@ -77,8 +94,20 @@ class MockAuthProvider extends AuthProvider {
     lastToggledValue = enabled;
     lastPassword = password;
 
+    if (toggleFailOffline) {
+      const err = SocketException('Network is unreachable');
+      _storedError = friendlyErrorMessage(err);
+      _storedStatusCode = null;
+      notifyListeners();
+      throw err;
+    }
+
     if (shouldFailToggle) {
-      throw ApiClientException('invalid password', statusCode: 401);
+      _storedError = toggleFailMessage;
+      _storedStatusCode = toggleFailStatusCode;
+      notifyListeners();
+      throw ApiClientException(toggleFailMessage,
+          statusCode: toggleFailStatusCode);
     }
 
     _mockUser = _mockUser?.copyWith(twoFactorEnabled: enabled);
@@ -689,5 +718,95 @@ void main() {
     expect(find.text('Two-factor authentication enabled'), findsOneWidget);
     expect(authProvider.lastToggledValue, isTrue);
     expect(authProvider.lastPassword, isNull);
+  });
+
+  testWidgets(
+      'Audit S5: 429 lockout surfaces server lockout copy, not wrong-password',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: true,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+    authProvider.shouldFailToggle = true;
+    authProvider.toggleFailStatusCode = 429;
+    authProvider.toggleFailMessage =
+        'Too many attempts. Try again in 4 minutes.';
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Disable 2FA'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('disable_2fa_password_field')), 'any-pass');
+    await tester.tap(find.byKey(const Key('disable_2fa_confirm_btn')));
+    await tester.pumpAndSettle();
+
+    // Stored lockout copy with its wait time, under its own banner key ...
+    expect(find.byKey(const Key('disable_2fa_lockout_banner')), findsOneWidget);
+    expect(find.text('Too many attempts. Try again in 4 minutes.'),
+        findsOneWidget);
+    // ... never the wrong-password copy.
+    expect(find.byKey(const Key('disable_2fa_password_error')), findsNothing);
+    expect(
+        find.text('Incorrect password. 2FA was not disabled.'), findsNothing);
+    // Single attempt made; the dialog offers no retry that would extend
+    // the lockout.
+    expect(authProvider.toggleTwoFactorCalled, isTrue);
+  });
+
+  testWidgets('Audit S5: offline failure surfaces connectivity copy',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: true,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+    authProvider.toggleFailOffline = true;
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Disable 2FA'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('disable_2fa_password_field')), 'any-pass');
+    await tester.tap(find.byKey(const Key('disable_2fa_confirm_btn')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('disable_2fa_password_error')), findsOneWidget);
+    expect(
+        find.text(
+            "Couldn't connect. Please check your internet connection and try again."),
+        findsOneWidget);
+    expect(
+        find.text('Incorrect password. 2FA was not disabled.'), findsNothing);
   });
 }
