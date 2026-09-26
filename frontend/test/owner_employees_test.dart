@@ -9,6 +9,7 @@ import 'package:frontend/screens/employee_screen.dart';
 import 'package:frontend/widgets/status_badge.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
 import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/skeleton_loader.dart';
 
 class MockApiClientForEmployeesTest extends ApiClient {
   bool shouldFail = false;
@@ -184,7 +185,7 @@ void main() {
   }
 
   testWidgets(
-      'EmployeeScreen renders loading state while employees are being fetched',
+      'EmployeeScreen renders skeleton loader while employees are being fetched (audit E1)',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
@@ -193,9 +194,33 @@ void main() {
 
     await tester
         .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.byKey(const Key('employees_loading')), findsOneWidget);
-    expect(find.text("Loading employee list..."), findsOneWidget);
+    expect(find.byKey(const Key('employees_roster_skeleton_list')),
+        findsOneWidget);
+    expect(find.byType(EmployeeRosterCardSkeleton), findsNWidgets(3));
+  });
+
+  testWidgets(
+      'EmployeeScreen renders audit trail skeleton while audit log is being fetched (audit E1)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockIsLoading = true;
+    mockOwner.mockAuditLogEntries = [];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pump();
+
+    // Switch to Audit Trail tab
+    await tester.tap(find.text("Audit Trail"));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('audit_trail_skeleton_list')), findsOneWidget);
+    expect(find.byType(AuditTrailCardSkeleton), findsWidgets);
   });
 
   testWidgets('EmployeeScreen renders empty state when zero employees exist',
@@ -539,7 +564,7 @@ void main() {
     await tester.tap(expansionFinder);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('employee_toggle_submit_button')),
-        findsOneWidget);
+    expect(
+        find.byKey(const Key('employee_toggle_submit_button')), findsOneWidget);
   });
 }

@@ -287,6 +287,62 @@ void main() {
       expect(find.byType(WalletScreenSkeleton), findsOneWidget);
       expect(find.byType(SkeletonLoader), findsWidgets);
     });
+
+    testWidgets('EmployeeRosterCardSkeleton renders worker roster card layout',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmployeeRosterCardSkeleton(),
+          ),
+        ),
+      );
+
+      expect(find.byType(EmployeeRosterCardSkeleton), findsOneWidget);
+      expect(find.byType(SkeletonLoader), findsNWidgets(5));
+    });
+
+    testWidgets('AuditTrailCardSkeleton renders activity log card layout',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: AuditTrailCardSkeleton(),
+          ),
+        ),
+      );
+
+      expect(find.byType(AuditTrailCardSkeleton), findsOneWidget);
+      expect(find.byType(SkeletonLoader), findsNWidgets(3));
+    });
+
+    testWidgets('LedgerCardSkeleton renders financial ledger tile layout',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: LedgerCardSkeleton(),
+          ),
+        ),
+      );
+
+      expect(find.byType(LedgerCardSkeleton), findsOneWidget);
+      expect(find.byType(SkeletonLoader), findsNWidgets(6));
+    });
+
+    testWidgets('ReconciliationCardSkeleton renders escrow review layout',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ReconciliationCardSkeleton(),
+          ),
+        ),
+      );
+
+      expect(find.byType(ReconciliationCardSkeleton), findsOneWidget);
+      expect(find.byType(SkeletonLoader), findsNWidgets(10));
+    });
   });
 
   group('Per-Screen Skeleton & Animated Cross-Fade Transition Tests', () {

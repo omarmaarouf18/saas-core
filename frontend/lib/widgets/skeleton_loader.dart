@@ -367,3 +367,212 @@ class WalletScreenSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// Skeleton loader for Employee Roster Cards (Owner screen)
+class EmployeeRosterCardSkeleton extends StatelessWidget {
+  const EmployeeRosterCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: const Row(
+        children: [
+          SkeletonLoader(
+            width: 44,
+            height: 44,
+            borderRadius: AppRadius.full,
+          ),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonLoader(width: 120, height: 16),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonLoader(width: 160, height: 14),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonLoader(width: 80, height: 12),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm),
+          SkeletonLoader(
+            width: 60,
+            height: 24,
+            borderRadius: AppRadius.sm,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton loader for Audit Trail / Activity Log Cards
+class AuditTrailCardSkeleton extends StatelessWidget {
+  const AuditTrailCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(width: 140, height: 16),
+              SkeletonLoader(width: 110, height: 12),
+            ],
+          ),
+          SizedBox(height: AppSpacing.xs),
+          SkeletonLoader(width: 90, height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton loader for Owner History Ledger Cards
+class LedgerCardSkeleton extends StatelessWidget {
+  const LedgerCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: const Row(
+        children: [
+          SkeletonLoader(
+            width: 40,
+            height: 40,
+            borderRadius: AppRadius.sm,
+          ),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonLoader(width: 130, height: 16),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonLoader(width: 90, height: 12),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonLoader(width: 110, height: 10),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              SkeletonLoader(width: 70, height: 16),
+              SizedBox(height: AppSpacing.xs),
+              SkeletonLoader(width: 50, height: 12),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton loader for Reconciliation Queue Cards
+class ReconciliationCardSkeleton extends StatelessWidget {
+  const ReconciliationCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+        boxShadow: const [AppElevation.shadowLevel1],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(width: 120, height: 18),
+              SkeletonLoader(width: 90, height: 22, borderRadius: AppRadius.sm),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Divider(color: AppColors.outlineVariant),
+          SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(width: 100, height: 14),
+              SkeletonLoader(width: 140, height: 14),
+            ],
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(width: 90, height: 14),
+              SkeletonLoader(width: 70, height: 14),
+            ],
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonLoader(width: 80, height: 14),
+              SkeletonLoader(width: 110, height: 14),
+            ],
+          ),
+          SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: SkeletonLoader(
+                  height: 40,
+                  borderRadius: AppRadius.sm,
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: SkeletonLoader(
+                  height: 40,
+                  borderRadius: AppRadius.sm,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

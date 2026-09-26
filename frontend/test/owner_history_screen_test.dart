@@ -10,6 +10,7 @@ import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/widgets/status_badge.dart';
+import 'package:frontend/widgets/skeleton_loader.dart';
 
 class MockAuthProviderForHistoryTest extends AuthProvider {
   MockAuthProviderForHistoryTest(super.apiClient);
@@ -252,7 +253,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Switch to Ledger tab
-    await tester.tap(find.byKey(const Key('history_tab_ledger')));
+    await tester.tap(find.byKey(const Key('history_tab_ledger')),
+        warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('Owner Deposit'), findsOneWidget);
@@ -297,7 +299,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Switch to Jobs tab
-    await tester.tap(find.byKey(const Key('history_tab_jobs')));
+    await tester.tap(find.byKey(const Key('history_tab_jobs')),
+        warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('Job #job-101'), findsOneWidget);
@@ -317,5 +320,63 @@ void main() {
 
     expect(find.byKey(const Key('filtered_empty_jobs_state')), findsNothing);
     expect(find.text('Job #job-101'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Renders skeleton loader in Activity tab on initial load when empty (audit E2)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHistoryScreenApp(
+      isEmbeddedInTab: true,
+      isLoading: true,
+      auditEntries: const [],
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('owner_history_activity_skeleton_list')),
+        findsOneWidget);
+    expect(find.byType(AuditTrailCardSkeleton), findsNWidgets(4));
+  });
+
+  testWidgets(
+      'Renders skeleton loader in Jobs tab on initial load when empty (audit E2)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHistoryScreenApp(
+      isEmbeddedInTab: true,
+      isLoading: true,
+      jobs: const [],
+    ));
+    await tester.pump();
+
+    // Switch to Jobs tab
+    await tester.tap(find.byKey(const Key('history_tab_jobs')),
+        warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('owner_history_jobs_skeleton_list')),
+        findsOneWidget);
+    expect(find.byType(EmployeeJobCardSkeleton), findsNWidgets(3));
+  });
+
+  testWidgets(
+      'Renders skeleton loader in Ledger tab on initial load when empty (audit E2)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHistoryScreenApp(
+      isEmbeddedInTab: true,
+      isLoading: true,
+      ledger: const [],
+    ));
+    await tester.pump();
+
+    // Switch to Ledger tab
+    await tester.tap(find.byKey(const Key('history_tab_ledger')),
+        warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('owner_history_ledger_skeleton_list')),
+        findsOneWidget);
+    expect(find.byType(LedgerCardSkeleton), findsNWidgets(4));
   });
 }

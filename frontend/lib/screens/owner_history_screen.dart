@@ -11,8 +11,8 @@ import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/skeleton_loader.dart';
 
 class OwnerHistoryScreen extends StatefulWidget {
   final bool isEmbeddedInTab;
@@ -158,7 +158,13 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     return RefreshIndicator(
       onRefresh: _refreshAuditLog,
       child: ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty
-          ? const Center(child: ThemedLoadingIndicator())
+          ? ListView.builder(
+              key: const Key('owner_history_activity_skeleton_list'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: 4,
+              itemBuilder: (_, __) => const AuditTrailCardSkeleton(),
+            )
           : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -308,7 +314,13 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     return RefreshIndicator(
       onRefresh: _refreshJobs,
       child: ownerProvider.isLoading && ownerProvider.ownerJobs.isEmpty
-          ? const Center(child: ThemedLoadingIndicator())
+          ? ListView.builder(
+              key: const Key('owner_history_jobs_skeleton_list'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: 3,
+              itemBuilder: (_, __) => const EmployeeJobCardSkeleton(),
+            )
           : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -456,7 +468,13 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
     return RefreshIndicator(
       onRefresh: _refreshLedger,
       child: ownerProvider.isLoading && ownerProvider.ledgerEntries.isEmpty
-          ? const Center(child: ThemedLoadingIndicator())
+          ? ListView.builder(
+              key: const Key('owner_history_ledger_skeleton_list'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: 4,
+              itemBuilder: (_, __) => const LedgerCardSkeleton(),
+            )
           : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.lg),

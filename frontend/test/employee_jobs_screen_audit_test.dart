@@ -256,7 +256,8 @@ void main() {
       'Background refresh shows non-blocking linear progress indicator (audit E19)',
       (WidgetTester tester) async {
     final jobsProvider = MockEmployeeJobsProvider();
-    jobsProvider.isLoading = true; // refresh in flight while jobs are already loaded
+    jobsProvider.isLoading =
+        true; // refresh in flight while jobs are already loaded
 
     await tester.pumpWidget(createTestApp(jobsProvider: jobsProvider));
     await tester.pump();
@@ -264,7 +265,6 @@ void main() {
     expect(find.byKey(const Key('employee_jobs_refresh_indicator')),
         findsOneWidget);
     // Jobs content remains visible underneath (non-blocking)
-    expect(
-        find.byKey(const ValueKey('employee_jobs_content')), findsOneWidget);
+    expect(find.byKey(const ValueKey('employee_jobs_content')), findsOneWidget);
   });
 }

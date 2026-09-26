@@ -15,6 +15,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/skeleton_loader.dart';
 
 class OwnerReconciliationQueueScreen extends StatefulWidget {
   final bool? showBackButton;
@@ -202,6 +203,12 @@ class _OwnerReconciliationQueueScreenState
             ],
           ),
           isLoading: provider.isLoading && provider.queue.isEmpty,
+          loadingWidget: ListView.builder(
+            key: const Key('reconciliation_queue_skeleton_list'),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            itemCount: 3,
+            itemBuilder: (_, __) => const ReconciliationCardSkeleton(),
+          ),
           errorMessage: provider.queue.isEmpty ? provider.error : null,
           onRetry: () => provider.fetchQueue(),
           onRefresh: _onRefresh,

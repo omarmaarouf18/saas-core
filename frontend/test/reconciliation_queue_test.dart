@@ -8,11 +8,13 @@ import 'package:frontend/models/job.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/providers/reconciliation_provider.dart';
 import 'package:frontend/screens/owner_reconciliation_queue_screen.dart';
+import 'package:frontend/widgets/skeleton_loader.dart';
 
 class MockReconciliationProvider extends ReconciliationProvider {
   final List<ReconciliationJob> initialJobs;
   bool mockFetchError;
   final bool mockResolveConflict;
+  final bool mockIsLoading;
   int fetchQueueCallCount = 0;
   bool get fetchQueueCalled => fetchQueueCallCount > 0;
   bool resolveJobCalled = false;
@@ -25,6 +27,7 @@ class MockReconciliationProvider extends ReconciliationProvider {
     this.initialJobs = const [],
     this.mockFetchError = false,
     this.mockResolveConflict = false,
+    this.mockIsLoading = false,
   }) {
     _testQueue = List.from(initialJobs);
     if (mockFetchError) {
@@ -42,7 +45,7 @@ class MockReconciliationProvider extends ReconciliationProvider {
   String? get error => _testError;
 
   @override
-  bool get isLoading => false;
+  bool get isLoading => mockIsLoading;
 
   @override
   Future<void> fetchQueue() async {
@@ -400,5 +403,24 @@ void main() {
 
     expect(find.byKey(const Key('filtered_empty_recon_state')), findsNothing);
     expect(find.text('Order #job-test-101'), findsOneWidget);
+  });
+
+  testWidgets(
+      '(k) Skeleton loader rendered during initial queue load when empty (audit E3)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: const [],
+      mockIsLoading: true,
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('reconciliation_queue_skeleton_list')),
+        findsOneWidget);
+    expect(find.byType(ReconciliationCardSkeleton), findsNWidgets(3));
   });
 }

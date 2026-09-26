@@ -15,10 +15,10 @@ import '../widgets/app_shell.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/themed_text_field.dart';
+import '../widgets/skeleton_loader.dart';
 import 'employee_jobs_screen.dart';
 
 class EmployeeScreen extends StatefulWidget {
@@ -291,9 +291,15 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                   // Loading / Error / Empty States
                   if (ownerProvider.isLoading &&
                       ownerProvider.employees.isEmpty)
-                    ThemedLoadingIndicator(
-                      key: const Key('employees_loading'),
-                      message: l10n.loadingEmployeeList,
+                    ListView.separated(
+                      key: const Key('employees_roster_skeleton_list'),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 3,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (_, __) =>
+                          const EmployeeRosterCardSkeleton(),
                     )
                   else if (ownerProvider.error != null &&
                       ownerProvider.employees.isEmpty)
@@ -805,7 +811,16 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
     if (ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty) {
-      return ThemedLoadingIndicator(message: l10n.loadingAuditTrail);
+      return RefreshIndicator(
+        onRefresh: _refreshAuditLog,
+        child: ListView.builder(
+          key: const Key('audit_trail_skeleton_list'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          itemCount: 4,
+          itemBuilder: (_, __) => const AuditTrailCardSkeleton(),
+        ),
+      );
     }
 
     final hasError = ownerProvider.error != null;
