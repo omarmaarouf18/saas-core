@@ -302,17 +302,21 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       },
                     )
                   else if (filteredEmployees.isEmpty)
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                      child: Center(
-                        child: Text(
-                          l10n.noWorkersMatchFilter,
-                          style: AppTypography.bodyMd.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                    ThemedCard(
+                      borderRadius: AppRadius.md,
+                      padding: AppSpacing.lg,
+                      child: ThemedEmptyState(
+                        key: const Key('filtered_empty_employees_state'),
+                        icon: Icons.search_off_outlined,
+                        title: l10n.noWorkersMatchFilter,
+                        description: l10n.adjustFiltersDesc,
+                        actionText: l10n.clearFiltersBtn,
+                        onActionPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _statusFilter = 'all';
+                          });
+                        },
                       ),
                     )
                   else

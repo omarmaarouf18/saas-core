@@ -531,6 +531,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get applyFiltersBtn => 'Apply Filters';
 
   @override
+  String get clearFiltersBtn => 'Clear Filters';
+
+  @override
+  String get adjustFiltersDesc =>
+      'Try adjusting your search query or status filter.';
+
+  @override
   String get customerJobsTitle => 'My Orders';
 
   @override

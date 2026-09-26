@@ -271,4 +271,51 @@ void main() {
 
     expect(find.text('Network error fetching history'), findsOneWidget);
   });
+
+  testWidgets(
+      'Renders actionable empty state when job filters match zero jobs (audit E5)',
+      (WidgetTester tester) async {
+    final testJobs = [
+      Job(
+        id: 'job-101',
+        ownerId: 'owner-history-1',
+        employeeId: 'emp-1',
+        userId: 'user-1',
+        serviceId: 'srv-1',
+        status: 'completed',
+        paymentMethod: 'cod',
+        location: JobLocation(latitude: 30.0, longitude: 31.0),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    ];
+
+    await tester.pumpWidget(createOwnerHistoryScreenApp(
+      isEmbeddedInTab: true,
+      jobs: testJobs,
+    ));
+    await tester.pumpAndSettle();
+
+    // Switch to Jobs tab
+    await tester.tap(find.byKey(const Key('history_tab_jobs')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Job #job-101'), findsOneWidget);
+
+    // Enter a search query matching nothing
+    await tester.enterText(find.byType(TextField).first, 'nomatch');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('filtered_empty_jobs_state')), findsOneWidget);
+    expect(find.text('No jobs found matching your filter.'), findsOneWidget);
+    expect(find.text('Clear Filters'), findsOneWidget);
+    expect(find.text('Job #job-101'), findsNothing);
+
+    // Tap Clear Filters
+    await tester.tap(find.text('Clear Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('filtered_empty_jobs_state')), findsNothing);
+    expect(find.text('Job #job-101'), findsOneWidget);
+  });
 }

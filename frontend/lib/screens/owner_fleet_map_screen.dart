@@ -473,6 +473,17 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 ),
               ),
             ),
+            IconButton(
+              key: const Key('empty_fleet_refresh_button'),
+              icon: const Icon(Icons.refresh, size: 20),
+              tooltip: context.l10n.tooltipRefreshStatus,
+              onPressed: () {
+                final provider = context.read<MapTrackingProvider>();
+                if (widget.token != null) {
+                  provider.hydrateOwnerFleet(widget.token!);
+                }
+              },
+            ),
           ],
         ),
       ),

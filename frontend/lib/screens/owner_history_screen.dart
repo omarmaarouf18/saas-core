@@ -371,17 +371,19 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                       ),
                     )
                   else if (filteredJobs.isEmpty)
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                      child: Center(
-                        child: Text(
-                          l10n.noJobsMatchFilter,
-                          style: AppTypography.bodyMd.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                    ThemedCard(
+                      borderRadius: AppRadius.md,
+                      padding: AppSpacing.lg,
+                      child: ThemedEmptyState(
+                        key: const Key('filtered_empty_jobs_state'),
+                        icon: Icons.search_off_outlined,
+                        title: l10n.noJobsMatchFilter,
+                        description: l10n.adjustFiltersDesc,
+                        actionText: l10n.clearFiltersBtn,
+                        onActionPressed: () => setState(() {
+                          _jobsSearchController.clear();
+                          _jobsStatusFilter = 'all';
+                        }),
                       ),
                     )
                   else

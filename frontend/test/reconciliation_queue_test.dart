@@ -369,4 +369,36 @@ void main() {
         find.text('Access denied: owner authorization required'), findsNothing);
     expect(find.text('Order #job-test-101'), findsOneWidget);
   });
+
+  testWidgets(
+      '(j) Actionable empty state rendered when queue search/filters match zero items (audit E6)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockProvider = MockReconciliationProvider(
+      apiClient,
+      initialJobs: [testJob],
+    );
+
+    await tester.pumpWidget(buildReconciliationApp(mockProvider));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Order #job-test-101'), findsOneWidget);
+
+    // Search for a non-matching query
+    await tester.enterText(find.byType(TextField).first, 'nonexistent');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('filtered_empty_recon_state')), findsOneWidget);
+    expect(
+        find.text('No reconciliation jobs match your filter.'), findsOneWidget);
+    expect(find.text('Clear Filters'), findsOneWidget);
+    expect(find.text('Order #job-test-101'), findsNothing);
+
+    // Tap Clear Filters
+    await tester.tap(find.text('Clear Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('filtered_empty_recon_state')), findsNothing);
+    expect(find.text('Order #job-test-101'), findsOneWidget);
+  });
 }

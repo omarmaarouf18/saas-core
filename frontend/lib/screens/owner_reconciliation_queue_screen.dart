@@ -279,15 +279,20 @@ class _OwnerReconciliationQueueScreenState
                       ),
                       if (filteredQueue.isEmpty &&
                           provider.queue.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Center(
-                          child: Text(
-                            l10n.noReconMatchFilter,
-                            style: AppTypography.bodyMd.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                        const SizedBox(height: AppSpacing.md),
+                        ThemedCard(
+                          borderRadius: AppRadius.md,
+                          padding: AppSpacing.lg,
+                          child: ThemedEmptyState(
+                            key: const Key('filtered_empty_recon_state'),
+                            icon: Icons.search_off_outlined,
+                            title: l10n.noReconMatchFilter,
+                            description: l10n.adjustFiltersDesc,
+                            actionText: l10n.clearFiltersBtn,
+                            onActionPressed: () => setState(() {
+                              _searchController.clear();
+                              _selectedCategory = 'all';
+                            }),
                           ),
                         ),
                       ],

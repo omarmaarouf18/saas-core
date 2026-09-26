@@ -176,6 +176,8 @@
   "customerMarketplaceFilterRadius": "أقصى مسافة (كم)",
   "customerMarketplaceChooseMap": "حدد المكان على الخريطة",
   "applyFiltersBtn": "تطبيق الفلاتر",
+  "clearFiltersBtn": "مسح الفلاتر",
+  "adjustFiltersDesc": "جرب تعديل كلمة البحث أو فلتر الحالة.",
   "customerJobsTitle": "طلباتي",
   "customerJobsSub": "تتبع وإدارة سجل طلباتك.",
   "customerJobsSearchHint": "ابحث برقم الطلب أو الموقع...",

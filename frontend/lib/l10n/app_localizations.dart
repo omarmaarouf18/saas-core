@@ -1112,6 +1112,18 @@ abstract class AppLocalizations {
   /// **'Apply Filters'**
   String get applyFiltersBtn;
 
+  /// No description provided for @clearFiltersBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Filters'**
+  String get clearFiltersBtn;
+
+  /// No description provided for @adjustFiltersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search query or status filter.'**
+  String get adjustFiltersDesc;
+
   /// No description provided for @customerJobsTitle.
   ///
   /// In en, this message translates to:

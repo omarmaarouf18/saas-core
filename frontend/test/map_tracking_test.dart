@@ -355,7 +355,7 @@ void main() {
     });
 
     testWidgets(
-        '(f) Empty fleet notice rendered when no error and markers empty',
+        '(f) Empty fleet notice rendered when no error and markers empty with refresh button (audit E7)',
         (WidgetTester tester) async {
       final mockProvider = MockMapTrackingProvider(
         apiClient: apiClient,
@@ -382,6 +382,13 @@ void main() {
       expect(find.byKey(const Key('fleet_map_error_banner')), findsNothing);
       expect(find.text('No active employees transmitting location.'),
           findsOneWidget);
+      expect(
+          find.byKey(const Key('empty_fleet_refresh_button')), findsOneWidget);
+
+      mockProvider.hydrateOwnerFleetCalled = false;
+      await tester.tap(find.byKey(const Key('empty_fleet_refresh_button')));
+      await tester.pumpAndSettle();
+      expect(mockProvider.hydrateOwnerFleetCalled, isTrue);
     });
   });
 

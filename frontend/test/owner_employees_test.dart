@@ -298,4 +298,46 @@ void main() {
     expect(find.byKey(const Key('audit_log_error_banner')), findsNothing);
     expect(find.text('No audit events recorded'), findsOneWidget);
   });
+
+  testWidgets(
+      'EmployeeScreen renders actionable empty state when filters match zero workers (audit E4)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockIsLoading = false;
+    mockOwner.mockEmployees = [
+      {
+        'id': 'emp-101',
+        'username': 'driver_john',
+        'email': 'john@company.com',
+        'is_active': true,
+      },
+    ];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    expect(find.text('driver_john'), findsOneWidget);
+
+    // Enter search term that matches nothing
+    await tester.enterText(find.byType(TextField).first, 'nonexistent');
+    await tester.pumpAndSettle();
+
+    // Verify filtered empty state renders with clear filters action
+    expect(find.byKey(const Key('filtered_empty_employees_state')),
+        findsOneWidget);
+    expect(find.text('No workers found matching your filter.'), findsOneWidget);
+    expect(find.text('Clear Filters'), findsOneWidget);
+    expect(find.text('driver_john'), findsNothing);
+
+    // Tap Clear Filters
+    await tester.tap(find.text('Clear Filters'));
+    await tester.pumpAndSettle();
+
+    // Verify filter is cleared and worker card returns
+    expect(
+        find.byKey(const Key('filtered_empty_employees_state')), findsNothing);
+    expect(find.text('driver_john'), findsOneWidget);
+  });
 }

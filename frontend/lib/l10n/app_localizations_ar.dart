@@ -528,6 +528,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get applyFiltersBtn => 'تطبيق الفلاتر';
 
   @override
+  String get clearFiltersBtn => 'مسح الفلاتر';
+
+  @override
+  String get adjustFiltersDesc => 'جرب تعديل كلمة البحث أو فلتر الحالة.';
+
+  @override
   String get customerJobsTitle => 'طلباتي';
 
   @override
