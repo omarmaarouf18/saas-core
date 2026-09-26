@@ -11,6 +11,7 @@ import '../providers/employee_jobs_provider.dart';
 import '../providers/employee_location_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/job_location_mini_map.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/primary_button.dart';
@@ -66,7 +67,10 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             Provider.of<EmployeeJobsProvider>(context, listen: false);
         final hasOffers = jobsProvider.jobs
             .any((j) => j.status.toLowerCase().trim() == 'pending_dispatch');
-        if (hasOffers) {
+        // Issue-1: price-proposal countdowns need the same 1s tick.
+        final hasPricePending = jobsProvider.jobs.any(
+            (j) => j.status.toLowerCase().trim() == 'awaiting_price_response');
+        if (hasOffers || hasPricePending) {
           setState(() {});
         }
       }
@@ -137,6 +141,36 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         setState(() => _isSimulating = false);
       }
     }
+  }
+
+  /// Issue-1 helpers: fare-negotiation status communication.
+  /// Proposed fare display, matching the customer proposal card's `$X.XX`
+  /// rendering (the documented `$`-hardcode class, shared with that UI).
+  String _formatProposedFare(Job job) {
+    final amount = job.proposedPrice ?? job.suggestedPrice;
+    if (amount == null) return '';
+    return '\$${amount.toStringAsFixed(2)}';
+  }
+
+  bool _isPriceExpired(Job job) {
+    final expiresAt = job.priceProposalExpiresAt;
+    if (expiresAt == null) return false;
+    return !expiresAt.isAfter(DateTime.now());
+  }
+
+  String _priceRemainingClock(Job job) {
+    final expiresAt = job.priceProposalExpiresAt;
+    if (expiresAt == null) return '';
+    final remaining = expiresAt.difference(DateTime.now());
+    if (remaining.isNegative || remaining.inSeconds <= 0) return '0:00';
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _priceExpiryText(Job job, AppLocalizations l10n) {
+    if (_isPriceExpired(job)) return l10n.negotiationExpiredBanner;
+    return l10n.employeePricePendingExpiry(_priceRemainingClock(job));
   }
 
   Future<void> _confirmAndCompleteJob(Job job) async {
@@ -873,6 +907,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               dropoffAddress: l10n.deliveryDestinationLabel,
               dropoffDetail: job.destination?.formatCoordinates() ??
                   l10n.routeDestinationNotSetYet,
+              // Issue-2 Option A: visual destination preview replaces the
+              // raw coordinate pair as the primary signal (caption inside
+              // keeps exact numbers for precision).
+              dropoffMap: job.destination != null
+                  ? JobLocationMiniMap(
+                      key: Key('job_destination_map_${job.id}'),
+                      location: job.destination!,
+                    )
+                  : null,
               distanceText: l10n.standardRouteLabel,
               timeText: l10n.matchingCourierLabel,
               cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
@@ -961,10 +1004,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   Widget _buildJobCard(Job job) {
     final l10n = AppLocalizations.of(context)!;
     final isActive = job.status.toLowerCase().trim() == 'active';
+    // Issue-1: transport/ride jobs wait here (not started yet) until the
+    // fare is accepted — the backend CompleteJob 409s anything non-active,
+    // so the Complete button stays correctly hidden and this card explains
+    // why instead (missing status communication, not a missing button).
+    final normalizedStatus = job.status.toLowerCase().trim();
+    final isAwaitingPrice = normalizedStatus == 'awaiting_price_response';
     // Same rule as the assigned-jobs filter in build(): any assigned job
     // that isn't already completed/cancelled may be cancelled by the
     // employee with a recorded reason (including mid-trip actives).
-    final normalizedStatus = job.status.toLowerCase().trim();
     final isCancellable =
         normalizedStatus != 'completed' && normalizedStatus != 'cancelled';
 
@@ -1021,6 +1069,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               dropoffAddress: l10n.deliveryDestinationLabel,
               dropoffDetail: job.destination?.formatCoordinates() ??
                   l10n.routeDestinationNotSetYet,
+              // Issue-2 Option A: visual destination preview replaces the
+              // raw coordinate pair as the primary signal (caption inside
+              // keeps exact numbers for precision).
+              dropoffMap: job.destination != null
+                  ? JobLocationMiniMap(
+                      key: Key('job_destination_map_${job.id}'),
+                      location: job.destination!,
+                    )
+                  : null,
               distanceText: job.lockedEscrowAmount != null
                   ? l10n.ownerHomeCreditsAmount(
                       job.lockedEscrowAmount!.toStringAsFixed(0))
@@ -1172,6 +1229,64 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
               ],
             ],
             const SizedBox(height: AppSpacing.lg),
+            // Issue-1: fare-negotiation status communication. The Complete
+            // button above stays hidden until the trip is active (backend
+            // 409s anything else) — this panel tells the employee why, with
+            // the live proposal state, instead of a bare status chip.
+            if (isAwaitingPrice) ...[
+              ThemedPanel(
+                key: Key('employee_price_pending_panel_${job.id}'),
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: AppRadius.defaultBorder,
+                border:
+                    Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: AppIconSize.sm,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            l10n.employeePricePendingTitle,
+                            style: AppTypography.labelLg.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      l10n.employeePricePendingBody(_formatProposedFare(job)),
+                      style: AppTypography.bodyMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      _priceExpiryText(job, l10n),
+                      key: Key('employee_price_expiry_${job.id}'),
+                      style: AppTypography.labelMd.copyWith(
+                        color: _isPriceExpired(job)
+                            ? AppColors.error
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             // Action buttons bar
             Row(
               children: [

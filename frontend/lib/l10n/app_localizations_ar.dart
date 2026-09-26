@@ -787,6 +787,19 @@ class AppLocalizationsAr extends AppLocalizations {
       'طلبت الإلغاء — مستني موافقة صاحب الشغل.';
 
   @override
+  String get employeePricePendingTitle => 'مستني تأكيد الأجرة';
+
+  @override
+  String employeePricePendingBody(Object price) {
+    return 'الأجرة المقترحة $price — المشوار هيبدأ لوحده أول ما الأجرة تتقبل. مينفعش تنهي المشوار غير وهو شغال.';
+  }
+
+  @override
+  String employeePricePendingExpiry(Object remaining) {
+    return 'الطلب هينتهي خلال $remaining — وبعدها هيتلغي لوحده.';
+  }
+
+  @override
   String get cancelRequestRejectedBanner =>
       'صاحب الشغل رفض طلب الإلغاء بتاعك. انت لسه مسئول عن الطلب ده.';
 

@@ -294,6 +294,7 @@
     * `entity_avatar.dart`
     * `info_alert_dialog.dart`
     * `info_list_tile.dart`
+    * `job_location_mini_map.dart`
     * `list_screen_template.dart`
     * `location_picker_map.dart`
     * `location_picker_dialog.dart`

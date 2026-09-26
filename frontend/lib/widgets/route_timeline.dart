@@ -12,12 +12,19 @@ class RouteTimeline extends StatelessWidget {
   final Widget? pickupTrailing;
   final Widget? dropoffTrailing;
 
+  /// Issue-2 Option A: visual destination preview (e.g.
+  /// `JobLocationMiniMap`). When provided, renders in place of the
+  /// [dropoffDetail] text — the raw coordinate pair stops being the
+  /// primary signal. Null keeps the legacy text branch byte-identical.
+  final Widget? dropoffMap;
+
   const RouteTimeline({
     super.key,
     required this.pickupAddress,
     this.pickupDetail,
     required this.dropoffAddress,
     this.dropoffDetail,
+    this.dropoffMap,
     this.distanceText,
     this.timeText,
     this.cargoText,
@@ -143,7 +150,10 @@ class RouteTimeline extends StatelessWidget {
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          if (dropoffDetail != null &&
+                          if (dropoffMap != null) ...[
+                            const SizedBox(height: AppSpacing.xxs),
+                            dropoffMap!,
+                          ] else if (dropoffDetail != null &&
                               dropoffDetail!.isNotEmpty) ...[
                             const SizedBox(height: AppSpacing.xxs),
                             Text(

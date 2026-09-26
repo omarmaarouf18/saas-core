@@ -198,4 +198,41 @@ void main() {
     expect(provider.error,
         friendlyErrorMessage(ApiClientException('x', statusCode: 403)));
   });
+
+  test(
+      'acceptJobOffer fallback preserves destination and request state on activation',
+      () async {
+    final (provider, _) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {
+            'id': 'job-offer-1',
+            'status': 'pending_dispatch',
+            'payment_method': 'cod',
+            'destination': {'latitude': 30.1, 'longitude': 31.1},
+            'proposed_price': 85.5,
+            'cancellation_request_status': 'rejected',
+            'offer_expires_at': DateTime.now()
+                .add(const Duration(seconds: 50))
+                .toIso8601String(),
+          }
+        ]);
+      }
+      // No 'job' object in the accept response -> local fallback path.
+      return MockHttpResponse.ok();
+    }, token: 'emp-jwt-token');
+
+    await provider.fetchAssignedJobs('emp-jwt-token');
+    await provider.acceptJobOffer('job-offer-1');
+
+    final updated = provider.jobs.firstWhere((j) => j.id == 'job-offer-1');
+    expect(updated.status, 'active');
+    // Previously dropped by the local rebuild (Issue-1 chain integrity):
+    // the destination mini-map and request state survive activation.
+    expect(updated.destination?.latitude, 30.1);
+    expect(updated.destination?.longitude, 31.1);
+    expect(updated.proposedPrice, 85.5);
+    expect(updated.cancellationRequestStatus, 'rejected');
+    expect(updated.offerExpiresAt, isNull);
+  });
 }

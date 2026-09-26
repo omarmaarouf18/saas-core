@@ -793,6 +793,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cancellation requested — waiting for owner approval.';
 
   @override
+  String get employeePricePendingTitle => 'Waiting for fare confirmation';
+
+  @override
+  String employeePricePendingBody(Object price) {
+    return 'Proposed fare $price — the trip starts automatically once the fare is accepted. Completing is only possible on an active trip.';
+  }
+
+  @override
+  String employeePricePendingExpiry(Object remaining) {
+    return 'Request expires in $remaining — then it is cancelled automatically.';
+  }
+
+  @override
   String get cancelRequestRejectedBanner =>
       'The business owner declined your cancellation request. You remain assigned to this job.';
 

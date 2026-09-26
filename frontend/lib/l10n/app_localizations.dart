@@ -1581,6 +1581,24 @@ abstract class AppLocalizations {
   /// **'Cancellation requested — waiting for owner approval.'**
   String get cancelRequestPendingBanner;
 
+  /// No description provided for @employeePricePendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for fare confirmation'**
+  String get employeePricePendingTitle;
+
+  /// No description provided for @employeePricePendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed fare {price} — the trip starts automatically once the fare is accepted. Completing is only possible on an active trip.'**
+  String employeePricePendingBody(Object price);
+
+  /// No description provided for @employeePricePendingExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Request expires in {remaining} — then it is cancelled automatically.'**
+  String employeePricePendingExpiry(Object remaining);
+
   /// No description provided for @cancelRequestRejectedBanner.
   ///
   /// In en, this message translates to:

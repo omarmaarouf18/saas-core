@@ -120,6 +120,22 @@ void main() {
     lockedEscrowAmount: 25.50,
   );
 
+  final awaitingPriceJob = Job(
+    id: 'job-awaiting-price-004',
+    ownerId: 'owner-1',
+    employeeId: 'emp-1',
+    userId: 'cust-4',
+    serviceId: 'service-transport-1',
+    status: 'awaiting_price_response',
+    location: JobLocation(latitude: 30.0, longitude: 31.0),
+    destination: JobLocation(latitude: 30.1, longitude: 31.1),
+    paymentMethod: 'cod',
+    suggestedPrice: 90.0,
+    proposedPrice: 85.50,
+    proposedBy: 'cust-4',
+    priceProposalExpiresAt: DateTime.now().add(const Duration(minutes: 4)),
+  );
+
   final pendingJob = Job(
     id: 'job-pending-003',
     ownerId: 'owner-1',
@@ -332,5 +348,85 @@ void main() {
     final errorText = find.text(ErrorMessages.forbidden);
     await tester.ensureVisible(errorText);
     expect(errorText, findsOneWidget);
+  });
+
+  testWidgets(
+      'Issue-1: awaiting-price job hides Complete but explains fare state',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    // The Complete gate stays closed: backend CompleteJob 409s non-active.
+    expect(find.byKey(const Key('complete_job_button_job-awaiting-price-004')),
+        findsNothing);
+    // ... and the card communicates why: live proposal state + countdown.
+    expect(
+        find.byKey(
+            const Key('employee_price_pending_panel_job-awaiting-price-004')),
+        findsOneWidget);
+    expect(find.text('Waiting for fare confirmation'), findsOneWidget);
+    expect(find.textContaining('85.50'), findsOneWidget);
+    expect(find.textContaining('expires in'), findsOneWidget);
+    // Request-cancellation stays available (assignable state).
+    expect(
+        find.byKey(
+            const Key('employee_cancel_job_button_job-awaiting-price-004')),
+        findsOneWidget);
+    // Issue-2 Option A: destination renders as a map preview, not raw text.
+    expect(find.byKey(const Key('job_destination_map_job-awaiting-price-004')),
+        findsOneWidget);
+  });
+
+  testWidgets('Issue-1: expired proposal shows the expired banner, not a clock',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final expiredJob = Job(
+      id: 'job-awaiting-price-005',
+      ownerId: 'owner-1',
+      employeeId: 'emp-1',
+      userId: 'cust-5',
+      serviceId: 'service-transport-1',
+      status: 'awaiting_price_response',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'cod',
+      suggestedPrice: 90.0,
+      proposedPrice: 85.50,
+      proposedBy: 'cust-5',
+      priceProposalExpiresAt:
+          DateTime.now().subtract(const Duration(seconds: 30)),
+    );
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [expiredJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('complete_job_button_job-awaiting-price-005')),
+        findsNothing);
+    expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
+        findsOneWidget);
+  });
+
+  testWidgets('Issue-2: job without destination shows fallback, no map slot',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [pendingJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('job_destination_map_job-pending-003')),
+        findsNothing);
   });
 }
