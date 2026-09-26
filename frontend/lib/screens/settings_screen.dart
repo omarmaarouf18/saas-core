@@ -24,9 +24,18 @@ import 'my_account_screen.dart';
 import 'notifications_screen.dart';
 import 'owner_configuration_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   final bool isEmbeddedInTab;
   const SettingsScreen({super.key, this.isEmbeddedInTab = false});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  /// Audit S10: locks the 2FA-enable switch for the whole enable round-trip
+  /// (same defect class as tracked E-05, different control).
+  bool _toggling2fa = false;
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +68,9 @@ class SettingsScreen extends StatelessWidget {
 
     return FormScreenTemplate(
       title: l10n.settingsTitle,
-      isEmbeddedInTab: isEmbeddedInTab,
+      isEmbeddedInTab: widget.isEmbeddedInTab,
       backgroundColor: theme.scaffoldBackgroundColor,
-      showBackButton: isEmbeddedInTab ? false : null,
+      showBackButton: widget.isEmbeddedInTab ? false : null,
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
@@ -427,54 +436,79 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                Switch.adaptive(
-                  key: const Key('settings_two_factor_switch'),
-                  value: user?.twoFactorEnabled ?? true,
-                  onChanged: (bool newVal) async {
-                    if (!newVal) {
-                      final confirmed = await ConfirmActionDialog.show(
-                        context,
-                        title: l10n.disableTwoFactorConfirmTitle,
-                        message: l10n.disableTwoFactorConfirmBody,
-                        confirmLabel: l10n.disableTwoFactorConfirmAction,
-                        cancelLabel: l10n.cancel,
-                        isDestructive: true,
-                      );
-                      if (confirmed != true) return;
+                // Audit S10: while the enable round-trip is in flight the
+                // control locks (disabled switch + progress indicator) so
+                // rapid taps cannot queue multiple PATCHes.
+                if (_toggling2fa)
+                  const SizedBox(
+                    width: 48,
+                    height: 32,
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          key: Key('settings_2fa_toggle_progress'),
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Switch.adaptive(
+                    key: const Key('settings_two_factor_switch'),
+                    value: user?.twoFactorEnabled ?? true,
+                    onChanged: (bool newVal) async {
+                      if (!newVal) {
+                        final confirmed = await ConfirmActionDialog.show(
+                          context,
+                          title: l10n.disableTwoFactorConfirmTitle,
+                          message: l10n.disableTwoFactorConfirmBody,
+                          confirmLabel: l10n.disableTwoFactorConfirmAction,
+                          cancelLabel: l10n.cancel,
+                          isDestructive: true,
+                        );
+                        if (confirmed != true) return;
 
-                      if (!context.mounted) return;
-                      final disabled =
-                          await _DisableTwoFactorPasswordDialog.show(
-                        context,
-                        auth,
-                      );
-                      if (disabled == true && context.mounted) {
-                        ThemedSnackBar.showSuccess(
+                        if (!context.mounted) return;
+                        final disabled =
+                            await _DisableTwoFactorPasswordDialog.show(
                           context,
-                          l10n.twoFactorDisabledSuccess,
+                          auth,
                         );
+                        if (disabled == true && context.mounted) {
+                          ThemedSnackBar.showSuccess(
+                            context,
+                            l10n.twoFactorDisabledSuccess,
+                          );
+                        }
+                        return;
                       }
-                      return;
-                    }
 
-                    try {
-                      await auth.toggleTwoFactor(true);
-                      if (context.mounted) {
-                        ThemedSnackBar.showSuccess(
-                          context,
-                          l10n.twoFactorEnabledSuccess,
-                        );
+                      // Enable path: locked for the whole round-trip.
+                      setState(() => _toggling2fa = true);
+                      try {
+                        await auth.toggleTwoFactor(true);
+                        if (context.mounted) {
+                          ThemedSnackBar.showSuccess(
+                            context,
+                            l10n.twoFactorEnabledSuccess,
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ThemedSnackBar.showError(
+                            context,
+                            friendlyErrorMessage(e),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _toggling2fa = false);
+                        }
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ThemedSnackBar.showError(
-                          context,
-                          friendlyErrorMessage(e),
-                        );
-                      }
-                    }
-                  },
-                ),
+                    },
+                  ),
               ],
             ),
           ),

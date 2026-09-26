@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -69,6 +70,10 @@ class MockAuthProvider extends AuthProvider {
   String? _storedError;
   int? _storedStatusCode;
 
+  /// Audit S10: optional gate holding the enable round-trip in flight so
+  /// the test can observe the mid-submit switch state deterministically.
+  Completer<void>? toggleGate;
+
   @override
   String? get error => _storedError;
 
@@ -111,6 +116,9 @@ class MockAuthProvider extends AuthProvider {
     }
 
     _mockUser = _mockUser?.copyWith(twoFactorEnabled: enabled);
+    if (toggleGate != null) {
+      await toggleGate!.future;
+    }
     notifyListeners();
     return true;
   }
@@ -808,5 +816,50 @@ void main() {
         findsOneWidget);
     expect(
         find.text('Incorrect password. 2FA was not disabled.'), findsNothing);
+  });
+
+  testWidgets('Audit S10: enable switch locks with progress during round-trip',
+      (WidgetTester tester) async {
+    final themeProvider = ThemeProvider(storage: FakeSecureStorage());
+    final user = UserProfile(
+      id: 'owner-1',
+      email: 'owner@example.com',
+      username: 'owner1',
+      role: 'owner',
+      twoFactorEnabled: false,
+    );
+    final authProvider = MockAuthProvider(apiClient, user);
+    authProvider.toggleGate = Completer<void>();
+
+    await tester.pumpWidget(buildSettingsApp(
+      authProvider: authProvider,
+      themeProvider: themeProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byKey(const Key('settings_two_factor_switch'));
+    await tester.ensureVisible(switchFinder);
+    await tester.tap(switchFinder);
+    // Fixed-frame pumps only: the progress indicator animates indefinitely.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Mid-round-trip: switch replaced by progress, no re-trigger possible.
+    expect(find.byKey(const Key('settings_two_factor_switch')), findsNothing);
+    expect(
+        find.byKey(const Key('settings_2fa_toggle_progress')), findsOneWidget);
+    expect(authProvider.toggleTwoFactorCalled, isTrue);
+    expect(authProvider.lastToggledValue, isTrue);
+
+    authProvider.toggleGate!.complete();
+    await tester.pumpAndSettle();
+
+    // Resolved: switch back, ON, progress gone.
+    expect(find.byKey(const Key('settings_two_factor_switch')), findsOneWidget);
+    expect(find.byKey(const Key('settings_2fa_toggle_progress')), findsNothing);
+    final Switch updatedSwitch = tester.widget(switchFinder);
+    expect(updatedSwitch.value, isTrue);
+    expect(updatedSwitch.onChanged, isNotNull);
+    expect(find.text('Two-factor authentication enabled'), findsOneWidget);
   });
 }
