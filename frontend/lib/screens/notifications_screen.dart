@@ -175,6 +175,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return ListScreenTemplate<NotificationModel>(
       title: l10n.notificationsTitle,
       showBackButton: widget.showBackButton,
+      // Audit S2: gate the template on history fetch so a cold start renders
+      // the loading state instead of the empty state (whose "Back to Home"
+      // pop action would exit the screen mid-load). History-fetch errors
+      // keep surfacing via the header banner above, which retries initSse.
+      isLoading: provider.isLoadingHistory,
       onRefresh: () async {
         await provider.fetchHistory(refresh: true);
       },

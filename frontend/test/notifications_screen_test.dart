@@ -27,6 +27,13 @@ class MockNotificationsProvider extends NotificationsProvider {
   @override
   bool get isConnected => true;
 
+  // Audit S2: controllable history-loading flag. Defaults to false so all
+  // pre-existing cases keep exercising the settled branches.
+  bool mockLoadingHistory = false;
+
+  @override
+  bool get isLoadingHistory => mockLoadingHistory;
+
   @override
   Future<void> fetchHistory({bool refresh = false, int limit = 30}) async {}
 
@@ -302,5 +309,43 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Jobs'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Audit S2: empty list mid-fetch renders loading, not the empty pop-trap',
+      (WidgetTester tester) async {
+    final notifsProvider = MockNotificationsProvider(apiClient, []);
+    notifsProvider.mockLoadingHistory = true;
+    final authProvider = MockAuthProviderForNotifs(apiClient);
+
+    await tester.pumpWidget(createNotificationsTestApp(
+      notificationsProvider: notifsProvider,
+      authProvider: authProvider,
+    ));
+    await tester.pump();
+
+    // Template loading state wins while history is in flight ...
+    expect(find.byKey(const ValueKey('list_template_loading')),
+        findsOneWidget);
+    // ... and the empty state's "Back to Home" pop action is absent, so a
+    // tap during load cannot exit the screen.
+    expect(find.text('Back to Home'), findsNothing);
+  });
+
+  testWidgets(
+      'Audit S2: settled empty list still renders the empty state',
+      (WidgetTester tester) async {
+    final notifsProvider = MockNotificationsProvider(apiClient, []);
+    notifsProvider.mockLoadingHistory = false;
+    final authProvider = MockAuthProviderForNotifs(apiClient);
+
+    await tester.pumpWidget(createNotificationsTestApp(
+      notificationsProvider: notifsProvider,
+      authProvider: authProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('list_template_loading')), findsNothing);
+    expect(find.text('Back to Home'), findsOneWidget);
   });
 }
