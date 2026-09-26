@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Value-Identical Token Migration Across Screens and Widgets (Visual Audit V1)
+
+- **Implementation Detail**: Per the fresh UI visual audit (`docs/frontend/UI_VISUAL_AUDIT_2026-09.md`, findings V-T1–V-T8), the A8 token pass held with narrow, genuine drift — every fix below is value-identical (zero pixels, no golden churn): 77 raw icon sizes migrated to `AppIconSize` (`14→xs, 16→sm, 24→md, 32→lg, 48→xl`), including a new `AppIconSize.smMd = 20.0` gap token (mirroring the `AppRadius.smMd` precedent) absorbing all 38 `size: 20` sites across screens and shared buttons; `Colors.white` fleet-marker border and `AppColors.surface` map-pin borders unified to `AppColors.onPrimary` (same `#FFFFFF`, dark-proof semantics); raw `SizedBox(2/4)`, `vertical: 2`, and `AppSpacing.xs / 2` mapped to `xxs`/`xs`; raw 300ms durations and `Curves.easeInOut` mapped to `durationMedium`/`curveStateChange`; `StatusBadge` hand-rolled `toUpperCase()` routed through `AppTypography.uppercaseLabel`; marketplace unread count badge rebuilt on `ThemedPanel` (pixel-parity geometry) and the subscription plans header adopted to `ThemedSectionHeader`. Palette untouched — no token color value changed. Sizes 18/22/28/36 have no token and stay raw as a documented open proposal (future snap with golden regen).
+- **Commit SHA**: ``9cedc0b15598f028644430b6e89002f795adeb1d``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), new `design_token_compliance_test.dart` regression guard (documented token values + source scans for raw hex/bare palette/icon sizes/spacing-motion values/status-badge transforms; 5/5 passed — it caught the two missed `vertical: 2` paddings mid-task). Unchanged goldens are the pixel-identity proof (full suite green via pre-push gate). Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## Restore Notification Dismiss Target to 44px (Audit S14)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S14, the per-card dismiss `IconButton` overrode Material's 48px default down to 24×24px constraints nested inside the card's own navigation tap area, inviting mis-taps in both directions (delete when opening, open when deleting). Restored `BoxConstraints(minWidth: 44, minHeight: 44)` keeping the 16px `AppIconSize.sm` visual and zero padding — same repair shape as the A8 banner-dismiss restoration and the E20–E22 44px convention (Rule 10), now with a stable `dismiss_notification_<id>` key. No shared-widget change (single call site).
