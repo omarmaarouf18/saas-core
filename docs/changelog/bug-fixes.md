@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Confirm Subscription Billing Changes with Consequence Dialog (Audit S7)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S7, both subscription buttons fired `_changeSubscription` one-tap with zero confirmation — upgrade immediately charges $19.99/mo, downgrade silently drops Pro features — with less ceremony than the payout two-step confirm in the same app. Both call sites now route through `_confirmAndChangeSubscription`, which presents `ConfirmActionDialog.show` stating the consequence upfront (new EN + Egyptian-AR `subscriptionUpgradeConfirmTitle/Message` and `subscriptionDowngradeConfirmTitle/Message` keys via `flutter gen-l10n`; downgrade styled `isDestructive: true`, matching the recon-resolve destructive convention) and fires `_changeSubscription` only on confirm. The post-failure snackbar retry still re-fires the network call directly (already-confirmed intent, legitimate retry per the retry-must-re-fire-network rule).
+- **Commit SHA**: ``2f6d2f473cabdf754e48eed22f9b22acdc426209``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), `subscription_screen_test.dart`: pre-existing one-tap upgrade test rewritten to the confirm flow (dialog opens, nothing fires, confirm fires `paid`) plus 3 new S7 cases (upgrade dialog states $19.99 consequence and Cancel bills nothing; confirm fires `updateSubscription(paid)`; downgrade dialog states feature loss, is destructive, confirm fires `free`; 10/10 passed). Full `flutter test` suite green via pre-push gate. Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## Gate Notifications Empty State on History Loading (Audit S2)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S2, the notifications screen's `ListScreenTemplate` invocation omitted `isLoading`, so every cold start rendered the empty state — complete with its "Back to Home" pop action — while `fetchHistory` was still in flight, and a tap during load exited the screen (mini pop-trap). Passed `isLoading: provider.isLoadingHistory` (one-line change, as the audit suggested) so the template's loading state wins mid-fetch; history-fetch errors keep surfacing via the existing header `notifications_error_banner` (whose retry re-runs `initSse`, covering both SSE and history recovery), which the audit explicitly allowed keeping.
