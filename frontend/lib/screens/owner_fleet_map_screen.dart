@@ -217,7 +217,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
               _buildFleetFilterPillRow(markers.length),
 
               // Empty fleet state notice
-              if (markers.isEmpty && !provider.isLoading)
+              if (markers.isEmpty &&
+                  !provider.isLoading &&
+                  provider.error == null)
                 _buildEmptyFleetNotice(),
 
               // Selected Driver Detail Card (Stitch Reference)
@@ -225,7 +227,10 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                 _buildSelectedDriverCard(_selectedEmployee!),
 
               // Connection status / error banner
-              if (!provider.isConnected && !provider.isLoading)
+              if ((!provider.isConnected ||
+                      provider.error != null ||
+                      provider.subscriptionError != null) &&
+                  !provider.isLoading)
                 _buildConnectionBanner(provider),
 
               // Floating Map Controls (Zoom / Recenter)
@@ -580,9 +585,17 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
           ? ThemedErrorBanner(
               message: provider.subscriptionError!,
             )
-          : ThemedWarningBanner(
-              message: context.l10n.reconnectingTrackingStream,
-            ),
+          : (provider.error != null
+              ? ThemedErrorBanner(
+                  key: const Key('fleet_map_error_banner'),
+                  message: provider.error!,
+                  onRetry: widget.token != null
+                      ? () => provider.hydrateOwnerFleet(widget.token!)
+                      : null,
+                )
+              : ThemedWarningBanner(
+                  message: context.l10n.reconnectingTrackingStream,
+                )),
     );
   }
 

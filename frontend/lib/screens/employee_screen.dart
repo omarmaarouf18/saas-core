@@ -704,91 +704,106 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     final l10n = context.l10n;
     final ownerProvider = Provider.of<OwnerProvider>(context);
 
-    return ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty
-        ? ThemedLoadingIndicator(message: l10n.loadingAuditTrail)
-        : RefreshIndicator(
-            onRefresh: _refreshAuditLog,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              itemCount: ownerProvider.auditLogEntries.isEmpty
-                  ? 1
-                  : ownerProvider.auditLogEntries.length,
-              itemBuilder: (context, index) {
-                if (ownerProvider.auditLogEntries.isEmpty) {
-                  return ThemedCard(
-                    borderRadius: AppRadius.md,
-                    padding: AppSpacing.lg,
-                    child: ThemedEmptyState(
-                      icon: Icons.receipt_long_outlined,
-                      title: l10n.noAuditEventsTitle,
-                      description: l10n.noAuditEventsDesc,
-                      actionText: l10n.refreshAuditLogBtn,
-                      onActionPressed: _refreshAuditLog,
-                    ),
-                  );
-                }
+    if (ownerProvider.isLoading && ownerProvider.auditLogEntries.isEmpty) {
+      return ThemedLoadingIndicator(message: l10n.loadingAuditTrail);
+    }
 
-                final entry = ownerProvider.auditLogEntries[index];
-                final action = entry['action'] ?? '';
-                final clientIp = entry['client_ip'] ?? '';
+    final hasError = ownerProvider.error != null;
+    final entries = ownerProvider.auditLogEntries;
 
-                DateTime? timestamp;
-                if (entry['timestamp'] != null) {
-                  try {
-                    timestamp = DateTime.parse(entry['timestamp']).toLocal();
-                  } catch (_) {}
-                }
+    return RefreshIndicator(
+      onRefresh: _refreshAuditLog,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        itemCount: entries.isEmpty ? 1 : entries.length + (hasError ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (hasError && (entries.isEmpty || index == 0)) {
+            final banner = Padding(
+              padding:
+                  EdgeInsets.only(bottom: entries.isEmpty ? 0 : AppSpacing.md),
+              child: ThemedErrorBanner(
+                key: const Key('audit_log_error_banner'),
+                message: ownerProvider.error!,
+                onRetry: _refreshAuditLog,
+              ),
+            );
+            return banner;
+          }
 
-                final dateStr = timestamp != null
-                    ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}:${_twoDigits(timestamp.second)}"
-                    : "";
+          final entryIndex =
+              (hasError && entries.isNotEmpty) ? index - 1 : index;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: ThemedCard(
-                    borderRadius: AppRadius.md,
-                    padding: AppSpacing.md,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              AppTypography.uppercaseLabel(action.toString()),
-                              style: AppTypography.bodyMd.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              dateStr,
-                              style: AppTypography.labelMd.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+          if (entries.isEmpty) {
+            return ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.lg,
+              child: ThemedEmptyState(
+                icon: Icons.receipt_long_outlined,
+                title: l10n.noAuditEventsTitle,
+                description: l10n.noAuditEventsDesc,
+                actionText: l10n.refreshAuditLogBtn,
+                onActionPressed: _refreshAuditLog,
+              ),
+            );
+          }
+
+          final entry = entries[entryIndex];
+          final action = entry['action'] ?? '';
+          final clientIp = entry['client_ip'] ?? '';
+
+          DateTime? timestamp;
+          if (entry['timestamp'] != null) {
+            try {
+              timestamp = DateTime.parse(entry['timestamp']).toLocal();
+            } catch (_) {}
+          }
+
+          final dateStr = timestamp != null
+              ? "${timestamp.year}-${_twoDigits(timestamp.month)}-${_twoDigits(timestamp.day)} ${_twoDigits(timestamp.hour)}:${_twoDigits(timestamp.minute)}:${_twoDigits(timestamp.second)}"
+              : "";
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: ThemedCard(
+              borderRadius: AppRadius.md,
+              padding: AppSpacing.md,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppTypography.uppercaseLabel(action.toString()),
+                        style: AppTypography.bodyMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        if (clientIp.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            context.l10n.clientIpLine(clientIp),
-                            style: AppTypography.labelMd.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                      Text(
+                        dateStr,
+                        style: AppTypography.labelMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
+                  if (clientIp.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      context.l10n.clientIpLine(clientIp),
+                      style: AppTypography.labelMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           );
+        },
+      ),
+    );
   }
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');

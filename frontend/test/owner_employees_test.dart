@@ -88,11 +88,21 @@ class MockOwnerProviderForEmployeesTest extends OwnerProvider {
     return mockEmployees;
   }
 
+  List<Map<String, dynamic>> mockAuditLogEntries = [];
+  bool fetchAuditLogCalled = false;
+
+  @override
+  List<Map<String, dynamic>> get auditLogEntries => mockAuditLogEntries;
+
   @override
   Future<void> fetchAuditLog({
-    required String tenantId,
-    required String requesterToken,
-  }) async {}
+    String? tenantId,
+    String? requesterToken,
+    String? userId,
+    String? userToken,
+  }) async {
+    fetchAuditLogCalled = true;
+  }
 }
 
 void main() {
@@ -236,5 +246,56 @@ void main() {
 
     expect(find.byKey(const Key('employees_error_banner')), findsOneWidget);
     expect(find.text('Failed to fetch employee roster'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Audit trail tab renders error banner with retry on fetch failure, suppressing empty state (audit E8)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockIsLoading = false;
+    mockOwner.mockEmployees = [];
+    mockOwner.mockError = 'Audit log fetch failed';
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    // Switch to Audit Trail tab
+    await tester.tap(find.text('Audit Trail'));
+    await tester.pumpAndSettle();
+
+    // Error banner renders with retry, and empty state is NOT shown
+    expect(find.byKey(const Key('audit_log_error_banner')), findsOneWidget);
+    expect(find.text('Audit log fetch failed'), findsOneWidget);
+    expect(find.text('No audit events recorded'), findsNothing);
+
+    // Tap retry
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(mockOwner.fetchAuditLogCalled, isTrue);
+  });
+
+  testWidgets(
+      'Audit trail tab renders empty state when zero events and no error',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockIsLoading = false;
+    mockOwner.mockEmployees = [];
+    mockOwner.mockError = null;
+    mockOwner.mockAuditLogEntries = [];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    // Switch to Audit Trail tab
+    await tester.tap(find.text('Audit Trail'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('audit_log_error_banner')), findsNothing);
+    expect(find.text('No audit events recorded'), findsOneWidget);
   });
 }

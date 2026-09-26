@@ -128,6 +128,9 @@ class MapTrackingProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint(
             'Error fetching available employees during fleet hydration: $e');
+        if (_employeeMarkers.isEmpty) {
+          _error = friendlyErrorMessage(e);
+        }
       }
 
       // 2. Overlay active/recent jobs from owner jobs list

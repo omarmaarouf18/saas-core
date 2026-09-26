@@ -15,6 +15,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
   final bool initialLoading;
   final bool initialConnected;
   final String? initialSubError;
+  final String? initialError;
   final JobLocation? initialJobLoc;
   final String? initialAssignedEmp;
 
@@ -24,6 +25,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
     this.initialLoading = false,
     this.initialConnected = true,
     this.initialSubError,
+    this.initialError,
     this.initialJobLoc,
     this.initialAssignedEmp,
   }) : super(apiClient) {
@@ -31,6 +33,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
     _testLoading = initialLoading;
     _testConnected = initialConnected;
     _testSubError = initialSubError;
+    _testError = initialError;
     _testJobLoc = initialJobLoc;
     _testAssignedEmp = initialAssignedEmp;
   }
@@ -39,8 +42,10 @@ class MockMapTrackingProvider extends MapTrackingProvider {
   late bool _testLoading;
   late bool _testConnected;
   late String? _testSubError;
+  late String? _testError;
   late JobLocation? _testJobLoc;
   late String? _testAssignedEmp;
+  bool hydrateOwnerFleetCalled = false;
 
   @override
   Map<String, EmployeeMarkerData> get employeeMarkers =>
@@ -59,13 +64,18 @@ class MockMapTrackingProvider extends MapTrackingProvider {
   String? get subscriptionError => _testSubError;
 
   @override
+  String? get error => _testError;
+
+  @override
   JobLocation? get customerJobLocation => _testJobLoc;
 
   @override
   String? get assignedEmployeeId => _testAssignedEmp;
 
   @override
-  Future<void> hydrateOwnerFleet(String ownerToken) async {}
+  Future<void> hydrateOwnerFleet(String ownerToken) async {
+    hydrateOwnerFleetCalled = true;
+  }
 
   @override
   Future<void> hydrateCustomerJob(String jobId, String userToken) async {}
@@ -304,6 +314,74 @@ void main() {
 
       // Should show the fallback on both marker and card
       expect(find.text('Unknown: emp-idle'), findsNWidgets(2));
+    });
+
+    testWidgets(
+        '(e) Error banner rendered on provider.error and suppresses empty notice (audit E9)',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialMarkers: {},
+        initialLoading: false,
+        initialConnected: true,
+        initialError: 'Fleet hydration network failure',
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const OwnerFleetMapScreen(
+              ownerId: 'owner-123',
+              token: 'token-123',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('fleet_map_error_banner')), findsOneWidget);
+      expect(find.text('Fleet hydration network failure'), findsOneWidget);
+      // Suppresses misleading empty fleet notice when fetch failed
+      expect(find.text('No active employees transmitting location.'),
+          findsNothing);
+
+      // Tap retry
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      expect(mockProvider.hydrateOwnerFleetCalled, isTrue);
+    });
+
+    testWidgets(
+        '(f) Empty fleet notice rendered when no error and markers empty',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialMarkers: {},
+        initialLoading: false,
+        initialConnected: true,
+        initialError: null,
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const OwnerFleetMapScreen(
+              ownerId: 'owner-123',
+              token: 'token-123',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('fleet_map_error_banner')), findsNothing);
+      expect(find.text('No active employees transmitting location.'),
+          findsOneWidget);
     });
   });
 
