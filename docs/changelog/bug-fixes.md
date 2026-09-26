@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Gate Notifications Empty State on History Loading (Audit S2)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S2, the notifications screen's `ListScreenTemplate` invocation omitted `isLoading`, so every cold start rendered the empty state — complete with its "Back to Home" pop action — while `fetchHistory` was still in flight, and a tap during load exited the screen (mini pop-trap). Passed `isLoading: provider.isLoadingHistory` (one-line change, as the audit suggested) so the template's loading state wins mid-fetch; history-fetch errors keep surfacing via the existing header `notifications_error_banner` (whose retry re-runs `initSse`, covering both SSE and history recovery), which the audit explicitly allowed keeping.
+- **Commit SHA**: ``3e36c8d484bf79bcb1b5a59d63753d68fe9d9470``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), `notifications_screen_test.dart` extended with a controllable `mockLoadingHistory` flag on the mock provider plus 2 new cases (mid-fetch renders `list_template_loading` with no "Back to Home" pop action; settled empty still renders the empty state; 7/7 passed). Full `flutter test` suite green via pre-push gate. Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## Skeleton Loading Placeholders Across Employee Roster, Owner History, and Recon Queue (Audit E1, E2, E3)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E1, E2, and E3, initial loading states across owner and employee screens relied on bare centered spinners rather than skeleton layout placeholders:
