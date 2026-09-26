@@ -39,6 +39,11 @@ This design system provides the visual architecture and component spec for Quick
 | `AppColors.warning` | `#B45309` | Warm amber-700 for pending reviews, warnings, hold alerts | 5.02:1 (AA) |
 | `AppColors.outline` | `#57585E` | Dark gray for active input borders and icon outlines | 7.09:1 (AAA) |
 | `AppColors.outlineVariant` | `#8E8F95` | Mid gray for subtle card dividers and passive borders | 3.34:1 (UI Component) |
+| `AppColors.scrim` | `#000000` | Base scrim — always apply via `withValues(alpha: …)`; replaces raw `Colors.black` shadow/tint sites | N/A (always translucent) |
+| `AppColors.successDark` / `warningDark` / `dangerDark` | `#4ADE80` / `#FBBF24` / `#F87171` | Dark-tuned semantic trio (AA on dark surfaces); screens must read semantic colors via `context.semanticColors`, never these directly | AA on dark |
+
+> [!NOTE]
+> **Container hierarchy & dark tokens (visual audit 2026-09 note)**: the table above lists the headline tokens. The full set in `theme.dart` additionally includes the surface container ramp (`surfaceDim`, `surfaceContainerLowest/Low/Container/High/Highest` + `Dark` twins), `onPrimaryContainer`/`onSecondaryContainer`/`onErrorContainer` pairs (+`Dark` twins), `background`/`onBackground`, and the brightness-aware `AppSemanticColors` extension (`context.semanticColors`). Values are fixed with the palette — this doc previously omitted them, not the code.
 
 ### 2.2 Spacing Scale (`AppSpacing`)
 
@@ -67,10 +72,10 @@ This design system provides the visual architecture and component spec for Quick
 | `AppRadius.sm` | `4.0` | `AppRadius.smBorder` | Status badges, chip elements, tooltips |
 | `AppRadius.defaultValue` | `8.0` | `AppRadius.defaultBorder` | Buttons, text fields, small alert banners |
 | `AppRadius.smMd` | `10.0` | `AppRadius.smMdBorder` | Unread notification badge pill radius |
-| `AppRadius.md` | `12.0` | `AppRadius.mdBorder` | Standard surface cards (`ThemedCard`), metric tiles |
-| `AppRadius.lg` | `16.0` | `AppRadius.lgBorder` | Large modal cards, hero summary banners |
+| `AppRadius.md` | `12.0` | `AppRadius.mdBorder` | Standard surface cards (`ThemedCard`), metric tiles, **all modal dialogs** (`ConfirmActionDialog`, `CancelJobDialog`, deposit/payout/email/booking dialogs — the app-wide dialog standard) |
+| `AppRadius.lg` | `16.0` | `AppRadius.lgBorder` | Large modal cards (map location-picker dialogs), hero summary banners |
 | `AppRadius.lgXl` | `20.0` | `AppRadius.lgXlBorder` | Pill category badge radius |
-| `AppRadius.xl` | `24.0` | `AppRadius.xlBorder` | Bottom sheet top corners, floating dialogs |
+| `AppRadius.xl` | `24.0` | `AppRadius.xlBorder` | Bottom sheet top corners only (visual audit 2026-09: the table previously listed "floating dialogs" here, but every dialog in the app uses `md` — doc corrected to match the shipped standard) |
 | `AppRadius.full` | `9999.0` | `AppRadius.fullBorder` | Circular avatars (`EntityAvatar`), pill buttons |
 
 ### 2.4 Elevation & Shadow Scale (`AppElevation`)
@@ -104,6 +109,7 @@ This design system provides the visual architecture and component spec for Quick
 | :--- | :--- | :--- |
 | `AppIconSize.xs` | `14.0` | Compact status badge icons, micro inline indicators |
 | `AppIconSize.sm` | `16.0` | Inline text icons, small button leading icons |
+| `AppIconSize.smMd` | `20.0` | Compact button/tile icons (fills the 16–24 gap; added by visual audit 2026-09 — 38 call sites) |
 | `AppIconSize.md` | `24.0` | Standard list tile leading icons, app bar action icons |
 | `AppIconSize.lg` | `32.0` | Featured metric card icons, stat summary badge icons |
 | `AppIconSize.xl` | `48.0` | Empty state visual graphic icons, dialog header highlights |
@@ -124,52 +130,56 @@ This design system provides the visual architecture and component spec for Quick
 | `AppTypography.labelMd` | 11 | Medium (500) | 14/11 | Metadata timestamps, compact status badge text |
 | `AppTypography.labelSm` | 10 | Medium (500) | 12/10 | Micro badges, detail notes, count tags |
 | `AppTypography.caption` | 11 | Regular (400) | 14/11 | Caption text, informational notes |
+| `AppTypography.labelUppercase` | 10 | Bold (700) | 12/10 | **The ONLY sanctioned uppercase label style** (short badges, chips, status tags) — letterSpacing 0.8 |
+| `AppTypography.uppercaseLabel(text)` | — | — | — | **The ONLY sanctioned uppercase transform** (tracking IDs, methods, roles, statuses) — screens must route all `.toUpperCase()` through this helper |
 
 ---
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 34 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 36 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
 | `AppShell` | `app_shell.dart` | Root screen scaffold wrapper providing unified app bar, drawer, and background | `title`, `body`, `actions`, `bottomNavigationBar`, `floatingActionButton` | Used across all screens |
-| `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `jobId`, `onCancelled` | `home_screen.dart`, `job_status_screen.dart` |
-| `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmText`, `isDestructive` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart`, `notifications_screen.dart` |
-| `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `referenceId`, `referenceType` | `job_status_screen.dart`, `settings_screen.dart` |
-| `DashboardScreenTemplate` | `dashboard_screen_template.dart` | Template for dashboard screens with stats header, action grid, and activity feed | `title`, `stats`, `actions`, `activity` | `home_screen.dart` |
-| `DepositFundsDialog` | `deposit_funds_dialog.dart` | Owner e-wallet deposit modal with amount presets | `onDepositSubmitted` | `wallet_screen.dart` |
-| `EmailChangeDialog` | `email_change_dialog.dart` | Secure 2-step email change modal with OTP verification | `currentEmail`, `onEmailChanged` | `my_account_screen.dart` |
-| `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `imageUrl`, `name`, `radius` | `rating_screen.dart`, `employee_screen.dart`, `job_status_screen.dart` |
-| `FormScreenTemplate` | `form_screen_template.dart` | Template for structured input forms with sticky bottom CTA | `title`, `children`, `onSubmit`, `submitText` | `owner_configuration_screen.dart`, `employee_screen.dart` |
-| `InfoAlertDialog` | `info_alert_dialog.dart` | Informational pop-up dialog with title, message, and single acknowledge action | `title`, `message`, `buttonText` | General notifications & alerts |
-| `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `label`, `value`, `icon`, `trailing` | `wallet_screen.dart`, `owner_history_screen.dart` |
-| `KycRejectionDialogHost` | `kyc_rejection_dialog_host.dart` | Host dialog displaying reviewer rejection reasons and remediation instructions | `reason`, `onResubmit` | `kyc_document_upload_screen.dart` |
-| `ListScreenTemplate` | `list_screen_template.dart` | Standard list screen wrapper with search, filters, and empty/loading states | `title`, `itemCount`, `itemBuilder`, `filterBar` | `customer_jobs_screen.dart`, `owner_history_screen.dart` |
+| `CancelJobDialog` | `cancel_job_dialog.dart` | Job cancellation modal dialog with preset reason radios & custom input | `show(context, jobId, onConfirm, titleText, bodyText, confirmText)` | `home_screen.dart`, `job_status_screen.dart` |
+| `ConfirmActionDialog` | `confirm_action_dialog.dart` | Reusable modal confirmation for destructive or financial operations | `title`, `message`, `confirmLabel`, `cancelLabel`, `isDestructive`, `icon` | `employee_jobs_screen.dart`, `owner_reconciliation_queue_screen.dart`, `notifications_screen.dart` |
+| `CreateTicketDialog` | `create_ticket_dialog.dart` | Customer/owner complaint ticket submission modal | `contextId` (optional job reference) | `job_status_screen.dart`, `customer_tickets_screen.dart` |
+| `DashboardScreenTemplate` | `dashboard_screen_template.dart` | Tabbed dashboard shell (bottom nav + tab bodies) | `tabs`, `destinations`, `currentIndex`, `onDestinationSelected`, `isEmbeddedInTab` | `home_screen.dart`, `customer_home_screen.dart`, `employee_home_screen.dart` |
+| `DepositFundsDialog` | `deposit_funds_dialog.dart` | Owner e-wallet deposit modal with amount presets | `show(context)` (reads providers internally) | `wallet_screen.dart` |
+| `EmailChangeDialog` | `email_change_dialog.dart` | Secure 2-step email change modal with OTP verification | `show(context)` (reads providers internally) | `my_account_screen.dart` |
+| `EntityAvatar` | `entity_avatar.dart` | Circular avatar widget rendering photo or initial initials with border | `name`, `imageUrl`, `radius`, `backgroundColor`, `foregroundColor`, `onTap`, `defaultIcon` | `rating_screen.dart`, `employee_screen.dart`, `job_status_screen.dart`, `settings_screen.dart` |
+| `FormScreenTemplate` | `form_screen_template.dart` | Template for structured input forms (AppShell chrome + body) | `title`, `body`, `actions`, `showBackButton`, `isEmbeddedInTab` + AppShell chrome passthrough | `owner_configuration_screen.dart`, `my_account_screen.dart`, `settings_screen.dart` |
+| `InfoAlertDialog` | `info_alert_dialog.dart` | Informational pop-up dialog with title, message, and single acknowledge action | `title`, `message`, `ackLabel`, `icon` | General notifications & alerts |
+| `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `title`, `subtitle`/`subtitleWidget`, `leadingIcon`, `trailing`, `onTap` | `wallet_screen.dart`, `owner_history_screen.dart` |
+| `KycRejectionDialogHost` | `kyc_rejection_dialog_host.dart` | Navigator host presenting reviewer rejection-reason dialogs over the app | `child`, `navigatorKey` | app root (KYC/KYE rejection stream) |
+| `ListScreenTemplate` | `list_screen_template.dart` | Standard list screen wrapper with search, filters, and empty/loading states | `title`, `items`, `isLoading`, `errorMessage`, `onRetry`, `header`, `itemBuilder`, `emptyWidget`, `loadingWidget` | `customer_jobs_screen.dart`, `owner_history_screen.dart`, `notifications_screen.dart` |
 | `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
-| `OtpPinInput` | `otp_pin_input.dart` | 6-digit discrete PIN input boxes with auto-advance and clipboard support | `controller`, `onCompleted` | `otp_screen.dart`, `forgot_password_screen.dart` |
-| `PayoutRequestDialog` | `payout_request_dialog.dart` | Owner payout withdrawal request modal with bank/Instapay methods | `withdrawableBalance`, `onPayoutRequested` | `wallet_screen.dart` |
+| `LocationPickerDialog` | `location_picker_dialog.dart` | Shared responsive dialog shell (title row, map, confirm) unifying the four location-picker call sites | `title`, `initialLocation`, `confirmLabel`, `confirmButtonKey`, `onConfirmed` | `customer_home_screen.dart`, `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
+| `OtpPinInput` | `otp_pin_input.dart` | 6-digit discrete PIN input boxes with auto-advance and clipboard support | `controller`, `onChanged`, `onCompleted`, `length`, `hasError`, `enabled`, `autoFocus` | `otp_screen.dart`, `reset_password_otp_screen.dart` |
+| `PayoutRequestDialog` | `payout_request_dialog.dart` | Owner payout withdrawal request modal with bank/Instapay methods | `show(context)` (reads providers internally) | `wallet_screen.dart` |
 | `PendingPulseDot` | `pending_pulse_dot.dart` | Looping animated dot signaling an unbounded background wait (dispatch search, polling) | `size`, `color` | `job_status_screen.dart`, `customer_jobs_screen.dart`, `customer_job_map_screen.dart` |
-| `PillFilterBar` | `pill_filter_bar.dart` | Horizontal scrollable category and status filter chips with badge counts | `items`, `selectedValue`, `onSelected` | `customer_jobs_screen.dart`, `notifications_screen.dart`, `owner_history_screen.dart`, `owner_fleet_map_screen.dart` |
-| `PrimaryButton` | `primary_button.dart` | Amber Gold primary CTA button with built-in 600ms tap debounce | `text`, `onPressed`, `isLoading`, `icon`, `isDestructive` | Used across 28 screens |
-| `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `totalReviews` | `home_screen.dart`, `customer_marketplace_screen.dart` |
-| `RouteTimeline` | `route_timeline.dart` | 2-point vertical route connector for pickup and dropoff itinerary | `pickup`, `dropoff`, `metrics` | `job_status_screen.dart`, `employee_jobs_screen.dart` |
-| `SecondaryButton` | `secondary_button.dart` | Tonal / outlined secondary action button for non-primary choices | `text`, `onPressed`, `isLoading`, `icon`, `isOutlined` | Used across 20 screens |
+| `PillFilterBar` | `pill_filter_bar.dart` | Horizontal scrollable category and status filter chips with badge counts | `items` (`label`/`value`/`icon`/`count`), `selectedValue`, `onSelected`, `isDarkSelected` — 44px min touch targets | `customer_jobs_screen.dart`, `notifications_screen.dart`, `owner_history_screen.dart`, `employee_screen.dart`, `owner_reconciliation_queue_screen.dart` |
+| `PrimaryButton` | `primary_button.dart` | Amber Gold primary CTA button with built-in 600ms tap debounce | `text`, `onPressed`, `isLoading`, `isDestructive`, `isFullWidth`, `icon`, `trailingIcon` | Used across 28 screens |
+| `RatingSummaryCard` | `rating_summary_card.dart` | Rating breakdown card displaying star average, progress bars & counts | `averageRating`, `ratingCount` | `home_screen.dart`, `customer_marketplace_screen.dart` |
+| `RouteTimeline` | `route_timeline.dart` | 2-point vertical route connector for pickup and dropoff itinerary | `pickupAddress`/`pickupDetail`, `dropoffAddress`/`dropoffDetail`, `distanceText`, `timeText`, `cargoText` | `job_status_screen.dart`, `employee_jobs_screen.dart` |
+| `SecondaryButton` | `secondary_button.dart` | Tonal / outlined secondary action button for non-primary choices | `text`, `onPressed`, `isLoading`, `isOutlined`, `isDestructive`, `isFullWidth`, `icon` | Used across 20 screens |
 | `SkeletonLoader` | `skeleton_loader.dart` | Reusable shimmer-animated block & per-screen card geometry loaders | `width`, `height`, `borderRadius`, `margin` | `customer_marketplace_screen.dart`, `home_screen.dart`, `employee_jobs_screen.dart`, `wallet_screen.dart` |
-| `StatCard` | `stat_card.dart` | Metric card with icon, title, bold value, and trend indicator | `title`, `value`, `icon`, `subtitle` | `home_screen.dart`, `wallet_screen.dart` |
-| `StatusBadge` | `status_badge.dart` | Localized pill badge mapping job/kyc/payout status to color/icon | `status` | Used across 15 screens |
-| `ThemedBanner` | `themed_banner.dart` | Full-width contextual informational and alert banner | `message`, `type` | Used across 8 screens |
-| `ThemedCard` | `themed_card.dart` | Surface card container with radius, ambient elevation & topAccent | `child`, `padding`, `margin`, `onTap`, `topAccentColor` | Used across 28 screens |
-| `ThemedEmptyState` | `themed_empty_state.dart` | Centered graphic placeholder for empty lists with action button | `icon`, `title`, `description`, `action` | Used across 14 screens |
+| `StatCard` | `stat_card.dart` | Metric card with icon, title, bold value, and trend indicator | `label`, `value`, `icon`, `iconColor`, `trend`, `isPositiveTrend`, `onTap` | `home_screen.dart`, `wallet_screen.dart` |
+| `StatusBadge` | `status_badge.dart` | Localized pill badge mapping job/kyc/payout status to color/icon | `status`, `showIcon`, `compact`, `customColor` | Used across 15 screens |
+| `ThemedBanner` | `themed_banner.dart` | Full-width contextual informational and alert banner | `type`, `message`, `title`, `icon`, `onDismiss`, `onRetry` | Used across 8 screens |
+| `ThemedCard` | `themed_card.dart` | Surface card container with radius, ambient elevation & topAccent | `child`, `variant`, `borderRadius`, `padding`, `color`, `onTap`, `topAccentColor`, `topAccentHeight` | Used across 28 screens |
+| `ThemedEmptyState` | `themed_empty_state.dart` | Centered graphic placeholder for empty lists with action button | `icon`, `title`, `description`, `actionText`, `onActionPressed` | Used across 14 screens |
 | `ThemedErrorBanner` | `themed_error_banner.dart` | Dismissible alert card displaying operational errors or warnings | `message`, `onDismiss`, `onRetry` | Used across 18 screens |
+| `ThemedInlineSpinner` | `themed_inline_spinner.dart` | Bounded square busy indicator for small slots (refresh icons, send buttons, toggles) where the full-size loader cannot fit | `size`, `color`, `strokeWidth` | `chat_screen.dart`, `job_status_screen.dart`, `kyc_document_upload_screen.dart`, `ticket_chat_screen.dart`, `settings_screen.dart` |
 | `ThemedLoadingIndicator` | `themed_loading_indicator.dart` | Brand-tinted progress spinner with optional progress label | `message` | Used across 16 screens |
-| `ThemedPanel` | `themed_panel.dart` | Styled surface panel with rounded corners and themed borders | `child`, `padding`, `backgroundColor` | Used across multi-card dashboards |
+| `ThemedPanel` | `themed_panel.dart` | Styled surface panel with rounded corners and themed borders | `child`, `color`, `borderRadius`, `border`, `boxShadow`, `padding`, `constraints`, `alignment` (+ `AnimatedThemedPanel` variant) | Used across multi-card dashboards |
 | `ThemedSectionHeader` | `themed_section_header.dart` | Section header row with title and optional trailing action button | `title`, `actionText`, `onActionTap` | Used across 12 screens |
 | `ThemedSuccessBanner` | `themed_success_banner.dart` | Floating toast/banner for positive operation confirmations | `message` | Used across 14 screens |
-| `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `label`, `controller`, `validator`, `prefixIcon` | Used across 20 screens |
+| `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `controller`, `labelText`, `hintText`, `validator`, `autovalidateMode`, `focusNode`, `prefixIcon`/`suffixIcon`, `isPasswordField` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 34 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 36 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 
@@ -231,9 +241,9 @@ Column(
 ## 5. Tracked Design Debt Backlog
 
 > [!NOTE]
-> **Status**: **[100% RESOLVED IN PHASE 1]** All 55 catalogued instances of hardcoded values have been replaced with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Automated audit via `scratch/audit_debt.py` returns **0** findings.
+> **Status**: **[100% RESOLVED IN PHASE 1]** All 53 catalogued instances of hardcoded values have been replaced with canonical `AppColors`, `AppSpacing`, `AppRadius`, and `AppTypography` design tokens. Automated audit via `scratch/audit_debt.py` returns **0** findings. (Visual audit 2026-09: two `service_screen.dart` rows from the original 55 were dropped — that file was deleted and consolidated into `owner_configuration_screen.dart`; the remaining rows were spot re-verified.)
 
-The following 55 catalogued instances of hardcoded values were remediated in Phase 1:
+The following 53 catalogued instances of hardcoded values were remediated in Phase 1:
 
 | # | Screen File | Line | Debt Category | Raw Value | Context |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -287,11 +297,9 @@ The following 55 catalogued instances of hardcoded values were remediated in Pha
 | 48 | `rating_screen.dart` | 149 | Raw Material Color | `Colors.red` | `backgroundColor: Colors.red` |
 | 49 | `rating_screen.dart` | 461 | Hardcoded BorderRadius | `BorderRadius.circular(3)` | `borderRadius: BorderRadius.circular(3)` |
 | 50 | `rating_screen.dart` | 471 | Hardcoded BorderRadius | `BorderRadius.circular(3)` | `borderRadius: BorderRadius.circular(3)` |
-| 51 | `service_screen.dart` | 83 | Hardcoded SizedBox Dimension | `SizedBox(height: 100)` | `const SizedBox(height: 100)` |
-| 52 | `service_screen.dart` | 143 | Hardcoded BorderRadius | `BorderRadius.circular(20)` | `BorderRadius.circular(20)` |
-| 53 | `subscription_screen.dart` | 242 | Hardcoded EdgeInsets | `EdgeInsets.symmetric(...)` | `const EdgeInsets.symmetric(...)` |
-| 54 | `wallet_screen.dart` | 269 | Hardcoded SizedBox Dimension | `SizedBox(height: 4)` | `const SizedBox(height: 4)` |
-| 55 | `wallet_screen.dart` | 321 | Raw Material Color | `Colors.teal` | `color = Colors.teal;` |
+| 51 | `subscription_screen.dart` | 242 | Hardcoded EdgeInsets | `EdgeInsets.symmetric(...)` | `const EdgeInsets.symmetric(...)` |
+| 52 | `wallet_screen.dart` | 269 | Hardcoded SizedBox Dimension | `SizedBox(height: 4)` | `const SizedBox(height: 4)` |
+| 53 | `wallet_screen.dart` | 321 | Raw Material Color | `Colors.teal` | `color = Colors.teal;` |
 
 ---
 

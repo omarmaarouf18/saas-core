@@ -19,6 +19,7 @@ import '../widgets/status_badge.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/themed_section_header.dart';
@@ -121,6 +122,15 @@ class ComponentLibraryScreen extends StatelessWidget {
           const MarketplaceCardSkeleton(),
           const SizedBox(height: AppSpacing.md),
           const WalletScreenSkeleton(),
+          const SizedBox(height: AppSpacing.md),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ThemedInlineSpinner(size: 8, color: AppColors.secondary),
+              ThemedInlineSpinner(size: 18),
+              ThemedInlineSpinner(size: 20),
+            ],
+          ),
           _section('Error / Empty / Success States'),
           const ThemedErrorBanner(
             message: 'Something went wrong while fetching data.',
