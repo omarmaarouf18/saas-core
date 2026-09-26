@@ -4,6 +4,15 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Enforce 44px Minimum Touch Targets Across Shared PillFilterBar, Fleet Map, and Jobs Screen (Audit E20-E22)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E20, E21, and E22, interactive controls on owner and employee screens fell below the standard 44×44px touch target:
+  - Shared Widget: `PillFilterBar` (`pill_filter_bar.dart:106–125`): Replaced fixed `height: 36` with `constraints: BoxConstraints(minHeight: 44, minWidth: 44)` and `alignment: Alignment.center`. Per repo shared-widget discipline, this fix directly resolves sub-44px targets on employee roster (`employee_screen.dart`), owner history (`owner_history_screen.dart`), and reconciliation queue (`owner_reconciliation_queue_screen.dart`).
+  - Fleet Live Map (`owner_fleet_map_screen.dart:320–448`): Expanded floating filter pills (`_selectedFilter == 'all'`, `'on_route'`, `'idle'`) with `constraints: BoxConstraints(minHeight: 44, minWidth: 44)` and `alignment: Alignment.center`, and added test keys (`fleet_filter_pill_all`, `fleet_filter_pill_on_route`, `fleet_filter_pill_idle`).
+  - Employee Jobs Screen (`employee_jobs_screen.dart:1016–1046`): Wrapped details toggle `InkWell` child in `ConstrainedBox(constraints: BoxConstraints(minHeight: 44, minWidth: 44))` with `vertical: AppSpacing.xs` padding and rounded ripple radius, preserving compact visual styling while meeting 44×44 touch target requirements.
+- **Commit SHA**: ``b7414d13cdb01f51c8065503193eca2ce92c2046``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean, widget geometry tests added in `shared_widgets_test.dart` (asserting `PillFilterBar` chips meet min 44px height and width), `map_tracking_test.dart` (asserting floating pills meet min 44px height and width), and `employee_jobs_screen_audit_test.dart` (asserting details toggle meets min 44px height and width). Golden screen baselines re-rendered under pinned Flutter suite and all 58/58 passed (`golden_screens_test.dart`). Backend checks (`gofmt -l .`, `shared/infra` tests) green.
+
 ## Actionable Empty States and Recovery Across Roster, History, Recon Queue, and Fleet Map (Audit E4-E7)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E4, E5, E6, and E7, filtered views and empty notices across owner and employee screens lacked iconography, descriptions, or recovery affordances:
