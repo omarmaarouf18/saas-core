@@ -66,6 +66,8 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   double? _longitude;
   bool _isSubmitting = false;
   String? _errorMessage;
+  String? _fetchError;
+  String? _locationError;
   bool _isInitialized = false;
   Map<String, dynamic>? _existingService;
 
@@ -135,6 +137,10 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    setState(() {
+      _fetchError = null;
+    });
+
     await authProvider.fetchUserProfile();
 
     if (ownerProvider.services.isEmpty) {
@@ -142,6 +148,14 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     }
 
     if (mounted) {
+      if (ownerProvider.error != null && ownerProvider.services.isEmpty) {
+        setState(() {
+          _fetchError = ownerProvider.error;
+          _isInitialized = true;
+        });
+        return;
+      }
+
       final user = authProvider.user;
       final services = ownerProvider.services;
       Map<String, dynamic>? match;
@@ -255,6 +269,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                       setState(() {
                         _latitude = tempLocation.latitude;
                         _longitude = tempLocation.longitude;
+                        _locationError = null;
                       });
                       Navigator.of(dialogCtx).pop();
                     },
@@ -321,6 +336,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     final l10n = context.l10n;
     setState(() {
       _errorMessage = null;
+      _locationError = null;
     });
 
     if (!_formKey.currentState!.validate()) {
@@ -329,34 +345,15 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
 
     if (_latitude == null || _longitude == null) {
       setState(() {
-        _errorMessage = l10n.ownerConfigLocationReq;
+        _locationError = l10n.ownerConfigLocationReq;
       });
       return;
     }
 
-    final radius = double.tryParse(_radiusController.text.trim());
-    if (radius == null || radius <= 0) {
-      setState(() {
-        _errorMessage = l10n.ownerConfigRadiusReq;
-      });
-      return;
-    }
-
-    final basePrice = double.tryParse(_basePriceController.text.trim());
-    if (basePrice == null || basePrice < 0) {
-      setState(() {
-        _errorMessage = l10n.ownerConfigBasePriceReq;
-      });
-      return;
-    }
-
-    final pricePerKm = double.tryParse(_pricePerKmController.text.trim());
-    if (pricePerKm == null || pricePerKm < 0) {
-      setState(() {
-        _errorMessage = l10n.ownerConfigPricePerKmReq;
-      });
-      return;
-    }
+    final radius = double.tryParse(_radiusController.text.trim()) ?? 0.0;
+    final basePrice = double.tryParse(_basePriceController.text.trim()) ?? 0.0;
+    final pricePerKm =
+        double.tryParse(_pricePerKmController.text.trim()) ?? 0.0;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
@@ -474,6 +471,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
           ? Center(child: ThemedLoadingIndicator(message: l10n.loading))
           : Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -482,6 +480,14 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                     subtitle: l10n.ownerConfigHeaderSub,
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  if (_fetchError != null) ...[
+                    ThemedErrorBanner(
+                      key: const Key('owner_config_fetch_error_banner'),
+                      message: _fetchError!,
+                      onRetry: _loadAndPrepopulate,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   if (_errorMessage != null) ...[
                     ThemedErrorBanner(
                       key: const Key('owner_config_error_banner'),
@@ -819,6 +825,12 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
             labelText: l10n.ownerConfigAddressLabel,
             hintText: l10n.ownerConfigAddressHint,
             controller: _addressController,
+            validator: (v) {
+              if (v != null && v.trim().isNotEmpty && v.trim().length < 3) {
+                return l10n.ownerConfigAddressInvalid;
+              }
+              return null;
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -832,7 +844,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
-                color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                color: _locationError != null
+                    ? context.semanticColors.danger
+                    : AppColors.outlineVariant.withValues(alpha: 0.4),
               ),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: LayoutBuilder(builder: (context, constraints) {
@@ -889,12 +903,28 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                         ],
                       );
               })),
+          if (_locationError != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              _locationError!,
+              key: const Key('owner_config_location_inline_error'),
+              style: AppTypography.caption.copyWith(
+                color: context.semanticColors.danger,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           ThemedTextField(
             key: const Key('owner_config_working_hours_field'),
             labelText: l10n.ownerConfigHoursLabel,
             hintText: l10n.ownerConfigHoursHint,
             controller: _workingHoursController,
+            validator: (v) {
+              if (v != null && v.trim().isNotEmpty && v.trim().length < 3) {
+                return l10n.ownerConfigHoursInvalid;
+              }
+              return null;
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           ThemedTextField(
@@ -904,7 +934,9 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             controller: _radiusController,
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return null;
+              if (v == null || v.trim().isEmpty) {
+                return l10n.ownerConfigRadiusReq;
+              }
               final parsed = double.tryParse(v.trim());
               if (parsed == null || parsed <= 0) {
                 return l10n.ownerConfigRadiusReq;
@@ -1105,81 +1137,108 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                 ],
               ),
             ] else ...[
-              for (final row in _dayRows) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: Row(
+              Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: Material(
+                  color: Colors.transparent,
+                  child: ExpansionTile(
+                    key: const Key('schedule_per_day_expansion_tile'),
+                    initiallyExpanded: true,
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.scheduleModePerDay,
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          _dayLabel(l10n, row.day),
-                          style: AppTypography.bodyMd.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: SecondaryButton(
-                          key: Key('schedule_day_${row.day}_open_button'),
-                          text: _timeText(row.open, '--:--'),
-                          isOutlined: true,
-                          isFullWidth: true,
-                          onPressed: row.isOff
-                              ? null
-                              : () => _pickScheduleTime(
-                                    initial: row.open ??
-                                        const TimeOfDay(hour: 9, minute: 0),
-                                    onPicked: (t) => row.open = t,
+                      for (final row in _dayRows) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  _dayLabel(l10n, row.day),
+                                  style: AppTypography.bodyMd.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(
-                        flex: 3,
-                        child: SecondaryButton(
-                          key: Key('schedule_day_${row.day}_close_button'),
-                          text: _timeText(row.close, '--:--'),
-                          isOutlined: true,
-                          isFullWidth: true,
-                          onPressed: row.isOff
-                              ? null
-                              : () => _pickScheduleTime(
-                                    initial: row.close ??
-                                        const TimeOfDay(hour: 17, minute: 0),
-                                    onPicked: (t) => row.close = t,
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: SecondaryButton(
+                                  key: Key(
+                                      'schedule_day_${row.day}_open_button'),
+                                  text: _timeText(row.open, '--:--'),
+                                  isOutlined: true,
+                                  isFullWidth: true,
+                                  onPressed: row.isOff
+                                      ? null
+                                      : () => _pickScheduleTime(
+                                            initial: row.open ??
+                                                const TimeOfDay(
+                                                    hour: 9, minute: 0),
+                                            onPicked: (t) => row.open = t,
+                                          ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                flex: 3,
+                                child: SecondaryButton(
+                                  key: Key(
+                                      'schedule_day_${row.day}_close_button'),
+                                  text: _timeText(row.close, '--:--'),
+                                  isOutlined: true,
+                                  isFullWidth: true,
+                                  onPressed: row.isOff
+                                      ? null
+                                      : () => _pickScheduleTime(
+                                            initial: row.close ??
+                                                const TimeOfDay(
+                                                    hour: 17, minute: 0),
+                                            onPicked: (t) => row.close = t,
+                                          ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    l10n.scheduleOffLabel,
+                                    style: AppTypography.labelMd.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
                                   ),
+                                  Switch(
+                                    key: Key(
+                                        'schedule_day_${row.day}_off_switch'),
+                                    value: row.isOff,
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _scheduleTouched = true;
+                                        row.isOff = v;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.scheduleOffLabel,
-                            style: AppTypography.labelMd.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                          Switch(
-                            key: Key('schedule_day_${row.day}_off_switch'),
-                            value: row.isOff,
-                            onChanged: (v) {
-                              setState(() {
-                                _scheduleTouched = true;
-                                row.isOff = v;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                      ],
                     ],
                   ),
                 ),
-              ],
+              ),
             ],
             const SizedBox(height: AppSpacing.sm),
             Align(
@@ -1212,20 +1271,24 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
     return ThemedCard(
       borderRadius: AppRadius.md,
       padding: AppSpacing.lg,
+      borderSide: BorderSide(
+        color: context.semanticColors.success.withValues(alpha: 0.35),
+      ),
+      topAccentColor: context.semanticColors.success,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               ThemedPanel(
-                  color: AppColors.primaryContainer,
+                  color: context.semanticColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   width: 36,
                   height: 36,
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.payments_outlined,
-                      color: AppColors.secondary,
+                      color: context.semanticColors.success,
                       size: 20,
                     ),
                   )),
@@ -1337,12 +1400,20 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   }
 
   Widget _buildSaveButton(AppLocalizations l10n) {
-    return PrimaryButton(
-      key: const Key('owner_config_save_button'),
-      text: l10n.ownerConfigSaveButton,
-      trailingIcon: Icons.arrow_forward,
-      isLoading: _isSubmitting,
-      onPressed: _submitForm,
+    return ThemedPanel(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      border: Border.all(
+        color: AppColors.outlineVariant.withValues(alpha: 0.4),
+      ),
+      child: PrimaryButton(
+        key: const Key('owner_config_save_button'),
+        text: l10n.ownerConfigSaveButton,
+        trailingIcon: Icons.arrow_forward,
+        isLoading: _isSubmitting,
+        onPressed: _submitForm,
+      ),
     );
   }
 }

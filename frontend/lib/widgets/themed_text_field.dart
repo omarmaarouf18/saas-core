@@ -23,6 +23,7 @@ class ThemedTextField extends StatefulWidget {
 
   final ValueChanged<String>? onFieldSubmitted;
   final TextInputAction? textInputAction;
+  final AutovalidateMode? autovalidateMode;
 
   const ThemedTextField({
     super.key,
@@ -45,6 +46,7 @@ class ThemedTextField extends StatefulWidget {
     this.counterText,
     this.onFieldSubmitted,
     this.textInputAction,
+    this.autovalidateMode,
   });
 
   @override
@@ -115,6 +117,7 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
         ],
         TextFormField(
           controller: widget.controller,
+          autovalidateMode: widget.autovalidateMode,
           obscureText: _isPassword ? _obscureText : widget.obscureText,
           keyboardType: widget.keyboardType,
           validator: widget.validator,

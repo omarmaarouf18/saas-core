@@ -78,6 +78,8 @@
   "ownerConfigRadiusLabel": "Coverage Radius (KM)",
   "ownerConfigRadiusHint": "e.g. 25.0",
   "ownerConfigRadiusReq": "Enter a valid radius > 0.",
+  "ownerConfigAddressInvalid": "Enter a valid address (at least 3 characters).",
+  "ownerConfigHoursInvalid": "Enter valid working hours (e.g. 8:00 AM - 10:00 PM).",
   "scheduleTitle": "Weekly Schedule",
   "scheduleSubtitle": "Tell customers when you're open. Leave unset to stay listed as always open.",
   "scheduleSetBtn": "Set working hours",

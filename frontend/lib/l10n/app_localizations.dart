@@ -566,6 +566,18 @@ abstract class AppLocalizations {
   /// **'Enter a valid radius > 0.'**
   String get ownerConfigRadiusReq;
 
+  /// No description provided for @ownerConfigAddressInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid address (at least 3 characters).'**
+  String get ownerConfigAddressInvalid;
+
+  /// No description provided for @ownerConfigHoursInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid working hours (e.g. 8:00 AM - 10:00 PM).'**
+  String get ownerConfigHoursInvalid;
+
   /// No description provided for @scheduleTitle.
   ///
   /// In en, this message translates to:

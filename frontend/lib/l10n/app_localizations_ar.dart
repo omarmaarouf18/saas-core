@@ -247,6 +247,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigRadiusReq => 'اكتب نطاق تغطية صحيح أكبر من 0.';
 
   @override
+  String get ownerConfigAddressInvalid =>
+      'أدخل عنواناً صالحاً (3 أحرف على الأقل).';
+
+  @override
+  String get ownerConfigHoursInvalid =>
+      'أدخل مواعيد عمل صالحة (مثلاً: 8 صباحاً - 10 مساءً).';
+
+  @override
   String get scheduleTitle => 'مواعيد الأسبوع';
 
   @override

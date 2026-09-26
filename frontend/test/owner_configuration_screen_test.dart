@@ -43,10 +43,11 @@ class MockAuthProviderForConfigTest extends AuthProvider {
 
 class MockOwnerProviderForConfigTest extends OwnerProvider {
   final List<dynamic> mockServices;
-  final String? mockErrorMsg;
+  String? mockErrorMsg;
   final bool shouldFailUpdate;
   bool updateCalled = false;
   bool createCalled = false;
+  int fetchServicesCalls = 0;
   Map<String, dynamic>? lastUpdatePayload;
   Map<String, dynamic>? lastCreatePayload;
 
@@ -64,7 +65,9 @@ class MockOwnerProviderForConfigTest extends OwnerProvider {
   String? get error => mockErrorMsg;
 
   @override
-  Future<void> fetchServices() async {}
+  Future<void> fetchServices() async {
+    fetchServicesCalls++;
+  }
 
   @override
   Future<Map<String, dynamic>> createService({
@@ -147,13 +150,15 @@ Widget createOwnerConfigApp({
   Widget? homeScreen,
   String kycStatus = 'approved',
   MockAuthProviderForConfigTest? authProvider,
+  MockOwnerProviderForConfigTest? ownerProvider,
 }) {
   final apiClient = ApiClient();
-  final mockOwnerProvider = MockOwnerProviderForConfigTest(
-    apiClient,
-    mockServices: services,
-    shouldFailUpdate: shouldFailUpdate,
-  );
+  final mockOwnerProvider = ownerProvider ??
+      MockOwnerProviderForConfigTest(
+        apiClient,
+        mockServices: services,
+        shouldFailUpdate: shouldFailUpdate,
+      );
   final effectiveAuth = authProvider ??
       MockAuthProviderForConfigTest(apiClient, mockKycStatus: kycStatus);
 
@@ -680,5 +685,122 @@ void main() {
     final payload = built.mock.lastUpdatePayload!;
     expect(payload['schedule_mode'], isNull);
     expect(payload['per_day_schedule'], isNull);
+  });
+
+  testWidgets(
+      'Fetch failure displays fetch error banner with retry that re-fetches services (audit E10)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForConfigTest(
+      apiClient,
+      mockServices: [],
+      mockErrorMsg: 'Failed to fetch services',
+    );
+    final auth = MockAuthProviderForConfigTest(apiClient);
+
+    await tester.pumpWidget(createOwnerConfigApp(
+      authProvider: auth,
+      ownerProvider: mockOwner,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('owner_config_fetch_error_banner')),
+        findsOneWidget);
+    expect(find.text('Failed to fetch services'), findsOneWidget);
+
+    // Simulate resolved error and trigger retry
+    mockOwner.mockErrorMsg = null;
+    final retryBtn = find.descendant(
+      of: find.byKey(const Key('owner_config_fetch_error_banner')),
+      matching: find.text('Retry'),
+    );
+    await tester.tap(retryBtn);
+    await tester.pumpAndSettle();
+
+    expect(mockOwner.fetchServicesCalls, greaterThanOrEqualTo(2));
+    expect(
+        find.byKey(const Key('owner_config_fetch_error_banner')), findsNothing);
+  });
+
+  testWidgets(
+      'Client-side validation error displays inline error and does NOT show top retry banner (audit E11)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerConfigApp(services: []));
+    await tester.pumpAndSettle();
+
+    final nameField = find.byKey(const Key('owner_config_name_field'));
+    await tester.ensureVisible(nameField);
+    await tester.enterText(nameField, 'Valid Business');
+
+    final radiusField = find.byKey(const Key('owner_config_radius_field'));
+    await tester.ensureVisible(radiusField);
+    await tester.enterText(radiusField, '-5');
+
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    // Inline field validation error is visible
+    expect(find.text('Enter a valid radius > 0.'), findsOneWidget);
+    // Submit-level retry banner is NOT shown for client-side errors
+    expect(find.byKey(const Key('owner_config_error_banner')), findsNothing);
+  });
+
+  testWidgets(
+      'Missing location displays inline error below coordinate panel (audit E11/E15)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerConfigApp(services: []));
+    await tester.pumpAndSettle();
+
+    final nameField = find.byKey(const Key('owner_config_name_field'));
+    await tester.ensureVisible(nameField);
+    await tester.enterText(nameField, 'Valid Business');
+
+    final radiusField = find.byKey(const Key('owner_config_radius_field'));
+    await tester.ensureVisible(radiusField);
+    await tester.enterText(radiusField, '25.0');
+
+    final basePriceField =
+        find.byKey(const Key('owner_config_base_price_field'));
+    await tester.ensureVisible(basePriceField);
+    await tester.enterText(basePriceField, '10.0');
+
+    final pricePerKmField =
+        find.byKey(const Key('owner_config_price_per_km_field'));
+    await tester.ensureVisible(pricePerKmField);
+    await tester.enterText(pricePerKmField, '1.5');
+
+    final saveButton = find.byKey(const Key('owner_config_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('owner_config_location_inline_error')),
+        findsOneWidget);
+    expect(find.text('Please select your business location on the map.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('owner_config_error_banner')), findsNothing);
+  });
+
+  testWidgets(
+      'Per-day schedule rows rendered inside collapsible ExpansionTile (audit E17)',
+      (WidgetTester tester) async {
+    final built = buildScheduleApp(services: [scheduleBaseService()]);
+    await tester.pumpWidget(built.app);
+    await tester.pumpAndSettle();
+
+    await tester
+        .ensureVisible(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.tap(find.byKey(const Key('schedule_set_hours_button')));
+    await tester.pumpAndSettle();
+
+    await tester
+        .ensureVisible(find.byKey(const Key('schedule_mode_per_day_button')));
+    await tester.tap(find.byKey(const Key('schedule_mode_per_day_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('schedule_per_day_expansion_tile')),
+        findsOneWidget);
   });
 }

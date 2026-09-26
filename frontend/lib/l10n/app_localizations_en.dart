@@ -251,6 +251,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigRadiusReq => 'Enter a valid radius > 0.';
 
   @override
+  String get ownerConfigAddressInvalid =>
+      'Enter a valid address (at least 3 characters).';
+
+  @override
+  String get ownerConfigHoursInvalid =>
+      'Enter valid working hours (e.g. 8:00 AM - 10:00 PM).';
+
+  @override
   String get scheduleTitle => 'Weekly Schedule';
 
   @override

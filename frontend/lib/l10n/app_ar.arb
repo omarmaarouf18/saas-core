@@ -78,6 +78,8 @@
   "ownerConfigRadiusLabel": "نطاق التغطية (كيلومتر)",
   "ownerConfigRadiusHint": "مثلاً: 25.0",
   "ownerConfigRadiusReq": "اكتب نطاق تغطية صحيح أكبر من 0.",
+  "ownerConfigAddressInvalid": "أدخل عنواناً صالحاً (3 أحرف على الأقل).",
+  "ownerConfigHoursInvalid": "أدخل مواعيد عمل صالحة (مثلاً: 8 صباحاً - 10 مساءً).",
   "scheduleTitle": "مواعيد الأسبوع",
   "scheduleSubtitle": "عرف العملاء انت فاتح امتى. سيبها فاضية وهتفضل ظاهر انك فاتح على طول.",
   "scheduleSetBtn": "حدد مواعيد العمل",
