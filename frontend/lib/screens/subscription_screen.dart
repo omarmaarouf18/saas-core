@@ -9,6 +9,7 @@ import '../widgets/themed_panel.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
@@ -22,6 +23,31 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _isSubmitting = false;
+
+  /// Audit S7: both directions of this money-affecting change route through
+  /// a consequence-stating confirmation. Upgrade charges $19.99/mo
+  /// immediately; downgrade silently drops Pro features — neither may fire
+  /// one-tap. Downgrade is styled destructive, matching the payout
+  /// two-step confirm ceremony elsewhere in the app.
+  Future<void> _confirmAndChangeSubscription(String tier) async {
+    final l10n = context.l10n;
+    final isDowngrade = tier == 'free';
+    final confirmed = await ConfirmActionDialog.show(
+      context,
+      title: isDowngrade
+          ? l10n.subscriptionDowngradeConfirmTitle
+          : l10n.subscriptionUpgradeConfirmTitle,
+      message: isDowngrade
+          ? l10n.subscriptionDowngradeConfirmMessage
+          : l10n.subscriptionUpgradeConfirmMessage,
+      confirmLabel:
+          isDowngrade ? l10n.downgradeToFreeBtn : l10n.upgradeToProfessionalBtn,
+      cancelLabel: l10n.cancel,
+      isDestructive: isDowngrade,
+    );
+    if (confirmed != true || !mounted) return;
+    await _changeSubscription(tier);
+  }
 
   Future<void> _changeSubscription(String tier) async {
     setState(() {
@@ -353,7 +379,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             isOutlined: true,
             onPressed: isCurrent || _isSubmitting
                 ? null
-                : () => _changeSubscription('free'),
+                : () => _confirmAndChangeSubscription('free'),
             isLoading: isThisPlanLoading,
           ),
         ],
@@ -483,7 +509,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     trailingIcon: Icons.arrow_forward,
                     onPressed: isCurrent || _isSubmitting
                         ? null
-                        : () => _changeSubscription('paid'),
+                        : () => _confirmAndChangeSubscription('paid'),
                     isLoading: isThisPlanLoading,
                   ),
                   const SizedBox(height: AppSpacing.xs),

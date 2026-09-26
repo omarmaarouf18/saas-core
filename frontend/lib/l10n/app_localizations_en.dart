@@ -2360,10 +2360,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downgradeToFreeBtn => 'Downgrade to Free';
 
   @override
+  String get subscriptionDowngradeConfirmTitle => 'Downgrade to Free?';
+
+  @override
+  String get subscriptionDowngradeConfirmMessage =>
+      'You will immediately lose Pro features: live driver tracking, dispatch, advanced pricing, and the employee suite.';
+
+  @override
   String get awaitingPaymentLabel => 'Awaiting Payment';
 
   @override
   String get upgradeToProfessionalBtn => 'Upgrade to Professional';
+
+  @override
+  String get subscriptionUpgradeConfirmTitle => 'Upgrade to Professional?';
+
+  @override
+  String get subscriptionUpgradeConfirmMessage =>
+      'You will be charged \$19.99/month starting immediately, unlocking live tracking, dispatch, and the employee suite.';
 
   @override
   String get appUpdateRequiredTitle => 'App Update Required';

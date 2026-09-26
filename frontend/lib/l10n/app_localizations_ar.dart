@@ -2322,10 +2322,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downgradeToFreeBtn => 'التحويل إلى الباقة المجانية';
 
   @override
+  String get subscriptionDowngradeConfirmTitle => 'تنزل للباقة المجانية؟';
+
+  @override
+  String get subscriptionDowngradeConfirmMessage =>
+      'هتفقد مميزات الاحترافية فوراً: تتبع السايقين المباشر والإرسال والتسعير المتقدم وإدارة الموظفين.';
+
+  @override
   String get awaitingPaymentLabel => 'بانتظار الدفع';
 
   @override
   String get upgradeToProfessionalBtn => 'الترقية إلى الاحترافية';
+
+  @override
+  String get subscriptionUpgradeConfirmTitle => 'ترقي للاحترافية؟';
+
+  @override
+  String get subscriptionUpgradeConfirmMessage =>
+      'هيتخصم منك \$19.99 في الشهر بداية من دلوقتي، وهيتفتح التتبع المباشر والإرسال وإدارة الموظفين.';
 
   @override
   String get appUpdateRequiredTitle => 'تحديث التطبيق مطلوب';

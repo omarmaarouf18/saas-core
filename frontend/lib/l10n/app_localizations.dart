@@ -4329,6 +4329,18 @@ abstract class AppLocalizations {
   /// **'Downgrade to Free'**
   String get downgradeToFreeBtn;
 
+  /// No description provided for @subscriptionDowngradeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Downgrade to Free?'**
+  String get subscriptionDowngradeConfirmTitle;
+
+  /// No description provided for @subscriptionDowngradeConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You will immediately lose Pro features: live driver tracking, dispatch, advanced pricing, and the employee suite.'**
+  String get subscriptionDowngradeConfirmMessage;
+
   /// No description provided for @awaitingPaymentLabel.
   ///
   /// In en, this message translates to:
@@ -4340,6 +4352,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upgrade to Professional'**
   String get upgradeToProfessionalBtn;
+
+  /// No description provided for @subscriptionUpgradeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Professional?'**
+  String get subscriptionUpgradeConfirmTitle;
+
+  /// No description provided for @subscriptionUpgradeConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be charged \$19.99/month starting immediately, unlocking live tracking, dispatch, and the employee suite.'**
+  String get subscriptionUpgradeConfirmMessage;
 
   /// No description provided for @appUpdateRequiredTitle.
   ///

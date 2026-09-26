@@ -8,6 +8,7 @@ import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/screens/subscription_screen.dart';
+import 'package:frontend/widgets/confirm_action_dialog.dart';
 import 'package:frontend/widgets/themed_banner.dart';
 import 'package:frontend/widgets/themed_card.dart';
 
@@ -169,7 +170,7 @@ void main() {
   });
 
   testWidgets(
-      '(d) Tapping Upgrade to Professional triggers subscription update',
+      '(d) Tapping Upgrade to Professional triggers subscription update after confirm',
       (WidgetTester tester) async {
     final apiClient = ApiClient();
     final auth = MockAuthProvider(apiClient);
@@ -186,6 +187,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(upgradeBtn);
+    await tester.pumpAndSettle();
+
+    // Audit S7: one tap only opens the consequence dialog ...
+    expect(find.byType(ConfirmActionDialog), findsOneWidget);
+    expect(owner.updateSubscriptionCalled, isFalse);
+
+    // ... the billing change fires on confirm.
+    final confirmBtn = find.descendant(
+      of: find.byType(ConfirmActionDialog),
+      matching: find.text('Upgrade to Professional'),
+    );
+    await tester.tap(confirmBtn);
     await tester.pumpAndSettle();
 
     expect(owner.updateSubscriptionCalled, isTrue);
@@ -254,5 +267,118 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(owner.fetchDashboardCalls, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets(
+      'Audit S7: upgrade tap shows consequence dialog and bills nothing until confirmed',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'free');
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    final upgradeBtn = find.text('Upgrade to Professional');
+    await tester.ensureVisible(upgradeBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(upgradeBtn);
+    await tester.pumpAndSettle();
+
+    // Consequence dialog states the price and immediate billing ...
+    expect(find.byType(ConfirmActionDialog), findsOneWidget);
+    expect(find.text('Upgrade to Professional?'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ConfirmActionDialog),
+        matching: find.textContaining('\$19.99'),
+      ),
+      findsOneWidget,
+    );
+    // ... and nothing fired yet.
+    expect(owner.updateSubscriptionCalled, isFalse);
+
+    // Dismissing cancels the billing change entirely.
+    final cancelBtn = find.descendant(
+      of: find.byType(ConfirmActionDialog),
+      matching: find.text('Cancel'),
+    );
+    await tester.tap(cancelBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConfirmActionDialog), findsNothing);
+    expect(owner.updateSubscriptionCalled, isFalse);
+  });
+
+  testWidgets('Audit S7: confirming upgrade fires updateSubscription(paid)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'free');
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    final upgradeBtn = find.text('Upgrade to Professional');
+    await tester.ensureVisible(upgradeBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(upgradeBtn);
+    await tester.pumpAndSettle();
+
+    final confirmBtn = find.descendant(
+      of: find.byType(ConfirmActionDialog),
+      matching: find.text('Upgrade to Professional'),
+    );
+    expect(confirmBtn, findsOneWidget);
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(owner.updateSubscriptionCalled, isTrue);
+    expect(owner.lastRequestedTier, 'paid');
+  });
+
+  testWidgets(
+      'Audit S7: downgrade dialog states feature loss and fires only on confirm',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final auth = MockAuthProvider(apiClient);
+    final owner = MockOwnerProvider(apiClient, initialTier: 'paid');
+
+    await tester.pumpWidget(createSubscriptionTestWidget(
+      authProvider: auth,
+      ownerProvider: owner,
+    ));
+    await tester.pumpAndSettle();
+
+    final downgradeBtn = find.text('Downgrade to Free');
+    await tester.ensureVisible(downgradeBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(downgradeBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConfirmActionDialog), findsOneWidget);
+    expect(find.text('Downgrade to Free?'), findsOneWidget);
+    expect(find.textContaining('lose Pro features'), findsOneWidget);
+    expect(owner.updateSubscriptionCalled, isFalse);
+
+    final dialog =
+        tester.widget<ConfirmActionDialog>(find.byType(ConfirmActionDialog));
+    expect(dialog.isDestructive, isTrue);
+
+    final confirmBtn = find.descendant(
+      of: find.byType(ConfirmActionDialog),
+      matching: find.text('Downgrade to Free'),
+    );
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(owner.updateSubscriptionCalled, isTrue);
+    expect(owner.lastRequestedTier, 'free');
   });
 }
