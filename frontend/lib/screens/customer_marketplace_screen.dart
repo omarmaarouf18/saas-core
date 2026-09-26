@@ -13,7 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/list_screen_template.dart';
-import '../widgets/location_picker_map.dart';
+import '../widgets/location_picker_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/secondary_button.dart';
@@ -672,79 +672,20 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
   }
 
   Future<void> _openLocationPickerDialog(BuildContext context) async {
-    final l10n = context.l10n;
     LatLng tempLocation = LatLng(_customerLat, _customerLon);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
-    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
-
-    await showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return Dialog(
-          key: const Key('location_picker_dialog'),
-          insetPadding: const EdgeInsets.all(AppSpacing.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          context.l10n.chooseSearchLocation,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.tooltipClose,
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: LocationPickerMap(
-                        initialLocation: tempLocation,
-                        onLocationSelected: (newLocation) {
-                          tempLocation = newLocation;
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PrimaryButton(
-                    key: const Key('confirm_location_button'),
-                    text: context.l10n.locationPickerConfirmBtn,
-                    trailingIcon: Icons.arrow_forward,
-                    onPressed: () {
-                      setState(() {
-                        _customerLat = tempLocation.latitude;
-                        _customerLon = tempLocation.longitude;
-                      });
-                      Navigator.of(dialogCtx).pop();
-                      _loadServices();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    await LocationPickerDialog.show(
+      context,
+      title: context.l10n.chooseSearchLocation,
+      initialLocation: tempLocation,
+      confirmLabel: context.l10n.locationPickerConfirmBtn,
+      confirmButtonKey: const Key('confirm_location_button'),
+      confirmTrailingIcon: Icons.arrow_forward,
+      onConfirmed: (picked) {
+        setState(() {
+          _customerLat = picked.latitude;
+          _customerLon = picked.longitude;
+        });
+        _loadServices();
       },
     );
   }
@@ -875,88 +816,30 @@ class _BookingDialogState extends State<_BookingDialog> {
     LatLng tempLocation = isPickup
         ? LatLng(_pickupLat, _pickupLon)
         : LatLng(_destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
-    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return Dialog(
-          key: Key(isPickup
-              ? 'pickup_location_picker_dialog'
-              : 'destination_location_picker_dialog'),
-          insetPadding: const EdgeInsets.all(AppSpacing.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          isPickup
-                              ? l10n.pickupLocationLabel
-                              : l10n.destinationLocationLabel,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.tooltipClose,
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: LocationPickerMap(
-                        initialLocation: tempLocation,
-                        onLocationSelected: (newLocation) {
-                          tempLocation = newLocation;
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PrimaryButton(
-                    key: Key(isPickup
-                        ? 'confirm_pickup_location_button'
-                        : 'confirm_destination_location_button'),
-                    text: l10n.locationPickerConfirmBtn,
-                    trailingIcon: Icons.arrow_forward,
-                    onPressed: () {
-                      setState(() {
-                        if (isPickup) {
-                          _pickupLat = tempLocation.latitude;
-                          _pickupLon = tempLocation.longitude;
-                        } else {
-                          _destinationLat = tempLocation.latitude;
-                          _destinationLon = tempLocation.longitude;
-                        }
-                        _recalculatePrice();
-                      });
-                      Navigator.of(dialogCtx).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    LocationPickerDialog.show(
+      context,
+      dialogKey: Key(isPickup
+          ? 'pickup_location_picker_dialog'
+          : 'destination_location_picker_dialog'),
+      title:
+          isPickup ? l10n.pickupLocationLabel : l10n.destinationLocationLabel,
+      initialLocation: tempLocation,
+      confirmLabel: l10n.locationPickerConfirmBtn,
+      confirmButtonKey: Key(isPickup
+          ? 'confirm_pickup_location_button'
+          : 'confirm_destination_location_button'),
+      confirmTrailingIcon: Icons.arrow_forward,
+      onConfirmed: (picked) {
+        setState(() {
+          if (isPickup) {
+            _pickupLat = picked.latitude;
+            _pickupLon = picked.longitude;
+          } else {
+            _destinationLat = picked.latitude;
+            _destinationLon = picked.longitude;
+          }
+          _recalculatePrice();
+        });
       },
     );
   }

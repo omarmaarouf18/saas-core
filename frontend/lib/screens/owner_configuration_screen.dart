@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/form_screen_template.dart';
+import '../widgets/location_picker_dialog.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -205,80 +205,22 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
   }
 
   void _openLocationPickerDialog(BuildContext context) {
-    final l10n = context.l10n;
     LatLng tempLocation = (_latitude != null && _longitude != null)
         ? LatLng(_latitude!, _longitude!)
         : LocationPickerMap.cairoDefault;
 
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        final screenSize = MediaQuery.of(dialogCtx).size;
-        final dialogWidth = math.min(500.0, screenSize.width * 0.9);
-        final dialogHeight = math.min(550.0, screenSize.height * 0.8);
-
-        return Dialog(
-          key: const Key('location_picker_dialog'),
-          insetPadding: const EdgeInsets.all(AppSpacing.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          context.l10n.customerMarketplaceChooseMap,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.tooltipClose,
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: LocationPickerMap(
-                        initialLocation: tempLocation,
-                        onLocationSelected: (newLocation) {
-                          tempLocation = newLocation;
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PrimaryButton(
-                    key: const Key('confirm_location_button'),
-                    text: context.l10n.locationPickerConfirmBtn,
-                    onPressed: () {
-                      setState(() {
-                        _latitude = tempLocation.latitude;
-                        _longitude = tempLocation.longitude;
-                        _locationError = null;
-                      });
-                      Navigator.of(dialogCtx).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    LocationPickerDialog.show(
+      context,
+      title: context.l10n.customerMarketplaceChooseMap,
+      initialLocation: tempLocation,
+      confirmLabel: context.l10n.locationPickerConfirmBtn,
+      confirmButtonKey: const Key('confirm_location_button'),
+      onConfirmed: (picked) {
+        setState(() {
+          _latitude = picked.latitude;
+          _longitude = picked.longitude;
+          _locationError = null;
+        });
       },
     );
   }

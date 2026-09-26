@@ -14,6 +14,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_error_banner.dart';
 import 'package:file_picker/file_picker.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/themed_panel.dart';
 import '../widgets/themed_success_banner.dart';
 
@@ -770,7 +771,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: ThemedInlineSpinner(size: 20),
                   )
                 : Icon(
                     Icons.attach_file_rounded,
@@ -810,7 +811,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: ThemedInlineSpinner(size: 20),
                   )
                 : Icon(
                     Icons.send_rounded,

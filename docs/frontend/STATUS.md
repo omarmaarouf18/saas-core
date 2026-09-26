@@ -296,6 +296,7 @@
     * `info_list_tile.dart`
     * `list_screen_template.dart`
     * `location_picker_map.dart`
+    * `location_picker_dialog.dart`
     * `otp_pin_input.dart`
     * `payout_request_dialog.dart`
     * `pending_pulse_dot.dart`
@@ -311,6 +312,7 @@
     * `themed_card.dart`
     * `themed_empty_state.dart`
     * `themed_error_banner.dart`
+    * `themed_inline_spinner.dart`
     * `themed_loading_indicator.dart`
     * `themed_section_header.dart`
     * `themed_success_banner.dart`

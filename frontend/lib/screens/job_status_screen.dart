@@ -9,6 +9,7 @@ import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/pending_pulse_dot.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/create_ticket_dialog.dart';
@@ -468,8 +469,8 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                  child: ThemedInlineSpinner(
+                    size: 18,
                     color: AppColors.onPrimary,
                   ),
                 )

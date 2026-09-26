@@ -10,6 +10,7 @@ import '../core/theme.dart';
 import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
@@ -683,7 +684,7 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                 child: SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: ThemedInlineSpinner(size: 18),
                 ),
               )
             : IconButton(

@@ -9,6 +9,7 @@ import '../providers/theme_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/entity_avatar.dart';
 import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
@@ -447,9 +448,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
+                        child: ThemedInlineSpinner(
                           key: Key('settings_2fa_toggle_progress'),
-                          strokeWidth: 2,
+                          size: 20,
                         ),
                       ),
                     ),

@@ -13,6 +13,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_inline_spinner.dart';
 import '../widgets/themed_success_banner.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -151,8 +152,8 @@ class _ChatScreenState extends State<ChatScreen>
           const SizedBox(
             width: 8,
             height: 8,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
+            child: ThemedInlineSpinner(
+              size: 8,
               color: AppColors.secondary,
             ),
           ),

@@ -9,6 +9,7 @@ import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/location_picker_dialog.dart';
 import '../widgets/location_picker_map.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/themed_panel.dart';
@@ -452,76 +453,16 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
 
     if (!context.mounted) return;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final dialogWidth = screenWidth > 600 ? 500.0 : screenWidth * 0.95;
-    final dialogHeight = screenHeight > 800 ? 600.0 : screenHeight * 0.75;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return Dialog(
-          key: const Key('home_search_location_picker_dialog'),
-          insetPadding: const EdgeInsets.all(AppSpacing.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.chooseSearchLocation,
-                          style: AppTypography.titleMd.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.tooltipClose,
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: LocationPickerMap(
-                        initialLocation: tempLocation,
-                        onLocationSelected: (newLocation) {
-                          tempLocation = newLocation;
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PrimaryButton(
-                    key: const Key('confirm_search_location_button'),
-                    text: l10n.locationPickerConfirmBtn,
-                    trailingIcon: Icons.arrow_forward,
-                    onPressed: () {
-                      Navigator.of(dialogCtx).pop();
-                      widget.onLocationSelected?.call(
-                        tempLocation.latitude,
-                        tempLocation.longitude,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    LocationPickerDialog.show(
+      context,
+      dialogKey: const Key('home_search_location_picker_dialog'),
+      title: l10n.chooseSearchLocation,
+      initialLocation: tempLocation,
+      confirmLabel: l10n.locationPickerConfirmBtn,
+      confirmButtonKey: const Key('confirm_search_location_button'),
+      confirmTrailingIcon: Icons.arrow_forward,
+      onConfirmed: (picked) {
+        widget.onLocationSelected?.call(picked.latitude, picked.longitude);
       },
     );
   }
