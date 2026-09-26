@@ -521,6 +521,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             IconButton(
+                              key: Key('dismiss_notification_${notif.id}'),
                               icon: const Icon(
                                 Icons.delete_outline,
                                 size: AppIconSize.sm,
@@ -530,9 +531,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   .colorScheme
                                   .onSurfaceVariant,
                               padding: EdgeInsets.zero,
+                              // Audit S14: 16px visual, 44px hit area —
+                              // restoring the Material minimum the 24px
+                              // override took away (same repair as the A8
+                              // banner-dismiss restoration), so delete/open
+                              // mis-taps stop going both directions.
                               constraints: const BoxConstraints(
-                                minWidth: 24,
-                                minHeight: 24,
+                                minWidth: 44,
+                                minHeight: 44,
                               ),
                               onPressed: () => provider.dismiss(notif.id),
                             ),

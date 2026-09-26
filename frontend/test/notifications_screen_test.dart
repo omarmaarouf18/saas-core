@@ -325,15 +325,13 @@ void main() {
     await tester.pump();
 
     // Template loading state wins while history is in flight ...
-    expect(find.byKey(const ValueKey('list_template_loading')),
-        findsOneWidget);
+    expect(find.byKey(const ValueKey('list_template_loading')), findsOneWidget);
     // ... and the empty state's "Back to Home" pop action is absent, so a
     // tap during load cannot exit the screen.
     expect(find.text('Back to Home'), findsNothing);
   });
 
-  testWidgets(
-      'Audit S2: settled empty list still renders the empty state',
+  testWidgets('Audit S2: settled empty list still renders the empty state',
       (WidgetTester tester) async {
     final notifsProvider = MockNotificationsProvider(apiClient, []);
     notifsProvider.mockLoadingHistory = false;
@@ -347,5 +345,39 @@ void main() {
 
     expect(find.byKey(const ValueKey('list_template_loading')), findsNothing);
     expect(find.text('Back to Home'), findsOneWidget);
+  });
+
+  testWidgets('Audit S14: per-card dismiss target meets the 44px minimum',
+      (WidgetTester tester) async {
+    final now = DateTime.now();
+    final items = [
+      NotificationModel(
+        id: 'job-1',
+        tenantId: 'tenant-1',
+        title: 'New Job Available',
+        body: 'A new delivery job is ready',
+        type: 'job_alert',
+        isRead: false,
+        timestamp: now,
+      ),
+    ];
+    final notifsProvider = MockNotificationsProvider(apiClient, items);
+    final authProvider = MockAuthProviderForNotifs(apiClient);
+
+    await tester.pumpWidget(createNotificationsTestApp(
+      notificationsProvider: notifsProvider,
+      authProvider: authProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    // 16px visual kept ...
+    final dismissBtn = tester.widget<IconButton>(
+      find.byKey(const Key('dismiss_notification_job-1')),
+    );
+    final icon = dismissBtn.icon as Icon;
+    expect(icon.size, AppIconSize.sm);
+    // ... with the 44px minimum hit area restored.
+    expect(dismissBtn.constraints?.minWidth ?? 0, greaterThanOrEqualTo(44));
+    expect(dismissBtn.constraints?.minHeight ?? 0, greaterThanOrEqualTo(44));
   });
 }
