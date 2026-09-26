@@ -137,7 +137,7 @@ This design system provides the visual architecture and component spec for Quick
 
 ## 3. Shared Component Library Reference
 
-All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 36 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
+All shared widgets are located in `frontend/lib/widgets/`. Below is the complete catalog of 37 shared widgets (catalog snapshots may lag; `frontend/lib/widgets/` is the source of truth):
 
 | Widget Class Name | File Path | Visual Role & Purpose | Key Constructor Parameters | Primary Screen Usages |
 | :--- | :--- | :--- | :--- | :--- |
@@ -152,6 +152,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `FormScreenTemplate` | `form_screen_template.dart` | Template for structured input forms (AppShell chrome + body) | `title`, `body`, `actions`, `showBackButton`, `isEmbeddedInTab` + AppShell chrome passthrough | `owner_configuration_screen.dart`, `my_account_screen.dart`, `settings_screen.dart` |
 | `InfoAlertDialog` | `info_alert_dialog.dart` | Informational pop-up dialog with title, message, and single acknowledge action | `title`, `message`, `ackLabel`, `icon` | General notifications & alerts |
 | `InfoListTile` | `info_list_tile.dart` | Key-value information list row with leading icon and optional subtitle | `title`, `subtitle`/`subtitleWidget`, `leadingIcon`, `trailing`, `onTap` | `wallet_screen.dart`, `owner_history_screen.dart` |
+| `JobLocationMiniMap` | `job_location_mini_map.dart` | Non-interactive destination preview (OSM thumbnail + pin + coords caption) replacing raw coordinate pairs | `location`, `height` | `employee_jobs_screen.dart` (via `RouteTimeline.dropoffMap`) |
 | `KycRejectionDialogHost` | `kyc_rejection_dialog_host.dart` | Navigator host presenting reviewer rejection-reason dialogs over the app | `child`, `navigatorKey` | app root (KYC/KYE rejection stream) |
 | `ListScreenTemplate` | `list_screen_template.dart` | Standard list screen wrapper with search, filters, and empty/loading states | `title`, `items`, `isLoading`, `errorMessage`, `onRetry`, `header`, `itemBuilder`, `emptyWidget`, `loadingWidget` | `customer_jobs_screen.dart`, `owner_history_screen.dart`, `notifications_screen.dart` |
 | `LocationPickerMap` | `location_picker_map.dart` | Interactive OpenStreetMap coordinate picker for pickup/dropoff | `initialLocation`, `onLocationSelected` | `customer_marketplace_screen.dart`, `owner_configuration_screen.dart` |
@@ -179,7 +180,7 @@ All shared widgets are located in `frontend/lib/widgets/`. Below is the complete
 | `ThemedTextField` | `themed_text_field.dart` | Input field with floating label, focus indicator & password toggle | `controller`, `labelText`, `hintText`, `validator`, `autovalidateMode`, `focusNode`, `prefixIcon`/`suffixIcon`, `isPasswordField` | Used across 20 screens |
 
 > [!RULE]
-> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 36 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
+> **Component Propose Rule**: If a developer requires a visual pattern not fulfilled by the 37 shared widgets above, they must propose and implement a new shared widget under `frontend/lib/widgets/` rather than adding custom inline container styling inside a screen file.
 
 ---
 
