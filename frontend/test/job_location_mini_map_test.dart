@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/core/theme.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/widgets/job_location_mini_map.dart';
 import 'package:frontend/widgets/route_timeline.dart';
