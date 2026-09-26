@@ -213,6 +213,24 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
               // OpenStreetMap Layer
               _buildMapCanvas(centerPoint, displayedMarkers),
 
+              // Non-blocking linear progress when revalidating existing markers (audit E16)
+              if (provider.isLoading && provider.markersList.isNotEmpty)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SizedBox(
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      key: const Key('fleet_map_revalidating_indicator'),
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+
               // Floating Fleet Filter Pills (Stitch Reference)
               _buildFleetFilterPillRow(markers.length),
 

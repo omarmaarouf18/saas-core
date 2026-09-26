@@ -1044,52 +1044,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildUrgentActions(AppLocalizations l10n) {
-    // Declutter V2: the former two stacked action cards are now a single
-    // compact dismissible row (session-only dismissal).
+    // Declutter V2: compact dismissible row (session-only dismissal).
+    // Audit E25: removed static mock vehicle maintenance chip that pointed to roster.
     if (_urgentActionsDismissed) return const SizedBox.shrink();
     return ThemedCard(
       key: const Key('urgent_actions_row'),
       padding: AppSpacing.sm,
       child: Row(
         children: [
-          Expanded(
-            child: InkWell(
-              key: const Key('urgent_maintenance_chip'),
-              onTap: () {
-                onTabTapped(1); // Switch to Employees / Fleet tab
-              },
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                child: Row(
-                  children: [
-                    ThemedPanel(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        shape: BoxShape.circle,
-                        width: 32,
-                        height: 32,
-                        child: Icon(
-                          Icons.warning_amber_rounded,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                          size: 18,
-                        )),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        l10n.vehicleMaintenanceTitle,
-                        style: AppTypography.labelMd.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: InkWell(
               key: const Key('urgent_reconciliation_chip'),
@@ -1112,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 32,
                         height: 32,
                         child: const Icon(
-                          Icons.person_add_outlined,
+                          Icons.receipt_long_outlined,
                           color: AppColors.secondary,
                           size: 18,
                         )),

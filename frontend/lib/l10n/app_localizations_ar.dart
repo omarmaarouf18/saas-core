@@ -2702,4 +2702,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ratingSubmittedSuccess => 'تم إرسال التقييم';
+
+  @override
+  String get newDispatchAlertMessage =>
+      'تم استلام طلب توصيل جديد. جاري تحديث الطلبات المتاحة...';
+
+  @override
+  String get freezeWorkerSubtitle =>
+      'إدارة حالة حساب العامل، صلاحية تسجيل الدخول، وإتاحة استقبال المهام';
 }

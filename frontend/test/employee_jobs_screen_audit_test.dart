@@ -156,13 +156,13 @@ class MockChatProvider extends ChangeNotifier implements ChatProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Widget createTestApp() {
+Widget createTestApp({MockEmployeeJobsProvider? jobsProvider}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<AuthProvider>(
           create: (_) => MockEmployeeAuthProvider()),
       ChangeNotifierProvider<EmployeeJobsProvider>(
-          create: (_) => MockEmployeeJobsProvider()),
+          create: (_) => jobsProvider ?? MockEmployeeJobsProvider()),
       ChangeNotifierProvider<EmployeeLocationProvider>(
           create: (_) => MockEmployeeLocationProvider()),
       ChangeNotifierProvider<NotificationsProvider>(
@@ -250,5 +250,21 @@ void main() {
     final size = tester.getSize(toggleFinder);
     expect(size.height, greaterThanOrEqualTo(44.0));
     expect(size.width, greaterThanOrEqualTo(44.0));
+  });
+
+  testWidgets(
+      'Background refresh shows non-blocking linear progress indicator (audit E19)',
+      (WidgetTester tester) async {
+    final jobsProvider = MockEmployeeJobsProvider();
+    jobsProvider.isLoading = true; // refresh in flight while jobs are already loaded
+
+    await tester.pumpWidget(createTestApp(jobsProvider: jobsProvider));
+    await tester.pump();
+
+    expect(find.byKey(const Key('employee_jobs_refresh_indicator')),
+        findsOneWidget);
+    // Jobs content remains visible underneath (non-blocking)
+    expect(
+        find.byKey(const ValueKey('employee_jobs_content')), findsOneWidget);
   });
 }

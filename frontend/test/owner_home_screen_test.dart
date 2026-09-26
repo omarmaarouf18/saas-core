@@ -376,4 +376,20 @@ void main() {
     // Tapping the retry button triggers an additional refresh call
     expect(retryCalls, equals(2));
   });
+
+  testWidgets(
+      'Urgent actions row renders real pending reconciliation chip and omits mock vehicle maintenance chip (audit E25)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp());
+    await tester.pumpAndSettle();
+
+    // Urgent actions row exists
+    expect(find.byKey(const Key('urgent_actions_row')), findsOneWidget);
+
+    // Real reconciliation chip is present
+    expect(find.byKey(const Key('urgent_reconciliation_chip')), findsOneWidget);
+
+    // Mock maintenance chip is removed
+    expect(find.byKey(const Key('urgent_maintenance_chip')), findsNothing);
+  });
 }

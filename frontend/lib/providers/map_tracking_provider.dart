@@ -82,14 +82,16 @@ class MapTrackingProvider extends ChangeNotifier {
   }
 
   /// Hydrate initial fleet positions for tenant owner via GET /users/jobs/owner
+  /// Stale-while-revalidate: retains existing markers while revalidating (audit E16).
   Future<void> hydrateOwnerFleet(String ownerToken) async {
     _isLoading = true;
     _error = null;
     _subscriptionError = null;
-    _employeeMarkers.clear();
     notifyListeners();
 
     try {
+      final Map<String, EmployeeMarkerData> freshMarkers = {};
+
       // 1. Fetch available/idle employees reporting fresh locations
       try {
         final availableRes = await apiClient.get(
@@ -113,7 +115,7 @@ class MapTrackingProvider extends ChangeNotifier {
                   empId.isNotEmpty &&
                   lat != null &&
                   lon != null) {
-                _employeeMarkers[empId] = EmployeeMarkerData(
+                freshMarkers[empId] = EmployeeMarkerData(
                   employeeId: empId,
                   employeeName: _employeeNames[empId],
                   jobId: null,
@@ -128,7 +130,7 @@ class MapTrackingProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint(
             'Error fetching available employees during fleet hydration: $e');
-        if (_employeeMarkers.isEmpty) {
+        if (_employeeMarkers.isEmpty && freshMarkers.isEmpty) {
           _error = friendlyErrorMessage(e);
         }
       }
@@ -154,7 +156,7 @@ class MapTrackingProvider extends ChangeNotifier {
 
             if (isActiveStatus || isRecent) {
               final loc = job.currentLocation ?? job.location;
-              _employeeMarkers[empId] = EmployeeMarkerData(
+              freshMarkers[empId] = EmployeeMarkerData(
                 employeeId: empId,
                 employeeName: _employeeNames[empId],
                 jobId: job.id,
@@ -166,6 +168,10 @@ class MapTrackingProvider extends ChangeNotifier {
           }
         }
       }
+
+      _employeeMarkers
+        ..clear()
+        ..addAll(freshMarkers);
     } catch (e) {
       debugPrint('Error hydrating owner fleet: $e');
       _error = friendlyErrorMessage(e);

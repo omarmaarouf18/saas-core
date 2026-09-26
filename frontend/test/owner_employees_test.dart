@@ -382,6 +382,13 @@ void main() {
         .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
     await tester.pumpAndSettle();
 
+    // Expand the freeze worker disclosure (audit E23)
+    final expansionFinder =
+        find.byKey(const Key('freeze_worker_expansion_tile'));
+    await tester.ensureVisible(expansionFinder);
+    await tester.tap(expansionFinder);
+    await tester.pumpAndSettle();
+
     // Scroll to freeze form submit button
     final submitFinder = find.byKey(const Key('employee_toggle_submit_button'));
     await tester.ensureVisible(submitFinder);
@@ -451,6 +458,13 @@ void main() {
         .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
     await tester.pumpAndSettle();
 
+    // Expand the freeze worker disclosure (audit E23)
+    final expansionFinder =
+        find.byKey(const Key('freeze_worker_expansion_tile'));
+    await tester.ensureVisible(expansionFinder);
+    await tester.tap(expansionFinder);
+    await tester.pumpAndSettle();
+
     final submitFinder = find.byKey(const Key('employee_toggle_submit_button'));
     await tester.ensureVisible(submitFinder);
 
@@ -488,5 +502,44 @@ void main() {
     expect(mockOwner.toggleEmployeeCalled, isTrue);
     expect(mockOwner.lastToggledEmail, 'john@company.com');
     expect(mockOwner.lastSetActive, isFalse);
+  });
+
+  testWidgets(
+      'Roster is focal with badge icon and freeze form is collapsed by default (audit E23)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final mockOwner = MockOwnerProviderForEmployeesTest(apiClient);
+    mockOwner.mockEmployees = [
+      {
+        'id': 'emp-101',
+        'username': 'driver_john',
+        'email': 'john@company.com',
+        'is_active': true,
+      },
+    ];
+
+    await tester
+        .pumpWidget(createEmployeeScreenWidget(ownerProvider: mockOwner));
+    await tester.pumpAndSettle();
+
+    // Roster focal element has badge icon
+    expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
+
+    // Freeze form is collapsed behind expansion tile by default
+    final expansionFinder =
+        find.byKey(const Key('freeze_worker_expansion_tile'));
+    expect(expansionFinder, findsOneWidget);
+
+    // Form submit button is not visible while collapsed
+    expect(
+        find.byKey(const Key('employee_toggle_submit_button')), findsNothing);
+
+    // Tapping expands the form
+    await tester.ensureVisible(expansionFinder);
+    await tester.tap(expansionFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('employee_toggle_submit_button')),
+        findsOneWidget);
   });
 }

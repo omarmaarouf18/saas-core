@@ -191,16 +191,33 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Registered Employees Roster Section (Stitch Reference)
+            // 1. Registered Employees Roster Section (Stitch Reference) - Focal Card (audit E23)
             ThemedCard(
               borderRadius: AppRadius.md,
               padding: AppSpacing.lg,
+              topAccentColor: Theme.of(context).colorScheme.primary,
+              variant: ThemedCardVariant.elevated,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      ThemedPanel(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        width: 36,
+                        height: 36,
+                        child: Icon(
+                          Icons.badge_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,6 +441,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     return ThemedCard(
       borderRadius: AppRadius.md,
       padding: AppSpacing.lg,
+      topAccentColor: Theme.of(context).colorScheme.secondary,
       child: Form(
         key: _registerFormKey,
         child: Column(
@@ -573,152 +591,208 @@ class _EmployeeScreenState extends State<EmployeeScreen>
     return ThemedCard(
       borderRadius: AppRadius.md,
       padding: AppSpacing.lg,
-      child: Form(
-        key: _toggleFormKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      topAccentColor: Theme.of(context).colorScheme.error,
+      borderSide: BorderSide(
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: ExpansionTile(
+          key: const Key('freeze_worker_expansion_tile'),
+          initiallyExpanded: false,
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: AppSpacing.md),
+          title: Row(
+            children: [
+              ThemedPanel(
+                color:
+                    Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                width: 36,
+                height: 36,
+                child: Icon(
+                  Icons.lock_person_outlined,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.freezeUnfreezeWorker,
+                      style: AppTypography.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      l10n.freezeWorkerSubtitle,
+                      style: AppTypography.labelMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           children: [
-            ThemedSectionHeader(
-              title: l10n.freezeUnfreezeWorker,
-            ),
             const Divider(
               height: AppSpacing.lg,
               color: AppColors.outlineVariant,
             ),
-            ThemedTextField(
-              key: const Key('toggle_employee_email_input'),
-              controller: _togEmailController,
-              keyboardType: TextInputType.emailAddress,
-              labelText: l10n.employeeEmailLabel,
-              hintText: l10n.employeeEmailHint,
-              prefixIcon: Icon(Icons.email_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return l10n.employeeEmailRequired;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Form(
+              key: _toggleFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ThemedTextField(
+                    key: const Key('toggle_employee_email_input'),
+                    controller: _togEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    labelText: l10n.employeeEmailLabel,
+                    hintText: l10n.employeeEmailHint,
+                    prefixIcon: Icon(Icons.email_outlined,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.employeeEmailRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
                     children: [
-                      Text(
-                        l10n.targetStatusLabel,
-                        style: AppTypography.titleMd.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.targetStatusLabel,
+                              style: AppTypography.titleMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              _togSetActive
+                                  ? l10n.employeeSetActiveStatus
+                                  : l10n.employeeSetFrozenStatus,
+                              style: AppTypography.bodyMd.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        _togSetActive
-                            ? l10n.employeeSetActiveStatus
-                            : l10n.employeeSetFrozenStatus,
-                        style: AppTypography.bodyMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      Switch(
+                        value: _togSetActive,
+                        onChanged: (val) {
+                          setState(() {
+                            _togSetActive = val;
+                          });
+                        },
                       ),
                     ],
                   ),
-                ),
-                Switch(
-                  value: _togSetActive,
-                  onChanged: (val) {
-                    setState(() {
-                      _togSetActive = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ThemedTextField(
-              key: const Key('toggle_owner_password_input'),
-              controller: _togPasswordController,
-              obscureText: true,
-              isPasswordField: true,
-              labelText: l10n.confirmOwnerPassword,
-              hintText: context.l10n.secureVerificationNote,
-              prefixIcon: Icon(Icons.vpn_key_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return l10n.ownerPasswordRequired;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            PrimaryButton(
-              key: const Key('employee_toggle_submit_button'),
-              onPressed: _isTogSubmitting
-                  ? null
-                  : () async {
-                      if (_toggleFormKey.currentState!.validate()) {
-                        final isFreezing = !_togSetActive;
-                        final targetEmail = _togEmailController.text.trim();
-                        final confirmed = await ConfirmActionDialog.show(
-                          context,
-                          title: isFreezing
-                              ? l10n.freezeWorkerConfirmTitle
-                              : l10n.unfreezeWorkerConfirmTitle,
-                          message: isFreezing
-                              ? l10n.freezeWorkerConfirmMessage(targetEmail)
-                              : l10n.unfreezeWorkerConfirmMessage(targetEmail),
-                          confirmLabel: isFreezing
-                              ? l10n.freezeWorkerBtn
-                              : l10n.unfreezeWorkerBtn,
-                          cancelLabel: l10n.cancel,
-                          isDestructive: isFreezing,
-                        );
-
-                        if (confirmed != true || !mounted) return;
-
-                        setState(() => _isTogSubmitting = true);
-                        try {
-                          final res = await ownerProvider.toggleEmployee(
-                            employeeEmail: targetEmail,
-                            ownerEmail: auth.user!.email,
-                            ownerPassword: _togPasswordController.text,
-                            setActive: _togSetActive,
-                          );
-
-                          if (mounted) {
-                            _togPasswordController.clear();
-                            ThemedSnackBar.showSuccess(
-                              context,
-                              res['message'] ??
-                                  l10n.workerStatusChangedSuccessMsg,
-                              key:
-                                  const Key('employee_status_updated_snackbar'),
-                            );
-                            _refreshEmployees();
-                          }
-                        } catch (e) {
-                          debugPrint('Error toggling worker status: $e');
-                          if (mounted) {
-                            ThemedSnackBar.showError(
-                              context,
-                              friendlyErrorMessage(e),
-                            );
-                          }
-                        } finally {
-                          if (mounted) {
-                            setState(() => _isTogSubmitting = false);
-                          }
-                        }
+                  const SizedBox(height: AppSpacing.md),
+                  ThemedTextField(
+                    key: const Key('toggle_owner_password_input'),
+                    controller: _togPasswordController,
+                    obscureText: true,
+                    isPasswordField: true,
+                    labelText: l10n.confirmOwnerPassword,
+                    hintText: context.l10n.secureVerificationNote,
+                    prefixIcon: Icon(Icons.vpn_key_outlined,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.ownerPasswordRequired;
                       }
+                      return null;
                     },
-              text:
-                  _togSetActive ? l10n.unfreezeWorkerBtn : l10n.freezeWorkerBtn,
-              isDestructive: !_togSetActive,
-              isLoading: _isTogSubmitting,
-              icon: _togSetActive
-                  ? Icons.check_circle_outline
-                  : Icons.block_flipped,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    key: const Key('employee_toggle_submit_button'),
+                    onPressed: _isTogSubmitting
+                        ? null
+                        : () async {
+                            if (_toggleFormKey.currentState!.validate()) {
+                              final isFreezing = !_togSetActive;
+                              final targetEmail =
+                                  _togEmailController.text.trim();
+                              final confirmed = await ConfirmActionDialog.show(
+                                context,
+                                title: isFreezing
+                                    ? l10n.freezeWorkerConfirmTitle
+                                    : l10n.unfreezeWorkerConfirmTitle,
+                                message: isFreezing
+                                    ? l10n
+                                        .freezeWorkerConfirmMessage(targetEmail)
+                                    : l10n.unfreezeWorkerConfirmMessage(
+                                        targetEmail),
+                                confirmLabel: isFreezing
+                                    ? l10n.freezeWorkerBtn
+                                    : l10n.unfreezeWorkerBtn,
+                                cancelLabel: l10n.cancel,
+                                isDestructive: isFreezing,
+                              );
+
+                              if (confirmed != true || !mounted) return;
+
+                              setState(() => _isTogSubmitting = true);
+                              try {
+                                final res = await ownerProvider.toggleEmployee(
+                                  employeeEmail: targetEmail,
+                                  ownerEmail: auth.user!.email,
+                                  ownerPassword: _togPasswordController.text,
+                                  setActive: _togSetActive,
+                                );
+
+                                if (mounted) {
+                                  _togPasswordController.clear();
+                                  ThemedSnackBar.showSuccess(
+                                    context,
+                                    res['message'] ??
+                                        l10n.workerStatusChangedSuccessMsg,
+                                    key: const Key(
+                                        'employee_status_updated_snackbar'),
+                                  );
+                                  _refreshEmployees();
+                                }
+                              } catch (e) {
+                                debugPrint('Error toggling worker status: $e');
+                                if (mounted) {
+                                  ThemedSnackBar.showError(
+                                    context,
+                                    friendlyErrorMessage(e),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isTogSubmitting = false);
+                                }
+                              }
+                            }
+                          },
+                    text: _togSetActive
+                        ? l10n.unfreezeWorkerBtn
+                        : l10n.freezeWorkerBtn,
+                    isDestructive: !_togSetActive,
+                    isLoading: _isTogSubmitting,
+                    icon: _togSetActive
+                        ? Icons.check_circle_outline
+                        : Icons.block_flipped,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

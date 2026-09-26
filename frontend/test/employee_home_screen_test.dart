@@ -16,6 +16,7 @@ import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/models/job.dart';
+import 'package:frontend/models/notification_model.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   MockAuthProviderForTest(super.apiClient);
@@ -70,10 +71,19 @@ class MockEmployeeLocationProviderForTest extends EmployeeLocationProvider {
 }
 
 class MockNotificationsProviderForTest extends NotificationsProvider {
-  MockNotificationsProviderForTest(super.apiClient);
+  final List<NotificationModel> mockNotifications;
+  MockNotificationsProviderForTest(super.apiClient,
+      {this.mockNotifications = const []});
 
   @override
-  int get unreadCount => 0;
+  List<NotificationModel> get notifications => mockNotifications;
+
+  @override
+  int get unreadCount => mockNotifications.where((n) => !n.isRead).length;
+
+  void triggerNotificationChange() {
+    notifyListeners();
+  }
 }
 
 class MockThemeProviderForTest extends ThemeProvider {
@@ -84,6 +94,7 @@ class MockThemeProviderForTest extends ThemeProvider {
 Widget createEmployeeHomeScreenApp({
   int initialTabIndex = 0,
   List<Job> mockJobs = const [],
+  MockNotificationsProviderForTest? notificationsProvider,
 }) {
   final apiClient = ApiClient();
   return MultiProvider(
@@ -96,7 +107,9 @@ Widget createEmployeeHomeScreenApp({
       ChangeNotifierProvider<EmployeeLocationProvider>(
           create: (_) => MockEmployeeLocationProviderForTest(apiClient)),
       ChangeNotifierProvider<NotificationsProvider>(
-          create: (_) => MockNotificationsProviderForTest(apiClient)),
+          create: (_) =>
+              notificationsProvider ??
+              MockNotificationsProviderForTest(apiClient)),
       ChangeNotifierProvider<ThemeProvider>(
           create: (_) => MockThemeProviderForTest()),
     ],
@@ -237,5 +250,39 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(EmployeeHomeScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'job_alert notification triggers transient dispatch snackbar (audit E19)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final notifsProvider = MockNotificationsProviderForTest(
+      apiClient,
+      mockNotifications: [
+        NotificationModel(
+          id: 'notif-alert-1',
+          type: 'job_alert',
+          tenantId: 'tenant-1',
+          title: 'New Dispatch',
+          body: 'A new delivery job is available.',
+          timestamp: DateTime.now(),
+          isRead: false,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(createEmployeeHomeScreenApp(
+      initialTabIndex: 0,
+      notificationsProvider: notifsProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    // Trigger notification change listener
+    notifsProvider.triggerNotificationChange();
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('job_alert_dispatch_snackbar')), findsOneWidget);
+    expect(find.textContaining('New dispatch offer received'), findsOneWidget);
   });
 }

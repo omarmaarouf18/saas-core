@@ -5006,6 +5006,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rating Submitted'**
   String get ratingSubmittedSuccess;
+
+  /// No description provided for @newDispatchAlertMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New dispatch offer received. Refreshing available jobs...'**
+  String get newDispatchAlertMessage;
+
+  /// No description provided for @freezeWorkerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage worker account status, login access, and dispatch availability'**
+  String get freezeWorkerSubtitle;
 }
 
 class _AppLocalizationsDelegate

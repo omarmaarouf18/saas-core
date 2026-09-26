@@ -12,6 +12,7 @@ import 'employee_history_screen.dart';
 import 'settings_screen.dart';
 import 'notifications_screen.dart';
 import 'kyc_document_upload_screen.dart';
+import '../widgets/themed_success_banner.dart';
 
 class EmployeeHomeScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -52,6 +53,12 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final notifs = _notificationsProvider!.notifications;
     if (notifs.isNotEmpty && notifs.first.type == 'job_alert') {
       _refreshData();
+      final l10n = context.l10n;
+      ThemedSnackBar.showSuccess(
+        context,
+        l10n.newDispatchAlertMessage,
+        key: const Key('job_alert_dispatch_snackbar'),
+      );
     }
   }
 

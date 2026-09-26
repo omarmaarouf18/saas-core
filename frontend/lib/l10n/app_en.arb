@@ -1385,5 +1385,7 @@
   "disableTwoFactorPasswordError": "Incorrect password. 2FA was not disabled.",
   "twoFactorDisabledSuccess": "Two-factor authentication disabled",
   "twoFactorEnabledSuccess": "Two-factor authentication enabled",
-  "ratingSubmittedSuccess": "Rating Submitted"
+  "ratingSubmittedSuccess": "Rating Submitted",
+  "newDispatchAlertMessage": "New dispatch offer received. Refreshing available jobs...",
+  "freezeWorkerSubtitle": "Manage worker account status, login access, and dispatch availability"
 }

@@ -38,6 +38,9 @@ class CancelJobDialog extends StatefulWidget {
   }) {
     return showDialog<bool>(
       context: context,
+      // Input-collecting dialog: barrierDismissible is strictly false per
+      // UX_PATTERNS.md Rule 6 and audit E18 to prevent accidental outside-taps
+      // from discarding typed cancellation reasons without explicit user intent.
       barrierDismissible: false,
       builder: (context) => CancelJobDialog(
         jobId: jobId,

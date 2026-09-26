@@ -2749,4 +2749,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ratingSubmittedSuccess => 'Rating Submitted';
+
+  @override
+  String get newDispatchAlertMessage =>
+      'New dispatch offer received. Refreshing available jobs...';
+
+  @override
+  String get freezeWorkerSubtitle =>
+      'Manage worker account status, login access, and dispatch availability';
 }

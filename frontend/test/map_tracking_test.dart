@@ -97,6 +97,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
 class _MockApiClientForMap extends ApiClient {
   final Map<String, dynamic> getResponses = {};
   final List<String> getCalledEndpoints = [];
+  bool shouldFail = false;
 
   @override
   Future<dynamic> get(String endpoint,
@@ -104,6 +105,9 @@ class _MockApiClientForMap extends ApiClient {
       Map<String, String>? headers,
       bool isRetry = false}) async {
     getCalledEndpoints.add(endpoint);
+    if (shouldFail) {
+      throw ApiClientException('Network failure', statusCode: 500);
+    }
     if (getResponses.containsKey(endpoint)) {
       return getResponses[endpoint];
     }
@@ -249,6 +253,49 @@ void main() {
       expect(find.text('Unknown: emp-001'), findsOneWidget);
       expect(find.text('Unknown: emp-002'), findsOneWidget);
       expect(find.byIcon(Icons.location_on), findsNWidgets(2));
+    });
+
+    testWidgets(
+        '(e16) Revalidating with existing markers keeps map and renders linear progress indicator (audit E16)',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialMarkers: {
+          'emp-001': EmployeeMarkerData(
+            employeeId: 'emp-001',
+            jobId: 'job-100',
+            latitude: 30.0444,
+            longitude: 31.2357,
+            updatedAt: DateTime.now(),
+          ),
+        },
+        initialLoading: true,
+        initialConnected: true,
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const OwnerFleetMapScreen(
+              ownerId: 'owner-123',
+              token: 'token-123',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Full screen loading indicator is NOT shown because markers exist
+      expect(find.byKey(const Key('fleet_map_loading')), findsNothing);
+
+      // Non-blocking linear progress indicator is shown
+      expect(find.byKey(const Key('fleet_map_revalidating_indicator')),
+          findsOneWidget);
+
+      // Map canvas and markers remain visible
+      expect(find.text('Unknown: emp-001'), findsOneWidget);
     });
 
     testWidgets(
@@ -587,6 +634,36 @@ void main() {
       expect(provider.employeeMarkers.containsKey('emp-active-1'), isTrue);
       expect(provider.employeeMarkers['emp-active-1']!.jobId,
           equals('job-active-1'));
+    });
+
+    test(
+        '(e16) hydrateOwnerFleet retains existing markers during revalidation failure (audit E16)',
+        () async {
+      final mockApi = _MockApiClientForMap();
+      mockApi.getResponses['/users/employees/available'] = {
+        'count': 1,
+        'employees': [
+          {
+            'employee_id': 'emp-existing',
+            'latitude': 30.01,
+            'longitude': 31.01,
+            'updated_at': '2026-09-05T08:00:00Z',
+          }
+        ]
+      };
+      mockApi.getResponses['/users/jobs/owner'] = [];
+
+      final provider = MapTrackingProvider(mockApi);
+      await provider.hydrateOwnerFleet('owner-token-1');
+      expect(provider.employeeMarkers.containsKey('emp-existing'), isTrue);
+
+      // Now simulate network failure on subsequent revalidation
+      mockApi.shouldFail = true;
+      await provider.hydrateOwnerFleet('owner-token-1');
+
+      // Stale marker is retained
+      expect(provider.employeeMarkers.containsKey('emp-existing'), isTrue);
+      expect(provider.error, isNotNull);
     });
   });
 }

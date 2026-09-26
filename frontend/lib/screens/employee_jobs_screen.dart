@@ -250,7 +250,26 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                         )
                       : KeyedSubtree(
                           key: const ValueKey('employee_jobs_content'),
-                          child: _buildJobsList(activeJobs),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (jobsProvider.isLoading &&
+                                  jobsProvider.jobs.isNotEmpty)
+                                const Padding(
+                                  padding:
+                                      EdgeInsets.only(bottom: AppSpacing.sm),
+                                  child: SizedBox(
+                                    height: 3,
+                                    child: LinearProgressIndicator(
+                                      key: Key(
+                                          'employee_jobs_refresh_indicator'),
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  ),
+                                ),
+                              _buildJobsList(activeJobs),
+                            ],
+                          ),
                         ),
             ),
             const SizedBox(height: AppSpacing.xl),
