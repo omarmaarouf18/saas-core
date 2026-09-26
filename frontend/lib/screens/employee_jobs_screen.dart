@@ -914,6 +914,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ? JobLocationMiniMap(
                       key: Key('job_destination_map_${job.id}'),
                       location: job.destination!,
+                      // Option C: typed note is the primary label; the map
+                      // stays for spatial confirmation, caption for numbers.
+                      label: job.destination!.addressNote,
                     )
                   : null,
               distanceText: l10n.standardRouteLabel,
@@ -1076,6 +1079,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ? JobLocationMiniMap(
                       key: Key('job_destination_map_${job.id}'),
                       location: job.destination!,
+                      // Option C: typed note is the primary label; the map
+                      // stays for spatial confirmation, caption for numbers.
+                      label: job.destination!.addressNote,
                     )
                   : null,
               distanceText: job.lockedEscrowAmount != null

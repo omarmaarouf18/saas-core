@@ -296,4 +296,45 @@ void main() {
     expect(provider.customerJobs, isEmpty);
     expect(call, 2);
   });
+
+  test('bookJob passes trimmed address notes, omits them when blank', () async {
+    final (provider, overrides) =
+        _makeProvider((req) => _jobEnvelope('QD-2'), token: 'cust-tok');
+
+    await provider.bookJob(
+      serviceId: 'svc-9',
+      userId: 'cust-tok',
+      latitude: 30.05,
+      longitude: 31.23,
+      destinationLatitude: 30.15,
+      destinationLongitude: 31.33,
+      paymentMethod: 'cod',
+      pickupAddressNote: '  Home gate  ',
+      destinationAddressNote: "beside Ahmed's kiosk",
+    );
+
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/track'));
+    final body = jsonDecode(posted.body!) as Map<String, dynamic>;
+    expect((body['location'] as Map)['address_note'], 'Home gate');
+    expect(
+        (body['destination'] as Map)['address_note'], "beside Ahmed's kiosk");
+
+    await provider.bookJob(
+      serviceId: 'svc-9',
+      userId: 'cust-tok',
+      latitude: 30.05,
+      longitude: 31.23,
+      destinationLatitude: 30.15,
+      destinationLongitude: 31.33,
+      paymentMethod: 'cod',
+      pickupAddressNote: '   ',
+    );
+
+    final posted2 = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/track'));
+    final body2 = jsonDecode(posted2.body!) as Map<String, dynamic>;
+    expect((body2['location'] as Map).containsKey('address_note'), isFalse);
+    expect((body2['destination'] as Map).containsKey('address_note'), isFalse);
+  });
 }

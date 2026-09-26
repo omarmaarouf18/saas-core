@@ -69,6 +69,10 @@ class MarketplaceProvider extends ChangeNotifier {
     required double destinationLatitude,
     required double destinationLongitude,
     required String paymentMethod,
+    // Option C: optional landmark notes typed in the booking flow.
+    // Sent only when non-empty (backend omitempty symmetry).
+    String? pickupAddressNote,
+    String? destinationAddressNote,
   }) async {
     _isLoading = true;
     _error = null;
@@ -82,10 +86,15 @@ class MarketplaceProvider extends ChangeNotifier {
         'location': {
           'latitude': latitude,
           'longitude': longitude,
+          if (pickupAddressNote != null && pickupAddressNote.trim().isNotEmpty)
+            'address_note': pickupAddressNote.trim(),
         },
         'destination': {
           'latitude': destinationLatitude,
           'longitude': destinationLongitude,
+          if (destinationAddressNote != null &&
+              destinationAddressNote.trim().isNotEmpty)
+            'address_note': destinationAddressNote.trim(),
         },
         'payment_method': paymentMethod,
       });

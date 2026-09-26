@@ -28,18 +28,36 @@ class JobLocationMiniMap extends StatelessWidget {
   /// Thumbnail height in dp. Width always stretches to the card.
   final double height;
 
+  /// Option C: typed landmark note rendered as the primary label above the
+  /// map (text for quick reading, map for spatial confirmation). Null (or
+  /// blank) keeps the previous map-only treatment for jobs without a note.
+  final String? label;
+
   const JobLocationMiniMap({
     super.key,
     required this.location,
     this.height = 110,
+    this.label,
   });
 
   @override
   Widget build(BuildContext context) {
     final point = LatLng(location.latitude, location.longitude);
+    final note =
+        (label != null && label!.trim().isNotEmpty) ? label!.trim() : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (note != null) ...[
+          Text(
+            note,
+            style: AppTypography.bodyMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+        ],
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: SizedBox(

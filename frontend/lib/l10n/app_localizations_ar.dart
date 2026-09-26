@@ -628,6 +628,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationPickerConfirmBtn => 'تأكيد الموقع';
 
   @override
+  String get locationNoteLabel => 'علامة مميزة (اختياري)';
+
+  @override
+  String get locationNoteHint =>
+      'مثلاً: جنب كشك عم أحمد، الدور التالت — عشان السواق يوصلك بسهولة';
+
+  @override
+  String get addDestinationNoteBtn => 'ضيف علامة مميزة';
+
+  @override
   String get ticketSubjectReq => 'عنوان التذكرة مطلوب.';
 
   @override

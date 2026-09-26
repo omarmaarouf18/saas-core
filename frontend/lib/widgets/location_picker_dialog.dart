@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../core/theme.dart';
 import 'location_picker_map.dart';
 import 'primary_button.dart';
+import 'themed_text_field.dart';
 
 /// Shared location-picker dialog shell (UI visual audit 2026-09, gap G1).
 ///
@@ -47,6 +48,19 @@ class LocationPickerDialog extends StatefulWidget {
   /// dialog pops itself afterwards; callers only persist state.
   final ValueChanged<LatLng> onConfirmed;
 
+  /// Option C: optional landmark-note field (label + hint already
+  /// localized by the caller). Null hides the field entirely, keeping the
+  /// two non-booking call sites byte-identical to before.
+  final String? addressLabel;
+  final String? addressHint;
+  final String? initialAddressNote;
+
+  /// Live note text (trimmed by callers on submit). Fires on every change.
+  final ValueChanged<String>? onAddressNoteChanged;
+
+  /// Mirrors the backend `MaxAddressNoteLength` cap (500).
+  static const int addressNoteMaxLength = 500;
+
   const LocationPickerDialog({
     super.key,
     this.dialogKey,
@@ -56,6 +70,10 @@ class LocationPickerDialog extends StatefulWidget {
     this.confirmButtonKey,
     this.confirmTrailingIcon,
     required this.onConfirmed,
+    this.addressLabel,
+    this.addressHint,
+    this.initialAddressNote,
+    this.onAddressNoteChanged,
   });
 
   /// Shows the picker. Returns when the dialog closes (confirm or close).
@@ -68,6 +86,10 @@ class LocationPickerDialog extends StatefulWidget {
     Key? confirmButtonKey,
     IconData? confirmTrailingIcon,
     required ValueChanged<LatLng> onConfirmed,
+    String? addressLabel,
+    String? addressHint,
+    String? initialAddressNote,
+    ValueChanged<String>? onAddressNoteChanged,
   }) {
     return showDialog<void>(
       context: context,
@@ -79,6 +101,10 @@ class LocationPickerDialog extends StatefulWidget {
         confirmButtonKey: confirmButtonKey,
         confirmTrailingIcon: confirmTrailingIcon,
         onConfirmed: onConfirmed,
+        addressLabel: addressLabel,
+        addressHint: addressHint,
+        initialAddressNote: initialAddressNote,
+        onAddressNoteChanged: onAddressNoteChanged,
       ),
     );
   }
@@ -89,11 +115,20 @@ class LocationPickerDialog extends StatefulWidget {
 
 class _LocationPickerDialogState extends State<LocationPickerDialog> {
   late LatLng _tempLocation;
+  late final TextEditingController _noteController;
 
   @override
   void initState() {
     super.initState();
     _tempLocation = widget.initialLocation;
+    _noteController =
+        TextEditingController(text: widget.initialAddressNote ?? '');
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
   }
 
   @override
@@ -148,6 +183,21 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                   ),
                 ),
               ),
+              // Option C: landmark note — one coherent step (see pin,
+              // describe it, confirm). Optional: no validator, empty
+              // submits fine; 500-char cap mirrors the backend.
+              if (widget.addressLabel != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                ThemedTextField(
+                  key: const Key('location_picker_note_field'),
+                  controller: _noteController,
+                  labelText: widget.addressLabel,
+                  hintText: widget.addressHint,
+                  maxLength: LocationPickerDialog.addressNoteMaxLength,
+                  textInputAction: TextInputAction.done,
+                  onChanged: widget.onAddressNoteChanged,
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               PrimaryButton(
                 key: widget.confirmButtonKey,

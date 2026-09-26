@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/user_profile.dart';
+import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
@@ -98,6 +99,42 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
   @override
   Future<Map<String, dynamic>> fetchRatings(String tenantId) async {
     return {'average': 4.8, 'count': 25};
+  }
+
+  // Option C: capture the landmark notes bookJob carries.
+  int bookJobCalls = 0;
+  String? lastPickupNote;
+  String? lastDestinationNote;
+
+  @override
+  Future<Job?> bookJob({
+    required String serviceId,
+    required String userId,
+    required double latitude,
+    required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
+    required String paymentMethod,
+    String? pickupAddressNote,
+    String? destinationAddressNote,
+  }) async {
+    bookJobCalls++;
+    lastPickupNote = pickupAddressNote;
+    lastDestinationNote = destinationAddressNote;
+    return Job(
+      id: 'job-note-1',
+      ownerId: 'tenant-456',
+      userId: 'cust-1',
+      serviceId: serviceId,
+      status: 'pending_dispatch',
+      location: JobLocation(latitude: latitude, longitude: longitude),
+      destination: JobLocation(
+        latitude: destinationLatitude,
+        longitude: destinationLongitude,
+        addressNote: destinationAddressNote,
+      ),
+      paymentMethod: paymentMethod,
+    );
   }
 }
 
@@ -751,6 +788,132 @@ void main() {
     expect(find.byKey(const Key('service_out_of_service_text')), findsNothing);
     expect(find.text('Plain Delivery'), findsOneWidget);
     expect(find.text('Open Delivery'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Option C: destination landmark note flows picker -> confirmation -> bookJob',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Book'));
+    await tester.pumpAndSettle();
+    expect(find.text('Confirm Booking'), findsOneWidget);
+
+    // Destination picker carries the optional note field ...
+    await tester.tap(find.byKey(const Key('choose_destination_button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('destination_location_picker_dialog')),
+        findsOneWidget);
+    expect(find.byKey(const Key('location_picker_note_field')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('location_picker_note_field')),
+        "beside Ahmed's kiosk");
+    // Unfocus: a focused field's cursor blink defeats pumpAndSettle.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester
+        .tap(find.byKey(const Key('confirm_destination_location_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // ... confirmation shows the typed note instead of raw coordinates ...
+    expect(
+        find.byKey(const Key('booking_destination_note_text')), findsOneWidget);
+    expect(find.text("beside Ahmed's kiosk"), findsOneWidget);
+    expect(
+        find.byKey(const Key('booking_destination_coords_text')), findsNothing);
+    expect(find.byKey(const Key('booking_destination_minimap')), findsNothing);
+
+    // ... and booking carries the note to the backend payload.
+    // (Fixed-frame pumps: success navigates to the polling JobStatusScreen,
+    // whose periodic timers defeat pumpAndSettle by design.)
+    await tester.tap(find.byKey(const Key('confirm_booking_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(mockMarketplaceProvider.bookJobCalls, 1);
+    expect(mockMarketplaceProvider.lastDestinationNote, "beside Ahmed's kiosk");
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Option C: destination without note shows mini-map plus add affordance',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Book'));
+    await tester.pumpAndSettle();
+
+    // Pick destination WITHOUT typing a note.
+    await tester.tap(find.byKey(const Key('choose_destination_button')));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('confirm_destination_location_button')));
+    await tester.pumpAndSettle();
+
+    // Spatial preview beats raw numbers; add-note affordance offered.
+    expect(
+        find.byKey(const Key('booking_destination_minimap')), findsOneWidget);
+    expect(
+        find.byKey(const Key('booking_destination_coords_text')), findsNothing);
+    expect(
+        find.byKey(const Key('add_destination_note_button')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

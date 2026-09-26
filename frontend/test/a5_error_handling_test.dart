@@ -391,6 +391,8 @@ class _BookingFailingMarketplaceProvider extends MarketplaceProvider {
     required double destinationLatitude,
     required double destinationLongitude,
     required String paymentMethod,
+    String? pickupAddressNote,
+    String? destinationAddressNote,
   }) async {
     throw ApiClientException('insufficient wallet balance', statusCode: 400);
   }

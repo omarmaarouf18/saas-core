@@ -82,6 +82,8 @@ class MockMarketplaceProviderForTest extends MarketplaceProvider {
     required double destinationLongitude,
     required String paymentMethod,
     String? employeeId,
+    String? pickupAddressNote,
+    String? destinationAddressNote,
   }) async {
     bookJobCalled = true;
     lastBookJobParams = {

@@ -2,7 +2,15 @@ class JobLocation {
   final double latitude;
   final double longitude;
 
-  JobLocation({required this.latitude, required this.longitude});
+  /// Option C: optional customer/owner-typed landmark note (e.g. "beside
+  /// Ahmed's kiosk") helping the courier find the pin. Free text, never
+  /// validated as an address (backend caps length at creation). Null or
+  /// empty means no note was provided — callers fall back to the map
+  /// preview (Option A), never to raw coordinates as the primary signal.
+  final String? addressNote;
+
+  JobLocation(
+      {required this.latitude, required this.longitude, this.addressNote});
 
   /// Shared, testable "lat, lon" formatter for per-job route display
   /// (e.g. RouteTimeline detail lines). Fixed 4-decimal precision matches
@@ -14,12 +22,17 @@ class JobLocation {
     return JobLocation(
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      addressNote: (json['address_note'] as String?)?.trim().isNotEmpty == true
+          ? (json['address_note'] as String).trim()
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'latitude': latitude,
         'longitude': longitude,
+        if (addressNote != null && addressNote!.isNotEmpty)
+          'address_note': addressNote,
       };
 }
 

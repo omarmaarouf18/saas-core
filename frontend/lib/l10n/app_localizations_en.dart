@@ -631,6 +631,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationPickerConfirmBtn => 'Confirm Location';
 
   @override
+  String get locationNoteLabel => 'Landmark note (optional)';
+
+  @override
+  String get locationNoteHint =>
+      'e.g. next to Ahmed\'s kiosk, 3rd floor — helps your driver find you';
+
+  @override
+  String get addDestinationNoteBtn => 'Add landmark note';
+
+  @override
   String get ticketSubjectReq => 'Subject is required.';
 
   @override

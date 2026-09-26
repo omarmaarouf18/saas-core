@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/list_screen_template.dart';
+import '../widgets/job_location_mini_map.dart';
 import '../widgets/location_picker_dialog.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_error_banner.dart';
@@ -741,6 +742,9 @@ class _BookingDialogState extends State<_BookingDialog> {
   late double _pickupLon;
   double? _destinationLat;
   double? _destinationLon;
+  // Option C: optional landmark notes typed in the picker dialogs.
+  String _pickupNote = '';
+  String _destinationNote = '';
   double? _tripDistanceKM;
   double? _estimatedPrice;
 
@@ -829,6 +833,19 @@ class _BookingDialogState extends State<_BookingDialog> {
           ? 'confirm_pickup_location_button'
           : 'confirm_destination_location_button'),
       confirmTrailingIcon: Icons.arrow_forward,
+      // Option C: landmark note field (same dialog, both pickers).
+      addressLabel: l10n.locationNoteLabel,
+      addressHint: l10n.locationNoteHint,
+      initialAddressNote: (isPickup ? _pickupNote : _destinationNote).isNotEmpty
+          ? (isPickup ? _pickupNote : _destinationNote)
+          : null,
+      onAddressNoteChanged: (note) {
+        if (isPickup) {
+          _pickupNote = note;
+        } else {
+          _destinationNote = note;
+        }
+      },
       onConfirmed: (picked) {
         setState(() {
           if (isPickup) {
@@ -868,6 +885,9 @@ class _BookingDialogState extends State<_BookingDialog> {
         destinationLatitude: _destinationLat!,
         destinationLongitude: _destinationLon!,
         paymentMethod: "cod", // forced COD only
+        pickupAddressNote: _pickupNote.trim().isNotEmpty ? _pickupNote : null,
+        destinationAddressNote:
+            _destinationNote.trim().isNotEmpty ? _destinationNote : null,
       );
 
       if (!mounted) return;
@@ -951,13 +971,25 @@ class _BookingDialogState extends State<_BookingDialog> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      "${_pickupLat.toStringAsFixed(4)}, ${_pickupLon.toStringAsFixed(4)}",
-                      key: const Key('booking_pickup_coords_text'),
-                      style: AppTypography.labelMd.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    // Option C: typed landmark replaces raw coordinates;
+                    // coordinates remain only when no note was added.
+                    if (_pickupNote.trim().isNotEmpty)
+                      Text(
+                        _pickupNote.trim(),
+                        key: const Key('booking_pickup_note_text'),
+                        style: AppTypography.bodyMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      Text(
+                        "${_pickupLat.toStringAsFixed(4)}, ${_pickupLon.toStringAsFixed(4)}",
+                        key: const Key('booking_pickup_coords_text'),
+                        style: AppTypography.labelMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: AppSpacing.xs),
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
@@ -965,19 +997,21 @@ class _BookingDialogState extends State<_BookingDialog> {
                         alignment: WrapAlignment.end,
                         spacing: AppSpacing.xs,
                         children: [
-                          TextButton.icon(
+                          SecondaryButton(
                             key:
                                 const Key('use_current_location_pickup_button'),
-                            icon: const Icon(Icons.my_location,
-                                size: AppIconSize.sm),
-                            label: Text(l10n.locationPickerUseMyLocation),
+                            text: l10n.locationPickerUseMyLocation,
+                            icon: Icons.my_location,
+                            isOutlined: true,
+                            isFullWidth: false,
                             onPressed: _useCurrentLocationForPickup,
                           ),
-                          TextButton.icon(
+                          SecondaryButton(
                             key: const Key('choose_pickup_button'),
-                            icon: const Icon(Icons.edit_location_alt_outlined,
-                                size: AppIconSize.sm),
-                            label: Text(l10n.changePickupLocationBtn),
+                            text: l10n.changePickupLocationBtn,
+                            icon: Icons.edit_location_alt_outlined,
+                            isOutlined: true,
+                            isFullWidth: false,
                             onPressed: () =>
                                 _openLocationPicker(isPickup: true),
                           ),
@@ -1010,15 +1044,40 @@ class _BookingDialogState extends State<_BookingDialog> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    if (hasDestination)
+                    // Option C: typed landmark replaces raw coordinates. No
+                    // note yet → spatial preview (mini-map) beats raw
+                    // numbers, plus an affordance to add a note.
+                    if (hasDestination && _destinationNote.trim().isNotEmpty)
                       Text(
-                        "${_destinationLat!.toStringAsFixed(4)}, ${_destinationLon!.toStringAsFixed(4)}",
-                        key: const Key('booking_destination_coords_text'),
-                        style: AppTypography.labelMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        _destinationNote.trim(),
+                        key: const Key('booking_destination_note_text'),
+                        style: AppTypography.bodyMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
                         ),
                       )
-                    else
+                    else if (hasDestination) ...[
+                      JobLocationMiniMap(
+                        key: const Key('booking_destination_minimap'),
+                        height: 110,
+                        location: JobLocation(
+                          latitude: _destinationLat!,
+                          longitude: _destinationLon!,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: SecondaryButton(
+                          key: const Key('add_destination_note_button'),
+                          text: l10n.addDestinationNoteBtn,
+                          icon: Icons.edit_outlined,
+                          isOutlined: true,
+                          isFullWidth: false,
+                          onPressed: () => _openLocationPicker(isPickup: false),
+                        ),
+                      ),
+                    ] else
                       Text(
                         l10n.selectDestinationPrompt,
                         style: AppTypography.bodySm.copyWith(
@@ -1028,12 +1087,14 @@ class _BookingDialogState extends State<_BookingDialog> {
                     const SizedBox(height: AppSpacing.xs),
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: OutlinedButton.icon(
+                      child: SecondaryButton(
                         key: const Key('choose_destination_button'),
-                        icon: const Icon(Icons.map, size: AppIconSize.sm),
-                        label: Text(hasDestination
+                        text: hasDestination
                             ? l10n.changeDestinationLocationBtn
-                            : l10n.chooseDestinationLocationBtn),
+                            : l10n.chooseDestinationLocationBtn,
+                        icon: Icons.map,
+                        isOutlined: true,
+                        isFullWidth: false,
                         onPressed: () => _openLocationPicker(isPickup: false),
                       ),
                     ),

@@ -429,4 +429,39 @@ void main() {
     expect(find.byKey(const Key('job_destination_map_job-pending-003')),
         findsNothing);
   });
+
+  testWidgets('Option C: typed note is the primary destination label',
+      (WidgetTester tester) async {
+    final notedJob = Job(
+      id: 'job-noted-006',
+      ownerId: 'owner-1',
+      employeeId: 'emp-1',
+      userId: 'cust-6',
+      serviceId: 'service-1',
+      status: 'active',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      destination: JobLocation(
+        latitude: 30.1,
+        longitude: 31.1,
+        addressNote: "beside Ahmed's kiosk",
+      ),
+      paymentMethod: 'cod',
+    );
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [notedJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    // Text for quick reading ...
+    expect(find.text("beside Ahmed's kiosk"), findsOneWidget);
+    // ... map alongside for spatial confirmation (not instead of it).
+    expect(find.byKey(const Key('job_destination_map_job-noted-006')),
+        findsOneWidget);
+    expect(find.byKey(const Key('complete_job_button_job-noted-006')),
+        findsOneWidget);
+  });
 }

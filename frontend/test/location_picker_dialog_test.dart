@@ -9,6 +9,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/widgets/location_picker_dialog.dart';
 import 'package:frontend/widgets/location_picker_map.dart';
 import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/themed_text_field.dart';
 
 class _MockGeolocatorPlatform extends GeolocatorPlatform
     with MockPlatformInterfaceMixin {
@@ -45,6 +46,9 @@ Widget _dialogHarness({
   String title = 'Pick a location',
   Key? confirmButtonKey,
   IconData? confirmTrailingIcon,
+  String? addressLabel,
+  String? addressHint,
+  ValueChanged<String>? onAddressNoteChanged,
   required ValueChanged<LatLng> onConfirmed,
 }) {
   return MaterialApp(
@@ -70,6 +74,9 @@ Widget _dialogHarness({
               confirmLabel: 'Confirm pin',
               confirmButtonKey: confirmButtonKey,
               confirmTrailingIcon: confirmTrailingIcon,
+              addressLabel: addressLabel,
+              addressHint: addressHint,
+              onAddressNoteChanged: onAddressNoteChanged,
               onConfirmed: onConfirmed,
             ),
             child: const Text('Open'),
@@ -162,4 +169,78 @@ void main() {
     );
     expect(confirmBtn, findsOneWidget);
   });
+
+  testWidgets('Option C: note field hidden when no label is passed',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_dialogHarnessNoNote());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open_picker_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('location_picker_note_field')), findsNothing);
+    // Confirm still submits fine with no note anywhere.
+    await tester.tap(find.byKey(const Key('test_confirm_btn_no_note')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LocationPickerDialog), findsNothing);
+  });
+
+  testWidgets('Option C: typed note flows to the callback, cap declared',
+      (WidgetTester tester) async {
+    String? seen;
+    await tester.pumpWidget(_dialogHarness(
+      confirmButtonKey: const Key('test_confirm_btn'),
+      addressLabel: 'Landmark note (optional)',
+      addressHint: 'e.g. next to the kiosk',
+      onAddressNoteChanged: (v) => seen = v,
+      onConfirmed: (_) {},
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open_picker_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Landmark note (optional)'), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('location_picker_note_field')), 'Home gate');
+    expect(seen, 'Home gate');
+
+    // 500-char backend mirror cap is declared on the field.
+    final field = tester.widget<ThemedTextField>(
+        find.byKey(const Key('location_picker_note_field')));
+    expect(field.maxLength, LocationPickerDialog.addressNoteMaxLength);
+    expect(LocationPickerDialog.addressNoteMaxLength, 500);
+  });
+}
+
+Widget _dialogHarnessNoNote() {
+  return MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    theme: quickDeliveryTheme,
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            key: const Key('open_picker_button'),
+            onPressed: () => LocationPickerDialog.show(
+              context,
+              title: 'Pick a location',
+              initialLocation: const LatLng(30.0444, 31.2357),
+              confirmLabel: 'Confirm pin',
+              confirmButtonKey: const Key('test_confirm_btn_no_note'),
+              onConfirmed: (_) {},
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    ),
+  );
 }

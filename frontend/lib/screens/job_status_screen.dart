@@ -346,6 +346,9 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
         destinationLongitude: _currentJob.destination?.longitude ??
             _currentJob.location.longitude,
         paymentMethod: _currentJob.paymentMethod,
+        // Option C: re-booking preserves the typed notes.
+        pickupAddressNote: _currentJob.location.addressNote,
+        destinationAddressNote: _currentJob.destination?.addressNote,
       );
 
       if (!mounted) return;
@@ -920,6 +923,20 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
+                    // Option C: the typed landmark the customer added at
+                    // booking time, shown where the order is tracked.
+                    if (_currentJob.destination?.addressNote != null &&
+                        _currentJob.destination!.addressNote!.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                        child: Text(
+                          _currentJob.destination!.addressNote!.trim(),
+                          style: AppTypography.bodyMd.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

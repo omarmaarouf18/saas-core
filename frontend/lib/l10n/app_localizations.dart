@@ -1304,6 +1304,24 @@ abstract class AppLocalizations {
   /// **'Confirm Location'**
   String get locationPickerConfirmBtn;
 
+  /// No description provided for @locationNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark note (optional)'**
+  String get locationNoteLabel;
+
+  /// No description provided for @locationNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. next to Ahmed\'s kiosk, 3rd floor — helps your driver find you'**
+  String get locationNoteHint;
+
+  /// No description provided for @addDestinationNoteBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add landmark note'**
+  String get addDestinationNoteBtn;
+
   /// No description provided for @ticketSubjectReq.
   ///
   /// In en, this message translates to:
