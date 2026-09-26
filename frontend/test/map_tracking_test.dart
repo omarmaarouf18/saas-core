@@ -390,6 +390,44 @@ void main() {
       await tester.pumpAndSettle();
       expect(mockProvider.hydrateOwnerFleetCalled, isTrue);
     });
+
+    testWidgets(
+        '(g) Floating filter pills satisfy minimum 44x44 touch target constraints (audit E21)',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialMarkers: {},
+        initialLoading: false,
+        initialConnected: true,
+        initialError: null,
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const OwnerFleetMapScreen(
+              ownerId: 'owner-123',
+              token: 'token-123',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      for (final keyName in [
+        'fleet_filter_pill_all',
+        'fleet_filter_pill_on_route',
+        'fleet_filter_pill_idle'
+      ]) {
+        final pillFinder = find.byKey(Key(keyName));
+        expect(pillFinder, findsOneWidget);
+        final size = tester.getSize(pillFinder);
+        expect(size.height, greaterThanOrEqualTo(44.0));
+        expect(size.width, greaterThanOrEqualTo(44.0));
+      }
+    });
   });
 
   group('CustomerJobMapScreen Tests', () {

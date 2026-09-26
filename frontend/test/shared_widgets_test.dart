@@ -1198,6 +1198,36 @@ void main() {
 
       expect(selected, equals('active'));
     });
+
+    testWidgets(
+        'PillFilterBar chips meet minimum 44px touch target height (audit E20)',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PillFilterBar<String>(
+              items: const [
+                PillFilterItem(label: 'All', value: 'all'),
+                PillFilterItem(label: 'Active', value: 'active'),
+              ],
+              selectedValue: 'all',
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final inkWells = find.descendant(
+        of: find.byType(PillFilterBar<String>),
+        matching: find.byType(InkWell),
+      );
+      expect(inkWells, findsNWidgets(2));
+      for (final element in inkWells.evaluate()) {
+        final size = tester.getSize(find.byWidget(element.widget));
+        expect(size.height, greaterThanOrEqualTo(44.0));
+        expect(size.width, greaterThanOrEqualTo(44.0));
+      }
+    });
   });
 
   group('RouteTimeline Widget Tests', () {

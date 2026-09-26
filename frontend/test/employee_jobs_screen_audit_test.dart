@@ -237,4 +237,18 @@ void main() {
 
     expect(find.byType(EmployeeJobsScreen), findsOneWidget);
   });
+
+  testWidgets(
+      'Job card details toggle satisfies minimum 44x44 touch target constraints (audit E22)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createTestApp());
+    await tester.pumpAndSettle();
+
+    final toggleFinder =
+        find.byKey(const Key('job_card_details_toggle_job-emp-101'));
+    expect(toggleFinder, findsOneWidget);
+    final size = tester.getSize(toggleFinder);
+    expect(size.height, greaterThanOrEqualTo(44.0));
+    expect(size.width, greaterThanOrEqualTo(44.0));
+  });
 }

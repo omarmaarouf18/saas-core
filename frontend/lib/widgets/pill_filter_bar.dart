@@ -109,7 +109,8 @@ class _PillFilterChipState<T> extends State<_PillFilterChip<T>> {
         onTap: _handleTap,
         borderRadius: BorderRadius.circular(AppRadius.full),
         child: Container(
-          height: 36,
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.xs,

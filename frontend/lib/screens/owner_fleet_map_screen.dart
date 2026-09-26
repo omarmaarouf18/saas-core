@@ -320,6 +320,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
         child: Row(
           children: [
             GestureDetector(
+              key: const Key('fleet_filter_pill_all'),
               onTap: () => setState(() => _selectedFilter = 'all'),
               child: ThemedPanel(
                   color: _selectedFilter == 'all'
@@ -330,6 +331,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                       ? null
                       : Border.all(color: AppColors.outlineVariant),
                   boxShadow: AppElevation.shadowLevel1List,
+                  constraints:
+                      const BoxConstraints(minHeight: 44, minWidth: 44),
+                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,
@@ -373,6 +377,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
             ),
             const SizedBox(width: AppSpacing.xs),
             GestureDetector(
+              key: const Key('fleet_filter_pill_on_route'),
               onTap: () => setState(() => _selectedFilter = 'on_route'),
               child: ThemedPanel(
                   color: _selectedFilter == 'on_route'
@@ -383,6 +388,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                       ? null
                       : Border.all(color: AppColors.outlineVariant),
                   boxShadow: AppElevation.shadowLevel1List,
+                  constraints:
+                      const BoxConstraints(minHeight: 44, minWidth: 44),
+                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,
@@ -410,6 +418,7 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
             ),
             const SizedBox(width: AppSpacing.xs),
             GestureDetector(
+              key: const Key('fleet_filter_pill_idle'),
               onTap: () => setState(() => _selectedFilter = 'idle'),
               child: ThemedPanel(
                   color: _selectedFilter == 'idle'
@@ -420,6 +429,9 @@ class _OwnerFleetMapScreenState extends State<OwnerFleetMapScreen>
                       ? null
                       : Border.all(color: AppColors.outlineVariant),
                   boxShadow: AppElevation.shadowLevel1List,
+                  constraints:
+                      const BoxConstraints(minHeight: 44, minWidth: 44),
+                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,

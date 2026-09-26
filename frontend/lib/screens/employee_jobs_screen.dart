@@ -1015,32 +1015,39 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             // (declutter V2); expand via the details toggle.
             InkWell(
               key: Key('job_card_details_toggle_${job.id}'),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               onTap: () => setState(() {
                 if (!_expandedJobCardIds.add(job.id)) {
                   _expandedJobCardIds.remove(job.id);
                 }
               }),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _expandedJobCardIds.contains(job.id)
-                          ? Icons.expand_less
-                          : Icons.expand_more,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.xxs),
-                    Text(
-                      l10n.jobCardDetailsToggle,
-                      style: AppTypography.labelMd.copyWith(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.xs,
+                    horizontal: AppSpacing.xxs,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _expandedJobCardIds.contains(job.id)
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 16,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text(
+                        l10n.jobCardDetailsToggle,
+                        style: AppTypography.labelMd.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
