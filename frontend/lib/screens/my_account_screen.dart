@@ -11,6 +11,7 @@ import '../widgets/form_screen_template.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_text_field.dart';
@@ -34,6 +35,13 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   // address edit / submit state change); it is now owned and disposed here.
   // Email is display-only; the value is populated in _loadAndPrepopulate.
   final _emailController = TextEditingController();
+
+  /// Audit S3: focus target for the no-addresses empty-state action.
+  final _newAddressFocusNode = FocusNode();
+
+  /// Audit S9: dedicated form for the add-address row so cap/empty errors
+  /// surface inline at the field instead of the distant top banner.
+  final _addressFormKey = GlobalKey<FormState>();
 
   List<String> _frequentAddresses = [];
   bool _isSubmitting = false;
@@ -94,36 +102,54 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     _usernameController.dispose();
     _phoneController.dispose();
     _newAddressController.dispose();
+    _newAddressFocusNode.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
   void _addAddress() {
-    final l10n = context.l10n;
+    // Audit S9: the field validator owns empty + cap feedback inline — an
+    // empty Add tap yields a field hint, never a silent return or a
+    // distant top-banner error.
+    if (!(_addressFormKey.currentState?.validate() ?? false)) return;
     final text = _newAddressController.text.trim();
-    if (text.isEmpty) return;
-
-    if (_frequentAddresses.length >= 10) {
-      setState(() {
-        _errorMessage = l10n.myAccountMaxAddressesError;
-      });
-      return;
-    }
 
     setState(() {
       _errorMessage = null;
       _frequentAddresses.add(text);
       _newAddressController.clear();
+      // Clearing the controller re-triggers onUserInteraction validation on
+      // the now-empty field — reset the form state so no spurious
+      // required-field error lingers after a successful add.
+      _addressFormKey.currentState?.reset();
     });
   }
 
   void _removeAddress(int index) {
+    if (index < 0 || index >= _frequentAddresses.length) return;
+    final removed = _frequentAddresses[index];
     setState(() {
       _errorMessage = null;
-      if (index >= 0 && index < _frequentAddresses.length) {
-        _frequentAddresses.removeAt(index);
-      }
+      _frequentAddresses.removeAt(index);
     });
+    // Audit S8: keep the red affordance, but deletion is recoverable — Undo
+    // reinserts the exact text at its stored index, no retyping.
+    final l10n = context.l10n;
+    ThemedSnackBar.showSuccess(
+      context,
+      l10n.myAccountAddressRemoved,
+      key: const Key('my_account_address_removed_snackbar'),
+      actionLabel: l10n.undoAction,
+      onAction: () {
+        if (!mounted) return;
+        setState(() {
+          final at = index <= _frequentAddresses.length
+              ? index
+              : _frequentAddresses.length;
+          _frequentAddresses.insert(at, removed);
+        });
+      },
+    );
   }
 
   Future<void> _submitForm() async {
@@ -601,38 +627,62 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           const SizedBox(height: AppSpacing.md),
 
           // Add address input row
-          Row(
-            children: [
-              Expanded(
-                child: ThemedTextField(
-                  key: const Key('my_account_new_address_field'),
-                  labelText: l10n.myAccountNewAddressLabel,
-                  hintText: l10n.myAccountNewAddressHint,
-                  controller: _newAddressController,
+          // Audit S9: own Form scope so empty/cap feedback renders inline
+          // at the field (validator + onUserInteraction), never in the
+          // distant top form banner.
+          Form(
+            key: _addressFormKey,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ThemedTextField(
+                    key: const Key('my_account_new_address_field'),
+                    labelText: l10n.myAccountNewAddressLabel,
+                    hintText: l10n.myAccountNewAddressHint,
+                    controller: _newAddressController,
+                    focusNode: _newAddressFocusNode,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return l10n.myAccountAddressRequired;
+                      }
+                      if (_frequentAddresses.length >= 10) {
+                        return l10n.myAccountMaxAddressesError;
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              PrimaryButton(
-                key: const Key('my_account_add_address_button'),
-                text: l10n.myAccountAddButton,
-                isFullWidth: false,
-                onPressed: _addAddress,
-              ),
-            ],
+                const SizedBox(width: AppSpacing.sm),
+                PrimaryButton(
+                  key: const Key('my_account_add_address_button'),
+                  text: l10n.myAccountAddButton,
+                  isFullWidth: false,
+                  onPressed: _addAddress,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
 
           // List of added addresses
+          // Audit S3: the zero-addresses case is a first-class empty state
+          // (location icon + existing copy) whose action focuses the input
+          // above — or adds the typed text directly when non-empty.
           if (_frequentAddresses.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Text(
-                l10n.myAccountNoAddresses,
-                style: AppTypography.bodyMd.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+            ThemedEmptyState(
+              key: const Key('my_account_no_addresses_state'),
+              icon: Icons.location_on_outlined,
+              title: l10n.myAccountAddressesHeader,
+              description: l10n.myAccountNoAddresses,
+              actionText: l10n.myAccountAddButton,
+              onActionPressed: () {
+                if (_newAddressController.text.trim().isNotEmpty) {
+                  _addAddress();
+                } else {
+                  _newAddressFocusNode.requestFocus();
+                }
+              },
             )
           else
             ListView.separated(

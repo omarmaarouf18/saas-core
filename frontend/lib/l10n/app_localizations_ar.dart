@@ -186,6 +186,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myAccountMaxAddressesError => 'متقدرش تضيف أكتر من 10 عناوين.';
 
   @override
+  String get myAccountAddressRequired =>
+      'اكتب العنوان الأول، وبعدين دوس إضافة.';
+
+  @override
+  String get myAccountAddressRemoved => 'العنوان اتمسح.';
+
+  @override
+  String get undoAction => 'تراجع';
+
+  @override
   String get myAccountSaveButton => 'حفظ البيانات';
 
   @override

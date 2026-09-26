@@ -8,6 +8,7 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/my_account_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
+import 'package:frontend/widgets/themed_empty_state.dart';
 
 class MockAuthProviderForMyAccount extends AuthProvider {
   final UserProfile? mockUser;
@@ -215,7 +216,9 @@ void main() {
     await tester.tap(addButton);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('my_account_error_banner')), findsOneWidget);
+    // Audit S9: the cap message renders inline at the field — never in the
+    // distant top form banner.
+    expect(find.byKey(const Key('my_account_error_banner')), findsNothing);
     expect(find.text('Cannot add more than 10 frequent addresses.'),
         findsOneWidget);
   });
@@ -350,5 +353,93 @@ void main() {
 
     expect(mockAuth.fetchCalls, equals(2));
     expect(find.byKey(const Key('my_account_load_error_banner')), findsNothing);
+  });
+
+  testWidgets(
+      'Audit S9: empty Add tap yields an inline field hint, not silence',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createMyAccountApp());
+    await tester.pumpAndSettle();
+
+    final addButton = find.byKey(const Key('my_account_add_address_button'));
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    // Inline hint at the field ...
+    expect(find.text('Type an address first, then tap ADD.'), findsOneWidget);
+    // ... no top-banner error, nothing added.
+    expect(find.byKey(const Key('my_account_error_banner')), findsNothing);
+    expect(find.text('Home: 123 Nile St'), findsOneWidget);
+    expect(find.text('Work: 456 Main St'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Audit S3: zero addresses render an empty state whose action adds typed input',
+      (WidgetTester tester) async {
+    final emptyUser = UserProfile(
+      id: 'u-empty',
+      email: 'empty@example.com',
+      username: 'empty_user',
+      phone: '+1234567890',
+      frequentAddresses: const [],
+      role: 'user',
+    );
+
+    await tester.pumpWidget(createMyAccountApp(mockUser: emptyUser));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('my_account_no_addresses_state')), findsOneWidget);
+    expect(find.text('No saved addresses yet.'), findsOneWidget);
+    // Bare italic placeholder text is gone.
+    expect(find.byType(ThemedEmptyState), findsOneWidget);
+
+    // Action with typed input adds it directly.
+    await tester.enterText(
+        find.byKey(const Key('my_account_new_address_field')),
+        'Home: 123 Nile St');
+    final emptyAction = find.descendant(
+      of: find.byKey(const Key('my_account_no_addresses_state')),
+      matching: find.text('ADD'),
+    );
+    await tester.ensureVisible(emptyAction);
+    await tester.pumpAndSettle();
+    await tester.tap(emptyAction);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home: 123 Nile St'), findsOneWidget);
+    expect(
+        find.byKey(const Key('my_account_no_addresses_state')), findsNothing);
+    // Clearing the field after a successful add must not leave a spurious
+    // required-field error behind.
+    expect(find.text('Type an address first, then tap ADD.'), findsNothing);
+  });
+
+  testWidgets('Audit S8: deleting an address offers Undo that restores it',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(createMyAccountApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home: 123 Nile St'), findsOneWidget);
+    expect(find.text('Work: 456 Main St'), findsOneWidget);
+
+    final removeBtn = find.byKey(const Key('my_account_remove_address_0'));
+    await tester.ensureVisible(removeBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(removeBtn);
+    await tester.pumpAndSettle();
+    expect(find.text('Home: 123 Nile St'), findsNothing);
+    expect(find.text('Address removed.'), findsOneWidget);
+    expect(find.text('UNDO'), findsOneWidget);
+
+    await tester.tap(find.text('UNDO'));
+    await tester.pumpAndSettle();
+
+    // Restored at its original index (ahead of Work).
+    expect(find.text('Home: 123 Nile St'), findsOneWidget);
+    final homeY = tester.getCenter(find.text('Home: 123 Nile St')).dy;
+    final workY = tester.getCenter(find.text('Work: 456 Main St')).dy;
+    expect(homeY, lessThan(workY));
   });
 }

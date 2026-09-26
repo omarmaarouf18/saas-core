@@ -25,6 +25,11 @@ class ThemedTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final AutovalidateMode? autovalidateMode;
 
+  /// Audit S3: optional focus node so screens can programmatically focus the
+  /// field (e.g. an empty-state action that focuses the input). Additive —
+  /// all existing call sites are unaffected.
+  final FocusNode? focusNode;
+
   const ThemedTextField({
     super.key,
     this.controller,
@@ -47,6 +52,7 @@ class ThemedTextField extends StatefulWidget {
     this.onFieldSubmitted,
     this.textInputAction,
     this.autovalidateMode,
+    this.focusNode,
   });
 
   @override
@@ -117,6 +123,7 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
         ],
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           autovalidateMode: widget.autovalidateMode,
           obscureText: _isPassword ? _obscureText : widget.obscureText,
           keyboardType: widget.keyboardType,

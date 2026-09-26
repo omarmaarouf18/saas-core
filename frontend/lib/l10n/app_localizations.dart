@@ -446,6 +446,24 @@ abstract class AppLocalizations {
   /// **'Cannot add more than 10 frequent addresses.'**
   String get myAccountMaxAddressesError;
 
+  /// No description provided for @myAccountAddressRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an address first, then tap ADD.'**
+  String get myAccountAddressRequired;
+
+  /// No description provided for @myAccountAddressRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Address removed.'**
+  String get myAccountAddressRemoved;
+
+  /// No description provided for @undoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undoAction;
+
   /// No description provided for @myAccountSaveButton.
   ///
   /// In en, this message translates to:

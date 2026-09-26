@@ -189,6 +189,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cannot add more than 10 frequent addresses.';
 
   @override
+  String get myAccountAddressRequired => 'Type an address first, then tap ADD.';
+
+  @override
+  String get myAccountAddressRemoved => 'Address removed.';
+
+  @override
+  String get undoAction => 'Undo';
+
+  @override
   String get myAccountSaveButton => 'SAVE PROFILE';
 
   @override

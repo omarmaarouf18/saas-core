@@ -32,7 +32,16 @@ class ThemedSuccessBanner extends StatelessWidget {
 
 /// Helper class providing standardized, token-driven success and error SnackBars.
 class ThemedSnackBar {
-  static void showSuccess(BuildContext context, String message, {Key? key}) {
+  /// Audit S8: optional one-tap recovery action (e.g. Undo after a delete),
+  /// mirroring the showError onRetry action pattern. Additive — existing
+  /// call sites pass neither and render exactly as before.
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    Key? key,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -43,6 +52,13 @@ class ThemedSnackBar {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.defaultBorder,
         ),
+        action: (actionLabel != null && onAction != null)
+            ? SnackBarAction(
+                label: AppTypography.uppercaseLabel(actionLabel),
+                textColor: AppColors.onPrimary,
+                onPressed: onAction,
+              )
+            : null,
         content: Row(
           children: [
             const Icon(
