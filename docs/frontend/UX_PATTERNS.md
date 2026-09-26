@@ -1,7 +1,8 @@
 # Frontend UX Patterns (Established by Fixing)
 
 > Source: these rules were extracted from the actual diffs that fixed audit
-> groups A (Auth), C (Customer), and E (Employee/Owner) of
+> groups A (Auth), C (Customer), E (Employee/Owner), and S
+> (Shared/Settings/Wallet) of
 > [UI_UX_AUDIT_2026-09.md](UI_UX_AUDIT_2026-09.md), not written upfront.
 > Each rule cites the reference implementation that proves it. This doc
 > grows incrementally — one section per fixed audit group — so a future
@@ -344,10 +345,156 @@ Test-harness note: `SkeletonLoader` uses an infinite shimmer loop on
 `tester.pump(const Duration(milliseconds: 50))`), never `pumpAndSettle()`, which
 would time out against the infinite animation.
 
-## Scope (what is NOT in this doc yet)
+## 15. First-paint hydration: never render defaults as fact
+
+A screen that opens on a fresh provider (deep link, fresh login) must
+self-hydrate its slice in `initState` and render an exclusive loader
+until the first fetch settles — never provider defaults (`'free'` tier,
+`$0.00` balances) presented as real data with the wrong CTAs enabled.
+
+Reference implementations:
+- `OwnerProvider.isDashboardHydrated` (flag set only on successful
+  `fetchDashboardData`, mirroring the `fetchPlatformConfig` cached-value
+  guard): `subscription_screen.dart` fetches in `initState` only when the
+  flag is false, and renders `subscription_loading_indicator` exclusively
+  while `isLoading` (audit S1); `wallet_screen.dart` fetches
+  `fetchDashboardData` in `initState` token-guarded like its own refresh
+  path (audit S16).
+- Three exclusive states per Rule 5 hold on both screens: loading,
+  error banner, or content — never loader-plus-stale-tier.
+
+## 16. Section-level loading-vs-empty gates
+
+On screens with several independently-fetched sections, EACH section
+gates its empty state on `!isLoading` (or renders a section-level
+shimmer): a mid-refresh list must never masquerade as empty, even when
+a sibling slice already settled.
+
+Reference: `wallet_screen.dart` payout + ledger sections render
+`payout_section_loading` / `ledger_section_loading` (slim inline
+`ThemedLoadingIndicator`s) while their list is empty AND `isLoading`
+holds, reserving the genuine empty cards for settled emptiness
+(audit S11).
+
+Test-harness note: the pinned-loading test uses fixed-frame pumps, not
+`pumpAndSettle()` — the inline spinners animate indefinitely, same
+class of timeout as the Rule 14 skeleton shimmer.
+
+## 17. Stored-error discrimination with status-aware copy
+
+When the provider already stores `_error` + `_lastErrorStatusCode`
+(post-A4 contract), the screen reads BOTH and picks copy by status:
+429 lockout surfaces the verbatim server text (with wait time) under
+its own banner key with NO retry affordance (retries extend the
+lockout); other non-401 failures surface the stored
+server/connectivity copy; only a true 401 keeps the generic
+wrong-password string. Each failure source keeps its own banner with
+its own retry (load-retry vs submit-retry never share a banner).
+
+Reference implementations:
+- `auth_provider.dart` `toggleTwoFactor` catch now stores
+  `_lastErrorStatusCode` alongside `_error`, matching
+  `fetchUserProfile` / `verifyResetCode`; the settings disable dialog
+  branches on it (`disable_2fa_lockout_banner` vs
+  `disable_2fa_password_error`), mirroring the reset-code lockout
+  banner's `onRetry: isLockedOut ? null` (audit S5).
+- `my_account_screen.dart` captures the stored profile-refresh error
+  into `_loadError` and renders `my_account_load_error_banner` with a
+  reload-then-repopulate retry, distinct from the submit-scoped banner
+  (audit S4).
+
+## 18. Billing-change confirmation ceremony
+
+Any mutation with money consequences in either direction (immediate
+charge on upgrade, immediate feature loss on downgrade) routes through
+`ConfirmActionDialog.show` stating price, effective timing, and
+feature consequences upfront — never one-tap. Downgrade is styled
+`isDestructive: true`, matching the recon-resolve destructive
+convention; the post-failure snackbar retry still re-fires the network
+call directly (already-confirmed intent).
+
+Reference: `subscription_screen.dart` `_confirmAndChangeSubscription`
+with `subscriptionUpgradeConfirmTitle/Message` and
+`subscriptionDowngradeConfirmTitle/Message` (EN + Egyptian-AR via
+`gen-l10n`) (audit S7).
+
+## 19. Last-good cache preservation + one refresh routine
+
+A list-fetch failure must never wipe the cached list: keep last-good
+data and let the Rule 1 banner + retry be the sole error signal, never
+a contradictory empty state beside it. And every refresh entry point
+on a screen (pull-to-refresh, banner retry, section empty-state
+button) points at ONE routine refetching the SAME slices, so a failure
+can never survive the retry placed next to it.
+
+Reference implementations:
+- `owner_provider.dart` `fetchPayoutRequests` catch keeps
+  `_payoutRequests` and returns them (audit S6).
+- `wallet_screen.dart` `_refreshAll()` (dashboard + config + payouts)
+  serves pull, banner retry, and ledger-empty refresh alike —
+  proven by the test where only the unified refresh surfaces a fresh
+  payout outage as the wallet banner (audit S15).
+
+## 20. Interaction locks on sensitive or in-flight operations
+
+Sensitive dialogs lock dismissal to match the majority (input dialogs
+`barrierDismissible: false` per Rule 6; close disabled while
+submitting), and every mutating control locks for its whole round-trip
+(disabled + progress indicator until resolve, per Rule 4's
+refuse-re-trigger principle extended from refresh buttons to toggles).
+
+Reference implementations:
+- `email_change_dialog.dart`: `barrierDismissible: false` in `show()`
+  (the two-step OTP state must survive outside taps) and close
+  `onPressed: _isLoading ? null : pop`, mirroring
+  `deposit_funds_dialog.dart` / `payout_request_dialog.dart` exactly
+  (audit S12, S13).
+- `settings_screen.dart`: `SettingsScreen` is now `StatefulWidget`
+  (const constructor, all five call sites unchanged) holding
+  `_toggling2fa` — the enable path sets it around the await
+  (cleared in `finally`) and renders
+  `settings_2fa_toggle_progress` instead of the switch while set, so
+  rapid taps cannot queue multiple PATCHes (audit S10; same defect
+  class as tracked E-05, different control).
+
+## 21. Inline field-error ownership, delete-with-undo, actionable zero-states
+
+Validation feedback lives AT the field that needs it: the input row
+owns a dedicated `Form` scope with `AutovalidateMode.onUserInteraction`
+so cap/empty errors render inline, never in a distant top banner; a
+form `reset()` after each successful add prevents the cleared field
+from flashing a spurious required error. Destructive-but-lightweight
+deletes skip the confirmation dialog in favor of a success snackbar
+with an Undo action that reinserts the exact item at its stored index.
+Genuinely-empty collections render `ThemedEmptyState` (icon + copy +
+action that focuses the input or adds typed text), never bare text.
+
+Reference implementations (`my_account_screen.dart`, audit S9/S8/S3):
+- `_addressFormKey` scope + inline validator reusing
+  `myAccountMaxAddressesError` and new `myAccountAddressRequired`
+  (EN + Egyptian-AR); submit-time >10 guard kept as a server-data
+  safety net.
+- `_removeAddress` follows with `myAccountAddressRemoved` snackbar
+  (`my_account_address_removed_snackbar`) carrying `undoAction`
+  (`UNDO`), reinserting at the clamped original index.
+- Zero addresses render `my_account_no_addresses_state`
+  (`Icons.location_on_outlined`, existing copy, `ADD` action) focusing
+  `_newAddressFocusNode` or adding typed input.
+
+Shared-widget notes (both additive, existing call sites unaffected):
+`ThemedTextField` exposes `focusNode` passthrough; `ThemedSnackBar.showSuccess`
+exposes `actionLabel`/`onAction` rendering a `SnackBarAction` mirroring the
+`showError` retry pattern.
+
+## Completion (full 62-finding audit closed)
 
 Rules 1–4 came from audit group A (A1–A10); Rules 5–7 from audit group C
-(C1–C10); Rules 8–14 from audit group E (E1–E26). All 26 E-group findings are
-addressed across these patterns (0 deferred). Audit group S (Shared/System,
-S1–S16) remains deferred for a future pass following the same extract-after-building
-discipline.
+(C1–C10); Rules 8–14 from audit group E (E1–E26); Rules 15–21 from audit
+group S (S1–S16). Table-verified tally: A 5 P1 / 5 P2 / 0 P3, C 0 / 3 / 7,
+E 3 / 20 / 3, S 4 / 10 / 2 — 62/62 addressed, 0 deferred. (The audit
+doc's §2 header prose claims "11 P1 / 39 P2"; the 62 table rows
+themselves sum to 12 P1 / 38 P2 / 12 P3 — the rows are authoritative.)
+The 11 §5 open questions Q1–Q11 explicitly need product/device
+confirmation and were never findings, so they stay open and untouched
+by design; the §4 verified-OK items were confirmed non-findings and
+likewise untouched.
