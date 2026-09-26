@@ -4,6 +4,12 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Owner Cancellation Request Confirmation Dialog and Decision-Specific Toasts (Audit E12/E26)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E12 and E26, owner approve and decline decisions on employee cancellation requests fired immediately with zero confirmation on tap, followed by a generic "Request resolved." toast for opposite outcomes (`home_screen.dart:114–136, 1283–1319`). Wrapped both decisions in `ConfirmActionDialog.show` within `_respondCancellationRequest`, stating the exact consequence upfront (approve confirms job cancellation and full escrow refund to customer, styled with `isDestructive: true`; decline confirms courier remains assigned to active job). On success, replaced the generic toast with decision-specific localized strings (`ownerCancelRequestApproved` / `ownerCancelRequestDeclined`, EN + Egyptian-AR via `flutter gen-l10n`).
+- **Commit SHA**: ``c9d2a902adef957a8cbfcf37971f56816fc502f8``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean, `owner_cancellation_respond_test.dart` updated and extended (asserting dialog presentation, consequence copy, cancel aborts submission with 0 provider calls, approve/decline confirm flows, and distinct success snackbar copy; 5/5 passed), full `flutter test` 640/640 green. No backend changes.
+
 ## Unavailable Job Status Keeps a Single Retry CTA (Audit C10)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding C10, `job_status_screen.dart` rendered two identical retry buttons for `unavailable` jobs — one inside `_buildUnavailableBusyCard`, one in `_buildActionButtons` (same `_retryBooking` handler, same `retryBookingAction` copy, shared `_isRetrying` flag). Removed the action-row duplicate (`job_status_unavailable_retry_button`); kept the in-card button (`job_status_retry_button`) because it sits directly under the all-couriers-busy explanation, closest to the failure context. Purely structural — no behavior change, since both were already in sync.
