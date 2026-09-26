@@ -4,6 +4,14 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Lock 2FA-Enable Switch During Round-Trip (Audit S10)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` finding S10, enabling 2FA awaited `auth.toggleTwoFactor(true)` with the switch static for the whole round-trip, so rapid taps queued multiple PATCHes (same defect class as tracked E-05, different control). `SettingsScreen` is now `StatefulWidget` (const constructor and all five call sites unchanged) holding a `_toggling2fa` flag: the enable path sets it around the await (cleared in `finally`), and while set the switch is replaced by a 20px progress indicator (`settings_2fa_toggle_progress`), refusing re-trigger until resolve — mirroring the disable path's existing `_isLoading` handling. The disable flow (confirm + password dialogs) is untouched.
+- **Commit SHA**: ``330cc4d415d33ea221fff975de060af62ad27e73``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), `settings_screen_test.dart` mock extended with a `toggleGate` completer + 1 new S10 case (mid-round-trip switch absent with progress shown and exactly one PATCH queued via fixed-frame pumps; resolved switch back ON with `onChanged` live and success snackbar). Pre-existing enable/disable tests pass unchanged. Full `flutter test` suite green via pre-push gate. Backend checks (`gofmt -l .`, `shared/infra` tests via `make docs-check`) green.
+
+---
+
 ## My-Account Address Inline Validation, Empty State, and Delete Undo (Audit S9/S3/S8)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings S9, S3, and S8, the frequent-addresses card scattered its feedback: (S9) the 10-cap and empty-add errors surfaced (if at all) in the distant top form banner while the field had no validator — the add row now owns a `_addressFormKey` scope with `AutovalidateMode.onUserInteraction` and a validator returning the inline cap message (`myAccountMaxAddressesError`, reused) or the empty hint (new `myAccountAddressRequired`, EN + Egyptian-AR via `flutter gen-l10n`); `_addAddress` validates first, and a form `reset()` after each successful add prevents the cleared field from flashing a spurious required error (locked by test); the submit-time >10 guard stays as a server-data safety net; (S3) the zero-addresses bare italic text is now a `ThemedEmptyState` (location icon, existing `myAccountNoAddresses` copy, `myAccountAddButton` action) that adds typed input directly or focuses the field when empty; (S8) the one-tap delete keeps its red affordance but follows with an "Address removed — UNDO" snackbar (new `myAccountAddressRemoved` + `undoAction` keys) that reinserts the exact text at its stored index.
