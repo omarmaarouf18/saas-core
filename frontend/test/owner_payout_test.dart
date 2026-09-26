@@ -13,6 +13,10 @@ import 'package:frontend/screens/wallet_screen.dart';
 class FakeApiClientForPayout extends ApiClient {
   final Map<String, dynamic> mockWalletResponse;
   final List<dynamic> mockPayoutRequestsResponse;
+
+  /// Audit S6/S15: when true, the payout-list endpoint throws, simulating a
+  /// transient payout-service outage while wallet/ledger stay healthy.
+  bool failPayoutRequests = false;
   Map<String, dynamic>? lastPostedPayoutBody;
 
   FakeApiClientForPayout({
@@ -45,6 +49,9 @@ class FakeApiClientForPayout extends ApiClient {
       return {'platform_fee_percentage': 0.0};
     }
     if (path == '/users/wallet/payout/requests') {
+      if (failPayoutRequests) {
+        throw ApiClientException('Payout service unavailable', statusCode: 500);
+      }
       return mockPayoutRequestsResponse;
     }
     return {};
@@ -454,6 +461,66 @@ void main() {
         find.byKey(const ValueKey('ledger_section_loading')), findsOneWidget);
     expect(find.text('No payout requests submitted yet.'), findsNothing);
     expect(find.text('No transactions recorded yet.'), findsNothing);
+  });
+
+  test('Audit S6: payout-list failure keeps the last-good cached list',
+      () async {
+    final fakeApi = FakeApiClientForPayout(
+      mockPayoutRequestsResponse: [
+        {
+          'id': 'payout-1',
+          'tenant_id': 'owner-test-1',
+          'amount': 120.0,
+          'status': 'requested',
+          'payout_method': 'instapay',
+          'account_details': 'wallet-123',
+          'created_at': '2026-09-20T10:00:00Z',
+          'updated_at': '2026-09-20T10:00:00Z',
+        },
+      ],
+    );
+    final ownerProvider = OwnerProvider(fakeApi);
+
+    await ownerProvider.fetchPayoutRequests();
+    expect(ownerProvider.payoutRequests, hasLength(1));
+    expect(ownerProvider.error, isNull);
+
+    // Transient outage: the cached entry survives, the banner owns the
+    // signal — no wiped list, no contradictory empty state.
+    fakeApi.failPayoutRequests = true;
+    await ownerProvider.fetchPayoutRequests();
+    expect(ownerProvider.payoutRequests, hasLength(1));
+    expect(ownerProvider.payoutRequests.first.id, 'payout-1');
+    expect(ownerProvider.error, isNotNull);
+  });
+
+  testWidgets(
+      'Audit S15: ledger empty-state refresh runs the unified refresh (hits payouts)',
+      (WidgetTester tester) async {
+    final fakeApi = FakeApiClientForPayout();
+    final ownerProvider = OwnerProvider(fakeApi);
+    await ownerProvider.fetchDashboardData('mock-owner-token');
+
+    await tester.pumpWidget(createWalletTestWidget(
+      apiClient: fakeApi,
+      ownerProvider: ownerProvider,
+    ));
+    await tester.pumpAndSettle();
+
+    // Healthy start: ledger genuinely empty, no error anywhere.
+    expect(find.text('No transactions recorded yet.'), findsOneWidget);
+    expect(find.byKey(const Key('wallet_screen_error')), findsNothing);
+
+    // Outage begins AFTER first paint; the ledger button's refresh must
+    // surface it — only possible if it refetches payouts, not just the
+    // dashboard slice the old button fetched.
+    fakeApi.failPayoutRequests = true;
+    final refreshBtn = find.text('Refresh Wallet');
+    await tester.ensureVisible(refreshBtn);
+    await tester.tap(refreshBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('wallet_screen_error')), findsOneWidget);
   });
 }
 

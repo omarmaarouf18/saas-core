@@ -27,6 +27,20 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  /// Audit S15: single refresh routine — pull-to-refresh, the error banner
+  /// retry, and the ledger empty-state button all refetch the same three
+  /// slices, so a payout-list failure can never survive the retry placed
+  /// next to it. (Distinct from tracked O-07, which is dialog-side.)
+  Future<void> _refreshAll() async {
+    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.token != null) {
+      await ownerProvider.fetchDashboardData(auth.token!);
+    }
+    await ownerProvider.fetchPlatformConfig();
+    await ownerProvider.fetchPayoutRequests();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,13 +80,7 @@ class _WalletScreenState extends State<WalletScreen> {
               )
             : RefreshIndicator(
                 key: const ValueKey('wallet_content'),
-                onRefresh: () async {
-                  if (auth.token != null) {
-                    await ownerProvider.fetchDashboardData(auth.token!);
-                  }
-                  await ownerProvider.fetchPlatformConfig();
-                  await ownerProvider.fetchPayoutRequests();
-                },
+                onRefresh: _refreshAll,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(AppSpacing.lg),
@@ -89,14 +97,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ThemedErrorBanner(
                           key: const Key('wallet_screen_error'),
                           message: ownerProvider.error!,
-                          onRetry: () async {
-                            if (auth.token != null) {
-                              await ownerProvider
-                                  .fetchDashboardData(auth.token!);
-                            }
-                            await ownerProvider.fetchPlatformConfig();
-                            await ownerProvider.fetchPayoutRequests();
-                          },
+                          onRetry: _refreshAll,
                         ),
                         const SizedBox(height: AppSpacing.lg),
                       ],
@@ -397,9 +398,9 @@ class _WalletScreenState extends State<WalletScreen> {
         const SizedBox(height: AppSpacing.sm),
         // Audit S11: same loading-vs-empty gate as the payout section above.
         if (ownerProvider.ledgerEntries.isEmpty && ownerProvider.isLoading)
-          Center(
+          const Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: ThemedLoadingIndicator(
                 key: ValueKey('ledger_section_loading'),
               ),
@@ -414,11 +415,8 @@ class _WalletScreenState extends State<WalletScreen> {
               title: l10n.walletNoTransactions,
               description: l10n.walletLedgerEmptyHint,
               actionText: l10n.refreshWalletBtn,
-              onActionPressed: () {
-                if (auth.token != null) {
-                  ownerProvider.fetchDashboardData(auth.token!);
-                }
-              },
+              // Audit S15: same unified refresh as pull + banner retry.
+              onActionPressed: () => _refreshAll(),
             ),
           )
         else

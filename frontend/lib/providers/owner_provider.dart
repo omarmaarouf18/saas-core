@@ -587,9 +587,11 @@ class OwnerProvider extends ChangeNotifier {
       return _payoutRequests;
     } catch (e) {
       debugPrint('Error fetching payout requests: $e');
+      // Audit S6: keep the last-good list on failure — the banner + retry
+      // is the sole error signal, never a contradictory wiped empty state
+      // with an active withdraw CTA on possibly stale balances.
       _error = friendlyErrorMessage(e);
-      _payoutRequests = [];
-      return [];
+      return _payoutRequests;
     } finally {
       _isLoading = false;
       notifyListeners();
