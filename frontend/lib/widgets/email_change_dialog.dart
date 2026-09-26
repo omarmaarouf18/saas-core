@@ -13,8 +13,13 @@ class EmailChangeDialog extends StatefulWidget {
   const EmailChangeDialog({super.key});
 
   static Future<void> show(BuildContext context) {
+    // Audit S12: the two-step request-code → OTP flow carries `_targetEmail`
+    // step state — an outside tap must never discard it. Matches the money
+    // (deposit/payout) and password (settings 2FA-disable) dialogs; the
+    // explicit close button stays the single exit.
     return showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => const EmailChangeDialog(),
     );
   }
@@ -143,7 +148,10 @@ class _EmailChangeDialogState extends State<EmailChangeDialog> {
                       key: const Key('close_email_change_dialog'),
                       icon: const Icon(Icons.close),
                       tooltip: context.l10n.tooltipClose,
-                      onPressed: () => Navigator.of(context).pop(),
+                      // Audit S13: no mid-request dismissal, matching the
+                      // deposit/payout siblings.
+                      onPressed:
+                          _isLoading ? null : () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),

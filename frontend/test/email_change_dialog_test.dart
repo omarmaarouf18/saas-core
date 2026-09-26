@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +16,7 @@ class MockAuthProviderForDialog extends AuthProvider {
   final bool shouldFailRequest;
   final bool shouldFailConfirm;
   final String? customError;
+  Completer<void>? requestGate;
   bool requestCalled = false;
   bool confirmCalled = false;
   String? lastRequestedEmail;
@@ -44,6 +47,11 @@ class MockAuthProviderForDialog extends AuthProvider {
   Future<String?> requestEmailChange(String newEmail) async {
     requestCalled = true;
     lastRequestedEmail = newEmail;
+    // Audit S13: optional gate holding the request in flight so the test
+    // can observe the mid-submit dialog state deterministically.
+    if (requestGate != null) {
+      await requestGate!.future;
+    }
     if (shouldFailRequest) {
       throw ApiClientException('Email already in use', statusCode: 409);
     }
@@ -262,5 +270,59 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Verify New Email'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Audit S12: outside tap does not discard the two-step email-change flow',
+      (WidgetTester tester) async {
+    final auth = MockAuthProviderForDialog(apiClient);
+    await tester.pumpWidget(createDialogTestApp(authProvider: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open_dialog_button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailChangeDialog), findsOneWidget);
+
+    // Outside-tap on the barrier must not dismiss (deposit/payout parity).
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmailChangeDialog), findsOneWidget);
+    expect(find.byKey(const Key('new_email_input')), findsOneWidget);
+  });
+
+  testWidgets('Audit S13: close is disabled while a request is in flight',
+      (WidgetTester tester) async {
+    final auth = MockAuthProviderForDialog(apiClient);
+    auth.requestGate = Completer<void>();
+    await tester.pumpWidget(createDialogTestApp(authProvider: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open_dialog_button')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('new_email_input')), 'user@test.com');
+    await tester.tap(find.byKey(const Key('send_email_code_button')));
+    // Fixed-frame pumps only: the submit spinner animates indefinitely.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Mid-request: the explicit close stays, but disabled.
+    final closeBtn = tester.widget<IconButton>(
+      find.byKey(const Key('close_email_change_dialog')),
+    );
+    expect(closeBtn.onPressed, isNull);
+    expect(find.byType(EmailChangeDialog), findsOneWidget);
+
+    // Release: step 2 arrives, close re-enables.
+    auth.requestGate!.complete();
+    await tester.pumpAndSettle();
+
+    final closeBtnAfter = tester.widget<IconButton>(
+      find.byKey(const Key('close_email_change_dialog')),
+    );
+    expect(closeBtnAfter.onPressed, isNotNull);
+    expect(find.byKey(const Key('email_change_otp_input')), findsOneWidget);
   });
 }
