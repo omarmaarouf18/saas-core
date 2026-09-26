@@ -4,6 +4,17 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Actionable Empty States and Recovery Across Roster, History, Recon Queue, and Fleet Map (Audit E4-E7)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E4, E5, E6, and E7, filtered views and empty notices across owner and employee screens lacked iconography, descriptions, or recovery affordances:
+  - Employee Roster (`employee_screen.dart:304–320`): Replaced bare filtered-empty text with `ThemedEmptyState` (`filtered_empty_employees_state`) featuring `search_off_outlined` icon, `noWorkersMatchFilter` title, `adjustFiltersDesc` description, and `clearFiltersBtn` action resetting `_searchController` and `_statusFilter = 'all'`.
+  - Owner History (`owner_history_screen.dart:373–387`): Replaced bare filtered-empty text on Jobs sub-tab with `ThemedEmptyState` (`filtered_empty_jobs_state`) featuring `search_off_outlined` icon, `noJobsMatchFilter` title, `adjustFiltersDesc` description, and `clearFiltersBtn` action resetting `_jobsSearchController` and `_jobsStatusFilter = 'all'`.
+  - Reconciliation Queue (`owner_reconciliation_queue_screen.dart:280–297`): Replaced bare filtered-empty text with `ThemedEmptyState` (`filtered_empty_recon_state`) featuring `search_off_outlined` icon, `noReconMatchFilter` title, `adjustFiltersDesc` description, and `clearFiltersBtn` action resetting `_searchController` and `_selectedCategory = 'all'`.
+  - Fleet Live Map (`owner_fleet_map_screen.dart:454–485`): Added `empty_fleet_refresh_button` `IconButton` (`Icons.refresh`) to `_buildEmptyFleetNotice` invoking `provider.hydrateOwnerFleet(widget.token!)` directly from the notice card.
+  - Localization: Added `clearFiltersBtn` ("Clear Filters" / "مسح الفلاتر") and `adjustFiltersDesc` ("Try adjusting your search query or status filter." / "جرب تعديل كلمة البحث أو فلتر الحالة.") in `app_en.arb` and Egyptian-AR `app_ar.arb`.
+- **Commit SHA**: ``58e14e5fce63bd817de6929f0661ae4c42ce958c``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean, widget tests added in `owner_employees_test.dart` (E4, 9/9 passed), `owner_history_screen_test.dart` (E5, 6/6 passed), `reconciliation_queue_test.dart` (E6, 10/10 passed), and `map_tracking_test.dart` (E7, 10/10 passed). Golden suite updated for fleet map notice refresh button and all 58/58 passed (`golden_screens_test.dart`). Backend `gofmt -l .` clean, `shared/infra` tests pass.
+
 ## Persistent Inline Error Banners on Audit Trail Tab and Fleet Map (Audit E8/E9)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E8 and E9, stored-but-unread provider errors masqueraded as empty states on the employee roster audit tab (`employee_screen.dart:703–792`, `owner_provider.dart:211–213`) and the fleet live map (`owner_fleet_map_screen.dart:142–236, 574–587`, `map_tracking_provider.dart:128–131, 166–168`). On the audit trail tab, surfaced `ThemedErrorBanner(key: Key('audit_log_error_banner'), message: ownerProvider.error!, onRetry: _refreshAuditLog)` and suppressed the contradictory "No audit events recorded" empty state when fetch fails. On the fleet map, captured available-employees sub-fetch failures in `MapTrackingProvider._error`, gated the empty fleet notice on `provider.error == null`, and surfaced `provider.error` via `ThemedErrorBanner(key: Key('fleet_map_error_banner'), message: provider.error!, onRetry: () => provider.hydrateOwnerFleet(widget.token!))` inside `_buildConnectionBanner`.
