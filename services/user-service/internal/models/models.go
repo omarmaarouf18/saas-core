@@ -118,11 +118,22 @@ func ValidPriceProposal(suggested, proposed float64) bool {
 	return proposed >= (minPrice-eps) && proposed <= (maxPrice+eps)
 }
 
-// Location represents a geographic coordinate pair.
+// Location represents a geographic coordinate pair, optionally annotated
+// with a free-text landmark note (Option C, no ADR: passive display string,
+// no validation beyond length, no state/auth/money semantics — same class
+// as CreateServiceRequest.Address and the Destination field itself, both
+// of which shipped without ADRs).
 type Location struct {
 	Latitude  float64 `json:"latitude"  bson:"latitude"`
 	Longitude float64 `json:"longitude" bson:"longitude"`
+	// AddressNote is an optional customer/owner-typed landmark description
+	// (e.g. "beside Ahmed's kiosk") helping the courier find the pin.
+	// Free text, never validated as an address; length-capped at creation.
+	AddressNote string `json:"address_note,omitempty" bson:"address_note,omitempty"`
 }
+
+// MaxAddressNoteLength caps the free-text landmark note (Option C).
+const MaxAddressNoteLength = 500
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
