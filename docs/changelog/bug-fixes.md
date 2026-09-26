@@ -4,6 +4,16 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Skeleton Loading Placeholders Across Employee Roster, Owner History, and Recon Queue (Audit E1, E2, E3)
+
+- **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E1, E2, and E3, initial loading states across owner and employee screens relied on bare centered spinners rather than skeleton layout placeholders:
+  - Employee Roster & Audit Trail (E1): In `employee_screen.dart`, replaced `ThemedLoadingIndicator` with `ListView.separated` of `EmployeeRosterCardSkeleton` (`key: Key('employees_roster_skeleton_list')`) during initial roster fetch, and a `ListView.builder` of `AuditTrailCardSkeleton` (`key: Key('audit_trail_skeleton_list')`) during initial audit trail fetch, reserving pull-to-refresh for subsequent network updates.
+  - Owner History Tabs (E2): In `owner_history_screen.dart`, replaced bare centered `ThemedLoadingIndicator` spinners across all three tabs with skeleton card lists matching real card geometries: `AuditTrailCardSkeleton` list (`key: Key('owner_history_activity_skeleton_list')`) for the Activity tab, `EmployeeJobCardSkeleton` list (`key: Key('owner_history_jobs_skeleton_list')`) for the Jobs tab, and `LedgerCardSkeleton` list (`key: Key('owner_history_ledger_skeleton_list')`) for the Ledger tab.
+  - Reconciliation Queue (E3): In `owner_reconciliation_queue_screen.dart`, supplied a `ListView.builder` of `ReconciliationCardSkeleton` (`key: Key('reconciliation_queue_skeleton_list')`) as `loadingWidget` to `ListScreenTemplate`, eliminating the template's default fallback spinner.
+  - Shared Widget: Extended `frontend/lib/widgets/skeleton_loader.dart` with reusable skeleton primitives: `EmployeeRosterCardSkeleton` (matching worker avatar, username, email, ID badge, and status chip), `AuditTrailCardSkeleton` (matching audit event action, timestamp, and client IP), `LedgerCardSkeleton` (matching financial icon, description, job ID, and amount), and `ReconciliationCardSkeleton` (matching escrow order header, failure detail rows, and dual resolution buttons).
+- **Commit SHA**: ``3e432e18307c844fba9f14ab5c3f6ccaec96cf7a``
+- **Verification**: `dart format --set-exit-if-changed` clean, `flutter analyze` clean (0 warnings), widget and primitive unit tests added/updated in `skeleton_loader_test.dart` (asserting all 4 new skeleton primitives render exact shimmer structures; 13/13 passed), `owner_employees_test.dart` (asserting roster and audit trail skeletons on initial load; 13/13 passed), `owner_history_screen_test.dart` (asserting skeletons across Activity, Jobs, and Ledger tabs; 9/9 passed), and `reconciliation_queue_test.dart` (asserting reconciliation card skeletons on initial load; 11/11 passed). Full golden screen test suite passed 58/58 byte-identical (`golden_screens_test.dart`). Backend checks (`gofmt -l .`, `shared/infra` tests) green.
+
 ## Fleet Map Stale-While-Revalidate, Non-Blocking Refresh Signals, Focal Roster Elevation, and Dashboard Real Urgency (Audit E16, E18, E19, E23, E25)
 
 - **Implementation Detail**: Per `docs/frontend/UI_UX_AUDIT_2026-09.md` findings E16, E18, E19, E23, and E25, owner and employee workflows lacked background refresh signals, wiped maps on revalidation, suffered from card hierarchy competition, and contained deceptive static mock actions:
