@@ -771,7 +771,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: ThemedInlineSpinner(size: 20),
+                    child: ThemedInlineSpinner(size: AppIconSize.smMd),
                   )
                 : Icon(
                     Icons.attach_file_rounded,
@@ -811,7 +811,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: ThemedInlineSpinner(size: 20),
+                    child: ThemedInlineSpinner(size: AppIconSize.smMd),
                   )
                 : Icon(
                     Icons.send_rounded,

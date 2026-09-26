@@ -128,7 +128,7 @@ class ComponentLibraryScreen extends StatelessWidget {
             children: [
               ThemedInlineSpinner(size: 8, color: AppColors.secondary),
               ThemedInlineSpinner(size: 18),
-              ThemedInlineSpinner(size: 20),
+              ThemedInlineSpinner(size: AppIconSize.smMd),
             ],
           ),
           _section('Error / Empty / Success States'),

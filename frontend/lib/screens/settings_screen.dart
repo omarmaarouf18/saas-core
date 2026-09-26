@@ -445,13 +445,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     width: 48,
                     height: 32,
                     child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: ThemedInlineSpinner(
-                          key: Key('settings_2fa_toggle_progress'),
-                          size: 20,
-                        ),
+                      child: ThemedInlineSpinner(
+                        key: Key('settings_2fa_toggle_progress'),
+                        size: AppIconSize.smMd,
                       ),
                     ),
                   )
