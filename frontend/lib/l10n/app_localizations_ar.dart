@@ -1513,6 +1513,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapDropoffBadge => 'الوصول';
 
   @override
+  String get mapYouAreHereBadge => 'انت';
+
+  @override
+  String get employeeLiveMapTitle => 'خريطة المشوار';
+
+  @override
+  String get employeeTrackTripBtn => 'عرض الخريطة';
+
+  @override
+  String get employeeWaitingSelfPosition => 'مستني موقعك من الـ GPS…';
+
+  @override
+  String get employeeMapLocationDenied =>
+      'إذن الموقع مرفوض — موقعك المباشر مش هيظهر، لكن الاستلام والوصول ظاهرين.';
+
+  @override
   String get waitingCourierUpdates => 'مستنيين تحديثات موقع الكورير...';
 
   @override

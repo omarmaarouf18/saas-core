@@ -2883,6 +2883,36 @@ abstract class AppLocalizations {
   /// **'Dropoff'**
   String get mapDropoffBadge;
 
+  /// No description provided for @mapYouAreHereBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get mapYouAreHereBadge;
+
+  /// No description provided for @employeeLiveMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Trip Map'**
+  String get employeeLiveMapTitle;
+
+  /// No description provided for @employeeTrackTripBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'View Live Map'**
+  String get employeeTrackTripBtn;
+
+  /// No description provided for @employeeWaitingSelfPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your GPS position…'**
+  String get employeeWaitingSelfPosition;
+
+  /// No description provided for @employeeMapLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied — your live position won\'t show, but pickup and dropoff still do.'**
+  String get employeeMapLocationDenied;
+
   /// No description provided for @waitingCourierUpdates.
   ///
   /// In en, this message translates to:

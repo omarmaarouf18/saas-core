@@ -18,6 +18,16 @@ class JobLocation {
   String formatCoordinates() =>
       '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
 
+  /// Compact address summary (Option C display rule, shared): the typed
+  /// landmark note when one was entered, coordinates only when nothing
+  /// was. Matches the booking-dialog presentation (note-primary,
+  /// coords-fallback) so map sheets and booking flows never disagree.
+  String addressSummary() {
+    final note = addressNote?.trim() ?? '';
+    if (note.isNotEmpty) return note;
+    return formatCoordinates();
+  }
+
   factory JobLocation.fromJson(Map<String, dynamic> json) {
     return JobLocation(
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,

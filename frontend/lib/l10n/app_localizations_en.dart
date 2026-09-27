@@ -1531,6 +1531,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapDropoffBadge => 'Dropoff';
 
   @override
+  String get mapYouAreHereBadge => 'You';
+
+  @override
+  String get employeeLiveMapTitle => 'Live Trip Map';
+
+  @override
+  String get employeeTrackTripBtn => 'View Live Map';
+
+  @override
+  String get employeeWaitingSelfPosition => 'Waiting for your GPS position…';
+
+  @override
+  String get employeeMapLocationDenied =>
+      'Location permission denied — your live position won\'t show, but pickup and dropoff still do.';
+
+  @override
   String get waitingCourierUpdates => 'Waiting for courier location updates...';
 
   @override

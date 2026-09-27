@@ -30,6 +30,7 @@ import '../widgets/themed_text_field.dart';
 import 'notifications_screen.dart';
 import 'settings_screen.dart';
 import 'chat_screen.dart';
+import 'employee_job_map_screen.dart';
 import 'kyc_document_upload_screen.dart';
 
 class EmployeeJobsScreen extends StatefulWidget {
@@ -1489,6 +1490,26 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   ),
                 ],
               ],
+            ),
+            // Live trip map entry: the in-card JobLocationMiniMap stays as
+            // the static preview; this explicit action opens the live
+            // pickup + dropoff + own-position screen (mirrors the
+            // customer's open_map_tracking_button entry pattern).
+            const SizedBox(height: AppSpacing.sm),
+            SecondaryButton(
+              key: Key('employee_live_map_button_${job.id}'),
+              text: l10n.employeeTrackTripBtn,
+              icon: Icons.map_outlined,
+              isOutlined: true,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EmployeeJobMapScreen(
+                      job: job,
+                    ),
+                  ),
+                );
+              },
             ),
             // Cancellation-request states (ADR-0027): a live pending request
             // replaces the button; a rejected outcome stays visible.

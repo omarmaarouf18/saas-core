@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +12,12 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/employee_jobs_provider.dart';
 import 'package:frontend/providers/employee_location_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
+import 'package:frontend/screens/employee_job_map_screen.dart';
 import 'package:frontend/screens/employee_jobs_screen.dart';
 import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/secondary_button.dart';
+
+import 'helpers/stub_tile_http.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -709,5 +713,39 @@ void main() {
     // S5: retries extend the lockout, so no retry affordance renders.
     expect(find.descendant(of: banner, matching: find.byType(TextButton)),
         findsNothing);
+  });
+
+  testWidgets('Live map entry opens the employee trip map screen',
+      (WidgetTester tester) async {
+    // The pushed screen moves the camera on open: stub tile bytes so no
+    // sandbox tile failure can escape to the image service (see
+    // helpers/stub_tile_http.dart).
+    final previousOverrides = HttpOverrides.current;
+    HttpOverrides.global = StubTileHttpOverrides();
+    addTearDown(() => HttpOverrides.global = previousOverrides);
+
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    // Static mini-map preview stays in the card...
+    expect(find.byKey(const Key('job_destination_map_job-awaiting-price-004')),
+        findsOneWidget);
+    // ...and the explicit action navigates to the live screen (mirrors the
+    // customer's open_map_tracking_button entry pattern).
+    final trackBtn = find
+        .byKey(const Key('employee_live_map_button_job-awaiting-price-004'));
+    expect(trackBtn, findsOneWidget);
+    await tester.ensureVisible(trackBtn);
+    await tester.tap(trackBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmployeeJobMapScreen), findsOneWidget);
+    expect(find.text('Live Trip Map'), findsOneWidget);
   });
 }
