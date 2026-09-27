@@ -1528,6 +1528,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapPickupBadge => 'Pickup';
 
   @override
+  String get mapDropoffBadge => 'Dropoff';
+
+  @override
   String get waitingCourierUpdates => 'Waiting for courier location updates...';
 
   @override

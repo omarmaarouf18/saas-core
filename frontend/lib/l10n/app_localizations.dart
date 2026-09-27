@@ -2877,6 +2877,12 @@ abstract class AppLocalizations {
   /// **'Pickup'**
   String get mapPickupBadge;
 
+  /// No description provided for @mapDropoffBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropoff'**
+  String get mapDropoffBadge;
+
   /// No description provided for @waitingCourierUpdates.
   ///
   /// In en, this message translates to:

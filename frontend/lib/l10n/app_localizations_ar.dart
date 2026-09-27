@@ -1510,6 +1510,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapPickupBadge => 'استلام';
 
   @override
+  String get mapDropoffBadge => 'الوصول';
+
+  @override
   String get waitingCourierUpdates => 'مستنيين تحديثات موقع الكورير...';
 
   @override

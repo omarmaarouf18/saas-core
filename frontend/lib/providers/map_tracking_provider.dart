@@ -17,6 +17,7 @@ class MapTrackingProvider extends ChangeNotifier {
 
   final Map<String, EmployeeMarkerData> _employeeMarkers = {};
   JobLocation? _customerJobLocation;
+  JobLocation? _customerJobDestination;
   String? _assignedEmployeeId;
 
   // Owner-roster name lookup (employeeId -> username), supplied by UI scopes
@@ -48,6 +49,7 @@ class MapTrackingProvider extends ChangeNotifier {
   Map<String, EmployeeMarkerData> get employeeMarkers => _employeeMarkers;
   List<EmployeeMarkerData> get markersList => _employeeMarkers.values.toList();
   JobLocation? get customerJobLocation => _customerJobLocation;
+  JobLocation? get customerJobDestination => _customerJobDestination;
   String? get assignedEmployeeId => _assignedEmployeeId;
 
   bool get isLoading => _isLoading;
@@ -188,6 +190,7 @@ class MapTrackingProvider extends ChangeNotifier {
     _subscriptionError = null;
     _employeeMarkers.clear();
     _customerJobLocation = null;
+    _customerJobDestination = null;
     _assignedEmployeeId = null;
     notifyListeners();
 
@@ -211,6 +214,7 @@ class MapTrackingProvider extends ChangeNotifier {
       if (jobMap != null) {
         final job = Job.fromJson(jobMap);
         _customerJobLocation = job.location;
+        _customerJobDestination = job.destination;
         _assignedEmployeeId = job.employeeId;
 
         if (job.employeeId != null && job.employeeId!.isNotEmpty) {
@@ -428,6 +432,7 @@ class MapTrackingProvider extends ChangeNotifier {
     _currentToken = null;
     _employeeMarkers.clear();
     _customerJobLocation = null;
+    _customerJobDestination = null;
     _assignedEmployeeId = null;
   }
 

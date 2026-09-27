@@ -701,6 +701,7 @@
     }
   },
   "mapPickupBadge": "Pickup",
+  "mapDropoffBadge": "Dropoff",
   "waitingCourierUpdates": "Waiting for courier location updates...",
   "reconnectingTrackingStream": "Reconnecting live tracking stream...",
   "filterAll": "All",

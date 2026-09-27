@@ -17,6 +17,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
   final String? initialSubError;
   final String? initialError;
   final JobLocation? initialJobLoc;
+  final JobLocation? initialJobDestination;
   final String? initialAssignedEmp;
 
   MockMapTrackingProvider({
@@ -27,6 +28,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
     this.initialSubError,
     this.initialError,
     this.initialJobLoc,
+    this.initialJobDestination,
     this.initialAssignedEmp,
   }) : super(apiClient) {
     _testMarkers = Map.from(initialMarkers);
@@ -35,6 +37,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
     _testSubError = initialSubError;
     _testError = initialError;
     _testJobLoc = initialJobLoc;
+    _testJobDestination = initialJobDestination;
     _testAssignedEmp = initialAssignedEmp;
   }
 
@@ -44,6 +47,7 @@ class MockMapTrackingProvider extends MapTrackingProvider {
   late String? _testSubError;
   late String? _testError;
   late JobLocation? _testJobLoc;
+  late JobLocation? _testJobDestination;
   late String? _testAssignedEmp;
   bool hydrateOwnerFleetCalled = false;
 
@@ -68,6 +72,9 @@ class MockMapTrackingProvider extends MapTrackingProvider {
 
   @override
   JobLocation? get customerJobLocation => _testJobLoc;
+
+  @override
+  JobLocation? get customerJobDestination => _testJobDestination;
 
   @override
   String? get assignedEmployeeId => _testAssignedEmp;
@@ -592,9 +599,126 @@ void main() {
       expect(find.text('courier-77'), findsOneWidget);
       expect(find.byIcon(Icons.directions_bike), findsOneWidget);
     });
+
+    testWidgets('(d) Dropoff marker renders when destination is set',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialAssignedEmp: 'courier-77',
+        initialJobLoc: JobLocation(latitude: 30.0, longitude: 30.0),
+        // Near the courier fix: MarkerLayer culls off-viewport markers,
+        // so a far-away dropoff would never enter the widget tree.
+        initialJobDestination: JobLocation(latitude: 30.012, longitude: 30.012),
+        initialMarkers: {
+          'courier-77': EmployeeMarkerData(
+            employeeId: 'courier-77',
+            jobId: 'job-999',
+            latitude: 30.01,
+            longitude: 30.01,
+            updatedAt: DateTime.now(),
+          ),
+        },
+        initialLoading: false,
+        initialConnected: true,
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const CustomerJobMapScreen(
+              jobId: 'job-999',
+              token: 'token-999',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Dropoff end of the trip now renders alongside pickup + courier.
+      expect(find.byKey(const Key('customer_job_map_dropoff_marker')),
+          findsOneWidget);
+      expect(find.text('Dropoff'), findsOneWidget);
+      // Visually distinct from pickup (amber pin vs navy flag).
+      expect(find.text('Pickup'), findsOneWidget);
+      expect(find.byIcon(Icons.flag), findsOneWidget);
+      expect(find.byIcon(Icons.location_on), findsOneWidget);
+      expect(find.byIcon(Icons.directions_bike), findsOneWidget);
+    });
+
+    testWidgets('(e) No dropoff marker when destination is null',
+        (WidgetTester tester) async {
+      final mockProvider = MockMapTrackingProvider(
+        apiClient: apiClient,
+        initialAssignedEmp: 'courier-77',
+        initialJobLoc: JobLocation(latitude: 30.0, longitude: 30.0),
+        initialJobDestination: null,
+        initialMarkers: const {},
+        initialLoading: false,
+        initialConnected: true,
+      );
+
+      await tester.pumpWidget(
+        buildTestMapApp(
+          child: ChangeNotifierProvider<MapTrackingProvider>.value(
+            value: mockProvider,
+            child: const CustomerJobMapScreen(
+              jobId: 'job-999',
+              token: 'token-999',
+            ),
+          ),
+        ),
+      );
+
+      // Fixed-frame pumps only: with no courier marker the waiting notice
+      // renders PendingPulseDot (infinite fade loop), which pumpAndSettle
+      // can never settle — same harness note as the skeleton shimmer.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byKey(const Key('customer_job_map_dropoff_marker')),
+          findsNothing);
+      expect(find.text('Dropoff'), findsNothing);
+      expect(find.text('Pickup'), findsOneWidget);
+    });
   });
 
   group('MapTrackingProvider Unit Tests', () {
+    test('(d) hydrateCustomerJob stores pickup and destination locations',
+        () async {
+      final mockApi = _MockApiClientForMap();
+      mockApi.getResponses['/users/jobs/get'] = {
+        'id': 'job-999',
+        'employee_id': 'courier-77',
+        'location': {'latitude': 30.0, 'longitude': 30.0},
+        'destination': {'latitude': 30.1, 'longitude': 30.1},
+      };
+
+      final provider = MapTrackingProvider(mockApi);
+      await provider.hydrateCustomerJob('job-999', 'token-999');
+
+      expect(provider.customerJobLocation?.latitude, 30.0);
+      expect(provider.customerJobDestination?.latitude, 30.1);
+      expect(provider.customerJobDestination?.longitude, 30.1);
+      expect(provider.assignedEmployeeId, 'courier-77');
+    });
+
+    test('(f) hydrateCustomerJob tolerates a null destination', () async {
+      final mockApi = _MockApiClientForMap();
+      mockApi.getResponses['/users/jobs/get'] = {
+        'id': 'job-1000',
+        'employee_id': 'courier-78',
+        'location': {'latitude': 30.0, 'longitude': 30.0},
+      };
+
+      final provider = MapTrackingProvider(mockApi);
+      await provider.hydrateCustomerJob('job-1000', 'token-1000');
+
+      expect(provider.customerJobLocation?.latitude, 30.0);
+      expect(provider.customerJobDestination, isNull);
+    });
+
     test(
         '(e) hydrateOwnerFleet queries both /users/employees/available and /users/jobs/owner',
         () async {

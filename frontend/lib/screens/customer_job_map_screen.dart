@@ -169,6 +169,14 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
       );
     }
 
+    // Dropoff Marker (was missing entirely — the map showed pickup +
+    // courier but never where the trip ends).
+    if (provider.customerJobDestination != null) {
+      mapMarkers.add(
+        _createDropoffMarker(provider.customerJobDestination!),
+      );
+    }
+
     // Active Courier Markers
     for (final m in markers) {
       mapMarkers.add(
@@ -211,6 +219,49 @@ class _CustomerJobMapScreenState extends State<CustomerJobMapScreen>
               child: Icon(
                 Icons.flag,
                 color: AppColors.onPrimary,
+                size: 18,
+              )),
+        ],
+      ),
+    );
+  }
+
+  /// Dropoff marker: same badge-plus-pin composition as the pickup marker
+  /// but amber (`secondary`/`onSecondary`) with a `location_on` pin instead
+  /// of navy + flag, so the two ends are distinguishable at a glance.
+  Marker _createDropoffMarker(JobLocation location) {
+    return Marker(
+      key: const Key('customer_job_map_dropoff_marker'),
+      width: 90.0,
+      height: 70.0,
+      point: LatLng(location.latitude, location.longitude),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ThemedPanel(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.primary, width: 1.5),
+              boxShadow: AppElevation.shadowLevel2List,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Text(
+                context.l10n.mapDropoffBadge,
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.onSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
+          const SizedBox(height: AppSpacing.xxs),
+          const ThemedPanel(
+              color: AppColors.secondary,
+              shape: BoxShape.circle,
+              padding: EdgeInsets.all(AppSpacing.xs),
+              child: Icon(
+                Icons.location_on,
+                color: AppColors.onSecondary,
                 size: 18,
               )),
         ],
