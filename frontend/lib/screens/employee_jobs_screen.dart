@@ -60,6 +60,18 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   String? _priceErrorJobId;
   int? _priceErrorStatusCode;
   String? _priceErrorDecision;
+  // Fare-proposal submission state (ADR-0006 ProposePrice, employee side):
+  // per-job input controllers plus a per-job in-flight lock. Client-side
+  // validation copy stays inline under the field (Rule 11 separation);
+  // server failures render in the panel banner with S5 discrimination.
+  final Map<String, TextEditingController> _proposeControllers = {};
+  String? _submittingProposalJobId;
+  String? _proposalError;
+  String? _proposalErrorJobId;
+  String? _proposeServerError;
+  String? _proposeServerErrorJobId;
+  int? _proposeServerErrorStatusCode;
+  bool _proposeServerErrorIsRaced = false;
   Timer? _countdownTimer;
 
   List<String> _getSuggestions(AppLocalizations l10n) => [
@@ -95,6 +107,9 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   void dispose() {
     _countdownTimer?.cancel();
     _actionController.dispose();
+    for (final controller in _proposeControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -296,6 +311,14 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         _priceErrorStatusCode = null;
         _priceErrorDecision = null;
       }
+      // A raced-submit notice served its purpose once the user acts on the
+      // converged respond panel.
+      if (_proposeServerErrorJobId == job.id) {
+        _proposeServerError = null;
+        _proposeServerErrorJobId = null;
+        _proposeServerErrorStatusCode = null;
+        _proposeServerErrorIsRaced = false;
+      }
     });
 
     try {
@@ -340,6 +363,146 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     } finally {
       if (mounted) {
         setState(() => _respondingPriceJobId = null);
+      }
+    }
+  }
+
+  /// Employee fare-proposal submission (ADR-0006 `ProposePrice`, employee
+  /// side of the same endpoint the customer proposes through in
+  /// `job_status_screen.dart`). Validation feedback, bounds copy, and submit
+  /// flow mirror `_submitCounterOffer` exactly (same $[0.5, 1.5] \times
+  /// suggested bounds the backend enforces via `ValidPriceProposal`) —
+  /// only the provider call and the post-submit state differ.
+  TextEditingController _proposeControllerFor(String jobId) {
+    return _proposeControllers.putIfAbsent(
+      jobId,
+      () => TextEditingController(),
+    );
+  }
+
+  Future<void> _submitPriceProposal(Job job, double suggestedPrice) async {
+    if (_submittingProposalJobId != null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final input = _proposeControllerFor(job.id).text.trim();
+    final proposed = double.tryParse(input);
+
+    final minPrice = 0.5 * suggestedPrice;
+    final maxPrice = 1.5 * suggestedPrice;
+
+    if (proposed == null) {
+      setState(() {
+        _proposalError = l10n.enterValidNumberError;
+        _proposalErrorJobId = job.id;
+      });
+      return;
+    }
+    const eps = 1e-9;
+    if (proposed < (minPrice - eps) || proposed > (maxPrice + eps)) {
+      setState(() {
+        _proposalError = l10n.priceRangeError(
+          minPrice.toStringAsFixed(2),
+          maxPrice.toStringAsFixed(2),
+        );
+        _proposalErrorJobId = job.id;
+      });
+      return;
+    }
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final token = auth.token;
+    if (token == null) return;
+    final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
+
+    setState(() {
+      _proposalError = null;
+      _proposalErrorJobId = null;
+      _proposeServerError = null;
+      _proposeServerErrorJobId = null;
+      _proposeServerErrorStatusCode = null;
+      _proposeServerErrorIsRaced = false;
+      _submittingProposalJobId = job.id;
+    });
+
+    try {
+      await provider.proposePrice(
+        jobId: job.id,
+        proposedPrice: proposed,
+        employeeToken: token,
+      );
+      if (!mounted) return;
+      _proposeControllerFor(job.id).clear();
+      ThemedSnackBar.showSuccess(context, l10n.employeeProposeSuccessMsg);
+      // The job now carries ProposedBy "employee": refresh flips this card
+      // from the propose form to the waiting-for-customer panel.
+      await _refreshJobs();
+    } catch (e) {
+      if (!mounted) return;
+      final status = e is ApiClientException ? e.statusCode : null;
+      if (status == 429 && e is ApiClientException) {
+        // S5: lockouts surface verbatim with no retry and no refresh —
+        // re-tapping extends the lockout.
+        setState(() {
+          _proposeServerError = e.message;
+          _proposeServerErrorJobId = job.id;
+          _proposeServerErrorStatusCode = status;
+        });
+      } else if (status == 400 || status == 409) {
+        // Races converge to server truth first; the copy is then decided
+        // from the refreshed domain state — never by branching on backend
+        // error strings. 409 (CAS `job_state_changed`) and the 400s
+        // (`proposal_already_submitted` when the customer proposed a beat
+        // earlier, `invalid_job_status`/`proposal_expired` when the window
+        // moved on) all land here.
+        await _refreshJobs();
+        if (!mounted) return;
+        Job? fresh;
+        for (final j in provider.jobs) {
+          if (j.id == job.id) {
+            fresh = j;
+            break;
+          }
+        }
+        final freshHasOthersProposal = fresh != null &&
+            fresh.proposedPrice != null &&
+            fresh.proposedBy != 'employee';
+        final freshGone = fresh == null ||
+            fresh.status.toLowerCase().trim() != 'awaiting_price_response';
+        final String message;
+        var raced = false;
+        if (freshHasOthersProposal) {
+          message = l10n.employeeProposalRacedError;
+          raced = true;
+        } else if (freshGone) {
+          message = l10n.jobStateChangedError;
+        } else {
+          // Still a clean awaiting job: the 400 was the authoritative
+          // bounds rejection (e.g. a rounding edge past client eps).
+          message = l10n.priceRangeError(
+            minPrice.toStringAsFixed(2),
+            maxPrice.toStringAsFixed(2),
+          );
+        }
+        setState(() {
+          _proposeServerError = message;
+          _proposeServerErrorJobId = job.id;
+          _proposeServerErrorStatusCode = status;
+          _proposeServerErrorIsRaced = raced;
+        });
+      } else {
+        if (status == 404) {
+          // Job is gone server-side: refresh drops the card from the list.
+          await _refreshJobs();
+          if (!mounted) return;
+        }
+        setState(() {
+          _proposeServerError = friendlyErrorMessage(e);
+          _proposeServerErrorJobId = job.id;
+          _proposeServerErrorStatusCode = status;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _submittingProposalJobId = null);
       }
     }
   }
@@ -1112,6 +1275,147 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     }
   }
 
+  /// Propose-price form panel: shown only while an awaiting job carries no
+  /// proposal yet. Input, bounds copy, and responsive layout mirror the
+  /// customer counter-offer form in `job_status_screen.dart` (same
+  /// $[0.5, 1.5] \times suggested bounds, same inline validation); only the
+  /// panel chrome (employee warning card) and the provider call differ.
+  Widget _buildProposePricePanel(Job job, AppLocalizations l10n) {
+    // canPropose guarantees suggestedPrice > 0; the backend stays the
+    // final enforcer if data ever arrives without one.
+    final suggested = job.suggestedPrice ?? 0;
+    final minPrice = 0.5 * suggested;
+    final maxPrice = 1.5 * suggested;
+    final isSubmitting = _submittingProposalJobId == job.id;
+    final isLocked = _submittingProposalJobId != null;
+    return ThemedPanel(
+      key: Key('employee_price_propose_panel_${job.id}'),
+      color: AppColors.warning.withValues(alpha: 0.1),
+      borderRadius: AppRadius.defaultBorder,
+      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.handshake_outlined,
+                size: AppIconSize.sm,
+                color: AppColors.warning,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  l10n.employeeProposePriceTitle,
+                  style: AppTypography.labelLg.copyWith(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            l10n.employeeProposePriceBody,
+            style: AppTypography.bodyMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.allowedBoundLine(
+              minPrice.toStringAsFixed(2),
+              maxPrice.toStringAsFixed(2),
+            ),
+            style: AppTypography.labelMd.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Same 340dp breakpoint contract as the customer form: below it
+          // the fixed-width button starves the input, so stack vertically.
+          LayoutBuilder(builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 340;
+            final fieldContent = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ThemedTextField(
+                  key: Key('employee_propose_input_${job.id}'),
+                  controller: _proposeControllerFor(job.id),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  hintText:
+                      l10n.negotiationHintExample(suggested.toStringAsFixed(2)),
+                  prefixIcon: const Icon(
+                    Icons.attach_money,
+                    size: AppIconSize.sm,
+                    color: AppColors.outline,
+                  ),
+                ),
+                if (_proposalErrorJobId == job.id &&
+                    _proposalError != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _proposalError!,
+                    style: AppTypography.labelMd.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ],
+            );
+            final submitButton = SizedBox(
+              width: narrow ? double.infinity : 150,
+              child: PrimaryButton(
+                key: Key('employee_propose_submit_${job.id}'),
+                text: l10n.submit,
+                isLoading: isSubmitting,
+                onPressed: isLocked
+                    ? null
+                    : () => _submitPriceProposal(job, suggested),
+              ),
+            );
+            return narrow
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      fieldContent,
+                      const SizedBox(height: AppSpacing.sm),
+                      submitButton,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: fieldContent),
+                      const SizedBox(width: AppSpacing.sm),
+                      submitButton,
+                    ],
+                  );
+          }),
+          // Server failures: per-job banner with S5 discrimination. Raced
+          // submissions carry no retry (refresh already converged the card
+          // onto the respond panel); lockouts carry none either.
+          if (_proposeServerErrorJobId == job.id &&
+              _proposeServerError != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            ThemedErrorBanner(
+              key: Key('employee_propose_error_${job.id}'),
+              message: _proposeServerError!,
+              onRetry: (_proposeServerErrorStatusCode == 429 ||
+                      _proposeServerErrorIsRaced)
+                  ? null
+                  : () => _submitPriceProposal(job, suggested),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildJobCard(Job job) {
     final l10n = AppLocalizations.of(context)!;
     final isActive = job.status.toLowerCase().trim() == 'active';
@@ -1121,6 +1425,18 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
     // why instead (missing status communication, not a missing button).
     final normalizedStatus = job.status.toLowerCase().trim();
     final isAwaitingPrice = normalizedStatus == 'awaiting_price_response';
+    // Fare-negotiation sub-states (ADR-0006 single-shot, read straight off
+    // the job — the three panels below are if/else branches, so at most one
+    // ever renders for a job):
+    // - no proposal yet + a suggested fare to bound against → PROPOSE form;
+    // - someone else's proposal (ProposedBy "customer") → RESPOND actions;
+    // - the employee's own proposal → WAITING, no actions (the backend
+    //   rejects answering your own proposal; the customer side already
+    //   renders its `waitingProposalResponse` counterpart for this case).
+    final hasProposal = job.proposedPrice != null;
+    final isOwnProposal = hasProposal && job.proposedBy == 'employee';
+    final canPropose =
+        isAwaitingPrice && !hasProposal && (job.suggestedPrice ?? 0) > 0;
     // Same rule as the assigned-jobs filter in build(): any assigned job
     // that isn't already completed/cancelled may be cancelled by the
     // employee with a recorded reason (including mid-trip actives).
@@ -1345,9 +1661,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
             const SizedBox(height: AppSpacing.lg),
             // Issue-1: fare-negotiation status communication. The Complete
             // button above stays hidden until the trip is active (backend
-            // 409s anything else) — this panel tells the employee why, with
+            // 409s anything else) — these panels tell the employee why, with
             // the live proposal state, instead of a bare status chip.
-            if (isAwaitingPrice) ...[
+            // PROPOSE form: no proposal exists yet on this awaiting job.
+            if (canPropose) ...[
+              _buildProposePricePanel(job, l10n),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            // RESPOND actions: the other party's proposal awaits decision.
+            if (isAwaitingPrice && hasProposal && !isOwnProposal) ...[
               ThemedPanel(
                 key: Key('employee_price_pending_panel_${job.id}'),
                 color: AppColors.warning.withValues(alpha: 0.1),
@@ -1401,6 +1723,21 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                     // immediate). Both lock while a response is in flight and
                     // disable once the countdown hits zero; the backend is
                     // the final enforcer on races.
+                    // Raced-submit notice: the employee's propose hit a
+                    // 400/409 because the customer's proposal landed first.
+                    // The propose form (and its banner slot) unmounted when
+                    // refresh converged onto THIS panel, so the notice
+                    // renders here, directly above the actions it points at.
+                    // No retry — acting on the buttons below IS the recovery.
+                    if (_proposeServerErrorIsRaced &&
+                        _proposeServerErrorJobId == job.id &&
+                        _proposeServerError != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      ThemedErrorBanner(
+                        key: Key('employee_proposal_raced_notice_${job.id}'),
+                        message: _proposeServerError!,
+                      ),
+                    ],
                     if (_priceErrorJobId == job.id && _priceError != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       ThemedErrorBanner(
@@ -1447,6 +1784,71 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            // WAITING: the employee's own proposal is with the customer —
+            // countdown runs, no actions (answering your own proposal is a
+            // backend 400, so none are offered).
+            if (isAwaitingPrice && hasProposal && isOwnProposal) ...[
+              ThemedPanel(
+                key: Key('employee_price_waiting_panel_${job.id}'),
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: AppRadius.defaultBorder,
+                border:
+                    Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: AppIconSize.sm,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            l10n.employeePricePendingTitle,
+                            style: AppTypography.labelLg.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      l10n.employeePricePendingBody(_formatProposedFare(job)),
+                      style: AppTypography.bodyMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      l10n.waitingProposalResponse,
+                      style: AppTypography.bodyMd.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      _priceExpiryText(job, l10n),
+                      key: Key('employee_price_waiting_expiry_${job.id}'),
+                      style: AppTypography.labelMd.copyWith(
+                        color: _isPriceExpired(job)
+                            ? AppColors.error
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),

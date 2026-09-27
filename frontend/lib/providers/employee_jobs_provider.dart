@@ -380,6 +380,56 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
+  /// Proposes a transport fare (ADR-0006 `ProposePrice`, employee side of
+  /// the same endpoint the customer proposes through in
+  /// `job_status_screen.dart`). This mirrors `MarketplaceProvider.proposePrice`'s
+  /// request shape (`job_id`, `proposed_price`, `requester_token` via
+  /// `ApiClient.proposePrice`) — the same backend endpoint, not a second one.
+  /// On success the local entry is replaced with the server-returned job
+  /// (still `awaiting_price_response`, now with `ProposedBy: "employee"`,
+  /// so the card flips from the propose form to the waiting panel).
+  /// Single-shot is a backend structural guarantee (CAS filter on
+  /// `proposed_price: nil`); this method never retries a rejected submit.
+  Future<Job?> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    required String employeeToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _lastErrorStatusCode = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.proposePrice(
+        jobId: jobId,
+        proposedPrice: proposedPrice,
+        requesterToken: employeeToken,
+      );
+
+      if (res is Map && res['job'] is Map) {
+        final updatedJob =
+            Job.fromJson(Map<String, dynamic>.from(res['job'] as Map));
+        final index = _jobs.indexWhere((j) => j.id == jobId);
+        if (index != -1) {
+          _jobs[index] = updatedJob;
+        } else {
+          _jobs.insert(0, updatedJob);
+        }
+        return updatedJob;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error proposing price: $e');
+      _error = friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     _lastErrorStatusCode = null;

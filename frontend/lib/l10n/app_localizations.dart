@@ -1629,6 +1629,30 @@ abstract class AppLocalizations {
   /// **'Accept the proposed fare {price}? The trip will start immediately and can then be completed. This is a financial commitment.'**
   String employeePriceAcceptConfirmMessage(Object price);
 
+  /// No description provided for @employeeProposePriceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose a Fare'**
+  String get employeeProposePriceTitle;
+
+  /// No description provided for @employeeProposePriceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest your fare — the customer accepts or declines it. One proposal per trip, within the allowed bound.'**
+  String get employeeProposePriceBody;
+
+  /// No description provided for @employeeProposeSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Price proposal sent — waiting for the customer.'**
+  String get employeeProposeSuccessMsg;
+
+  /// No description provided for @employeeProposalRacedError.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer already sent a price — respond to it instead.'**
+  String get employeeProposalRacedError;
+
   /// No description provided for @cancelRequestRejectedBanner.
   ///
   /// In en, this message translates to:

@@ -818,6 +818,20 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get employeeProposePriceTitle => 'اقترح أجرة';
+
+  @override
+  String get employeeProposePriceBody =>
+      'اقترح أجرتك — العميل هيقبلها أو يرفضها. عرض واحد بس للمشوار، جوه الحدود المسموحة.';
+
+  @override
+  String get employeeProposeSuccessMsg => 'اتبعت عرض السعر — مستني رد العميل.';
+
+  @override
+  String get employeeProposalRacedError =>
+      'العميل بعت سعر خلاص — رد عليه بدل ما تبعت عرض.';
+
+  @override
   String get cancelRequestRejectedBanner =>
       'صاحب الشغل رفض طلب الإلغاء بتاعك. انت لسه مسئول عن الطلب ده.';
 

@@ -824,6 +824,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get employeeProposePriceTitle => 'Propose a Fare';
+
+  @override
+  String get employeeProposePriceBody =>
+      'Suggest your fare — the customer accepts or declines it. One proposal per trip, within the allowed bound.';
+
+  @override
+  String get employeeProposeSuccessMsg =>
+      'Price proposal sent — waiting for the customer.';
+
+  @override
+  String get employeeProposalRacedError =>
+      'The customer already sent a price — respond to it instead.';
+
+  @override
   String get cancelRequestRejectedBanner =>
       'The business owner declined your cancellation request. You remain assigned to this job.';
 

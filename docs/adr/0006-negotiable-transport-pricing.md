@@ -103,5 +103,31 @@ change was needed. Decline semantics are exactly Q2 (terminal
 `cancelled`/`price_disagreement`, employee released, no redispatch — the
 card drops from the employee's assigned list and the customer must rebook);
 expiry semantics are exactly §1.4. Employee proposal initiation
-(`ProposePrice` from the employee side) remains unwired UI — out of scope
-for this note.
+(`ProposePrice` from the employee side) was unwired UI at the time — see
+§ Employee-Side Proposal UI below.
+
+---
+
+## Employee-Side Proposal UI (implementation note, 2026-09-27)
+
+The decision text above is unchanged — including Q1 (either party may
+initiate) and §1.3/§1.6 (single-shot, no counter-proposals, no re-propose
+after decline: the CAS filter on `proposed_price: nil` and the terminal
+`cancelled` decline path structurally forbid second proposals, and no
+backend change was made here).
+
+What changed is reachability: the employee side of
+`POST /users/jobs/propose-price` (which always branched
+`proposerRole = "employee"` for the assigned employee) is now callable
+from `employee_jobs_screen.dart` through `EmployeeJobsProvider.proposePrice`,
+using the same `{job_id, proposed_price, requester_token}` shape as the
+customer flow. The card gates three mutually exclusive states off the job
+itself: no proposal yet → propose form (same $[0.5, 1.5] \times suggested
+client-side bounds as the customer form); another party's proposal →
+the existing accept/decline panel; the employee's own proposal → a
+waiting-for-customer countdown with no actions (answering your own
+proposal stays a backend 400). A lost race (customer proposed first)
+converges onto the respond panel with an explicit raced notice. The
+customer side needed no changes: `job_status_screen.dart` already renders
+`ProposedBy == "employee"` as the waiting case with the driver/employee
+role label.

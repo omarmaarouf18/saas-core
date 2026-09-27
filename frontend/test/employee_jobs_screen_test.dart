@@ -45,6 +45,19 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
   bool shouldFailRespond = false;
   int failRespondStatus = 403;
   String failRespondMessage = 'forbidden';
+  bool proposePriceCalled = false;
+  double? lastProposedPrice;
+  String? lastProposeJobId;
+  bool shouldFailPropose = false;
+  int failProposeStatus = 400;
+  String failProposeMessage = 'proposal_already_submitted';
+  // Refresh-time fault injection (simulates the server truth a refresh
+  // would converge onto): inject a customer proposal, or mark cancelled.
+  // Applies from the SECOND fetch onward so the initial load still renders
+  // the clean propose state and only the post-submit refresh races.
+  String? injectProposalJobId;
+  String? cancelJobIdOnRefresh;
+  int fetchAssignedJobsCalls = 0;
 
   MockEmployeeJobsProviderForTest(
     super.apiClient, {
@@ -66,7 +79,56 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
 
   @override
   Future<void> fetchAssignedJobs(String employeeToken) async {
-    // No-op for test to keep initialJobs intact
+    // No-op for test to keep initialJobs intact, except refresh-time fault
+    // injection flags used by the propose-race tests.
+    fetchAssignedJobsCalls++;
+    if (fetchAssignedJobsCalls < 2) {
+      return;
+    }
+    if (injectProposalJobId != null) {
+      final index = _testJobs.indexWhere((j) => j.id == injectProposalJobId);
+      if (index != -1) {
+        final existing = _testJobs[index];
+        _testJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: existing.status,
+          location: existing.location,
+          destination: existing.destination,
+          paymentMethod: existing.paymentMethod,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: 80.0,
+          proposedBy: 'customer',
+          priceProposalExpiresAt:
+              DateTime.now().add(const Duration(minutes: 5)),
+        );
+      }
+    }
+    if (cancelJobIdOnRefresh != null) {
+      final index = _testJobs.indexWhere((j) => j.id == cancelJobIdOnRefresh);
+      if (index != -1) {
+        final existing = _testJobs[index];
+        _testJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'cancelled',
+          location: existing.location,
+          destination: existing.destination,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: 'price_proposal_expired',
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+        );
+      }
+    }
+    notifyListeners();
   }
 
   @override
@@ -163,6 +225,44 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
     notifyListeners();
     return index != -1 ? _testJobs[index] : null;
   }
+
+  @override
+  Future<Job?> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    required String employeeToken,
+  }) async {
+    proposePriceCalled = true;
+    lastProposedPrice = proposedPrice;
+    lastProposeJobId = jobId;
+
+    if (shouldFailPropose) {
+      throw ApiClientException(failProposeMessage,
+          statusCode: failProposeStatus);
+    }
+
+    final index = _testJobs.indexWhere((j) => j.id == jobId);
+    if (index != -1) {
+      final existing = _testJobs[index];
+      _testJobs[index] = Job(
+        id: existing.id,
+        ownerId: existing.ownerId,
+        employeeId: existing.employeeId,
+        userId: existing.userId,
+        serviceId: existing.serviceId,
+        status: 'awaiting_price_response',
+        location: existing.location,
+        destination: existing.destination,
+        paymentMethod: existing.paymentMethod,
+        suggestedPrice: existing.suggestedPrice,
+        proposedPrice: proposedPrice,
+        proposedBy: 'employee',
+        priceProposalExpiresAt: DateTime.now().add(const Duration(minutes: 5)),
+      );
+    }
+    notifyListeners();
+    return index != -1 ? _testJobs[index] : null;
+  }
 }
 
 void main() {
@@ -203,6 +303,39 @@ void main() {
     suggestedPrice: 90.0,
     proposedPrice: 85.50,
     proposedBy: 'cust-4',
+    priceProposalExpiresAt: DateTime.now().add(const Duration(minutes: 4)),
+  );
+
+  // Propose-state fixture: awaiting with a suggested fare but NO proposal
+  // yet — the employee may propose first.
+  final awaitingPriceNoProposalJob = Job(
+    id: 'job-awaiting-noproposal-009',
+    ownerId: 'owner-1',
+    employeeId: 'emp-1',
+    userId: 'cust-9',
+    serviceId: 'service-transport-1',
+    status: 'awaiting_price_response',
+    location: JobLocation(latitude: 30.0, longitude: 31.0),
+    destination: JobLocation(latitude: 30.1, longitude: 31.1),
+    paymentMethod: 'cod',
+    suggestedPrice: 90.0,
+  );
+
+  // Waiting-state fixture: the employee already proposed; the customer
+  // has not responded yet.
+  final ownProposedJob = Job(
+    id: 'job-own-proposed-008',
+    ownerId: 'owner-1',
+    employeeId: 'emp-1',
+    userId: 'cust-8',
+    serviceId: 'service-transport-1',
+    status: 'awaiting_price_response',
+    location: JobLocation(latitude: 30.0, longitude: 31.0),
+    destination: JobLocation(latitude: 30.1, longitude: 31.1),
+    paymentMethod: 'cod',
+    suggestedPrice: 90.0,
+    proposedPrice: 95.0,
+    proposedBy: 'employee',
     priceProposalExpiresAt: DateTime.now().add(const Duration(minutes: 4)),
   );
 
@@ -747,5 +880,437 @@ void main() {
 
     expect(find.byType(EmployeeJobMapScreen), findsOneWidget);
     expect(find.text('Live Trip Map'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Propose panel shows when no proposal exists (respond panel absent)',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key(
+            'employee_price_propose_panel_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(find.text('Propose a Fare'), findsOneWidget);
+    // Bounds copy mirrors the customer form (suggested 90 → 45–135).
+    expect(find.textContaining('45.00'), findsOneWidget);
+    expect(find.textContaining('135.00'), findsOneWidget);
+    expect(
+        find.byKey(
+            const Key('employee_propose_input_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.byKey(
+            const Key('employee_propose_submit_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    // Respond + waiting states stay hidden.
+    expect(
+        find.byKey(const Key(
+            'employee_price_pending_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(
+        find.byKey(const Key(
+            'employee_price_waiting_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(jobsProvider.proposePriceCalled, isFalse);
+  });
+
+  testWidgets('Out-of-range input shows bounds error, no API call',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '200');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Price must be between \$45.00 and \$135.00'),
+        findsOneWidget);
+    expect(jobsProvider.proposePriceCalled, isFalse);
+  });
+
+  testWidgets('Non-numeric input shows valid-number error, no API call',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, 'abc');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid number'), findsOneWidget);
+    expect(jobsProvider.proposePriceCalled, isFalse);
+  });
+
+  testWidgets('Propose success transitions the card to the waiting panel',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(jobsProvider.proposePriceCalled, isTrue);
+    expect(jobsProvider.lastProposeJobId, 'job-awaiting-noproposal-009');
+    expect(jobsProvider.lastProposedPrice, 85.5);
+    // Correct next state: own proposal is with the customer — waiting
+    // panel (countdown, no actions), propose + respond panels gone.
+    expect(
+        find.byKey(const Key(
+            'employee_price_waiting_panel_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.text('Waiting for response to your proposal...'), findsOneWidget);
+    expect(
+        find.byKey(const Key(
+            'employee_price_propose_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(
+        find.byKey(const Key(
+            'employee_price_pending_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(find.text('Price proposal sent — waiting for the customer.'),
+        findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Propose 409 race shows raced copy and refresh reveals the respond panel',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    )
+      ..shouldFailPropose = true
+      ..failProposeStatus = 409
+      ..failProposeMessage = 'job_state_changed'
+      ..injectProposalJobId = 'job-awaiting-noproposal-009';
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    expect(jobsProvider.proposePriceCalled, isTrue);
+    // The refreshed server truth carries the customer's proposal: the
+    // raced notice renders above the converged respond actions.
+    expect(
+        find.byKey(const Key(
+            'employee_proposal_raced_notice_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.text('The customer already sent a price — respond to it instead.'),
+        findsOneWidget);
+    expect(
+        find.byKey(const Key(
+            'employee_price_pending_panel_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.byKey(
+            const Key('employee_price_accept_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.byKey(const Key(
+            'employee_price_propose_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+
+    // Acting on the converged panel clears the notice: accept the
+    // customer's proposal through the standard confirm flow.
+    await tester.tap(find
+        .byKey(const Key('employee_price_accept_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(ElevatedButton, 'Accept Proposal'),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(
+        find.byKey(const Key(
+            'employee_proposal_raced_notice_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(
+        find.byKey(
+            const Key('complete_job_button_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Propose 400 with a terminal refresh shows state-changed copy',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    )
+      ..shouldFailPropose = true
+      ..failProposeStatus = 400
+      ..failProposeMessage = 'invalid_job_status'
+      ..cancelJobIdOnRefresh = 'job-awaiting-noproposal-009';
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    // Terminal refresh: the card drops from the assigned list entirely.
+    expect(
+        find.byKey(const Key(
+            'employee_price_propose_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(
+        find.byKey(const Key(
+            'employee_price_pending_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+  });
+
+  testWidgets('Propose 400 on a still-clean job falls back to bounds copy',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    )
+      ..shouldFailPropose = true
+      ..failProposeStatus = 400
+      ..failProposeMessage = 'invalid_proposed_price';
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    final banner = find
+        .byKey(const Key('employee_propose_error_job-awaiting-noproposal-009'));
+    expect(banner, findsOneWidget);
+    expect(
+        find.text('Price must be between \$45.00 and \$135.00'), findsWidgets);
+    // Actionable failure keeps its retry (re-submits the same input).
+    expect(find.descendant(of: banner, matching: find.byType(TextButton)),
+        findsOneWidget);
+  });
+
+  testWidgets('Propose 429 surfaces verbatim lockout text with no retry',
+      (WidgetTester tester) async {
+    const lockoutText = 'too many requests, locked out for 42 seconds';
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    )
+      ..shouldFailPropose = true
+      ..failProposeStatus = 429
+      ..failProposeMessage = lockoutText;
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    final banner = find
+        .byKey(const Key('employee_propose_error_job-awaiting-noproposal-009'));
+    expect(banner, findsOneWidget);
+    expect(find.text(lockoutText), findsOneWidget);
+    expect(find.descendant(of: banner, matching: find.byType(TextButton)),
+        findsNothing);
+  });
+
+  testWidgets('Propose 403 surfaces the friendly banner',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceNoProposalJob],
+    )
+      ..shouldFailPropose = true
+      ..failProposeStatus = 403
+      ..failProposeMessage = 'access denied';
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final input = find.descendant(
+      of: find.byKey(
+          const Key('employee_propose_input_job-awaiting-noproposal-009')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(input);
+    await tester.enterText(input, '85.5');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(
+        const Key('employee_propose_submit_job-awaiting-noproposal-009')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(
+            const Key('employee_propose_error_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(find.text(ErrorMessages.forbidden), findsOneWidget);
+  });
+
+  testWidgets(
+      'Propose vs respond vs waiting panels are mutually exclusive per job',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [
+        awaitingPriceNoProposalJob,
+        awaitingPriceJob,
+        ownProposedJob,
+      ],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    // No-proposal job: propose form only.
+    expect(
+        find.byKey(const Key(
+            'employee_price_propose_panel_job-awaiting-noproposal-009')),
+        findsOneWidget);
+    expect(
+        find.byKey(const Key(
+            'employee_price_pending_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+    expect(
+        find.byKey(const Key(
+            'employee_price_waiting_panel_job-awaiting-noproposal-009')),
+        findsNothing);
+
+    // Customer-proposed job: respond actions only.
+    expect(
+        find.byKey(
+            const Key('employee_price_pending_panel_job-awaiting-price-004')),
+        findsOneWidget);
+    expect(
+        find.byKey(
+            const Key('employee_price_propose_panel_job-awaiting-price-004')),
+        findsNothing);
+    expect(
+        find.byKey(
+            const Key('employee_price_waiting_panel_job-awaiting-price-004')),
+        findsNothing);
+
+    // Own-proposed job: waiting notice only (countdown, no actions).
+    expect(
+        find.byKey(
+            const Key('employee_price_waiting_panel_job-own-proposed-008')),
+        findsOneWidget);
+    expect(
+        find.text('Waiting for response to your proposal...'), findsOneWidget);
+    expect(
+        find.byKey(
+            const Key('employee_price_propose_panel_job-own-proposed-008')),
+        findsNothing);
+    expect(
+        find.byKey(
+            const Key('employee_price_pending_panel_job-own-proposed-008')),
+        findsNothing);
+    expect(find.byKey(const Key('employee_price_accept_job-own-proposed-008')),
+        findsNothing);
+    expect(find.byKey(const Key('employee_price_decline_job-own-proposed-008')),
+        findsNothing);
   });
 }

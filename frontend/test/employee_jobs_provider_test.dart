@@ -341,4 +341,84 @@ void main() {
     expect(provider.error,
         friendlyErrorMessage(ApiClientException('x', statusCode: 429)));
   });
+
+  test(
+      'proposePrice posts job_id + proposed_price + requester_token and stores the proposal',
+      () async {
+    const jobEnvelope = {
+      'id': 'job-propose-1',
+      'status': 'awaiting_price_response',
+      'payment_method': 'cod',
+      'owner_id': 'owner-1',
+      'user_id': 'cust-1',
+      'service_id': 'svc-t',
+      'suggested_price': 90.0,
+      'proposed_price': 85.5,
+      'proposed_by': 'employee',
+    };
+    final (provider, overrides) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {
+            'id': 'job-propose-1',
+            'status': 'awaiting_price_response',
+            'payment_method': 'cod',
+            'suggested_price': 90.0,
+          }
+        ]);
+      }
+      if (req.uri.path.endsWith('/users/jobs/propose-price')) {
+        return MockHttpResponse(200, jsonBody: {'job': jobEnvelope});
+      }
+      return MockHttpResponse.ok();
+    });
+
+    await provider.fetchAssignedJobs('emp-jwt-token');
+    final updated = await provider.proposePrice(
+      jobId: 'job-propose-1',
+      proposedPrice: 85.5,
+      employeeToken: 'emp-jwt-token',
+    );
+
+    // Same request shape as MarketplaceProvider.proposePrice (one endpoint).
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/propose-price'));
+    expect(jsonDecode(posted.body!), {
+      'job_id': 'job-propose-1',
+      'proposed_price': 85.5,
+      'requester_token': 'emp-jwt-token',
+    });
+    expect(updated!.status, 'awaiting_price_response');
+    expect(updated.proposedPrice, 85.5);
+    expect(updated.proposedBy, 'employee');
+    expect(provider.jobs.singleWhere((j) => j.id == 'job-propose-1').proposedBy,
+        'employee');
+    expect(provider.error, isNull);
+    expect(provider.lastErrorStatusCode, isNull);
+    expect(provider.isLoading, isFalse);
+  });
+
+  test('proposePrice failure rethrows, stores friendly error + status code',
+      () async {
+    final (provider, _) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'job-propose-2', 'status': 'awaiting_price_response'}
+        ]);
+      }
+      return MockHttpResponse(400,
+          jsonBody: {'error': 'proposal_already_submitted'});
+    });
+
+    await provider.fetchAssignedJobs('t');
+    await expectLater(
+      provider.proposePrice(
+          jobId: 'job-propose-2', proposedPrice: 80.0, employeeToken: 't'),
+      throwsA(isA<ApiClientException>()),
+    );
+    expect(provider.isLoading, isFalse);
+    expect(provider.lastErrorStatusCode, 400);
+    expect(provider.error,
+        friendlyErrorMessage(ApiClientException('x', statusCode: 400)));
+  });
 }
