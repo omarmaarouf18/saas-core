@@ -9,16 +9,22 @@ class EmployeeJobsProvider extends ChangeNotifier {
   List<Job> _jobs = [];
   bool _isLoading = false;
   String? _error;
+  // S5 stored-error discrimination: the HTTP status behind [_error] (notably
+  // 429 lockouts), so screens can pick verbatim-vs-friendly copy and drop the
+  // retry affordance on lockouts. Cleared alongside [_error].
+  int? _lastErrorStatusCode;
 
   List<Job> get jobs => _jobs;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int? get lastErrorStatusCode => _lastErrorStatusCode;
 
   EmployeeJobsProvider(this.apiClient);
 
   Future<void> fetchAssignedJobs(String employeeToken) async {
     _isLoading = true;
     _error = null;
+    _lastErrorStatusCode = null;
     notifyListeners();
 
     try {
@@ -288,8 +294,95 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
+  /// Responds to a transport fare proposal (ADR-0006 `RespondPrice`
+  /// vocabulary: decision "accept" or "decline"). This mirrors
+  /// `MarketplaceProvider.respondPrice`'s request shape (`job_id`, `decision`,
+  /// `requester_token` via `ApiClient.respondPrice`) — the same backend
+  /// endpoint, not a second one. On success the local entry is replaced with
+  /// the server-returned job: accept flips it to `active` (the pending panel
+  /// unmounts, the Complete button appears), decline flips it to `cancelled`
+  /// with reason `price_disagreement` (terminal — no redispatch — so it drops
+  /// out of the assigned list via the screen's existing status filter).
+  Future<Job?> respondPrice({
+    required String jobId,
+    required String decision,
+    required String employeeToken,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _lastErrorStatusCode = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.respondPrice(
+        jobId: jobId,
+        decision: decision,
+        requesterToken: employeeToken,
+      );
+
+      if (res is Map && res['job'] is Map) {
+        final updatedJob =
+            Job.fromJson(Map<String, dynamic>.from(res['job'] as Map));
+        final index = _jobs.indexWhere((j) => j.id == jobId);
+        if (index != -1) {
+          _jobs[index] = updatedJob;
+        } else {
+          _jobs.insert(0, updatedJob);
+        }
+        return updatedJob;
+      }
+      // No job envelope (defensive — the handler always returns one):
+      // rebuild locally the same way the accept/decline offer fallbacks do.
+      final index = _jobs.indexWhere((j) => j.id == jobId);
+      if (index != -1) {
+        final existing = _jobs[index];
+        if (decision == 'accept') {
+          _jobs[index] = Job(
+            id: existing.id,
+            ownerId: existing.ownerId,
+            employeeId: existing.employeeId,
+            userId: existing.userId,
+            serviceId: existing.serviceId,
+            status: 'active',
+            location: existing.location,
+            destination: existing.destination,
+            currentLocation: existing.currentLocation,
+            paymentMethod: existing.paymentMethod,
+            cancellationReason: existing.cancellationReason,
+            lockedEscrowAmount: existing.lockedEscrowAmount,
+            suggestedPrice: existing.suggestedPrice,
+            proposedPrice: existing.proposedPrice,
+            proposedBy: existing.proposedBy,
+            agreedPrice: existing.proposedPrice ?? existing.suggestedPrice,
+            priceProposalExpiresAt: existing.priceProposalExpiresAt,
+            currentOfferedEmployeeId: existing.currentOfferedEmployeeId,
+            offerExpiresAt: existing.offerExpiresAt,
+            offeredEmployeeIds: existing.offeredEmployeeIds,
+            cancellationRequestReason: existing.cancellationRequestReason,
+            cancellationRequestedAt: existing.cancellationRequestedAt,
+            cancellationRequestStatus: existing.cancellationRequestStatus,
+            createdAt: existing.createdAt,
+            updatedAt: DateTime.now(),
+          );
+          return _jobs[index];
+        }
+        _jobs.removeWhere((j) => j.id == jobId);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error responding to price proposal: $e');
+      _error = friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
+    _lastErrorStatusCode = null;
     notifyListeners();
   }
 }

@@ -12,6 +12,8 @@ import 'package:frontend/providers/employee_jobs_provider.dart';
 import 'package:frontend/providers/employee_location_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/employee_jobs_screen.dart';
+import 'package:frontend/widgets/primary_button.dart';
+import 'package:frontend/widgets/secondary_button.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -33,6 +35,12 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
   bool completeJobCalled = false;
   String? completedJobId;
   bool? lastCashCollectedParam;
+  bool respondPriceCalled = false;
+  String? lastDecision;
+  String? lastRespondJobId;
+  bool shouldFailRespond = false;
+  int failRespondStatus = 403;
+  String failRespondMessage = 'forbidden';
 
   MockEmployeeJobsProviderForTest(
     super.apiClient, {
@@ -92,6 +100,64 @@ class MockEmployeeJobsProviderForTest extends EmployeeJobsProvider {
       );
     }
     notifyListeners();
+  }
+
+  @override
+  Future<Job?> respondPrice({
+    required String jobId,
+    required String decision,
+    required String employeeToken,
+  }) async {
+    respondPriceCalled = true;
+    lastDecision = decision;
+    lastRespondJobId = jobId;
+
+    if (shouldFailRespond) {
+      throw ApiClientException(failRespondMessage,
+          statusCode: failRespondStatus);
+    }
+
+    final index = _testJobs.indexWhere((j) => j.id == jobId);
+    if (index != -1) {
+      final existing = _testJobs[index];
+      if (decision == 'accept') {
+        _testJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'active',
+          location: existing.location,
+          destination: existing.destination,
+          currentLocation: existing.currentLocation,
+          paymentMethod: existing.paymentMethod,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+          agreedPrice: existing.proposedPrice ?? existing.suggestedPrice,
+          priceProposalExpiresAt: existing.priceProposalExpiresAt,
+        );
+      } else {
+        _testJobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: 'cancelled',
+          location: existing.location,
+          destination: existing.destination,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: 'price_disagreement',
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+        );
+      }
+    }
+    notifyListeners();
+    return index != -1 ? _testJobs[index] : null;
   }
 }
 
@@ -463,5 +529,185 @@ void main() {
         findsOneWidget);
     expect(find.byKey(const Key('complete_job_button_job-noted-006')),
         findsOneWidget);
+  });
+
+  testWidgets(
+      'Price accept: confirm dialog then panel→active, Complete appears',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final acceptBtn =
+        find.byKey(const Key('employee_price_accept_job-awaiting-price-004'));
+    expect(acceptBtn, findsOneWidget);
+    await tester.ensureVisible(acceptBtn);
+    await tester.tap(acceptBtn);
+    await tester.pumpAndSettle();
+
+    // Accept is a financial commitment: confirmation first (Rule 8).
+    expect(find.text('Accept this fare?'), findsOneWidget);
+    expect(find.textContaining('85.50'), findsWidgets);
+    expect(jobsProvider.respondPriceCalled, isFalse);
+
+    final dialogConfirm = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(ElevatedButton, 'Accept Proposal'),
+    );
+    await tester.tap(dialogConfirm);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(jobsProvider.respondPriceCalled, isTrue);
+    expect(jobsProvider.lastDecision, 'accept');
+    expect(jobsProvider.lastRespondJobId, 'job-awaiting-price-004');
+    // Server-side active transition reflected: panel gone, Complete shown.
+    expect(
+        find.byKey(
+            const Key('employee_price_pending_panel_job-awaiting-price-004')),
+        findsNothing);
+    expect(find.byKey(const Key('complete_job_button_job-awaiting-price-004')),
+        findsOneWidget);
+    expect(find.text('Price proposal accepted! Job is now active.'),
+        findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Price decline: immediate, job leaves the assigned list',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final declineBtn =
+        find.byKey(const Key('employee_price_decline_job-awaiting-price-004'));
+    expect(declineBtn, findsOneWidget);
+    await tester.ensureVisible(declineBtn);
+    await tester.tap(declineBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // No confirmation for decline (customer + dispatch-offer precedent).
+    expect(find.text('Accept this fare?'), findsNothing);
+    expect(jobsProvider.respondPriceCalled, isTrue);
+    expect(jobsProvider.lastDecision, 'decline');
+    // Terminal cancelled/price_disagreement: filtered out of assigned jobs.
+    expect(
+        find.byKey(
+            const Key('employee_price_pending_panel_job-awaiting-price-004')),
+        findsNothing);
+    expect(
+        find.text('Price proposal declined. Job cancelled.'), findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Expired offer disables both price actions, never calls API',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final expiredJob = Job(
+      id: 'job-awaiting-price-005',
+      ownerId: 'owner-1',
+      employeeId: 'emp-1',
+      userId: 'cust-5',
+      serviceId: 'service-transport-1',
+      status: 'awaiting_price_response',
+      location: JobLocation(latitude: 30.0, longitude: 31.0),
+      paymentMethod: 'cod',
+      suggestedPrice: 90.0,
+      proposedPrice: 85.50,
+      proposedBy: 'cust-5',
+      priceProposalExpiresAt:
+          DateTime.now().subtract(const Duration(seconds: 30)),
+    );
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [expiredJob],
+    );
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    // Existing expired-copy state, not a clock.
+    expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
+        findsOneWidget);
+    final acceptBtn =
+        find.byKey(const Key('employee_price_accept_job-awaiting-price-005'));
+    final declineBtn =
+        find.byKey(const Key('employee_price_decline_job-awaiting-price-005'));
+    expect(acceptBtn, findsOneWidget);
+    expect(declineBtn, findsOneWidget);
+    expect(tester.widget<PrimaryButton>(acceptBtn).onPressed, isNull);
+    expect(tester.widget<SecondaryButton>(declineBtn).onPressed, isNull);
+    expect(jobsProvider.respondPriceCalled, isFalse);
+  });
+
+  testWidgets('Price 403 surfaces the friendly banner with retry',
+      (WidgetTester tester) async {
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    )
+      ..shouldFailRespond = true
+      ..failRespondStatus = 403
+      ..failRespondMessage = 'access denied';
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final declineBtn =
+        find.byKey(const Key('employee_price_decline_job-awaiting-price-004'));
+    await tester.ensureVisible(declineBtn);
+    await tester.tap(declineBtn);
+    await tester.pumpAndSettle();
+
+    expect(jobsProvider.respondPriceCalled, isTrue);
+    final banner =
+        find.byKey(const Key('employee_price_error_job-awaiting-price-004'));
+    expect(banner, findsOneWidget);
+    expect(find.text(ErrorMessages.forbidden), findsOneWidget);
+    // Non-lockout failures keep the S5 retry affordance.
+    expect(find.descendant(of: banner, matching: find.byType(TextButton)),
+        findsOneWidget);
+  });
+
+  testWidgets('Price 429 surfaces verbatim lockout text with no retry',
+      (WidgetTester tester) async {
+    const lockoutText = 'too many requests, locked out for 42 seconds';
+    final apiClient = ApiClient();
+    final jobsProvider = MockEmployeeJobsProviderForTest(
+      apiClient,
+      initialJobs: [awaitingPriceJob],
+    )
+      ..shouldFailRespond = true
+      ..failRespondStatus = 429
+      ..failRespondMessage = lockoutText;
+
+    await tester.pumpWidget(createTestWidget(jobsProvider: jobsProvider));
+    await tester.pumpAndSettle();
+
+    final declineBtn =
+        find.byKey(const Key('employee_price_decline_job-awaiting-price-004'));
+    await tester.ensureVisible(declineBtn);
+    await tester.tap(declineBtn);
+    await tester.pumpAndSettle();
+
+    final banner =
+        find.byKey(const Key('employee_price_error_job-awaiting-price-004'));
+    expect(banner, findsOneWidget);
+    expect(find.text(lockoutText), findsOneWidget);
+    // S5: retries extend the lockout, so no retry affordance renders.
+    expect(find.descendant(of: banner, matching: find.byType(TextButton)),
+        findsNothing);
   });
 }

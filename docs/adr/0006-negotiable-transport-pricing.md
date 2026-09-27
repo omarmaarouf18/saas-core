@@ -88,3 +88,20 @@ The following 5 design decisions are finalized for v1 implementation:
 
 - **Multi-Round Counter-Proposals**: Allowing iterative counter-bidding (customer $\leftrightarrow$ employee) was considered but rejected to avoid infinite negotiation loops, high latency, and client UI complexity.
 - **Initial Booking Escrow Pre-Lock for Rides**: Pre-locking $P_{\text{system}}$ at `TrackJob` time for rides and adjusting escrow later was considered but rejected because fare negotiations frequently alter the final price, which would cause unnecessary wallet lock/release churn. Locking escrow upon reaching `AgreedPrice` provides a cleaner, atomic financial lifecycle.
+
+---
+
+## Employee-Side Response UI (implementation note, 2026-09-27)
+
+The decision text above is unchanged. What changed is reachability: the
+employee side of `POST /users/jobs/respond-price` (which always authorized
+the assigned employee alongside the customer) is now actually callable from
+`employee_jobs_screen.dart` — the pending-fare panel carries Accept /
+Decline actions through `EmployeeJobsProvider.respondPrice`, using the same
+`{job_id, decision, requester_token}` shape as the customer flow. No backend
+change was needed. Decline semantics are exactly Q2 (terminal
+`cancelled`/`price_disagreement`, employee released, no redispatch — the
+card drops from the employee's assigned list and the customer must rebook);
+expiry semantics are exactly §1.4. Employee proposal initiation
+(`ProposePrice` from the employee side) remains unwired UI — out of scope
+for this note.

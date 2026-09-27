@@ -235,4 +235,110 @@ void main() {
     expect(updated.cancellationRequestStatus, 'rejected');
     expect(updated.offerExpiresAt, isNull);
   });
+
+  test(
+      'respondPrice posts job_id + decision + requester_token and activates on accept',
+      () async {
+    const jobEnvelope = {
+      'id': 'job-price-1',
+      'status': 'active',
+      'payment_method': 'cod',
+      'owner_id': 'owner-1',
+      'user_id': 'cust-1',
+      'service_id': 'svc-t',
+      'agreed_price': 85.5,
+    };
+    final (provider, overrides) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {
+            'id': 'job-price-1',
+            'status': 'awaiting_price_response',
+            'payment_method': 'cod',
+            'suggested_price': 90.0,
+            'proposed_price': 85.5,
+            'destination': {'latitude': 30.1, 'longitude': 31.1},
+          }
+        ]);
+      }
+      if (req.uri.path.endsWith('/users/jobs/respond-price')) {
+        return MockHttpResponse(200, jsonBody: {'job': jobEnvelope});
+      }
+      return MockHttpResponse.ok();
+    });
+
+    await provider.fetchAssignedJobs('emp-jwt-token');
+    final updated = await provider.respondPrice(
+      jobId: 'job-price-1',
+      decision: 'accept',
+      employeeToken: 'emp-jwt-token',
+    );
+
+    // Same request shape as MarketplaceProvider.respondPrice (one endpoint).
+    final posted = overrides.requests
+        .lastWhere((r) => r.uri.path.endsWith('/users/jobs/respond-price'));
+    expect(jsonDecode(posted.body!), {
+      'job_id': 'job-price-1',
+      'decision': 'accept',
+      'requester_token': 'emp-jwt-token',
+    });
+    expect(updated!.status, 'active');
+    expect(provider.jobs.singleWhere((j) => j.id == 'job-price-1').status,
+        'active');
+    expect(provider.error, isNull);
+    expect(provider.lastErrorStatusCode, isNull);
+    expect(provider.isLoading, isFalse);
+  });
+
+  test('respondPrice decline marks the job cancelled with price_disagreement',
+      () async {
+    final (provider, _) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'job-price-2', 'status': 'awaiting_price_response'}
+        ]);
+      }
+      return MockHttpResponse(200, jsonBody: {
+        'job': {
+          'id': 'job-price-2',
+          'status': 'cancelled',
+          'cancellation_reason': 'price_disagreement',
+        }
+      });
+    });
+
+    await provider.fetchAssignedJobs('t');
+    final updated = await provider.respondPrice(
+      jobId: 'job-price-2',
+      decision: 'decline',
+      employeeToken: 't',
+    );
+
+    expect(updated!.status, 'cancelled');
+    expect(updated.cancellationReason, 'price_disagreement');
+  });
+
+  test('respondPrice failure rethrows, stores friendly error + status code',
+      () async {
+    final (provider, _) = _makeProvider((req) {
+      if (req.uri.path.endsWith('/users/jobs/get')) {
+        return MockHttpResponse(200, jsonBody: [
+          {'id': 'job-price-3', 'status': 'awaiting_price_response'}
+        ]);
+      }
+      return MockHttpResponse(429,
+          jsonBody: {'error': 'too many requests, locked out'});
+    });
+
+    await provider.fetchAssignedJobs('t');
+    await expectLater(
+      provider.respondPrice(
+          jobId: 'job-price-3', decision: 'accept', employeeToken: 't'),
+      throwsA(isA<ApiClientException>()),
+    );
+    expect(provider.isLoading, isFalse);
+    expect(provider.lastErrorStatusCode, 429);
+    expect(provider.error,
+        friendlyErrorMessage(ApiClientException('x', statusCode: 429)));
+  });
 }

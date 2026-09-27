@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:frontend/l10n/l10n.dart';
+import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
@@ -49,6 +50,15 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
   String? _completeError;
   String? _completeErrorJobId;
   String? _isRespondingOfferId;
+  // Fare-proposal response state (ADR-0006 RespondPrice, employee side):
+  // per-job in-flight lock plus a per-job stored error with its status code
+  // (S5 discrimination) and the decision that failed, so the banner retry
+  // can re-fire the same decision directly.
+  String? _respondingPriceJobId;
+  String? _priceError;
+  String? _priceErrorJobId;
+  int? _priceErrorStatusCode;
+  String? _priceErrorDecision;
   Timer? _countdownTimer;
 
   List<String> _getSuggestions(AppLocalizations l10n) => [
@@ -232,6 +242,103 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
         setState(() {
           _completingJobId = null;
         });
+      }
+    }
+  }
+
+  /// Employee fare-proposal response (ADR-0006 `RespondPrice`, employee
+  /// side of the same endpoint the customer answers in
+  /// `job_status_screen.dart`). Accept is a financial commitment — the
+  /// agreed fare activates the trip (and locks escrow for non-COD) — so it
+  /// routes through `ConfirmActionDialog` per Rule 8, like the S7
+  /// subscription ceremony. Decline ends the job session immediately
+  /// (terminal `cancelled`/`price_disagreement`, no redispatch) and stays
+  /// immediate, matching the customer proposal-response and
+  /// dispatch-offer precedents.
+  Future<void> _confirmAndRespondPrice(Job job, String decision) async {
+    if (_respondingPriceJobId != null) return;
+    if (_isPriceExpired(job)) return;
+    if (decision == 'accept') {
+      final l10n = AppLocalizations.of(context)!;
+      final confirmed = await ConfirmActionDialog.show(
+        context,
+        title: l10n.employeePriceAcceptConfirmTitle,
+        message: l10n.employeePriceAcceptConfirmMessage(
+          _formatProposedFare(job),
+        ),
+        confirmLabel: l10n.acceptProposalBtn,
+        cancelLabel: l10n.cancel,
+        icon: Icons.payments_outlined,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    await _respondToPriceProposal(job, decision);
+  }
+
+  Future<void> _respondToPriceProposal(Job job, String decision) async {
+    if (_respondingPriceJobId != null) return;
+    // Client-side expiry guard: the countdown already proved the offer is
+    // dead, so never call RespondPrice on it (the backend 400s
+    // `proposal_expired` on races all the same).
+    if (_isPriceExpired(job)) return;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final token = auth.token;
+    if (token == null) return;
+    final provider = Provider.of<EmployeeJobsProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() {
+      _respondingPriceJobId = job.id;
+      if (_priceErrorJobId == job.id) {
+        _priceError = null;
+        _priceErrorJobId = null;
+        _priceErrorStatusCode = null;
+        _priceErrorDecision = null;
+      }
+    });
+
+    try {
+      await provider.respondPrice(
+        jobId: job.id,
+        decision: decision,
+        employeeToken: token,
+      );
+      if (!mounted) return;
+      if (decision == 'accept') {
+        ThemedSnackBar.showSuccess(context, l10n.priceProposalAcceptedMsg);
+      } else {
+        ThemedSnackBar.showError(context, l10n.priceProposalDeclinedMsg);
+      }
+      await _refreshJobs();
+    } catch (e) {
+      if (!mounted) return;
+      final status = e is ApiClientException ? e.statusCode : null;
+      final String message;
+      if (status == 409) {
+        message = l10n.jobStateChangedError;
+      } else if ((status == 429 || status == 400) && e is ApiClientException) {
+        // Curated-body exception (same class as the owner cancel-response
+        // flow): RespondPrice 429/400 bodies carry the actionable server
+        // text (lockout wait / proposal_expired), so the verbatim message
+        // is preferred over the generic friendly copy.
+        message = e.message;
+      } else {
+        message = friendlyErrorMessage(e);
+      }
+      setState(() {
+        _priceError = message;
+        _priceErrorJobId = job.id;
+        _priceErrorStatusCode = status;
+        _priceErrorDecision = decision;
+      });
+      if (status == 409 || status == 400) {
+        // The other party acted or the window lapsed: converge to the
+        // server truth instead of leaving a stale offer on screen.
+        await _refreshJobs();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _respondingPriceJobId = null);
       }
     }
   }
@@ -1287,6 +1394,58 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                             : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    // Fare-proposal actions: accept (Primary, confirmed —
+                    // financial commitment) / decline (outlined Secondary,
+                    // immediate). Both lock while a response is in flight and
+                    // disable once the countdown hits zero; the backend is
+                    // the final enforcer on races.
+                    if (_priceErrorJobId == job.id && _priceError != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      ThemedErrorBanner(
+                        key: Key('employee_price_error_${job.id}'),
+                        message: _priceError!,
+                        // S5: lockouts carry no retry — re-tapping extends
+                        // the lockout. Other failures retry the same
+                        // decision directly (already-confirmed intent).
+                        onRetry: _priceErrorStatusCode == 429
+                            ? null
+                            : () => _respondToPriceProposal(
+                                  job,
+                                  _priceErrorDecision ?? 'accept',
+                                ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PrimaryButton(
+                            key: Key('employee_price_accept_${job.id}'),
+                            text: l10n.acceptProposalBtn,
+                            icon: Icons.check,
+                            isLoading: _respondingPriceJobId == job.id,
+                            onPressed: (_respondingPriceJobId != null ||
+                                    _isPriceExpired(job))
+                                ? null
+                                : () => _confirmAndRespondPrice(job, 'accept'),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: SecondaryButton(
+                            key: Key('employee_price_decline_${job.id}'),
+                            text: l10n.declineProposalBtn,
+                            icon: Icons.close,
+                            isOutlined: true,
+                            isLoading: _respondingPriceJobId == job.id,
+                            onPressed: (_respondingPriceJobId != null ||
+                                    _isPriceExpired(job))
+                                ? null
+                                : () => _respondToPriceProposal(job, 'decline'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

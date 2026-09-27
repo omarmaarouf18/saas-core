@@ -1617,6 +1617,18 @@ abstract class AppLocalizations {
   /// **'Request expires in {remaining} — then it is cancelled automatically.'**
   String employeePricePendingExpiry(Object remaining);
 
+  /// No description provided for @employeePriceAcceptConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept this fare?'**
+  String get employeePriceAcceptConfirmTitle;
+
+  /// No description provided for @employeePriceAcceptConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept the proposed fare {price}? The trip will start immediately and can then be completed. This is a financial commitment.'**
+  String employeePriceAcceptConfirmMessage(Object price);
+
   /// No description provided for @cancelRequestRejectedBanner.
   ///
   /// In en, this message translates to:

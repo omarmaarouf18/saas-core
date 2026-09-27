@@ -318,6 +318,8 @@
   "employeePricePendingTitle": "Waiting for fare confirmation",
   "employeePricePendingBody": "Proposed fare {price} — the trip starts automatically once the fare is accepted. Completing is only possible on an active trip.",
   "employeePricePendingExpiry": "Request expires in {remaining} — then it is cancelled automatically.",
+  "employeePriceAcceptConfirmTitle": "Accept this fare?",
+  "employeePriceAcceptConfirmMessage": "Accept the proposed fare {price}? The trip will start immediately and can then be completed. This is a financial commitment.",
   "cancelRequestRejectedBanner": "The business owner declined your cancellation request. You remain assigned to this job.",
   "cancelRequestSentMsg": "Cancellation request sent to the business owner.",
   "employeeRequestCancelButton": "Request Cancellation",

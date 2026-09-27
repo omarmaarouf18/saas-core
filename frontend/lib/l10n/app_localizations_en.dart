@@ -816,6 +816,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get employeePriceAcceptConfirmTitle => 'Accept this fare?';
+
+  @override
+  String employeePriceAcceptConfirmMessage(Object price) {
+    return 'Accept the proposed fare $price? The trip will start immediately and can then be completed. This is a financial commitment.';
+  }
+
+  @override
   String get cancelRequestRejectedBanner =>
       'The business owner declined your cancellation request. You remain assigned to this job.';
 

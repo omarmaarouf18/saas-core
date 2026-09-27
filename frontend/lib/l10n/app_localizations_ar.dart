@@ -810,6 +810,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get employeePriceAcceptConfirmTitle => 'تقبل الأجرة دي؟';
+
+  @override
+  String employeePriceAcceptConfirmMessage(Object price) {
+    return 'هتقبل الأجرة المقترحة $price؟ المشوار هيبدأ فورًا وهتقدر تنهيه بعد كده. ده التزام مالي.';
+  }
+
+  @override
   String get cancelRequestRejectedBanner =>
       'صاحب الشغل رفض طلب الإلغاء بتاعك. انت لسه مسئول عن الطلب ده.';
 
