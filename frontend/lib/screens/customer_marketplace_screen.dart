@@ -747,6 +747,10 @@ class _BookingDialogState extends State<_BookingDialog> {
   String _destinationNote = '';
   double? _tripDistanceKM;
   double? _estimatedPrice;
+  // Current-location fetch in flight (disables the button + shows busy
+  // while GPS resolves; the result opens the picker, never applies
+  // silently).
+  bool _isFetchingCurrentLocation = false;
 
   @override
   void initState() {
@@ -789,16 +793,23 @@ class _BookingDialogState extends State<_BookingDialog> {
   }
 
   Future<void> _useCurrentLocationForPickup() async {
+    if (_isFetchingCurrentLocation) return;
+    setState(() => _isFetchingCurrentLocation = true);
     try {
       final perm = await requestLocationPermission();
       if (perm == LocationPermissionResult.granted) {
         final pos = await Geolocator.getCurrentPosition();
         if (mounted) {
-          setState(() {
-            _pickupLat = pos.latitude;
-            _pickupLon = pos.longitude;
-            _recalculatePrice();
-          });
+          // Same open-picker-and-confirm flow as manual pin placement,
+          // pre-centered on the GPS fix with the pin already there: the
+          // person sees the pin, can drag/adjust it, fill the note field,
+          // and explicitly Confirm. Current-location is a faster starting
+          // point, not a silent bypass (previously this setState'd the
+          // coords with zero visual feedback).
+          _openLocationPicker(
+            isPickup: true,
+            initialOverride: LatLng(pos.latitude, pos.longitude),
+          );
         }
       } else {
         if (mounted) {
@@ -812,14 +823,20 @@ class _BookingDialogState extends State<_BookingDialog> {
       if (mounted) {
         ThemedSnackBar.showError(context, friendlyErrorMessage(e));
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingCurrentLocation = false);
+      }
     }
   }
 
-  void _openLocationPicker({required bool isPickup}) {
+  void _openLocationPicker({required bool isPickup, LatLng? initialOverride}) {
     final l10n = context.l10n;
-    LatLng tempLocation = isPickup
-        ? LatLng(_pickupLat, _pickupLon)
-        : LatLng(_destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon);
+    LatLng tempLocation = initialOverride ??
+        (isPickup
+            ? LatLng(_pickupLat, _pickupLon)
+            : LatLng(
+                _destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon));
     LocationPickerDialog.show(
       context,
       dialogKey: Key(isPickup
@@ -1004,7 +1021,10 @@ class _BookingDialogState extends State<_BookingDialog> {
                             icon: Icons.my_location,
                             isOutlined: true,
                             isFullWidth: false,
-                            onPressed: _useCurrentLocationForPickup,
+                            isLoading: _isFetchingCurrentLocation,
+                            onPressed: _isFetchingCurrentLocation
+                                ? null
+                                : _useCurrentLocationForPickup,
                           ),
                           SecondaryButton(
                             key: const Key('choose_pickup_button'),

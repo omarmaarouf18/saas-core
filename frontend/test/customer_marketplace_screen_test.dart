@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
@@ -15,6 +16,7 @@ import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
+import 'package:frontend/widgets/location_picker_dialog.dart';
 import 'package:frontend/widgets/primary_button.dart';
 import 'package:frontend/widgets/themed_error_banner.dart';
 
@@ -915,5 +917,129 @@ void main() {
     expect(
         find.byKey(const Key('add_destination_note_button')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Use-current-location opens the picker pre-centered on the GPS fix instead of silently applying',
+      (WidgetTester tester) async {
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Book'));
+    await tester.pumpAndSettle();
+
+    // Pickup starts at the screen-level fix (31.2001, 29.9187).
+    expect(find.text('31.2001, 29.9187'), findsOneWidget);
+
+    // Fresh GPS fix, deliberately different from the current pickup.
+    mockGeolocator.mockPosition = Position(
+      latitude: 30.1,
+      longitude: 31.1,
+      timestamp: DateTime.now(),
+      accuracy: 10,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+
+    await tester
+        .tap(find.byKey(const Key('use_current_location_pickup_button')));
+    await tester.pumpAndSettle();
+
+    // The SAME picker-and-confirm flow as manual placement opens...
+    expect(
+        find.byKey(const Key('pickup_location_picker_dialog')), findsOneWidget);
+    final dialog =
+        tester.widget<LocationPickerDialog>(find.byType(LocationPickerDialog));
+    expect(dialog.initialLocation, const LatLng(30.1, 31.1));
+    // ...but nothing was applied yet: the old coords still stand behind
+    // the dialog (no silent bypass).
+    expect(find.text('31.2001, 29.9187'), findsOneWidget);
+
+    // Explicit Confirm applies the fix (adjustable in between).
+    await tester.tap(find.byKey(const Key('confirm_pickup_location_button')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('pickup_location_picker_dialog')), findsNothing);
+    expect(find.text('30.1000, 31.1000'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Use-current-location permission-denied keeps the old error path (snackbar, no dialog)',
+      (WidgetTester tester) async {
+    mockGeolocator.initialPermission = LocationPermission.denied;
+    mockGeolocator.requestedPermission = LocationPermission.denied;
+
+    final customerUser = UserProfile(
+      id: 'cust-1',
+      email: 'customer@example.com',
+      username: 'cust_user',
+      role: 'user',
+    );
+
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-123',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+
+    await tester.pumpWidget(buildMarketplaceApp(
+      MockAuthProviderForTest(apiClient, customerUser),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Book'));
+    await tester.pumpAndSettle();
+
+    await tester
+        .tap(find.byKey(const Key('use_current_location_pickup_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Location permission denied. Defaulting to Cairo.'),
+        findsOneWidget);
+    expect(
+        find.byKey(const Key('pickup_location_picker_dialog')), findsNothing);
+    await tester.pumpAndSettle();
   });
 }
