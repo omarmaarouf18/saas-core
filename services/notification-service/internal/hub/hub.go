@@ -29,14 +29,42 @@ const (
 // Notification is the payload broadcast to connected clients.
 type Notification struct {
 	ID        string    `json:"id"`
-	Type      string    `json:"type"`               // "job_alert", "status_update", "system", "popup"
-	TenantID  string    `json:"tenant_id"`          // scope to tenant
-	UserID    string    `json:"user_id,omitempty"`  // target user ID if single recipient
-	UserIDs   []string  `json:"user_ids,omitempty"` // target user IDs if multiple recipients
-	Global    bool      `json:"global"`             // explicit opt-in for platform-wide global broadcast
+	Type      string    `json:"type"`              // "job_alert", "status_update", "system", "popup"
+	TenantID  string    `json:"tenant_id"`         // scope to tenant
+	UserID    string    `json:"user_id,omitempty"` // target user ID if single recipient
+	UserIDs   []string  `json:"user_ids,omitempty"`
+	Global    bool      `json:"global"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
-	Roles     []Role    `json:"roles"` // target roles (empty = broadcast all)
+	Roles     []Role    `json:"roles"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// ToClient projects the broadcast to its client-safe shape (A6):
+// ClientNotification carries no routing metadata (other recipients,
+// role/global targeting). Routing itself is unaffected — Redis fan-out
+// and per-client filtering run on the full Notification before this
+// projection.
+func (n Notification) ToClient() ClientNotification {
+	return ClientNotification{
+		ID:        n.ID,
+		Type:      n.Type,
+		TenantID:  n.TenantID,
+		UserID:    n.UserID,
+		Title:     n.Title,
+		Body:      n.Body,
+		Timestamp: n.Timestamp,
+	}
+}
+
+// ClientNotification is the wire shape delivered to SSE clients.
+type ClientNotification struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	TenantID  string    `json:"tenant_id"`
+	UserID    string    `json:"user_id,omitempty"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -390,7 +418,7 @@ func (h *SSEHub) dispatchPush(n Notification) {
 }
 
 func (h *SSEHub) deliverLocal(n Notification) {
-	data, err := json.Marshal(n)
+	data, err := json.Marshal(n.ToClient())
 	if err != nil {
 		log.Printf("[SSE-HUB] Failed to marshal notification for local delivery: %v", err)
 		return

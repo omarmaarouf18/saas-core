@@ -559,8 +559,25 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 
 	hasMore := len(items) == limit
 
+	// A6: project to the client-safe shape — routing metadata (other
+	// recipients in user_ids, role/global targeting) is never parsed by
+	// the Flutter client and must not leave the server.
+	clientItems := make([]notificationHistoryItem, 0, len(items))
+	for _, it := range items {
+		clientItems = append(clientItems, notificationHistoryItem{
+			ID:        it.ID,
+			Type:      it.Type,
+			TenantID:  it.TenantID,
+			UserID:    it.UserID,
+			Title:     it.Title,
+			Body:      it.Body,
+			Timestamp: it.Timestamp,
+			IsRead:    it.IsRead,
+		})
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"notifications": items,
+		"notifications": clientItems,
 		"has_more":      hasMore,
 	})
 }
@@ -570,6 +587,18 @@ func resolveUserRoles(role hub.Role) []string {
 		return nil
 	}
 	return []string{string(role)}
+}
+
+// notificationHistoryItem is the client-safe history projection (A6).
+type notificationHistoryItem struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	TenantID  string    `json:"tenant_id"`
+	UserID    string    `json:"user_id,omitempty"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Timestamp time.Time `json:"timestamp"`
+	IsRead    bool      `json:"is_read"`
 }
 
 // ---------------------------------------------------------------------------

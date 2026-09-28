@@ -50,7 +50,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 				StartedAt: time.Now().UTC(),
 			}
 		}
-		writeJSON(w, http.StatusOK, sub)
+		writeJSON(w, http.StatusOK, models.NewSubscriptionResponse(sub))
 	case http.MethodPost:
 		var req struct {
 			TenantID       string          `json:"tenant_id"`
@@ -176,7 +176,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 			return
 		}
-		writeJSON(w, http.StatusOK, sub)
+		writeJSON(w, http.StatusOK, models.NewSubscriptionResponse(sub))
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 	}

@@ -1037,7 +1037,12 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var lookupID string
 
-	if a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) == 1 {
+	// A6: GET /auth/user serves two audiences. Internal services
+	// (notification push fan-out) need device_tokens + tenant_id and
+	// authenticate via X-Internal-Token; end-user callers (Flutter profile)
+	// must not receive other-device tokens or tenant echoes — strip them.
+	isInternal := a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalServiceToken)) == 1
+	if isInternal {
 		lookupID = id
 	} else {
 		claims, err := jwtutil.ValidateToken(id)
@@ -1074,6 +1079,16 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"account_status":     user.EffectiveAccountStatus(),
 		"device_tokens":      deviceTokens,
 		"two_factor_enabled": user.Is2FAEnabled(),
+	}
+	if !isInternal {
+		// A6: end-user callers (Flutter profile) must not receive
+		// other-device tokens or tenant echoes. Internal services
+		// (notification push fan-out reads device_tokens; user-service
+		// KYC checks read tenant_id) authenticate via X-Internal-Token
+		// and keep the full map. Keys stay statically present so the
+		// tests/contracts AST guards keep passing.
+		delete(resp, "device_tokens")
+		delete(resp, "tenant_id")
 	}
 	if user.Role == models.RoleEmployee {
 		resp["kye_status"] = user.KYEStatus

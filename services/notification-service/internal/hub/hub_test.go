@@ -2,7 +2,9 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -396,5 +398,37 @@ func TestSSEHub_AccountSuspended_ForceClosesConnection_F03(t *testing.T) {
 	// Verify client count dropped to 0
 	if h.ClientCount() != 0 {
 		t.Errorf("expected 0 clients in hub after suspension disconnect, got %d", h.ClientCount())
+	}
+}
+
+func TestNotification_ToClientStripsRouting(t *testing.T) {
+	n := Notification{
+		ID:       "n1",
+		Type:     "popup",
+		TenantID: "t1",
+		UserID:   "u1",
+		UserIDs:  []string{"u1", "u2"},
+		Global:   true,
+		Title:    "Hi",
+		Body:     "Body",
+		Roles:    []Role{RoleOwner},
+	}
+	raw, err := json.Marshal(n.ToClient())
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	for _, key := range []string{`"user_ids"`, `"roles"`, `"global"`, "u2"} {
+		if strings.Contains(string(raw), key) {
+			t.Errorf("client payload leaks %q: %s", key, raw)
+		}
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, key := range []string{"id", "type", "tenant_id", "user_id", "title", "body", "timestamp"} {
+		if _, ok := decoded[key]; !ok {
+			t.Errorf("client payload missing %q", key)
+		}
 	}
 }

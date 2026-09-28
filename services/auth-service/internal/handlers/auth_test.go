@@ -2181,6 +2181,9 @@ func TestGetUserUsernameResponse(t *testing.T) {
 }
 
 func TestGetUser_DeviceTokensResponse(t *testing.T) {
+	// A6: GET /auth/user serves two audiences. Internal callers
+	// (X-Internal-Token, e.g. notification push fan-out) receive
+	// device_tokens; end-user callers must not.
 	a, s, cleanup := setupTestAuth(t)
 	if a == nil {
 		t.Skip("setup failed")
@@ -2292,6 +2295,35 @@ func TestGetUser_DeviceTokensResponse(t *testing.T) {
 	}
 	if len(slice) != 0 {
 		t.Errorf("expected 0 device tokens, got %d", len(slice))
+	}
+
+	// 3. End-user caller (own JWT, no internal header) must NOT receive
+	// device_tokens or tenant_id echoes.
+	userToken, err := jwtutil.GenerateToken(userWithTokens.ID, string(models.RoleUser), "tenant-x", userWithTokens.Email)
+	if err != nil {
+		t.Fatalf("GenerateToken: %v", err)
+	}
+	reqSelf := httptest.NewRequest("GET", "/auth/user", nil)
+	reqSelf.Header.Set("Authorization", "Bearer "+userToken)
+	recSelf := httptest.NewRecorder()
+	a.GetUser(recSelf, reqSelf)
+	if recSelf.Code != http.StatusOK {
+		t.Fatalf("expected 200 for self caller, got %d: %s", recSelf.Code, recSelf.Body.String())
+	}
+	var respSelf map[string]any
+	if err := json.Unmarshal(recSelf.Body.Bytes(), &respSelf); err != nil {
+		t.Fatalf("decode self response: %v", err)
+	}
+	if _, exists := respSelf["device_tokens"]; exists {
+		t.Errorf("self caller must not receive device_tokens: %v", respSelf["device_tokens"])
+	}
+	if _, exists := respSelf["tenant_id"]; exists {
+		t.Errorf("self caller must not receive tenant_id echo")
+	}
+	for _, key := range []string{"id", "email", "role", "username"} {
+		if _, exists := respSelf[key]; !exists {
+			t.Errorf("self response missing %q", key)
+		}
 	}
 }
 

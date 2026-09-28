@@ -149,9 +149,8 @@ func TestUploadAndDownloadAttachment_Success(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if msg.AttachmentKey == "" {
-		t.Fatalf("expected non-empty attachment key")
-	}
+	// A6: the storage key must never reach clients — download flows use
+	// the signed URL token below, never the raw key.
 	if msg.AttachmentURL == "" {
 		t.Fatalf("expected non-empty attachment URL")
 	}

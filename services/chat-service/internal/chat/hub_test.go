@@ -2,7 +2,9 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -219,5 +221,32 @@ func TestHub_AccountSuspended_ForceClosesConnection_F03(t *testing.T) {
 	// Verify client count dropped to 0
 	if h.ClientCount() != 0 {
 		t.Errorf("expected 0 clients in hub after suspension disconnect, got %d", h.ClientCount())
+	}
+}
+
+func TestMessage_AttachmentKeyNeverSerialized(t *testing.T) {
+	m := Message{
+		ID:             "m1",
+		Channel:        "job:j1",
+		AttachmentKey:  "tickets/j1/12345_secret-file.pdf",
+		AttachmentURL:  "https://signed.example/view?token=abc",
+		AttachmentName: "secret-file.pdf",
+	}
+	raw, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if strings.Contains(string(raw), "attachment_key") || strings.Contains(string(raw), "tickets/j1") {
+		t.Errorf("storage key leaked: %s", raw)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if _, ok := decoded["attachment_key"]; ok {
+		t.Errorf("attachment_key present in client payload")
+	}
+	if decoded["attachment_url"] == nil || decoded["attachment_name"] == nil {
+		t.Errorf("client-needed attachment fields missing: %s", raw)
 	}
 }

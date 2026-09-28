@@ -52,7 +52,7 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, wallet)
+	writeJSON(w, http.StatusOK, models.NewWalletResponse(wallet))
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +171,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wallet := u.store.GetWallet(r.Context(), req.TenantID)
-	writeJSON(w, http.StatusOK, map[string]any{"message": "deposit successful", "wallet": wallet})
+	writeJSON(w, http.StatusOK, map[string]any{"message": "deposit successful", "wallet": models.NewWalletResponse(wallet)})
 }
 
 // ---------------------------------------------------------------------------
@@ -229,9 +229,13 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 	limit := int64(parseIntDefault(r.URL.Query().Get("limit"), 100))
 	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
 	entries := u.store.GetLedger(r.Context(), tenantID, limit, offset)
+	resp := make([]models.LedgerEntryResponse, 0, len(entries))
+	for _, e := range entries {
+		resp = append(resp, models.NewLedgerEntryResponse(e))
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"count":   len(entries),
-		"entries": entries,
+		"count":   len(resp),
+		"entries": resp,
 		"limit":   limit,
 		"offset":  offset,
 	})

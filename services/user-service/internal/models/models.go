@@ -308,14 +308,14 @@ type EmployeeJobResponse struct {
 	CancellationRequestReason string     `json:"cancellation_request_reason,omitempty"`
 	CancellationRequestedAt   *time.Time `json:"cancellation_requested_at,omitempty"`
 	CancellationRequestStatus string     `json:"cancellation_request_status,omitempty"`
-	ActualCashAmount          *float64   `json:"actual_cash_amount,omitempty"`
-	SuggestedPrice            float64    `json:"suggested_price,omitempty"`
-	ProposedPrice             *float64   `json:"proposed_price,omitempty"`
-	ProposedBy                string     `json:"proposed_by,omitempty"`
-	AgreedPrice               *float64   `json:"agreed_price,omitempty"`
-	PriceProposalExpiresAt    *time.Time `json:"price_proposal_expires_at,omitempty"`
-	CreatedAt                 time.Time  `json:"created_at"`
-	UpdatedAt                 time.Time  `json:"updated_at"`
+	// A6: no ActualCashAmount — owner/reconciliation-only, never sent to employees.
+	SuggestedPrice         float64    `json:"suggested_price,omitempty"`
+	ProposedPrice          *float64   `json:"proposed_price,omitempty"`
+	ProposedBy             string     `json:"proposed_by,omitempty"`
+	AgreedPrice            *float64   `json:"agreed_price,omitempty"`
+	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // NewEmployeeJobResponse maps a Job struct to an EmployeeJobResponse DTO,
@@ -342,14 +342,15 @@ func NewEmployeeJobResponse(j *Job, requesterEmployeeID string) EmployeeJobRespo
 		CancellationRequestReason: j.CancellationRequestReason,
 		CancellationRequestedAt:   j.CancellationRequestedAt,
 		CancellationRequestStatus: j.CancellationRequestStatus,
-		ActualCashAmount:          j.ActualCashAmount,
-		SuggestedPrice:            j.SuggestedPrice,
-		ProposedPrice:             j.ProposedPrice,
-		ProposedBy:                j.ProposedBy,
-		AgreedPrice:               j.AgreedPrice,
-		PriceProposalExpiresAt:    j.PriceProposalExpiresAt,
-		CreatedAt:                 j.CreatedAt,
-		UpdatedAt:                 j.UpdatedAt,
+		// A6: ActualCashAmount is owner/reconciliation-only (Flutter
+		// employee screens never read it) — excluded from the employee DTO.
+		SuggestedPrice:         j.SuggestedPrice,
+		ProposedPrice:          j.ProposedPrice,
+		ProposedBy:             j.ProposedBy,
+		AgreedPrice:            j.AgreedPrice,
+		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
+		CreatedAt:              j.CreatedAt,
+		UpdatedAt:              j.UpdatedAt,
 	}
 	if j.CurrentOfferedEmployeeID != "" && j.CurrentOfferedEmployeeID == requesterEmployeeID {
 		resp.CurrentOfferedEmployeeID = j.CurrentOfferedEmployeeID
@@ -370,6 +371,53 @@ type Wallet struct {
 	EscrowBalance       float64   `json:"escrow_balance"       bson:"escrow_balance"`       // locked/pending funds
 	WithdrawableBalance float64   `json:"withdrawable_balance" bson:"withdrawable_balance"` // available funds
 	UpdatedAt           time.Time `json:"updated_at"           bson:"updated_at"`
+}
+
+// WalletResponse is the client-facing wallet projection (A6): balances
+// plus timestamp only. The internal id/tenant echoes are stripped — the
+// caller already knows its own tenant.
+type WalletResponse struct {
+	TotalBalance        float64   `json:"total_balance"`
+	EscrowBalance       float64   `json:"escrow_balance"`
+	WithdrawableBalance float64   `json:"withdrawable_balance"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// NewWalletResponse projects a stored wallet to its client-safe shape.
+func NewWalletResponse(w *Wallet) WalletResponse {
+	if w == nil {
+		return WalletResponse{}
+	}
+	return WalletResponse{
+		TotalBalance:        w.TotalBalance,
+		EscrowBalance:       w.EscrowBalance,
+		WithdrawableBalance: w.WithdrawableBalance,
+		UpdatedAt:           w.UpdatedAt,
+	}
+}
+
+// LedgerEntryResponse is the client-facing ledger projection (A6): only
+// the fields the wallet/history screens render. The id/tenant echoes and
+// balance_before (reconstructible from neighbors) are stripped.
+type LedgerEntryResponse struct {
+	JobID        string          `json:"job_id"`
+	Type         TransactionType `json:"type"`
+	Amount       float64         `json:"amount"`
+	BalanceAfter float64         `json:"balance_after"`
+	Description  string          `json:"description"`
+	Timestamp    time.Time       `json:"timestamp"`
+}
+
+// NewLedgerEntryResponse projects a stored entry to its client-safe shape.
+func NewLedgerEntryResponse(e TransactionLedger) LedgerEntryResponse {
+	return LedgerEntryResponse{
+		JobID:        e.JobID,
+		Type:         e.Type,
+		Amount:       e.Amount,
+		BalanceAfter: e.BalanceAfter,
+		Description:  e.Description,
+		Timestamp:    e.Timestamp,
+	}
 }
 
 // TransactionType defines the kind of ledger entry.
@@ -541,6 +589,31 @@ type Subscription struct {
 	ActivatedBy string    `json:"activated_by,omitempty" bson:"activated_by,omitempty"` // reviewer ID
 	RevokedBy   string    `json:"revoked_by,omitempty"   bson:"revoked_by,omitempty"`   // reviewer ID
 	UpdatedAt   time.Time `json:"updated_at,omitempty"   bson:"updated_at,omitempty"`
+}
+
+// SubscriptionResponse is the client-facing subscription projection (A6):
+// tier plus lifecycle timestamps only. Internal id/tenant echoes and
+// reviewer audit fields (reason/activated_by/revoked_by) are stripped —
+// the admin reviewer console reads those via admin endpoints.
+type SubscriptionResponse struct {
+	Tier      PlanTier  `json:"tier"`
+	StartedAt time.Time `json:"started_at"`
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// NewSubscriptionResponse projects a stored subscription to its
+// client-safe shape.
+func NewSubscriptionResponse(s *Subscription) SubscriptionResponse {
+	if s == nil {
+		return SubscriptionResponse{}
+	}
+	return SubscriptionResponse{
+		Tier:      s.Tier,
+		StartedAt: s.StartedAt,
+		ExpiresAt: s.ExpiresAt,
+		UpdatedAt: s.UpdatedAt,
+	}
 }
 
 // IsClosed reports whether a tenant is closed for public marketplace purposes

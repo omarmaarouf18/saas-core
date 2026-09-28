@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -807,5 +808,51 @@ func TestHandler_BroadcastReadDismissIsPerRecipient(t *testing.T) {
 	code, ownerItemsAfterEmpDelete := getHistory(tokenOwner)
 	if code != http.StatusOK || len(ownerItemsAfterEmpDelete) != 1 || !ownerItemsAfterEmpDelete[0].IsRead {
 		t.Fatalf("owner-1 MUST still see 1 read notification after employee-1 dismissed it! Got %+v", ownerItemsAfterEmpDelete)
+	}
+}
+
+func TestHistoryEndpoint_StripsRoutingMetadata(t *testing.T) {
+	_, memStore, mux, tokenAlice, _ := setupHandlerTestContext(t)
+
+	now := time.Now().UTC()
+	_ = memStore.InsertNotification(context.Background(), &store.Notification{
+		ID:        "notif-routed-1",
+		Type:      "popup",
+		TenantID:  "tenant-alice",
+		UserID:    "user-alice",
+		UserIDs:   []string{"user-alice", "user-other"},
+		Global:    true,
+		Title:     "Routed",
+		Body:      "Routed body",
+		Roles:     []string{"client"},
+		Timestamp: now,
+	})
+
+	req := httptest.NewRequest("GET", "/notifications/history?limit=5", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenAlice)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
+	}
+	raw := rec.Body.String()
+	for _, key := range []string{`"user_ids"`, `"roles"`, `"global"`, "user-other"} {
+		if strings.Contains(raw, key) {
+			t.Errorf("history leaks routing metadata %q: %s", key, raw)
+		}
+	}
+	var resp struct {
+		Notifications []map[string]any `json:"notifications"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(resp.Notifications) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(resp.Notifications))
+	}
+	for _, key := range []string{"id", "type", "tenant_id", "title", "body", "timestamp", "is_read"} {
+		if _, ok := resp.Notifications[0][key]; !ok {
+			t.Errorf("history missing UI field %q", key)
+		}
 	}
 }

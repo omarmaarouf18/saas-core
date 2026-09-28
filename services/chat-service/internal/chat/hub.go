@@ -26,7 +26,7 @@ type Message struct {
 	Latitude       *float64   `json:"latitude,omitempty"`        // live tracking latitude
 	Longitude      *float64   `json:"longitude,omitempty"`       // live tracking longitude
 	EmployeeID     string     `json:"employee_id,omitempty"`     // live tracking employee id
-	AttachmentKey  string     `json:"attachment_key,omitempty"`  // storage key for encrypted attachment
+	AttachmentKey  string     `json:"-"`                         // storage key — server-side only, never serialized to clients (A6)
 	AttachmentURL  string     `json:"attachment_url,omitempty"`  // signed download/view URL
 	AttachmentName string     `json:"attachment_name,omitempty"` // original filename
 	AttachmentType string     `json:"attachment_type,omitempty"` // MIME content type (e.g. image/jpeg, application/pdf)

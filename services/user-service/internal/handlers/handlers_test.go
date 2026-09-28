@@ -2975,12 +2975,12 @@ func TestUserServiceHandlers(t *testing.T) {
 				t.Fatalf("Expected 200 OK, got %d. Body: %s", rec.Code, rec.Body.String())
 			}
 
-			// Confirm it returns Tenant B's wallet (balance 0), NOT Tenant A's wallet (balance 50)
-			var wallet models.Wallet
+			// Confirm it returns Tenant B's wallet (balance 0), NOT Tenant A's wallet (balance 50).
+			// A6: the response is a WalletResponse DTO (no tenant echo);
+			// isolation is proven by the balance, which would be 50.0 for
+			// the wrong tenant.
+			var wallet models.WalletResponse
 			json.Unmarshal(rec.Body.Bytes(), &wallet)
-			if wallet.TenantID != "tenant-b-owner" {
-				t.Errorf("Expected resolved wallet TenantID to be 'tenant-b-owner', got %s", wallet.TenantID)
-			}
 			if wallet.TotalBalance != 0.0 {
 				t.Errorf("Expected Tenant B's balance to be 0.0, got %.2f", wallet.TotalBalance)
 			}
