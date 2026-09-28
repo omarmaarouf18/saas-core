@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -153,7 +154,7 @@ func (c *Chat) AdminListTickets(w http.ResponseWriter, r *http.Request) {
 
 	tickets, total, err := c.store.ListTickets(ctx, status, search, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list tickets: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to list tickets", err)
 		return
 	}
 
@@ -225,6 +226,21 @@ func (c *Chat) dispatchTicketResolvedNotification(ctx context.Context, ticket *s
 	return true, ""
 }
 
+// sanitizeNotifyError keeps the outage status signal (an HTTP status code
+// is safe to expose) while replacing transport/marshal internals with a
+// stable generic. The reviewer console distinguishes outages by status.
+func sanitizeNotifyError(notifyErr string) string {
+	if strings.HasPrefix(notifyErr, "notification-service returned status ") {
+		return notifyErr
+	}
+	if m := upstreamStatusPattern.FindStringSubmatch(notifyErr); m != nil {
+		return fmt.Sprintf("failed to notify customer: upstream status %s", m[1])
+	}
+	return "failed to notify customer"
+}
+
+var upstreamStatusPattern = regexp.MustCompile(`HTTP status (\d{3})`)
+
 // AdminResolveTicket marks a ticket as resolved with mandatory notes (ADR-0023),
 // persists a system resolution chat message to the ticket channel, and dispatches a customer notification.
 // POST /chat/admin/tickets/resolve & POST /admin/tickets/resolve
@@ -242,7 +258,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 
 	var req AdminResolveTicketRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -269,7 +285,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -301,7 +317,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 		"customer_notified": notified,
 	}
 	if !notified && notifyErr != "" {
-		respData["notify_error"] = notifyErr
+		respData["notify_error"] = sanitizeNotifyError(notifyErr)
 	}
 
 	writeJSON(w, http.StatusOK, respData)
@@ -412,7 +428,7 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -445,7 +461,7 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 		"customer_notified": notified,
 	}
 	if !notified && notifyErr != "" {
-		respData["notify_error"] = notifyErr
+		respData["notify_error"] = sanitizeNotifyError(notifyErr)
 	}
 
 	writeJSON(w, http.StatusOK, respData)

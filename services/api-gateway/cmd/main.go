@@ -227,7 +227,7 @@ func VersionConfigHandler(internalToken string, versionStore *version.Store) htt
 		if r.Method == http.MethodGet {
 			vConfig, err := versionStore.GetConfig(r.Context())
 			if err != nil {
-				handlerutil.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 				return
 			}
 			handlerutil.WriteJSON(w, http.StatusOK, vConfig)
@@ -242,6 +242,10 @@ func VersionConfigHandler(internalToken string, versionStore *version.Store) htt
 			}
 			updated, err := versionStore.UpdateConfig(r.Context(), req)
 			if err != nil {
+				if strings.Contains(err.Error(), "failed to persist") {
+					handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInternal, "failed to update version config", err)
+					return
+				}
 				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 				return
 			}

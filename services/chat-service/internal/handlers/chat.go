@@ -352,7 +352,7 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// 1. Primary trust boundary: Validate JWT token signature and expiry locally
 		claims, err := jwtutil.ValidateToken(token)
 		if err != nil {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusForbidden, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 
@@ -449,7 +449,7 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 	} else {
 		claims, err := jwtutil.ValidateToken(requesterToken)
 		if err != nil {
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusForbidden, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 
@@ -495,7 +495,7 @@ func (c *Chat) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 	history, err := c.store.GetHistory(r.Context(), channel, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to retrieve chat history: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to retrieve chat history", err)
 		return
 	}
 
@@ -767,7 +767,7 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -809,7 +809,7 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired token: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusForbidden, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -831,7 +831,7 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 
 	ticket, err := c.store.CreateTicketAndAssign(r.Context(), claims.UserID, req.ContextID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create ticket: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create ticket", err)
 		return
 	}
 
@@ -876,7 +876,7 @@ func (c *Chat) GetCustomerTickets(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := jwtutil.ValidateToken(token)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired token: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -904,7 +904,7 @@ func (c *Chat) GetCustomerTickets(w http.ResponseWriter, r *http.Request) {
 
 	tickets, total, err := c.store.ListCustomerTickets(r.Context(), claims.UserID, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list customer tickets: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to list customer tickets", err)
 		return
 	}
 
@@ -1072,7 +1072,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 
 	allowed, err := c.canAccessChannel(callerID, "ticket:"+ticketID)
 	if err != nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "service_unavailable", "message": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "service temporarily unavailable", err)
 		return
 	}
 	if !allowed {
@@ -1088,7 +1088,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "file exceeds maximum allowed size of 10MB"})
 			return
 		}
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to parse multipart form: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -1112,7 +1112,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 	sniffBuf := make([]byte, 512)
 	n, err := file.Read(sniffBuf)
 	if err != nil && err != io.EOF {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read file: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInternal, "failed to read file", err)
 		return
 	}
 	detectedType := http.DetectContentType(sniffBuf[:n])
@@ -1144,7 +1144,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 	key := fmt.Sprintf("tickets/%s/%d_%s", ticketID, time.Now().UnixNano(), filename)
 
 	if err := c.storage.Upload(r.Context(), key, reader, baseType); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to store attachment: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to store attachment", err)
 		return
 	}
 
@@ -1155,7 +1155,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 	signedURL, err := c.storage.GetSignedURLWithClaims(r.Context(), "/chat/attachments/view", claims, 24*time.Hour)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate signed URL: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate signed URL", err)
 		return
 	}
 
@@ -1180,7 +1180,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.store.PersistMessage(r.Context(), msg); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist message: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to persist message", err)
 		return
 	}
 
@@ -1207,7 +1207,7 @@ func (c *Chat) ViewAttachment(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := c.storage.ValidateSignedURLTokenWithClaims(tokenStr)
 	if err != nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid or expired attachment token: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusForbidden, handlerutil.ErrCodeInvalidToken, "invalid or expired attachment token", err)
 		return
 	}
 
@@ -1226,7 +1226,7 @@ func (c *Chat) ViewAttachment(w http.ResponseWriter, r *http.Request) {
 
 		allowed, err := c.canAccessChannel(checkUser, "ticket:"+claims.TicketID)
 		if err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "service_unavailable", "message": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "service temporarily unavailable", err)
 			return
 		}
 		if !allowed {

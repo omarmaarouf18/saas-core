@@ -972,8 +972,12 @@ func TestWebSocketUpgradeExtraGaps(t *testing.T) {
 	if recExpired.Code != http.StatusForbidden {
 		t.Errorf("Expected 403 Forbidden for expired token, got %d", recExpired.Code)
 	}
-	if !strings.Contains(recExpired.Body.String(), "token has expired") {
-		t.Errorf("Expected body to contain token expired message, got: %s", recExpired.Body.String())
+	// A3: JWT detail stays server-side; the client gets the stable code.
+	if !strings.Contains(recExpired.Body.String(), `"code":"invalid_token"`) {
+		t.Errorf("Expected body to carry sanitized invalid_token code, got: %s", recExpired.Body.String())
+	}
+	if strings.Contains(recExpired.Body.String(), "token has expired") {
+		t.Errorf("JWT library detail leaked: %s", recExpired.Body.String())
 	}
 
 	// 3. Revoked (denylisted) Token -> 403 Forbidden
@@ -992,8 +996,12 @@ func TestWebSocketUpgradeExtraGaps(t *testing.T) {
 	if recRevoked.Code != http.StatusForbidden {
 		t.Errorf("Expected 403 Forbidden for revoked token, got %d", recRevoked.Code)
 	}
-	if !strings.Contains(recRevoked.Body.String(), "token has been revoked") {
-		t.Errorf("Expected body to contain token revoked message, got: %s", recRevoked.Body.String())
+	// A3: revocation detail stays server-side; the client gets the stable code.
+	if !strings.Contains(recRevoked.Body.String(), `"code":"invalid_token"`) {
+		t.Errorf("Expected body to carry sanitized invalid_token code, got: %s", recRevoked.Body.String())
+	}
+	if strings.Contains(recRevoked.Body.String(), "has been revoked") {
+		t.Errorf("JWT library detail leaked: %s", recRevoked.Body.String())
 	}
 }
 

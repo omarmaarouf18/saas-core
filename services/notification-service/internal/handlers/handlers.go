@@ -369,7 +369,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 
 	var req sendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.Title == "" || req.Body == "" {
@@ -456,7 +456,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 
 	var req jobAlertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.TenantID == "" || req.JobID == "" {
