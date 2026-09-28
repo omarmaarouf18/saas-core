@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
+import '../core/enum_labels.dart';
 import '../core/theme.dart';
 import '../models/reconciliation_job.dart';
 import '../providers/reconciliation_provider.dart';
@@ -318,19 +319,8 @@ class _OwnerReconciliationQueueScreenState
 
   String _localizedFailureReason(
       AppLocalizations l10n, String escrowFailureReason) {
-    switch (escrowFailureReason) {
-      case 'under_distance_mismatch':
-        return l10n.reconciliationUnderDistance;
-      case 'escrow_amount_unrecorded':
-        return l10n.reconciliationUnrecordedEscrow;
-      case 'implausible_speed':
-        return l10n.reconciliationImplausibleSpeed;
-      default:
-        if (escrowFailureReason.isNotEmpty) {
-          return escrowFailureReason.replaceAll('_', ' ');
-        }
-        return l10n.reconciliationRequiredDefault;
-    }
+    // B1/S1: one mapping per family with a humanized fallback (mirrors F1).
+    return escrowFailureReasonLabel(l10n, escrowFailureReason);
   }
 
   Widget _buildReconciliationCard(

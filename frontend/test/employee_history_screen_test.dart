@@ -194,8 +194,8 @@ void main() {
     expect(find.text('cust-501'), findsOneWidget);
     expect(find.text('cust-502'), findsOneWidget);
     expect(find.text('Payment: '), findsNWidgets(2));
-    expect(find.text('COD'), findsWidgets);
-    expect(find.text('WALLET'), findsWidgets);
+    expect(find.text('Cash on delivery'), findsWidgets);
+    expect(find.text('Wallet'), findsWidgets);
 
     // Verify escrow amount
     expect(find.text('75.00 Credits'), findsOneWidget);

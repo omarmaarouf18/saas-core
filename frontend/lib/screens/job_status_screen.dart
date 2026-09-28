@@ -5,6 +5,7 @@ import '../l10n/l10n.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
@@ -961,12 +962,20 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                     Expanded(
                       child: Row(
                         children: [
-                          Text(
-                            AppTypography.uppercaseLabel(
-                                _currentJob.paymentMethod),
-                            style: AppTypography.bodySm.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
+                          // B1: the friendly method name is longer than the
+                          // old "COD" code — flex with ellipsis so the 320dp
+                          // summary row cannot overflow (full method repeats
+                          // in the info rows below).
+                          Flexible(
+                            child: Text(
+                              paymentMethodLabel(
+                                  context.l10n, _currentJob.paymentMethod),
+                              style: AppTypography.bodySm.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -1007,7 +1016,7 @@ class _JobStatusScreenState extends State<JobStatusScreen> {
                 children: [
                   _buildInfoRow(
                     context.l10n.paymentSectionHeader,
-                    AppTypography.uppercaseLabel(_currentJob.paymentMethod),
+                    paymentMethodLabel(context.l10n, _currentJob.paymentMethod),
                   ),
                   _buildInfoRow(
                     context.l10n.totalFareLabel,

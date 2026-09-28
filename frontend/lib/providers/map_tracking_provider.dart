@@ -338,13 +338,14 @@ class MapTrackingProvider extends ChangeNotifier {
         notifyListeners();
       } else if (type == 'error') {
         final errorVal = map['error'];
-        final messageVal = map['message'] ?? errorVal;
 
+        // B2: backend WS error text never reaches the UI. The auth-failure
+        // branch keeps its reconnect-cancel behavior with localized copy.
         if (errorVal == 'not authorized for this channel') {
-          _subscriptionError = 'not authorized for this channel';
+          _subscriptionError = ErrorMessages.forbidden;
           _reconnectTimer?.cancel();
         } else {
-          _error = messageVal;
+          _error = ErrorMessages.connectionError;
         }
         _isConnecting = false;
         notifyListeners();

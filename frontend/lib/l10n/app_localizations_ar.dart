@@ -1202,6 +1202,48 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletAmountCredits => 'المبلغ';
 
   @override
+  String get enumPaymentWallet => 'المحفظة';
+
+  @override
+  String get enumRoleUser => 'مستخدم';
+
+  @override
+  String get enumTierFree => 'مجاني';
+
+  @override
+  String get enumTierPaid => 'مدفوع';
+
+  @override
+  String get enumTierPendingPayment => 'دفع معلق';
+
+  @override
+  String get enumPayoutVodafoneCash => 'فودافون كاش';
+
+  @override
+  String get enumTxnDeposit => 'إيداع';
+
+  @override
+  String get enumTxnEscrowLock => 'حجز ضمان';
+
+  @override
+  String get enumTxnEscrowRelease => 'صرف ضمان';
+
+  @override
+  String get enumTxnPlatformFee => 'رسوم المنصة';
+
+  @override
+  String get enumTxnPayout => 'سحب أرباح';
+
+  @override
+  String get enumTxnPayoutRefund => 'استرداد سحب';
+
+  @override
+  String get enumTxnRefund => 'استرداد';
+
+  @override
+  String get enumTxnFeeDeduction => 'خصم رسوم';
+
+  @override
   String get cancelJobReasonLabel => 'سبب الإلغاء *';
 
   @override

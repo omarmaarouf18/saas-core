@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../models/user_profile.dart';
@@ -299,8 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final subText = ownerProvider.isLoading
         ? "..."
-        : AppTypography.uppercaseLabel(ownerProvider.subscriptionTier)
-            .replaceAll('_', ' ');
+        : subscriptionTierLabel(context.l10n, ownerProvider.subscriptionTier);
 
     final subColor = ownerProvider.subscriptionTier == "paid"
         ? context.semanticColors.success
@@ -1209,7 +1209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         l10n.ownerHomePaymentInfo(
-                          AppTypography.uppercaseLabel(job.paymentMethod),
+                          paymentMethodLabel(l10n, job.paymentMethod),
                           job.lockedEscrowAmount != null
                               ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
                               : '',
@@ -1429,7 +1429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildDetailRow(l10n.ownerHomeLabelEmail, user.email),
                   _buildDetailRow(
                     l10n.ownerHomeLabelRole,
-                    AppTypography.uppercaseLabel(user.role),
+                    userRoleLabel(context.l10n, user.role),
                   ),
                 ],
               ),

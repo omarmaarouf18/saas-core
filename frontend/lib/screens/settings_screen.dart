@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
@@ -137,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         vertical: AppSpacing.xxs,
                       ),
                       child: Text(
-                        AppTypography.uppercaseLabel(user.role),
+                        userRoleLabel(context.l10n, user.role),
                         style: AppTypography.labelSm.copyWith(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,

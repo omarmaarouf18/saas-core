@@ -2295,6 +2295,90 @@ abstract class AppLocalizations {
   /// **'Amount'**
   String get walletAmountCredits;
 
+  /// No description provided for @enumPaymentWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get enumPaymentWallet;
+
+  /// No description provided for @enumRoleUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get enumRoleUser;
+
+  /// No description provided for @enumTierFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get enumTierFree;
+
+  /// No description provided for @enumTierPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get enumTierPaid;
+
+  /// No description provided for @enumTierPendingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending payment'**
+  String get enumTierPendingPayment;
+
+  /// No description provided for @enumPayoutVodafoneCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Vodafone Cash'**
+  String get enumPayoutVodafoneCash;
+
+  /// No description provided for @enumTxnDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get enumTxnDeposit;
+
+  /// No description provided for @enumTxnEscrowLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow lock'**
+  String get enumTxnEscrowLock;
+
+  /// No description provided for @enumTxnEscrowRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Escrow release'**
+  String get enumTxnEscrowRelease;
+
+  /// No description provided for @enumTxnPlatformFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform fee'**
+  String get enumTxnPlatformFee;
+
+  /// No description provided for @enumTxnPayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout'**
+  String get enumTxnPayout;
+
+  /// No description provided for @enumTxnPayoutRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout refund'**
+  String get enumTxnPayoutRefund;
+
+  /// No description provided for @enumTxnRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get enumTxnRefund;
+
+  /// No description provided for @enumTxnFeeDeduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee deduction'**
+  String get enumTxnFeeDeduction;
+
   /// No description provided for @cancelJobReasonLabel.
   ///
   /// In en, this message translates to:

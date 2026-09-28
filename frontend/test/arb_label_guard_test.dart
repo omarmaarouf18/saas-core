@@ -85,4 +85,58 @@ void main() {
               'use suffixText/prefixText instead');
     }
   });
+
+  test('no screen renders a model enum field through uppercaseLabel', () {
+    // B1/B4: enum families render via lib/core/enum_labels.dart mappings
+    // (or StatusBadge for statuses). A raw uppercaseLabel(<enum field>)
+    // reintroduces machine strings (DEPOSIT, PENDING_PAYMENT). Truncated
+    // IDs, initials, and already-localized badge labels are sanctioned and
+    // excluded by pattern (they never match the enum-field patterns).
+    final lib = Directory('lib');
+    final sources = lib
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) =>
+            f.path.endsWith('.dart') &&
+            (f.path.contains('${Platform.pathSeparator}screens') ||
+                f.path.contains('${Platform.pathSeparator}widgets')))
+        .toList();
+    expect(sources, isNotEmpty, reason: 'must run from frontend/ directory');
+    final enumField = RegExp(
+        r'uppercaseLabel\(\s*(?:[A-Za-z_.]*?(?:paymentMethod|payment_method|subscriptionTier|payoutMethod|payout_method|userRole|currentTier|rawType|job\.status|_currentJob\.paymentMethod|user\.role|[^A-Za-z_.]role[^A-Za-z_.]))',
+        multiLine: true);
+    // Collect logical uppercaseLabel(...) call spans (may span lines).
+    final offenders = <String>[];
+    for (final f in sources) {
+      final text = f.readAsStringSync();
+      var start = 0;
+      while (true) {
+        final idx = text.indexOf('uppercaseLabel(', start);
+        if (idx == -1) break;
+        var depth = 0;
+        var end = idx;
+        for (var i = idx; i < text.length; i++) {
+          if (text[i] == '(') depth++;
+          if (text[i] == ')') {
+            depth--;
+            if (depth == 0) {
+              end = i;
+              break;
+            }
+          }
+        }
+        final span =
+            text.substring(idx, end + 1).replaceAll(RegExp(r'\s+'), ' ');
+        if (enumField.hasMatch(span)) {
+          final line = text.substring(0, idx).split('\n').length;
+          offenders.add('${f.path}:$line: $span');
+        }
+        start = end + 1;
+      }
+    }
+    expect(offenders, isEmpty,
+        reason: 'model enum fields must render via enum_labels.dart '
+            'mappings (B1), never raw uppercaseLabel:\n'
+            '${offenders.join('\n')}');
+  });
 }

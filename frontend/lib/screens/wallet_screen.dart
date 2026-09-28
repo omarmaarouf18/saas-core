@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../l10n/l10n.dart';
 import '../models/payout_request.dart';
 import '../providers/auth_provider.dart';
@@ -417,11 +418,7 @@ class _WalletScreenState extends State<WalletScreen> {
     AppLocalizations l10n,
   ) {
     final isBank = payout.payoutMethod == 'bank_transfer';
-    final methodLabel = isBank
-        ? l10n.payoutMethodBankTransfer
-        : (payout.payoutMethod == 'instapay'
-            ? l10n.payoutMethodInstapay
-            : AppTypography.uppercaseLabel(payout.payoutMethod));
+    final methodLabel = payoutMethodLabel(l10n, payout.payoutMethod);
 
     final dateStr =
         "${payout.createdAt.year}-${_twoDigits(payout.createdAt.month)}-${_twoDigits(payout.createdAt.day)} ${_twoDigits(payout.createdAt.hour)}:${_twoDigits(payout.createdAt.minute)}";
@@ -530,7 +527,7 @@ class _WalletScreenState extends State<WalletScreen> {
       leadingBackgroundColor: color.withValues(alpha: 0.1),
       title: description.isNotEmpty
           ? description
-          : AppTypography.uppercaseLabel(type.replaceAll('_', ' ')),
+          : transactionTypeLabel(context.l10n, type),
       subtitleWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

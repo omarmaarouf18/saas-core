@@ -5,6 +5,29 @@ import '../core/error_messages.dart';
 import '../models/user_profile.dart';
 import '../services/push_notification_service.dart';
 
+/// B2: server text reaches the auth banner ONLY for 429 lockouts (the
+/// wait-time is server-computed and has no localized equivalent) and an
+/// explicit allowlist of curated static strings the backend intentionally
+/// emits verbatim (wrong-credential / wrong-code / duplicate-registration
+/// copy — all uniform anti-oracle responses with no internals).
+/// Everything else renders localized friendly copy, so even if the backend
+/// regresses to err-derived text, it can never reach these banners.
+const _verbatimServerCopy = {
+  'invalid email or password',
+  'invalid or expired OTP code',
+  'invalid or expired reset verification',
+  'email already registered',
+  'username already taken',
+};
+
+String _authBannerMessage(Object? e) {
+  if (e is ApiClientException) {
+    if (e.statusCode == 429) return e.message;
+    if (_verbatimServerCopy.contains(e.message)) return e.message;
+  }
+  return friendlyErrorMessage(e);
+}
+
 class AuthProvider extends ChangeNotifier {
   final ApiClient apiClient;
   final PushNotificationService pushService;
@@ -167,7 +190,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Signup error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -202,7 +225,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Login error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -242,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Verify OTP error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -262,7 +285,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Resend OTP error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -283,7 +306,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Forgot password error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       return null;
     } finally {
       _isLoading = false;
@@ -314,7 +337,7 @@ class AuthProvider extends ChangeNotifier {
       return _resetToken;
     } catch (e) {
       debugPrint('Verify reset code error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return null;
     } finally {
@@ -344,7 +367,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Reset password error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return false;
     } finally {
@@ -366,7 +389,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Request email change error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -401,7 +424,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Confirm email change error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -535,7 +558,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Update profile error: $e');
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -572,7 +595,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Toggle 2FA error: $e');
       _user = previousProfile;
       notifyListeners();
-      _error = e is ApiClientException ? e.message : friendlyErrorMessage(e);
+      _error = _authBannerMessage(e);
       // Audit S5: store the status alongside the message (mirroring
       // fetchUserProfile/verifyResetCode) so the disable dialog can tell a
       // 429 lockout from a true 401 instead of blaming the password.

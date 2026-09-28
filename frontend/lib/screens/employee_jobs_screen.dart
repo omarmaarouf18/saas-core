@@ -6,6 +6,7 @@ import 'package:frontend/l10n/l10n.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
@@ -1192,7 +1193,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   : null,
               distanceText: l10n.standardRouteLabel,
               timeText: l10n.matchingCourierLabel,
-              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
+              cargoText: paymentMethodLabel(context.l10n, job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             SecondaryButton(
@@ -1514,8 +1515,8 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   : l10n.standardRouteLabel,
               timeText: isActive
                   ? l10n.inProgressLabel
-                  : AppTypography.uppercaseLabel(job.status),
-              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
+                  : jobStatusLabel(l10n, job.status),
+              cargoText: paymentMethodLabel(context.l10n, job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             // Subordinate Info Badges / Chips — collapsed by default
@@ -1571,7 +1572,7 @@ class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
                   _buildSubordinateChip(
                     Icons.payment_outlined,
                     l10n.employeeJobsLabelPayment,
-                    AppTypography.uppercaseLabel(job.paymentMethod),
+                    paymentMethodLabel(l10n, job.paymentMethod),
                   ),
                   if (job.lockedEscrowAmount != null &&
                       job.lockedEscrowAmount! > 0)

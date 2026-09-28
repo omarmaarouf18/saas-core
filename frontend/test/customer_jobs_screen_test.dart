@@ -198,8 +198,8 @@ void main() {
     // Verify prices & payment methods
     expect(find.text("\$25.00"), findsOneWidget);
     expect(find.text("\$40.00"), findsOneWidget);
-    expect(find.text("Payment: COD"), findsNWidgets(2));
-    expect(find.text("Payment: ESCROW"), findsOneWidget);
+    expect(find.text("Payment: Cash on delivery"), findsNWidgets(2));
+    expect(find.text("Payment: Escrow"), findsOneWidget);
 
     // Verify cancellation reason
     expect(

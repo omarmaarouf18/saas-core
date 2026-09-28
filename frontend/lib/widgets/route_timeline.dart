@@ -191,25 +191,34 @@ class RouteTimeline extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
+                // B1: metric labels are localized sentences now ("Cash on
+                // delivery") instead of short codes — flex with ellipsis so
+                // the 360dp metrics row cannot overflow.
                 if (distanceText != null)
-                  _buildMetricItem(
-                    context: context,
-                    icon: Icons.route,
-                    label: distanceText!,
+                  Flexible(
+                    child: _buildMetricItem(
+                      context: context,
+                      icon: Icons.route,
+                      label: distanceText!,
+                    ),
                   ),
                 if (distanceText != null && timeText != null) _buildDivider(),
                 if (timeText != null)
-                  _buildMetricItem(
-                    context: context,
-                    icon: Icons.schedule,
-                    label: timeText!,
+                  Flexible(
+                    child: _buildMetricItem(
+                      context: context,
+                      icon: Icons.schedule,
+                      label: timeText!,
+                    ),
                   ),
                 if (timeText != null && cargoText != null) _buildDivider(),
                 if (cargoText != null)
-                  _buildMetricItem(
-                    context: context,
-                    icon: Icons.inventory_2_outlined,
-                    label: cargoText!,
+                  Flexible(
+                    child: _buildMetricItem(
+                      context: context,
+                      icon: Icons.inventory_2_outlined,
+                      label: cargoText!,
+                    ),
                   ),
               ],
             ),
@@ -230,11 +239,15 @@ class RouteTimeline extends StatelessWidget {
             size: AppIconSize.sm,
             color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: AppSpacing.xs),
-        Text(
-          label,
-          style: AppTypography.labelSm.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
+        Flexible(
+          child: Text(
+            label,
+            style: AppTypography.labelSm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

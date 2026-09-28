@@ -3,6 +3,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/themed_panel.dart';
@@ -545,7 +546,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                   vertical: AppSpacing.xxs,
                 ),
                 child: Text(
-                  AppTypography.uppercaseLabel(role),
+                  userRoleLabel(context.l10n, role),
                   style: AppTypography.labelSm.copyWith(
                     fontWeight: FontWeight.bold,
                     color: context.semanticColors.success,

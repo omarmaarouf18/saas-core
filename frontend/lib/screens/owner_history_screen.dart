@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/audit_labels.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -439,7 +440,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
           const SizedBox(height: AppSpacing.xs),
           Text(
             l10n.ownerHomePaymentInfo(
-              AppTypography.uppercaseLabel(job.paymentMethod),
+              paymentMethodLabel(l10n, job.paymentMethod),
               job.lockedEscrowAmount != null
                   ? ' (\$${job.lockedEscrowAmount!.toStringAsFixed(2)})'
                   : '',
@@ -596,7 +597,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
                 Text(
                   description.isNotEmpty
                       ? description
-                      : AppTypography.uppercaseLabel(rawType),
+                      : transactionTypeLabel(l10n, rawType),
                   style: AppTypography.titleMd.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

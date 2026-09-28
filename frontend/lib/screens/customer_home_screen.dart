@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import '../core/location_permission.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
@@ -751,8 +752,8 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                                 ),
                                 Text(
                                   context.l10n.paymentMethodLine(
-                                      AppTypography.uppercaseLabel(
-                                          job.paymentMethod)),
+                                      paymentMethodLabel(
+                                          context.l10n, job.paymentMethod)),
                                   style: AppTypography.caption.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme

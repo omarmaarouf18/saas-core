@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/marketplace_provider.dart';
@@ -336,7 +337,7 @@ class _CustomerJobsScreenState extends State<CustomerJobsScreen> {
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   l10n.paymentMethodLine(
-                      AppTypography.uppercaseLabel(job.paymentMethod)),
+                      paymentMethodLabel(context.l10n, job.paymentMethod)),
                   style: AppTypography.bodySm.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

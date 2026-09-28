@@ -1216,6 +1216,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walletAmountCredits => 'Amount';
 
   @override
+  String get enumPaymentWallet => 'Wallet';
+
+  @override
+  String get enumRoleUser => 'User';
+
+  @override
+  String get enumTierFree => 'Free';
+
+  @override
+  String get enumTierPaid => 'Paid';
+
+  @override
+  String get enumTierPendingPayment => 'Pending payment';
+
+  @override
+  String get enumPayoutVodafoneCash => 'Vodafone Cash';
+
+  @override
+  String get enumTxnDeposit => 'Deposit';
+
+  @override
+  String get enumTxnEscrowLock => 'Escrow lock';
+
+  @override
+  String get enumTxnEscrowRelease => 'Escrow release';
+
+  @override
+  String get enumTxnPlatformFee => 'Platform fee';
+
+  @override
+  String get enumTxnPayout => 'Payout';
+
+  @override
+  String get enumTxnPayoutRefund => 'Payout refund';
+
+  @override
+  String get enumTxnRefund => 'Refund';
+
+  @override
+  String get enumTxnFeeDeduction => 'Fee deduction';
+
+  @override
   String get cancelJobReasonLabel => 'Cancellation Reason *';
 
   @override

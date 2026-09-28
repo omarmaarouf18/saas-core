@@ -541,6 +541,31 @@ ARB keys; added `booking_pickup_minimap`). Tests pin one edit control
 per block, no primary-coords text in either block, and the FAB flow
 (stage-without-apply, confirm-applies, denied-snackbar-applies-nothing).
 
+## 24. Enum labels: one mapping per family, never raw codes
+
+Backend enum codes (`payment_method`, `role`, tier, `payout_method`,
+ledger `type`, escrow-failure reason, job `status`) never render through
+`uppercaseLabel` as shouting machine text (`DEPOSIT`, `PENDING PAYMENT`).
+Each family has one localized mapping in `lib/core/enum_labels.dart`
+(EN + Egyptian-AR ARB keys, reusing existing keys where the meaning is
+identical) with a `humanizeMachineCode` fallback (underscores to spaces,
+sentence case) for unknown values and `statusUnknown` for empty ones.
+`StatusBadge` keeps its known-status `status*` mappings; only its
+unknown-status default humanizes now (badge uppercase styling of the
+localized label is unchanged). The recon-queue unknown-reason default
+routes through the same fallback (closes sweep S1). Truncated IDs stay
+raw per the sanctioned tracking-ID convention.
+
+Reference: B1 pass (7 families, 14 new `enum*` ARB keys, 19 call sites
+across 12 screens + `StatusBadge` + recon queue). Guarded by the
+`arb_label_guard_test.dart` enum-field scan (fails on any
+`uppercaseLabel(<enum field>)`; fail-first proven with a planted probe)
+and `test/enum_labels_test.dart` (per-family EN/AR + fallback cases).
+Longer friendly names are layout-checked: the fare summary row and the
+shared `RouteTimeline` metrics row both flex with ellipsis after this
+pass fixed two real 360dp overflows they exposed (33px fare row, 214px
+metrics row).
+
 ## Completion (full 62-finding audit closed)
 
 Rules 1–4 came from audit group A (A1–A10); Rules 5–7 from audit group C

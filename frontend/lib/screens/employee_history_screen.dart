@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
 import '../providers/employee_jobs_provider.dart';
@@ -188,7 +189,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                   : l10n.routeLoggedLabel,
               timeText:
                   isCancelled ? l10n.statusCancelled : l10n.statusCompleted,
-              cargoText: AppTypography.uppercaseLabel(job.paymentMethod),
+              cargoText: paymentMethodLabel(context.l10n, job.paymentMethod),
             ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
@@ -203,7 +204,7 @@ class _EmployeeHistoryScreenState extends State<EmployeeHistoryScreen> {
                 _buildChip(
                   Icons.payment_outlined,
                   l10n.employeeJobsLabelPayment,
-                  AppTypography.uppercaseLabel(job.paymentMethod),
+                  paymentMethodLabel(context.l10n, job.paymentMethod),
                 ),
                 if (job.lockedEscrowAmount != null &&
                     job.lockedEscrowAmount! > 0)

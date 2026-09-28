@@ -300,6 +300,9 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // B3: title and badge stack vertically so neither truncates
+            // at 360dp (the side-by-side Row squeezed the title to
+            // "Verification ...").
             Row(
               children: [
                 Icon(
@@ -325,12 +328,14 @@ class _KycDocumentUploadScreenState extends State<KycDocumentUploadScreen> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                StatusBadge(status: displayStatus),
               ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: StatusBadge(status: displayStatus, compact: true),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(

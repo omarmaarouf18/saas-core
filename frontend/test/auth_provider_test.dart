@@ -113,8 +113,8 @@ void main() {
   test('failed login preserves the backend message and clears loading',
       () async {
     final (auth, _) = makeAuth(
-        handler: (req) =>
-            MockHttpResponse(401, jsonBody: {'error': 'invalid credentials'}));
+        handler: (req) => MockHttpResponse(401,
+            jsonBody: {'error': 'invalid email or password'}));
     await pump();
 
     final otp = await auth.login('e@x.dev', 'wrong');
@@ -122,7 +122,7 @@ void main() {
     expect(otp, isNull);
     // Backend messages on auth endpoints carry no tenant/balance disclosure;
     // passing them verbatim is intentional per the friendly-error policy.
-    expect(auth.error, contains('invalid credentials'));
+    expect(auth.error, contains('invalid email or password'));
     expect(auth.isLoading, isFalse);
   });
 
@@ -221,7 +221,8 @@ void main() {
       if (call == 1) {
         return MockHttpResponse(200, jsonBody: {'dev_otp': '700001'});
       }
-      return MockHttpResponse(409, jsonBody: {'error': 'email exists'});
+      return MockHttpResponse(409,
+          jsonBody: {'error': 'email already registered'});
     });
     await pump();
 
@@ -234,7 +235,7 @@ void main() {
     // provider (which routes through friendlyErrorMessage), ALL auth flows
     // surface ApiClientException.message VERBATIM because auth endpoints
     // return safe, user-facing strings by contract. Documented in STATUS.md.
-    expect(auth.error, 'email exists');
+    expect(auth.error, 'email already registered');
   });
 
   test('forgotPassword / verifyResetCode / resetPassword round-trip', () async {
@@ -277,14 +278,14 @@ void main() {
 
   test('resetPassword failure returns false with the backend reason', () async {
     final (auth, _) = makeAuth(
-        handler: (req) =>
-            MockHttpResponse(401, jsonBody: {'error': 'invalid OTP'}));
+        handler: (req) => MockHttpResponse(401,
+            jsonBody: {'error': 'invalid or expired OTP code'}));
     await pump();
 
     final ok = await auth.resetPassword('e@x.dev', 'tok-1', 'whatever1');
 
     expect(ok, isFalse);
-    expect(auth.error, contains('invalid OTP'));
+    expect(auth.error, contains('invalid or expired OTP code'));
   });
 
   test('verifyResetCode failure records the status code for 429 UX', () async {

@@ -3,6 +3,7 @@ import '../core/error_messages.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/theme.dart';
+import '../core/enum_labels.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
 import '../widgets/themed_panel.dart';
@@ -236,8 +237,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          AppTypography.uppercaseLabel(currentTier)
-                              .replaceAll('_', ' '),
+                          subscriptionTierLabel(context.l10n, currentTier),
                           style: AppTypography.headlineLgMobile.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.onPrimary,

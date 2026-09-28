@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/enum_labels.dart';
 import '../core/theme.dart';
 import '../l10n/l10n.dart';
 
@@ -168,9 +169,10 @@ class StatusBadge extends StatelessWidget {
         label = l10n.statusReconciliationRequired;
         break;
       default:
-        label = status.isEmpty
-            ? l10n.statusUnknown
-            : AppTypography.uppercaseLabel(status.replaceAll('_', ' '));
+        // B1/S4: unknown statuses humanize to sentence case instead of
+        // shouting the raw uppercase code (mirrors the F1 audit fallback).
+        label =
+            status.isEmpty ? l10n.statusUnknown : humanizeMachineCode(status);
         break;
     }
     return StatusBadgeConfig(

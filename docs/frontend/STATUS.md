@@ -210,6 +210,7 @@
   * **Core**:
     * `api_client.dart`
     * `audit_labels.dart`
+    * `enum_labels.dart`
     * `constants.dart`
    * `error_messages.dart`
    * `location_permission.dart`

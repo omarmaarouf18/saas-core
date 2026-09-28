@@ -126,7 +126,7 @@ void main() {
 
     // Verify current plan header
     expect(find.text('YOUR CURRENT PLAN'), findsOneWidget);
-    expect(find.text('FREE'), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
 
     // Verify plans listed
     expect(find.text('RECOMMENDED'), findsOneWidget);
@@ -154,7 +154,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('PENDING PAYMENT'), findsOneWidget);
+    expect(find.text('Pending payment'), findsOneWidget);
     expect(find.byType(ThemedWarningBanner), findsOneWidget);
     expect(
       find.text(
@@ -177,7 +177,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('PAID'), findsOneWidget);
+    expect(find.text('Paid'), findsOneWidget);
     expect(find.text('Downgrade to Free'), findsOneWidget);
     expect(find.text('Active Plan'), findsOneWidget);
   });
