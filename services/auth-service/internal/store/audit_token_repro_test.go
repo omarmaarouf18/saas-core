@@ -84,7 +84,6 @@ func TestAppendAudit_CryptoIDAndError(t *testing.T) {
 		TenantID:   "owner-1",
 		Action:     "ORDER_DISPATCH",
 		Timestamp:  time.Now().UTC(),
-		ClientIP:   "192.168.1.50",
 	}
 
 	// Should succeed and assign a crypto-random hex ID

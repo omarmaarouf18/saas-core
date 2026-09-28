@@ -262,7 +262,6 @@ func TestMongoDB_EmployeesAndAudit(t *testing.T) {
 		TenantID:   ownerID,
 		Action:     "check_in",
 		Timestamp:  time.Now(),
-		ClientIP:   "127.0.0.1",
 	}
 	if err := s.AppendAudit(ctx, entry); err != nil {
 		t.Fatalf("AppendAudit failed: %v", err)

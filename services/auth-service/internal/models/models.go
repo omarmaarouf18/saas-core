@@ -203,13 +203,40 @@ type ToggleEmployeeRequest struct {
 }
 
 // AuditEntry records a single employee action for the Action Server log.
+//
+// NOTE: routine per-request client IPs are NOT persisted here. Nothing
+// operational reads stored IPs (forensic IPs stay in CloudWatch security
+// events via ShipSecurityEvent at call time), and the owner UI must never
+// receive employee device IPs (A1). Do not re-add IP fields to this struct.
 type AuditEntry struct {
 	ID         string    `json:"id"          bson:"_id,omitempty"`
 	EmployeeID string    `json:"employee_id" bson:"employee_id"`
 	TenantID   string    `json:"tenant_id"   bson:"tenant_id"` // the OwnerID this employee belongs to
 	Action     string    `json:"action"      bson:"action"`
 	Timestamp  time.Time `json:"timestamp"   bson:"timestamp"`
-	ClientIP   string    `json:"client_ip"   bson:"client_ip"`
+}
+
+// AuditEntryResponse is the client-facing projection of AuditEntry served
+// by GET /auth/audit-log (and echoed by POST /auth/employee/action).
+// It carries only the fields the owner UI consumes; in particular there
+// is no client_ip key.
+type AuditEntryResponse struct {
+	ID         string    `json:"id"`
+	EmployeeID string    `json:"employee_id"`
+	TenantID   string    `json:"tenant_id"`
+	Action     string    `json:"action"`
+	Timestamp  time.Time `json:"timestamp"`
+}
+
+// ToResponse projects a stored entry to its client-safe shape.
+func (e AuditEntry) ToResponse() AuditEntryResponse {
+	return AuditEntryResponse{
+		ID:         e.ID,
+		EmployeeID: e.EmployeeID,
+		TenantID:   e.TenantID,
+		Action:     e.Action,
+		Timestamp:  e.Timestamp,
+	}
 }
 
 // Reviewer represents an onboarding reviewer identity.

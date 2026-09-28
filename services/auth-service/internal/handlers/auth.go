@@ -1005,16 +1005,13 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract Client IP
-	clientIP := a.getClientIP(r)
-
-	// Append to Audit Log
+	// Append to Audit Log (no client IP: routine IPs are not persisted —
+	// forensic IPs stay in CloudWatch security events; see models.AuditEntry).
 	entry := models.AuditEntry{
 		EmployeeID: emp.ID,
 		TenantID:   emp.OwnerID,
 		Action:     req.Action,
 		Timestamp:  time.Now().UTC(),
-		ClientIP:   clientIP,
 	}
 	if err := a.store.AppendAudit(ctx, entry); err != nil {
 		log.Printf("[AUDIT] Failed to record action in audit log: %v", err)
@@ -1023,11 +1020,11 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// #nosec G706 //nolint:gosec -- action is sanitized by stripping carriage return and newline characters to prevent log injection
-	log.Printf("[AUDIT] Action recorded: employee=%s tenant=%s action=%s ip=%s", emp.ID, emp.OwnerID, strings.ReplaceAll(strings.ReplaceAll(req.Action, "\n", " "), "\r", " "), clientIP)
+	log.Printf("[AUDIT] Action recorded: employee=%s tenant=%s action=%s", emp.ID, emp.OwnerID, strings.ReplaceAll(strings.ReplaceAll(req.Action, "\n", " "), "\r", " "))
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":     "action recorded in audit log",
-		"audit_entry": entry,
+		"audit_entry": entry.ToResponse(),
 	})
 }
 
@@ -1410,9 +1407,16 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	entries := a.store.GetAuditLog(ctx, tenantID)
 
+	// A1: project to the client-safe DTO — the owner UI must never
+	// receive employee device IPs (no client_ip key in the response).
+	resp := make([]models.AuditEntryResponse, 0, len(entries))
+	for _, e := range entries {
+		resp = append(resp, e.ToResponse())
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"count":   len(entries),
-		"entries": entries,
+		"count":   len(resp),
+		"entries": resp,
 	})
 }
 
@@ -1965,7 +1969,6 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 		TenantID:   targetUser.ID,
 		Action:     "KYC_REVIEWED",
 		Timestamp:  time.Now().UTC(),
-		ClientIP:   handlerutil.GetClientIP(r),
 	}); err != nil {
 		log.Printf("[AUTH] Failed to record KYC review in audit log: %v", err)
 	}
@@ -2383,7 +2386,6 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_SUSPENDED",
 		Timestamp:  time.Now().UTC(),
-		ClientIP:   handlerutil.GetClientIP(r),
 	}); err != nil {
 		log.Printf("[AUTH] Failed to record account suspension in audit log: %v", err)
 	}
@@ -2465,7 +2467,6 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 		TenantID:   targetUser.ID,
 		Action:     "ACCOUNT_REACTIVATED",
 		Timestamp:  time.Now().UTC(),
-		ClientIP:   handlerutil.GetClientIP(r),
 	}); err != nil {
 		log.Printf("[AUTH] Failed to record account reactivation in audit log: %v", err)
 	}
