@@ -47,3 +47,18 @@ func TestWriteSafeError_NilError(t *testing.T) {
 		t.Fatalf("status changed: got %d", rec.Code)
 	}
 }
+
+func TestBearerToken_HeaderParsing(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/x?requester_token=query-jwt", nil)
+	if got := BearerToken(req); got != "" {
+		t.Errorf("expected empty without header, got %q", got)
+	}
+	req.Header.Set("Authorization", "Bearer header-jwt")
+	if got := BearerToken(req); got != "header-jwt" {
+		t.Errorf("expected header-jwt, got %q", got)
+	}
+	req.Header.Set("Authorization", "Basic abc")
+	if got := BearerToken(req); got != "" {
+		t.Errorf("expected empty for non-Bearer scheme, got %q", got)
+	}
+}

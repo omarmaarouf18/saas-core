@@ -18,7 +18,12 @@ import (
 func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		tenantID := r.URL.Query().Get("tenant_token")
+		tenantID := handlerutil.BearerToken(r)
+		if tenantID == "" {
+			// Deprecated fallback: ?tenant_token= keeps the shipped mobile app
+			// working (removal date TBD). Prefer Authorization: Bearer.
+			tenantID = r.URL.Query().Get("tenant_token")
+		}
 		if tenantID == "" {
 			tenantID = r.URL.Query().Get("tenant_id")
 		}

@@ -52,6 +52,19 @@ func WriteSafeError(w http.ResponseWriter, r *http.Request, status int, code, me
 	WriteJSON(w, status, SafeError{Error: message, Code: code, RequestID: rid})
 }
 
+// BearerToken extracts a Bearer JWT from the Authorization header,
+// returning "" when absent. Query-string tokens are deprecated (URLs land
+// in proxy/gateway/CDN logs and shell history); handlers must prefer this
+// helper and keep query-token reads as a deprecated fallback only, until
+// the shipped mobile app migrates (removal date TBD by product).
+func BearerToken(r *http.Request) string {
+	h := r.Header.Get("Authorization")
+	if !strings.HasPrefix(h, "Bearer ") {
+		return ""
+	}
+	return strings.TrimPrefix(h, "Bearer ")
+}
+
 func newRequestID() string {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {

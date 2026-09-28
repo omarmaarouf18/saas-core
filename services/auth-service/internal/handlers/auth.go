@@ -1015,7 +1015,12 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("user_token")
+	id := handlerutil.BearerToken(r)
+	if id == "" {
+		// Deprecated fallback: ?user_token= keeps the shipped mobile app
+		// working (removal date TBD). Prefer Authorization: Bearer.
+		id = r.URL.Query().Get("user_token")
+	}
 	if id == "" {
 		id = r.URL.Query().Get("user_id")
 	}
@@ -1350,7 +1355,12 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requesterParam := r.URL.Query().Get("requester_token")
+	requesterParam := handlerutil.BearerToken(r)
+	if requesterParam == "" {
+		// Deprecated fallback: ?requester_token= keeps the shipped mobile
+		// app working (removal date TBD). Prefer Authorization: Bearer.
+		requesterParam = r.URL.Query().Get("requester_token")
+	}
 	if requesterParam == "" {
 		requesterParam = r.URL.Query().Get("requester_id")
 	}

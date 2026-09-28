@@ -161,8 +161,82 @@ func TestSimulateEmployeeAction_NoClientIPLeak(t *testing.T) {
 	}
 }
 
-// A1: the DTO projection keeps every UI-consumed field and drops client_ip
-// by construction (no-store unit pin).
+// A4: GET /auth/audit-log accepts the session JWT via Authorization
+// header with no query token. Query fallback keeps working (covered by
+// existing tests); this pins the header path.
+func TestGetAuditLog_AuthHeader(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	owner := &models.User{
+		ID:        "owner-hdr",
+		Email:     "owner-hdr@example.com",
+		Username:  "owner_hdr",
+		Role:      models.RoleOwner,
+		TenantID:  "owner-hdr",
+		IsActive:  true,
+		CreatedAt: time.Now(),
+	}
+	if err := s.CreateUser(ctx, owner); err != nil {
+		t.Fatalf("CreateUser owner failed: %v", err)
+	}
+	token, err := jwtutil.GenerateToken(owner.ID, string(models.RoleOwner), owner.ID, owner.Email)
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/auth/audit-log?tenant_id="+owner.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.GetAuditLog(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 via Authorization header, got %d (%s)", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "client_ip") {
+		t.Errorf("header-path response leaks client_ip: %s", rec.Body.String())
+	}
+}
+
+// A4: GET /auth/user accepts the session JWT via Authorization header.
+func TestGetUser_AuthHeader(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		t.Skip("setup failed")
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	user := &models.User{
+		ID:        "user-hdr",
+		Email:     "user-hdr@example.com",
+		Username:  "user_hdr",
+		Role:      models.RoleUser,
+		TenantID:  "tenant-hdr",
+		IsActive:  true,
+		CreatedAt: time.Now(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+	token, err := jwtutil.GenerateToken(user.ID, string(models.RoleUser), user.TenantID, user.Email)
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/auth/user", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.GetUser(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 via Authorization header, got %d (%s)", rec.Code, rec.Body.String())
+	}
+}
 func TestAuditEntryResponse_ProjectionShape(t *testing.T) {
 	entry := models.AuditEntry{
 		ID:         "audit-1",

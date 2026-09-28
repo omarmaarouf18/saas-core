@@ -877,7 +877,12 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	// the JWT string as a job ID, breaking hydration with 404s.
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		requesterToken := r.URL.Query().Get("requester_token")
+		requesterToken := handlerutil.BearerToken(r)
+		if requesterToken == "" {
+			// Deprecated fallback: ?requester_token= keeps the shipped mobile
+			// app working (removal date TBD). Prefer Authorization: Bearer.
+			requesterToken = r.URL.Query().Get("requester_token")
+		}
 		if requesterToken == "" {
 			requesterToken = r.URL.Query().Get("requester_id")
 		}
