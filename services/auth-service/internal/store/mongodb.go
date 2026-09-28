@@ -22,6 +22,7 @@ import (
 
 	"github.com/project/auth-service/internal/models"
 	"github.com/project/auth-service/internal/otpcrypto"
+	"github.com/project/shared/infra/redact"
 )
 
 // MongoDB is a persistent store backed by MongoDB for user registration states
@@ -69,7 +70,7 @@ func NewMongoDB(ctx context.Context, uri, dbName string, otpCipher *otpcrypto.Ci
 		return nil, fmt.Errorf("store: failed to create indexes: %w", err)
 	}
 
-	log.Printf("[AUTH-STORE] Connected to MongoDB: %s/%s (OTP encryption: AES-256-GCM)", uri, dbName)
+	log.Printf("[AUTH-STORE] Connected to MongoDB: %s/%s (OTP encryption: AES-256-GCM)", redact.RedactURI(uri), dbName)
 	return s, nil
 }
 

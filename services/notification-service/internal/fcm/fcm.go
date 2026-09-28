@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/project/shared/infra/redact"
 )
 
 // Dispatcher defines the interface for push notification delivery.
@@ -96,7 +98,7 @@ func (c *Client) IsEnabled() bool {
 // Returns isStale=true if FCM indicates the token is unregistered or expired.
 func (c *Client) SendPush(ctx context.Context, token, title, body string, data map[string]string) (bool, error) {
 	if !c.IsEnabled() {
-		log.Printf("[FCM-PUSH] FCM disabled, skipping push to token %s", token)
+		log.Printf("[FCM-PUSH] FCM disabled, skipping push to token %s...", redact.PreviewToken(token))
 		return false, nil
 	}
 
@@ -135,11 +137,7 @@ func (c *Client) SendPush(ctx context.Context, token, title, body string, data m
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		tokenPreview := token
-		if len(tokenPreview) > 10 {
-			tokenPreview = tokenPreview[:10]
-		}
-		log.Printf("[FCM-PUSH] Push delivered successfully to token %s...", tokenPreview)
+		log.Printf("[FCM-PUSH] Push delivered successfully to token %s...", redact.PreviewToken(token))
 		return false, nil
 	}
 
@@ -159,10 +157,7 @@ func (c *Client) SendPush(ctx context.Context, token, title, body string, data m
 		}
 	}
 
-	tokenPreview := token
-	if len(tokenPreview) > 10 {
-		tokenPreview = tokenPreview[:10]
-	}
+	tokenPreview := redact.PreviewToken(token)
 
 	if isStale {
 		log.Printf("[FCM-PUSH] Stale/unregistered token detected for token %s... (status=%d)", tokenPreview, resp.StatusCode)

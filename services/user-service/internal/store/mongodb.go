@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
+	"github.com/project/shared/infra/redact"
 	"github.com/project/user-service/internal/models"
 )
 
@@ -69,7 +70,7 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	}
 	s.ensurePlatformConfig(ctx)
 	s.ensureSeedData(ctx)
-	log.Printf("[USER-STORE] Connected to MongoDB: %s/%s", uri, dbName)
+	log.Printf("[USER-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return s, nil
 }
 

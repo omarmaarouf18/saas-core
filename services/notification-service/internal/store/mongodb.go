@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"github.com/project/shared/infra/redact"
 )
 
 // ErrNotFound is returned when a requested notification does not exist or is not accessible to the user.
@@ -76,7 +78,7 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 		return nil, err
 	}
 
-	log.Printf("[NOTIF-STORE] Connected to MongoDB: %s/%s", uri, dbName)
+	log.Printf("[NOTIF-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return s, nil
 }
 

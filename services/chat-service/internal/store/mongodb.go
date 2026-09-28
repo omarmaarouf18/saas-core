@@ -17,6 +17,7 @@ import (
 
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/redact"
 )
 
 // ErrTicketAlreadyResolved indicates that the ticket has already reached resolved status.
@@ -79,7 +80,7 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 		return nil, fmt.Errorf("store: failed to ensure indexes: %w", err)
 	}
 
-	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", uri, dbName)
+	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return store, nil
 }
 
