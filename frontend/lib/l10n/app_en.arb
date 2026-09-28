@@ -805,14 +805,10 @@
   },
   "targetStatusLabel": "Target Status",
   "secureVerificationNote": "Required for secure out-of-band operations verification.",
-  "clientIpLine": "IP: {ip}",
-  "@clientIpLine": {
-    "placeholders": {
-      "ip": {
-        "type": "String"
-      }
-    }
-  },
+  "auditActionAccountSuspended": "Account suspended",
+  "auditActionAccountReactivated": "Account reactivated",
+  "auditActionKycReviewed": "Identity review completed",
+  "auditActionDocumentViewed": "Document viewed",
   "usernameRequired": "Username is required",
   "usernameTooShort": "Username must be at least 3 characters",
   "usernameTooLong": "Username must be at most 30 characters",
@@ -977,18 +973,10 @@
   "proTierDesc": "Complete suite for fleet managers and growing businesses.",
   "billedMonthlyNote": "Billed monthly. Cancel anytime.",
   "recommendedBadge": "RECOMMENDED",
-  "platformFeeLine": "Platform fee: {fee}%",
-  "@platformFeeLine": {
-    "placeholders": {
-      "fee": {
-        "type": "String"
-      }
-    }
-  },
   "walletMyWalletTitle": "My Wallet",
   "walletCorporateSubtitle": "Manage corporate finances and payouts.",
-  "availableBalanceBadge": "AVAILABLE BALANCE",
-  "balanceTrendChipMock": "+8.4% vs last mo",
+  "availableBalanceBadge": "BALANCE",
+  "balanceTrendChipMock": "+8.4%",
   "totalPortfolioLine": "Total Portfolio: {amount} Credits",
   "@totalPortfolioLine": {
     "placeholders": {

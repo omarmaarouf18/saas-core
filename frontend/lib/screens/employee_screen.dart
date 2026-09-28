@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
+import '../core/audit_labels.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
@@ -864,7 +865,6 @@ class _EmployeeScreenState extends State<EmployeeScreen>
 
           final entry = entries[entryIndex];
           final action = entry['action'] ?? '';
-          final clientIp = entry['client_ip'] ?? '';
 
           DateTime? timestamp;
           if (entry['timestamp'] != null) {
@@ -889,7 +889,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppTypography.uppercaseLabel(action.toString()),
+                        auditActionLabel(l10n, action.toString()),
                         style: AppTypography.bodyMd.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -903,15 +903,6 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       ),
                     ],
                   ),
-                  if (clientIp.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      context.l10n.clientIpLine(clientIp),
-                      style: AppTypography.labelMd.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

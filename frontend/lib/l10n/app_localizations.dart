@@ -3105,11 +3105,29 @@ abstract class AppLocalizations {
   /// **'Required for secure out-of-band operations verification.'**
   String get secureVerificationNote;
 
-  /// No description provided for @clientIpLine.
+  /// No description provided for @auditActionAccountSuspended.
   ///
   /// In en, this message translates to:
-  /// **'IP: {ip}'**
-  String clientIpLine(String ip);
+  /// **'Account suspended'**
+  String get auditActionAccountSuspended;
+
+  /// No description provided for @auditActionAccountReactivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account reactivated'**
+  String get auditActionAccountReactivated;
+
+  /// No description provided for @auditActionKycReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity review completed'**
+  String get auditActionKycReviewed;
+
+  /// No description provided for @auditActionDocumentViewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Document viewed'**
+  String get auditActionDocumentViewed;
 
   /// No description provided for @usernameRequired.
   ///
@@ -3741,12 +3759,6 @@ abstract class AppLocalizations {
   /// **'RECOMMENDED'**
   String get recommendedBadge;
 
-  /// No description provided for @platformFeeLine.
-  ///
-  /// In en, this message translates to:
-  /// **'Platform fee: {fee}%'**
-  String platformFeeLine(String fee);
-
   /// No description provided for @walletMyWalletTitle.
   ///
   /// In en, this message translates to:
@@ -3762,13 +3774,13 @@ abstract class AppLocalizations {
   /// No description provided for @availableBalanceBadge.
   ///
   /// In en, this message translates to:
-  /// **'AVAILABLE BALANCE'**
+  /// **'BALANCE'**
   String get availableBalanceBadge;
 
   /// No description provided for @balanceTrendChipMock.
   ///
   /// In en, this message translates to:
-  /// **'+8.4% vs last mo'**
+  /// **'+8.4%'**
   String get balanceTrendChipMock;
 
   /// No description provided for @totalPortfolioLine.

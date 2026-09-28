@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
+import '../core/audit_labels.dart';
 import '../core/theme.dart';
 import '../models/job.dart';
 import '../providers/auth_provider.dart';
@@ -215,8 +216,7 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen>
 
   Widget _buildActivityCard(Map<String, dynamic> entry, AppLocalizations l10n) {
     final rawAction = entry['action']?.toString() ?? l10n.unknownActionLabel;
-    final actionTitle =
-        AppTypography.uppercaseLabel(rawAction.replaceAll('_', ' '));
+    final actionTitle = auditActionLabel(l10n, rawAction);
     final details = entry['details']?.toString() ?? '';
     final actorId = entry['actor_id']?.toString() ?? '';
     final rawTs = entry['timestamp']?.toString() ?? '';

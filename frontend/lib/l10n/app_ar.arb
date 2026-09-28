@@ -595,14 +595,10 @@
   },
   "targetStatusLabel": "الحالة المطلوبة",
   "secureVerificationNote": "مطلوب لتأكيد العمليات الحساسة بشكل آمن.",
-  "clientIpLine": "الـ IP: {ip}",
-  "@clientIpLine": {
-    "placeholders": {
-      "ip": {
-        "type": "String"
-      }
-    }
-  },
+  "auditActionAccountSuspended": "تم تجميد الحساب",
+  "auditActionAccountReactivated": "تم إعادة تنشيط الحساب",
+  "auditActionKycReviewed": "مراجعة الهوية اكتملت",
+  "auditActionDocumentViewed": "تم عرض المستند",
   "usernameRequired": "اسم المستخدم مطلوب",
   "usernameTooShort": "اسم المستخدم لازم يكون 3 حروف على الأقل",
   "usernameTooLong": "اسم المستخدم أقصاه 30 حرف",
@@ -767,18 +763,10 @@
   "proTierDesc": "حل متكامل لمديري الأسطول والأعمال اللي بتكبر.",
   "billedMonthlyNote": "الفاتورة شهرية. تقدر تلغي وقت ما تحب.",
   "recommendedBadge": "موصى بيها",
-  "platformFeeLine": "نسبة المنصة: {fee}%",
-  "@platformFeeLine": {
-    "placeholders": {
-      "fee": {
-        "type": "String"
-      }
-    }
-  },
   "walletMyWalletTitle": "محفظتي",
   "walletCorporateSubtitle": "أدر فلوس الشركة والمصروفات.",
-  "availableBalanceBadge": "الرصيد المتاح",
-  "balanceTrendChipMock": "+8.4% عن الشهر اللي فات",
+  "availableBalanceBadge": "الرصيد",
+  "balanceTrendChipMock": "+8.4%",
   "totalPortfolioLine": "إجمالي المحفظة: {amount} كريدت",
   "@totalPortfolioLine": {
     "placeholders": {

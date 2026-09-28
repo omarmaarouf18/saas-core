@@ -7,12 +7,15 @@ import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/screens/wallet_screen.dart';
 import 'package:provider/provider.dart';
 
+/// F2 (fee-line removal): the wallet no longer fetches or renders platform
+/// config. These tests pin the removal — no fee line under any backend
+/// response, and the internal `platform_wallet_id` secret never rendered —
+/// rather than the old fee-rendering contract.
 class MockApiClientForConfigTest extends ApiClient {
-  bool shouldFail = false;
   Map<String, dynamic> mockConfigResponse = {
     'id': 'config-global-1',
     'platform_fee_percentage': 5.0,
-    'platform_wallet_id': 'wallet-internal-secret-999',
+    'platform_wallet_id': 'SECRET_INTERNAL_WALLET_ID_9999',
   };
 
   @override
@@ -21,9 +24,6 @@ class MockApiClientForConfigTest extends ApiClient {
       Map<String, String>? headers,
       bool isRetry = false}) async {
     if (endpoint == '/users/platform/config') {
-      if (shouldFail) {
-        throw ApiClientException('Internal Server Error', statusCode: 500);
-      }
       return mockConfigResponse;
     }
     if (endpoint == '/users/wallet') {
@@ -88,15 +88,8 @@ void main() {
     );
   }
 
-  test(
-      '(a) Fee percentage renders correctly given a mock response (GET /users/platform/config)',
-      () async {
-    await ownerProvider.fetchPlatformConfig();
-    expect(ownerProvider.platformFeePercentage, equals(5.0));
-  });
-
   testWidgets(
-      '(a) & (b) Fee percentage renders in WalletScreen and platform_wallet_id is NEVER rendered',
+      '(F2) WalletScreen renders with no platform-fee line even when the backend still serves config',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 1.0;
@@ -111,41 +104,20 @@ void main() {
     await tester.pumpWidget(buildWalletScreenWidget());
     await tester.pumpAndSettle();
 
-    // (a) Verify fee percentage renders
-    expect(
-        find.byKey(const Key('platform_fee_percentage_text')), findsOneWidget);
-    expect(find.text('Platform fee: 7.5%'), findsOneWidget);
+    // No fee line under any backend response.
+    expect(find.byKey(const Key('platform_fee_percentage_text')), findsNothing);
+    expect(find.textContaining('Platform fee'), findsNothing);
+    expect(find.textContaining('نسبة المنصة'), findsNothing);
 
-    // (b) Security assertion: platform_wallet_id string must NEVER be rendered in the UI
+    // Security assertion: platform_wallet_id string must NEVER be rendered.
     expect(find.textContaining('SECRET_INTERNAL_WALLET_ID_9999'), findsNothing);
     expect(find.textContaining('platform_wallet_id'), findsNothing);
-  });
 
-  testWidgets(
-      '(c) Fetch failure does not crash WalletScreen — omits fee line gracefully without error banner',
-      (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 1920);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    apiClient.shouldFail = true;
-
-    await tester.pumpWidget(buildWalletScreenWidget());
-    await tester.pumpAndSettle();
-
-    // Screen should render normal wallet headers without crashing
+    // The wallet itself still renders.
     expect(find.text('My Wallet'), findsOneWidget);
-    expect(find.text('Total Balance'), findsOneWidget);
-
-    // Fee text should be omitted
-    expect(find.byKey(const Key('platform_fee_percentage_text')), findsNothing);
-
-    // No error banner should be present
-    expect(ownerProvider.error, isNull);
   });
 
-  testWidgets(
-      '(d) Zero-commission fee percentage (0.0%) renders accurately as "Platform fee: 0%" in WalletScreen',
+  testWidgets('(F2) Zero-commission backend (0.0%) also renders no fee line',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 1.0;
@@ -160,8 +132,8 @@ void main() {
     await tester.pumpWidget(buildWalletScreenWidget());
     await tester.pumpAndSettle();
 
-    expect(
-        find.byKey(const Key('platform_fee_percentage_text')), findsOneWidget);
-    expect(find.text('Platform fee: 0%'), findsOneWidget);
+    expect(find.byKey(const Key('platform_fee_percentage_text')), findsNothing);
+    expect(find.text('Platform fee: 0%'), findsNothing);
+    expect(find.text('My Wallet'), findsOneWidget);
   });
 }

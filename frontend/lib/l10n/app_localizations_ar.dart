@@ -1648,9 +1648,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'مطلوب لتأكيد العمليات الحساسة بشكل آمن.';
 
   @override
-  String clientIpLine(String ip) {
-    return 'الـ IP: $ip';
-  }
+  String get auditActionAccountSuspended => 'تم تجميد الحساب';
+
+  @override
+  String get auditActionAccountReactivated => 'تم إعادة تنشيط الحساب';
+
+  @override
+  String get auditActionKycReviewed => 'مراجعة الهوية اكتملت';
+
+  @override
+  String get auditActionDocumentViewed => 'تم عرض المستند';
 
   @override
   String get usernameRequired => 'اسم المستخدم مطلوب';
@@ -1995,21 +2002,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get recommendedBadge => 'موصى بيها';
 
   @override
-  String platformFeeLine(String fee) {
-    return 'نسبة المنصة: $fee%';
-  }
-
-  @override
   String get walletMyWalletTitle => 'محفظتي';
 
   @override
   String get walletCorporateSubtitle => 'أدر فلوس الشركة والمصروفات.';
 
   @override
-  String get availableBalanceBadge => 'الرصيد المتاح';
+  String get availableBalanceBadge => 'الرصيد';
 
   @override
-  String get balanceTrendChipMock => '+8.4% عن الشهر اللي فات';
+  String get balanceTrendChipMock => '+8.4%';
 
   @override
   String totalPortfolioLine(String amount) {

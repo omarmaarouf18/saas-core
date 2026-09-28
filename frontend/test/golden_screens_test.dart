@@ -211,8 +211,6 @@ class _MockOwnerProvider extends OwnerProvider {
   @override
   List<Job> get ownerJobs => mockJobs;
   @override
-  double? get platformFeePercentage => 10.0;
-  @override
   List<dynamic> get employees => mockEmployees;
   @override
   List<PayoutRequest> get payoutRequests => mockPayouts;
@@ -225,8 +223,6 @@ class _MockOwnerProvider extends OwnerProvider {
 
   @override
   Future<void> fetchDashboardData(String tenantId) async {}
-  @override
-  Future<void> fetchPlatformConfig() async {}
   @override
   Future<List<PayoutRequest>> fetchPayoutRequests() async => mockPayouts;
   @override

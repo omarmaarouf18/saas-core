@@ -158,7 +158,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('EMPLOYEE TOGGLE'), findsOneWidget);
+    expect(find.text('Employee toggle'), findsOneWidget);
     expect(find.text('Frozen worker john@example.com'), findsOneWidget);
     expect(find.text('Actor: owner-history-1'), findsOneWidget);
   });

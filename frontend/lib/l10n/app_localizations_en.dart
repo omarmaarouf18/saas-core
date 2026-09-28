@@ -1668,9 +1668,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Required for secure out-of-band operations verification.';
 
   @override
-  String clientIpLine(String ip) {
-    return 'IP: $ip';
-  }
+  String get auditActionAccountSuspended => 'Account suspended';
+
+  @override
+  String get auditActionAccountReactivated => 'Account reactivated';
+
+  @override
+  String get auditActionKycReviewed => 'Identity review completed';
+
+  @override
+  String get auditActionDocumentViewed => 'Document viewed';
 
   @override
   String get usernameRequired => 'Username is required';
@@ -2026,11 +2033,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recommendedBadge => 'RECOMMENDED';
 
   @override
-  String platformFeeLine(String fee) {
-    return 'Platform fee: $fee%';
-  }
-
-  @override
   String get walletMyWalletTitle => 'My Wallet';
 
   @override
@@ -2038,10 +2040,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage corporate finances and payouts.';
 
   @override
-  String get availableBalanceBadge => 'AVAILABLE BALANCE';
+  String get availableBalanceBadge => 'BALANCE';
 
   @override
-  String get balanceTrendChipMock => '+8.4% vs last mo';
+  String get balanceTrendChipMock => '+8.4%';
 
   @override
   String totalPortfolioLine(String amount) {

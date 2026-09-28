@@ -115,9 +115,6 @@ class TestableOwnerProvider extends OwnerProvider {
   Future<void> fetchOwnerJobs(String token) async {}
 
   @override
-  Future<void> fetchPlatformConfig() async {}
-
-  @override
   Future<List<PayoutRequest>> fetchPayoutRequests() async => [];
 }
 

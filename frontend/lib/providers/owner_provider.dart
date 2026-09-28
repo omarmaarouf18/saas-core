@@ -13,7 +13,6 @@ class OwnerProvider extends ChangeNotifier {
   String _subscriptionTier = 'free';
   List<dynamic> _ledgerEntries = [];
   List<Job> _ownerJobs = [];
-  double? _platformFeePercentage;
   List<dynamic> _employees = [];
   List<PayoutRequest> _payoutRequests = [];
   bool _isLoading = false;
@@ -22,7 +21,6 @@ class OwnerProvider extends ChangeNotifier {
   /// Audit S1/S16: true once [fetchDashboardData] has completed successfully
   /// at least once. Screens use it to distinguish "never hydrated" (render a
   /// loader, never defaults-as-fact) from "hydrated and refreshing".
-  /// Mirrors the `fetchPlatformConfig` cached-value guard below.
   bool _dashboardHydrated = false;
 
   double get walletBalance => _walletBalance;
@@ -31,7 +29,6 @@ class OwnerProvider extends ChangeNotifier {
   String get subscriptionTier => _subscriptionTier;
   List<dynamic> get ledgerEntries => _ledgerEntries;
   List<Job> get ownerJobs => _ownerJobs;
-  double? get platformFeePercentage => _platformFeePercentage;
   List<dynamic> get employees => _employees;
   List<PayoutRequest> get payoutRequests => _payoutRequests;
   bool get isLoading => _isLoading;
@@ -509,28 +506,6 @@ class OwnerProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
-  }
-
-  /// Fetches public platform configuration (GET /users/platform/config).
-  ///
-  /// Caches response in memory after first successful fetch since platform fee parameters change infrequently.
-  /// Ignores non-fatal fetch failures to prevent blocking critical UI workflows.
-  Future<void> fetchPlatformConfig() async {
-    if (_platformFeePercentage != null) return;
-
-    try {
-      final res = await apiClient.get('/users/platform/config');
-      if (res != null && res is Map) {
-        final data = Map<String, dynamic>.from(res);
-        if (data.containsKey('platform_fee_percentage')) {
-          _platformFeePercentage =
-              (data['platform_fee_percentage'] as num?)?.toDouble();
-        }
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Non-critical: Error fetching platform config: $e');
-    }
   }
 
   // ---------------------------------------------------------------------------

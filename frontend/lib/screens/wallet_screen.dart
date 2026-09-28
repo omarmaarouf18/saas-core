@@ -37,7 +37,6 @@ class _WalletScreenState extends State<WalletScreen> {
     if (auth.token != null) {
       await ownerProvider.fetchDashboardData(auth.token!);
     }
-    await ownerProvider.fetchPlatformConfig();
     await ownerProvider.fetchPayoutRequests();
   }
 
@@ -53,7 +52,6 @@ class _WalletScreenState extends State<WalletScreen> {
       if (auth.token != null) {
         ownerProvider.fetchDashboardData(auth.token!);
       }
-      ownerProvider.fetchPlatformConfig();
       ownerProvider.fetchPayoutRequests();
     });
   }
@@ -122,27 +120,6 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
 
-                      // Platform Fee Indicator
-                      if (ownerProvider.platformFeePercentage != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: Text(
-                            l10n.platformFeeLine(
-                                ownerProvider.platformFeePercentage! % 1 == 0
-                                    ? ownerProvider.platformFeePercentage!
-                                        .toInt()
-                                        .toString()
-                                    : "${ownerProvider.platformFeePercentage}"),
-                            key: const Key('platform_fee_percentage_text'),
-                            style: AppTypography.labelMd.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: AppSpacing.xl),
 
                       // Payout Requests History Section

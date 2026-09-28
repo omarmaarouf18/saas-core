@@ -207,9 +207,10 @@
  ## File Tracking Index
 
  The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
- * **Core**:
-   * `api_client.dart`
-   * `constants.dart`
+  * **Core**:
+    * `api_client.dart`
+    * `audit_labels.dart`
+    * `constants.dart`
    * `error_messages.dart`
    * `location_permission.dart`
    * `provider_connection_cleanup.dart`

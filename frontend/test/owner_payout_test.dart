@@ -45,9 +45,6 @@ class FakeApiClientForPayout extends ApiClient {
     if (path == '/users/ledger') {
       return {'entries': []};
     }
-    if (path == '/users/platform/config') {
-      return {'platform_fee_percentage': 0.0};
-    }
     if (path == '/users/wallet/payout/requests') {
       if (failPayoutRequests) {
         throw ApiClientException('Payout service unavailable', statusCode: 500);
@@ -540,9 +537,6 @@ class MockOwnerProviderWithCustomError extends OwnerProvider {
   Future<void> fetchDashboardData(String tenantId) async {
     refreshCalls++;
   }
-
-  @override
-  Future<void> fetchPlatformConfig() async {}
 
   @override
   Future<List<PayoutRequest>> fetchPayoutRequests() async => [];
