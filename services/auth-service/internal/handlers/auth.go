@@ -174,9 +174,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 	var req models.SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -265,9 +263,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			a.limiter.RecordFailure(clientIP)
 			handlerutil.ShipSecurityEvent(ctx, "UNAUTHORIZED_EMPLOYEE_PROVISION_BLOCKED", "auth-service", "unauthenticated", req.OwnerID, fmt.Sprintf("attempted to provision employee %s: authentication failed: %s", req.Email, err.Error()), handlerutil.GetClientIP(r))
-			writeJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": "missing or invalid authorization header, Bearer token required: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 			return
 		}
 
@@ -331,9 +327,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to hash password: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to hash password", err)
 			return
 		}
 
@@ -348,9 +342,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 
 		if err := a.store.SetPendingSignup(ctx, req.Email, pending, otpCode); err != nil {
 			log.Printf("[AUTH] Failed to set pending signup for %s: %v", req.Email, err)
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to set pending signup: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to set pending signup", err)
 			return
 		}
 
@@ -381,9 +373,7 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	// Employee signup — immediate creation, no OTP required.
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to hash password: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to hash password", err)
 		return
 	}
 
@@ -400,9 +390,13 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.CreateUser(ctx, user); err != nil {
-		writeJSON(w, http.StatusConflict, map[string]string{
-			"error": err.Error(),
-		})
+		if err.Error() == "email already registered" || err.Error() == "username already taken" {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "signup failed", err)
 		return
 	}
 
@@ -441,9 +435,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -523,9 +515,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 			// 2FA disabled by user preference: issue JWT token directly.
 			token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd"})
 			if err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{
-					"error": "failed to generate token: " + err.Error(),
-				})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate token", err)
 				return
 			}
 			response := map[string]any{
@@ -549,9 +539,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 
 		// Encrypt and store in MongoDB (AES-256-GCM).
 		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to generate OTP: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
 			return
 		}
 
@@ -583,9 +571,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		// Employees bypass 2FA.
 		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd"})
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to generate token: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate token", err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -619,9 +605,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	var req models.VerifyOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -677,9 +661,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 		token, err := jwtutil.GenerateToken(user.ID, string(user.Role), user.TenantID, user.Email, []string{"pwd", "otp"})
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to generate token: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate token", err)
 			return
 		}
 
@@ -733,9 +715,13 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.CreateUser(ctx, newUser); err != nil {
-		writeJSON(w, http.StatusConflict, map[string]string{
-			"error": err.Error(),
-		})
+		if err.Error() == "email already registered" || err.Error() == "username already taken" {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "signup failed", err)
 		return
 	}
 
@@ -743,9 +729,7 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 
 	token, err := jwtutil.GenerateToken(newUser.ID, string(newUser.Role), newUser.TenantID, newUser.Email, []string{"pwd", "otp"})
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to generate token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate token", err)
 		return
 	}
 
@@ -784,9 +768,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 
 	var req models.ToggleEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -928,9 +910,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -958,9 +938,7 @@ func (a *Auth) SimulateEmployeeAction(w http.ResponseWriter, r *http.Request) {
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 	claims, err := jwtutil.ValidateToken(tokenStr)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "invalid token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -1059,9 +1037,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 	} else {
 		claims, err := jwtutil.ValidateToken(id)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": "invalid token signature or expired: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		lookupID = claims.UserID
@@ -1118,7 +1094,7 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -1142,7 +1118,7 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	var raw map[string]any
 	if err := json.Unmarshal(bodyBytes, &raw); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -1387,9 +1363,7 @@ func (a *Auth) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := jwtutil.ValidateToken(requesterParam)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "invalid requester token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	resolvedRequesterID := claims.UserID
@@ -1435,7 +1409,7 @@ func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -1455,7 +1429,7 @@ func (a *Auth) Refresh(w http.ResponseWriter, r *http.Request) {
 	// Validate token, allowing expired token to be parsed for refresh purposes
 	claims, err := jwtutil.ValidateToken(req.Token)
 	if err != nil && !errors.Is(err, jwtutil.ErrExpiredToken) {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -1582,7 +1556,7 @@ func (a *Auth) UploadKYB(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -1617,7 +1591,7 @@ func (a *Auth) UploadKYB(w http.ResponseWriter, r *http.Request) {
 	n, _ := file.Read(buf)
 	contentType := http.DetectContentType(buf[:n])
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1640,7 +1614,7 @@ func (a *Auth) UploadKYB(w http.ResponseWriter, r *http.Request) {
 
 	key := fmt.Sprintf("kyb/%s/%s.%s", user.ID, docType, ext)
 	if err := a.storage.Upload(ctx, key, file, contentType); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1657,7 +1631,7 @@ func (a *Auth) UploadKYB(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1680,7 +1654,7 @@ func (a *Auth) UploadKYE(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -1715,7 +1689,7 @@ func (a *Auth) UploadKYE(w http.ResponseWriter, r *http.Request) {
 	n, _ := file.Read(buf)
 	contentType := http.DetectContentType(buf[:n])
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1734,7 +1708,7 @@ func (a *Auth) UploadKYE(w http.ResponseWriter, r *http.Request) {
 
 	key := fmt.Sprintf("kye/%s/%s.%s", user.ID, docType, ext)
 	if err := a.storage.Upload(ctx, key, file, contentType); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1749,7 +1723,7 @@ func (a *Auth) UploadKYE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.UpdateUser(ctx, user.ID, update); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1779,7 +1753,7 @@ func (a *Auth) GetPendingKYBKYESubmissions(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	users, err := a.store.GetPendingKYBKYE(ctx)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1956,7 +1930,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := a.store.UpdateUserConditional(ctx, targetUser.ID, statusField, models.KYCPendingApproval, update)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 	if !updated {
@@ -2272,7 +2246,7 @@ func (a *Auth) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	users, total, err := a.store.ListAccounts(ctx, search, role, status, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -2359,7 +2333,7 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	// Atomic CAS update: only suspend if not already suspended
 	suspended, err := a.store.SuspendUser(ctx, targetUserID, reason, reviewer.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 	if !suspended {
@@ -2453,7 +2427,7 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 	// Atomic CAS update: only reactivate if currently suspended
 	reactivated, err := a.store.ReactivateUser(ctx, targetUserID, reason, reviewer.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 	if !reactivated {
@@ -2699,7 +2673,7 @@ func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err := jwtutil.RevokeToken(tokenStr)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "logout failed: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "logout failed", err)
 		return
 	}
 
@@ -2722,9 +2696,7 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 
 	var req ResendOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -2780,9 +2752,7 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	// Pending signup found: generate a fresh 6-digit OTP code and overwrite the pending signup.
 	otpCode := generate6DigitOTP()
 	if err := a.store.SetPendingSignup(ctx, req.Email, pending, otpCode); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to set OTP: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to set OTP", err)
 		return
 	}
 
@@ -2824,9 +2794,7 @@ func (a *Auth) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	var req models.ForgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -2921,9 +2889,7 @@ func (a *Auth) VerifyResetCode(w http.ResponseWriter, r *http.Request) {
 
 	var req models.VerifyResetCodeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -3006,9 +2972,7 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	var req models.ResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -3061,9 +3025,7 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to hash password: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to hash password", err)
 		return
 	}
 
@@ -3153,9 +3115,7 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	// Validate requester token signature
 	_, err := jwtutil.ValidateToken(requesterToken)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "invalid requester token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -3207,7 +3167,7 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := jwtutil.ValidateToken(tokenStr)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -3263,9 +3223,7 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "unauthorized: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -3281,9 +3239,7 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := a.store.RemoveDeviceToken(ctx, claims.UserID, req.Token); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to unregister device token: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to unregister device token", err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{
@@ -3314,9 +3270,7 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 
 	if req.Action == "unregister" || req.Token == "" {
 		if err := a.store.RemoveDeviceToken(ctx, claims.UserID, req.Token); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "failed to unregister device token: " + err.Error(),
-			})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to unregister device token", err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{
@@ -3327,9 +3281,7 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 
 	// Upsert token
 	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to register device token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to register device token", err)
 		return
 	}
 
@@ -3354,9 +3306,7 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "unauthorized: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -3371,9 +3321,7 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 
 	var req models.EmailChangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -3479,9 +3427,7 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := a.authenticateUser(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "unauthorized: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "missing or invalid authorization", err)
 		return
 	}
 
@@ -3496,9 +3442,7 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 
 	var req models.EmailChangeConfirmRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid JSON body: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -3549,9 +3493,7 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(user.ID)
 
 	if err := a.store.UpdateEmail(ctx, user.ID, pending.NewEmail); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to update email address: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update email address", err)
 		return
 	}
 
@@ -3573,9 +3515,7 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := jwtutil.GenerateToken(updatedUser.ID, string(updatedUser.Role), updatedUser.TenantID, updatedUser.Email, amr)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "failed to generate updated token: " + err.Error(),
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate updated token", err)
 		return
 	}
 

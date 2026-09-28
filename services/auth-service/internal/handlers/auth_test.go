@@ -1895,8 +1895,13 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			if rec2.Code != http.StatusUnauthorized {
 				t.Errorf("expected 401 Unauthorized for already revoked token, got %d. Body: %s", rec2.Code, rec2.Body.String())
 			}
-			if !strings.Contains(rec2.Body.String(), "logout failed: jwtutil: token has been revoked") {
-				t.Errorf("unexpected error: %s", rec2.Body.String())
+			// A3: revoked-token detail stays server-side; the client gets the
+			// stable generic (code carries the machine signal).
+			if !strings.Contains(rec2.Body.String(), `"code":"unauthorized"`) {
+				t.Errorf("expected sanitized unauthorized code, got: %s", rec2.Body.String())
+			}
+			if strings.Contains(rec2.Body.String(), "jwtutil:") {
+				t.Errorf("internal jwtutil detail leaked: %s", rec2.Body.String())
 			}
 		})
 
