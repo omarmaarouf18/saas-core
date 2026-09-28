@@ -22,7 +22,7 @@ func (u *UserService) AdminListPayouts(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (u *UserService) AdminListPayouts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	payouts, total, err := u.store.AdminListPayoutRequests(ctx, status, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -69,13 +69,13 @@ func (u *UserService) AdminRejectPayoutRequest(w http.ResponseWriter, r *http.Re
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
 	var req models.AdminRejectPayoutRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (u *UserService) AdminRejectPayoutRequest(w http.ResponseWriter, r *http.Re
 			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to reject payout: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to reject payout", err)
 		return
 	}
 

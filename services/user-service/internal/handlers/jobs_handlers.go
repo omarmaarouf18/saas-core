@@ -49,7 +49,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	var req models.CreateJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.OwnerToken != "" {
@@ -112,7 +112,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resolvedOwnerID, err = resolveTokenWithRole(req.OwnerID, "owner")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		hasOwnerToken = true
@@ -121,7 +125,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// 2. Verify customer user token
 	resolvedUserID, err := resolveTokenWithRole(req.UserID, "user", "customer")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	req.UserID = resolvedUserID
@@ -216,7 +224,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if req.EmployeeID != "" {
 		resolvedEmployeeID, err := resolveTokenWithRole(req.EmployeeID, "employee")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		req.EmployeeID = resolvedEmployeeID
@@ -367,7 +379,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := u.store.CreateJob(ctx, job); err != nil {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			if strings.Contains(err.Error(), "already exists") {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "job could not be created", err)
 			return
 		}
 
@@ -471,7 +487,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.store.CreateJob(ctx, job); err != nil {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+		if strings.Contains(err.Error(), "already exists") {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "job could not be created", err)
 		return
 	}
 
@@ -494,7 +514,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
 		// Progress to active.
 		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
 			return
 		}
 		job.Status = models.JobStatusActive
@@ -564,7 +584,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 
 	// Progress to active.
 	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate job: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
 		return
 	}
 	job.Status = models.JobStatusActive
@@ -597,7 +617,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 	var req models.CompleteJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.JobID == "" {
@@ -635,7 +655,11 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		var err error
 		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		if u.completeJobLimiter != nil {
@@ -733,7 +757,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			note := fmt.Sprintf("tracked_distance_mismatch: actual %.2f km vs booked %.2f km", actualDist, bookedDist)
 			if recErr := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusEscrowReconciliationRequired, note, "under_distance_mismatch", job.LockedEscrowAmount); recErr != nil {
 				log.Printf("[ERROR] failed to update reconciliation status for job %s: %v", job.ID, recErr)
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to flag job for reconciliation: " + recErr.Error()})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to flag job for reconciliation", recErr)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]any{
@@ -778,7 +802,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
 			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete COD job: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to complete COD job", err)
 			return
 		}
 
@@ -809,12 +833,12 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 
 	// Release escrow with profit splitting (Non-COD flow)
 	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow release failed: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow release failed", err)
 		return
 	}
 
 	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusCompleted); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete job: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to complete job", err)
 		return
 	}
 
@@ -863,7 +887,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		}
 		resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		// Check if a client-supplied employee_id query param exists, and validate it matches resolvedRequester
@@ -876,7 +904,7 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		}
 		jobs, err := u.store.GetJobsByEmployee(r.Context(), resolvedRequester)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 			return
 		}
 		filtered := make([]models.EmployeeJobResponse, 0, len(jobs))
@@ -924,7 +952,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 		}
 		claims, err := resolveClaims(requesterToken)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		if claims.Role != "owner" && claims.Role != "employee" && claims.Role != "user" && claims.Role != "customer" {
@@ -1027,7 +1059,11 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := resolveClaims(requesterToken)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	resolvedOwnerID := claims.UserID
@@ -1058,7 +1094,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 
 	jobs, err := u.store.GetJobsByOwner(r.Context(), resolvedOwnerID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1114,7 +1150,11 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := resolveClaims(requesterToken)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	resolvedCustomerID := claims.UserID
@@ -1146,7 +1186,7 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 
 	jobs, err := u.store.GetJobsByCustomer(r.Context(), resolvedCustomerID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -1175,7 +1215,7 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 		Longitude      float64 `json:"longitude"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -1194,7 +1234,11 @@ func (u *UserService) UpdateJobLocation(w http.ResponseWriter, r *http.Request) 
 	// starving the assigned employee's legitimate updates with 429s.
 	resolvedRequester, err := resolveTokenWithRole(req.RequesterID, "employee", "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -1493,7 +1537,7 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 
 	var req models.EmployeeLocationPingRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -1518,7 +1562,11 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 
 	claims, err := resolveClaims(tokenStr)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -1543,7 +1591,7 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 			})
 			return
 		}
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "employee verification failed: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusForbidden, handlerutil.ErrCodeUnauthorized, "employee verification failed", err)
 		return
 	}
 	if !validAssignment {
@@ -1689,7 +1737,7 @@ func (u *UserService) UpdateEmployeeLocation(w http.ResponseWriter, r *http.Requ
 
 	if err := u.store.UpsertEmployeeLocation(r.Context(), locRecord); err != nil {
 		clearInFlight()
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist location: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to persist location", err)
 		return
 	}
 
@@ -1804,7 +1852,11 @@ func (u *UserService) GetAvailableEmployees(w http.ResponseWriter, r *http.Reque
 
 		claims, err := resolveClaims(tokenStr)
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 
@@ -1853,7 +1905,7 @@ func (u *UserService) GetAvailableEmployees(w http.ResponseWriter, r *http.Reque
 	ctx := r.Context()
 	locations, err := u.store.GetFreshEmployeeLocations(ctx, targetTenantID, EmployeeLocationFreshnessWindow)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to query employee locations: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query employee locations", err)
 		return
 	}
 	if locations == nil {
@@ -1912,7 +1964,11 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 
 	callerID, err := resolveTokenWithRole(requesterToken, "employee")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -1998,7 +2054,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	// F-02: Atomically acquire courier-busy lock to prevent concurrent double-accepts
 	acquired, err := u.store.TryAcquireCourierLock(ctx, job.OwnerID, callerID, job.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to acquire courier lock: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to acquire courier lock", err)
 		return
 	}
 	if !acquired {
@@ -2134,7 +2190,11 @@ func (u *UserService) DeclineJobOffer(w http.ResponseWriter, r *http.Request) {
 
 	callerID, err := resolveTokenWithRole(requesterToken, "employee")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid employee token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -2183,7 +2243,7 @@ func (u *UserService) DeclineJobOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.advanceCascade(ctx, job); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to advance cascade: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to advance cascade", err)
 		return
 	}
 
@@ -2684,13 +2744,20 @@ type cancelExecError struct {
 
 func (e *cancelExecError) Error() string { return e.body["error"] }
 
-func writeCancellationError(w http.ResponseWriter, err error) {
+func writeCancellationError(w http.ResponseWriter, r *http.Request, err error) {
 	var ce *cancelExecError
 	if errors.As(err, &ce) {
+		if ce.status == http.StatusInternalServerError {
+			// A3: the pre-built body may embed store/driver text (refund,
+			// cancel, reason persistence). Log it server-side, return a
+			// stable generic. Curated non-5xx bodies pass through below.
+			handlerutil.WriteSafeError(w, r, ce.status, handlerutil.ErrCodeInternal, "failed to cancel job", errors.New(ce.body["error"]))
+			return
+		}
 		writeJSON(w, ce.status, ce.body)
 		return
 	}
-	writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+	handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to cancel job", err)
 }
 
 // executeJobCancellation performs the money + status + courier-lock + audit
@@ -2810,7 +2877,7 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		Reason         string `json:"reason"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -2875,7 +2942,11 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 		// owner approval. Owner and customer/user paths are unchanged.
 		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner", "user", "customer")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 	} else {
@@ -2904,7 +2975,7 @@ func (u *UserService) CancelJob(w http.ResponseWriter, r *http.Request) {
 	// Money + status + lock + audit work lives in the shared implementation
 	// (also used by the cancellation-request accept path).
 	if err := u.executeJobCancellation(ctx, job, req.Reason, resolvedRequester, isOwner, handlerutil.GetClientIP(r)); err != nil {
-		writeCancellationError(w, err)
+		writeCancellationError(w, r, err)
 		return
 	}
 
@@ -3108,7 +3179,7 @@ func (u *UserService) RequestCancellation(w http.ResponseWriter, r *http.Request
 		Reason         string `json:"reason"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -3161,7 +3232,11 @@ func (u *UserService) RequestCancellation(w http.ResponseWriter, r *http.Request
 		var err error
 		resolvedRequester, err = resolveTokenWithRole(requesterToken, "employee")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 	}
@@ -3243,7 +3318,7 @@ func (u *UserService) RequestCancellation(w http.ResponseWriter, r *http.Request
 			})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to submit cancellation request: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to submit cancellation request", err)
 		return
 	}
 
@@ -3281,7 +3356,7 @@ func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request
 		RequesterToken string `json:"requester_token,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.JobID == "" {
@@ -3331,7 +3406,11 @@ func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request
 		var err error
 		resolvedRequester, err = resolveTokenWithRole(requesterToken, "owner")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 	}
@@ -3389,7 +3468,7 @@ func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request
 			})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to resolve cancellation request: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to resolve cancellation request", err)
 		return
 	}
 
@@ -3415,7 +3494,7 @@ func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request
 		if rerr := u.store.ReopenCancellationRequest(ctx, job.ID); rerr != nil {
 			log.Printf("[ERROR] Failed to reopen cancellation request for job %s after cancellation failure: %v", job.ID, rerr)
 		}
-		writeCancellationError(w, err)
+		writeCancellationError(w, r, err)
 		return
 	}
 
@@ -3477,7 +3556,7 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 
 	var req proposePriceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.JobID == "" {
@@ -3509,7 +3588,11 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 	// Dynamic in-job price negotiation is strictly between customer and employee (Part B #5).
 	resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee", "user", "customer")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -3598,7 +3681,7 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to persist price proposal: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to persist price proposal", err)
 		return
 	}
 
@@ -3641,7 +3724,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 
 	var req respondPriceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.JobID == "" {
@@ -3682,7 +3765,11 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 	// Dynamic in-job price negotiation is strictly between customer and employee (Part B #5).
 	resolvedRequester, err := resolveTokenWithRole(requesterToken, "employee", "user", "customer")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -3827,7 +3914,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 				})
 				return
 			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to accept price proposal: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to accept price proposal", err)
 			return
 		}
 
@@ -3850,7 +3937,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to decline price proposal: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to decline price proposal", err)
 		return
 	}
 

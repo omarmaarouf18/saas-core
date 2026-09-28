@@ -47,7 +47,11 @@ func (u *UserService) GetReconciliationQueue(w http.ResponseWriter, r *http.Requ
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
 			return
 		}
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -71,7 +75,7 @@ func (u *UserService) GetReconciliationQueue(w http.ResponseWriter, r *http.Requ
 
 	jobs, err := u.store.GetReconciliationQueueByOwner(r.Context(), resolvedOwnerID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -101,7 +105,7 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 
 	var req ResolveReconciliationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -143,7 +147,11 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: owner role required"})
 			return
 		}
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -191,14 +199,14 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 			}
 		} else if amount > 0 {
 			if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow release failed: " + err.Error()})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow release failed", err)
 				return
 			}
 		}
 
 		note := fmt.Sprintf("reconciliation_resolved: release_to_employee by owner %s", resolvedOwnerID)
 		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update job reconciliation status", err)
 			return
 		}
 
@@ -219,14 +227,14 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 	case "refund_to_customer":
 		if job.PaymentMethod != "cod" && amount > 0 {
 			if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "escrow refund failed: " + err.Error()})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow refund failed", err)
 				return
 			}
 		}
 
 		note := fmt.Sprintf("reconciliation_resolved: refund_to_customer by owner %s", resolvedOwnerID)
 		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update job reconciliation status: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update job reconciliation status", err)
 			return
 		}
 
@@ -318,7 +326,7 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
@@ -339,7 +347,7 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 	ctx := r.Context()
 	jobs, total, err := u.store.GetGlobalReconciliationQueue(ctx, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -401,13 +409,13 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
 	var req models.AdminResolveReconciliationRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -438,7 +446,7 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 

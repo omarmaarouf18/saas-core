@@ -88,7 +88,7 @@ func resolveOwnerAuthToken(r *http.Request, bodyOwnerToken, bodyOwnerID string) 
 func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -124,7 +124,11 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 	resolvedOwnerID, err := resolveTokenWithRole(authToken, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	req.OwnerID = resolvedOwnerID
@@ -196,7 +200,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	var req models.UpdateServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -228,7 +232,11 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 
 	resolvedOwnerID, err := resolveTokenWithRole(authToken, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid owner token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	req.OwnerID = resolvedOwnerID
@@ -398,7 +406,7 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := u.store.UpdateServiceFields(r.Context(), existing.ID, existing.TenantID, updateFields)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update service: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update service", err)
 		return
 	}
 

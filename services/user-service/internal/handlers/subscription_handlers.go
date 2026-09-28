@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
 )
 
@@ -26,7 +28,11 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		}
 		resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		tenantID = resolvedTenantID
@@ -49,7 +55,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			RequesterToken string          `json:"requester_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 			return
 		}
 		if req.TenantToken != "" {
@@ -69,14 +75,22 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 
 		resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		req.TenantID = resolvedTenantID
 
 		resolvedRequesterID, err := resolveTokenWithRole(req.RequesterID, "owner")
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+			if strings.Contains(err.Error(), "role mismatch") {
+				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+				return
+			}
+			handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 			return
 		}
 		req.RequesterID = resolvedRequesterID
@@ -100,7 +114,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 		authURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, req.RequesterID)
 		authReq, err := http.NewRequest("GET", authURL, nil)
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auth service request error: " + err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "auth service request error", err)
 			return
 		}
 		authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
@@ -137,7 +151,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 				StartedAt: time.Now().UTC(),
 			}
 			if err := u.store.UpsertSubscription(r.Context(), sub); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 				return
 			}
 			writeJSON(w, http.StatusAccepted, map[string]string{
@@ -154,7 +168,7 @@ func (u *UserService) Subscription(w http.ResponseWriter, r *http.Request) {
 			StartedAt: time.Now().UTC(),
 		}
 		if err := u.store.UpsertSubscription(r.Context(), sub); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 			return
 		}
 		writeJSON(w, http.StatusOK, sub)

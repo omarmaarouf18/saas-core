@@ -42,7 +42,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -66,7 +66,11 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 
 	resolvedRatedBy, err := resolveTokenWithRole(req.RatedBy, "owner", "employee", "user", "customer")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid rated_by token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	req.RatedBy = resolvedRatedBy
@@ -123,7 +127,7 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -169,7 +173,11 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 
 	_, err := resolveTokenWithRole(requesterToken, "owner", "employee", "user", "customer")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid requester token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 
@@ -205,7 +213,7 @@ func (u *UserService) GetRatings(w http.ResponseWriter, r *http.Request) {
 	offset := int64(parseIntDefault(r.URL.Query().Get("offset"), 0))
 	ratings, err := u.store.GetRatingsForUser(r.Context(), targetUserID, limit, offset)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 

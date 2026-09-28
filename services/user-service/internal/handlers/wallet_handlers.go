@@ -34,13 +34,17 @@ func (u *UserService) GetWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	tenantID = resolvedTenantID
 	wallet, err := u.store.GetOrCreateWallet(r.Context(), tenantID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, wallet)
@@ -84,7 +88,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 	var req models.DepositRequest
 	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 	if req.TenantToken != "" {
@@ -106,7 +110,11 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 
 	resolvedTenantID, err := resolveTokenWithRole(req.TenantID, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	req.TenantID = resolvedTenantID
@@ -154,7 +162,7 @@ func (u *UserService) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.store.Deposit(r.Context(), req.TenantID, req.Amount); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 	wallet := u.store.GetWallet(r.Context(), req.TenantID)
@@ -188,7 +196,11 @@ func (u *UserService) GetLedger(w http.ResponseWriter, r *http.Request) {
 	}
 	resolvedTenantID, err := resolveTokenWithRole(tenantID, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	tenantID = resolvedTenantID
@@ -225,7 +237,7 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req models.CreatePayoutRequestInput
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -246,7 +258,11 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 
 	resolvedTenantID, err := resolveTokenWithRole(tokenStr, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	if u.payoutLimiter != nil {
@@ -340,7 +356,7 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create payout request: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create payout request", err)
 		return
 	}
 
@@ -374,7 +390,11 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 
 	resolvedTenantID, err := resolveTokenWithRole(tokenStr, "owner")
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid tenant owner token: " + err.Error()})
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
 		return
 	}
 	if u.payoutLimiter != nil {
@@ -386,7 +406,7 @@ func (u *UserService) GetPayoutRequests(w http.ResponseWriter, r *http.Request) 
 
 	requests, err := u.store.GetPayoutRequests(ctx, resolvedTenantID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to fetch payout requests: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to fetch payout requests", err)
 		return
 	}
 

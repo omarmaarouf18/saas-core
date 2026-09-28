@@ -22,7 +22,7 @@ func (u *UserService) AdminListSubscriptions(w http.ResponseWriter, r *http.Requ
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (u *UserService) AdminListSubscriptions(w http.ResponseWriter, r *http.Requ
 
 	subs, total, err := u.store.ListSubscriptions(ctx, status, search, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list subscriptions: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to list subscriptions", err)
 		return
 	}
 
@@ -70,13 +70,13 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
 	var req models.AdminActivateSubscriptionRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -136,7 +136,7 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
@@ -158,13 +158,13 @@ func (u *UserService) AdminRevokeSubscription(w http.ResponseWriter, r *http.Req
 
 	reviewer, err := u.authenticateReviewer(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 
 	var req models.AdminRevokeSubscriptionRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
 	}
 
@@ -188,7 +188,7 @@ func (u *UserService) AdminRevokeSubscription(w http.ResponseWriter, r *http.Req
 			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
 		return
 	}
 
