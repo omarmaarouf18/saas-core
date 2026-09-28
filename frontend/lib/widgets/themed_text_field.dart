@@ -11,6 +11,12 @@ class ThemedTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+
+  /// F3 label rules: units and currency live in the input's
+  /// [suffixText]/[prefixText] ("Coverage radius" + suffix "km",
+  /// "Base price" + prefix "$"), never parenthesized in the label.
+  final String? prefixText;
+  final String? suffixText;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final bool enabled;
@@ -40,6 +46,8 @@ class ThemedTextField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
     this.suffixIcon,
+    this.prefixText,
+    this.suffixText,
     this.validator,
     this.onChanged,
     this.enabled = true,
@@ -145,6 +153,8 @@ class _ThemedTextFieldState extends State<ThemedTextField> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             prefixIcon: widget.prefixIcon,
             suffixIcon: effectiveSuffixIcon,
+            prefixText: widget.prefixText,
+            suffixText: widget.suffixText,
             counterText: widget.counterText,
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,

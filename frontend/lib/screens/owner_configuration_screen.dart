@@ -873,6 +873,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
             key: const Key('owner_config_radius_field'),
             labelText: l10n.ownerConfigRadiusLabel,
             hintText: l10n.ownerConfigRadiusHint,
+            suffixText: l10n.unitKm,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             controller: _radiusController,
             validator: (v) {
@@ -1268,6 +1269,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   key: const Key('owner_config_base_price_field'),
                   labelText: l10n.ownerConfigBasePriceLabel,
                   hintText: l10n.ownerConfigBasePriceHint,
+                  prefixText: '\$',
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   controller: _basePriceController,
@@ -1290,6 +1292,7 @@ class _OwnerConfigurationScreenState extends State<OwnerConfigurationScreen> {
                   key: const Key('owner_config_price_per_km_field'),
                   labelText: l10n.ownerConfigPricePerKmLabel,
                   hintText: l10n.ownerConfigPricePerKmHint,
+                  prefixText: '\$',
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   controller: _pricePerKmController,

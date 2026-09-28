@@ -190,7 +190,7 @@ void main() {
     String? seen;
     await tester.pumpWidget(_dialogHarness(
       confirmButtonKey: const Key('test_confirm_btn'),
-      addressLabel: 'Landmark note (optional)',
+      addressLabel: 'Landmark note · optional',
       addressHint: 'e.g. next to the kiosk',
       onAddressNoteChanged: (v) => seen = v,
       onConfirmed: (_) {},
@@ -200,7 +200,7 @@ void main() {
     await tester.tap(find.byKey(const Key('open_picker_button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Landmark note (optional)'), findsOneWidget);
+    expect(find.text('Landmark note · optional'), findsOneWidget);
     await tester.enterText(
         find.byKey(const Key('location_picker_note_field')), 'Home gate');
     expect(seen, 'Home gate');

@@ -51,13 +51,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSystem => 'System';
 
   @override
-  String get langAuto => 'Auto (System)';
+  String get langAuto => 'System default';
 
   @override
   String get langEnglish => 'English';
 
   @override
-  String get langArabic => 'العربية (مصر)';
+  String get langArabic => 'عربي مصري';
 
   @override
   String get settingsTitle => 'Settings';
@@ -119,7 +119,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage personal details and saved addresses';
 
   @override
-  String get myAccountEmailLabel => 'Email Address (Read-Only)';
+  String get myAccountEmailLabel => 'Email address';
 
   @override
   String get myAccountEmailHint => 'Your email address';
@@ -170,7 +170,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myAccountAddressesSub =>
-      'Save quick locations for faster booking (max 10).';
+      'Save quick locations for faster booking, max 10.';
 
   @override
   String get myAccountNewAddressLabel => 'New Address';
@@ -251,7 +251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigHoursHint => 'e.g. 8:00 AM - 10:00 PM';
 
   @override
-  String get ownerConfigRadiusLabel => 'Coverage Radius (KM)';
+  String get ownerConfigRadiusLabel => 'Coverage radius';
 
   @override
   String get ownerConfigRadiusHint => 'e.g. 25.0';
@@ -261,11 +261,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownerConfigAddressInvalid =>
-      'Enter a valid address (at least 3 characters).';
+      'Enter a valid address with at least 3 characters.';
 
   @override
   String get ownerConfigHoursInvalid =>
-      'Enter valid working hours (e.g. 8:00 AM - 10:00 PM).';
+      'Enter valid working hours, e.g. 8:00 AM - 10:00 PM.';
 
   @override
   String get scheduleTitle => 'Weekly Schedule';
@@ -325,7 +325,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get ownerConfigBasePriceLabel => 'Base Price (\$)';
+  String get ownerConfigBasePriceLabel => 'Base price';
 
   @override
   String get ownerConfigBasePriceHint => 'e.g. 10.00';
@@ -334,7 +334,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownerConfigBasePriceReq => 'Base price must be >= 0.';
 
   @override
-  String get ownerConfigPricePerKmLabel => 'Price per KM (\$)';
+  String get ownerConfigPricePerKmLabel => 'Price per km';
 
   @override
   String get ownerConfigPricePerKmHint => 'e.g. 1.50';
@@ -539,7 +539,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerMarketplaceFilterCategory => 'Category';
 
   @override
-  String get customerMarketplaceFilterRadius => 'Max Distance (KM)';
+  String get customerMarketplaceFilterRadius => 'Max distance';
+
+  @override
+  String get unitKm => 'km';
 
   @override
   String get customerMarketplaceChooseMap => 'Choose Location on Map';
@@ -613,10 +616,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsClear => 'Clear All';
 
   @override
-  String get walletTotalBalance => 'Total Balance';
+  String get walletTotalBalance => 'Total';
 
   @override
-  String get walletWithdrawable => 'Withdrawable';
+  String get walletWithdrawable => 'Available';
 
   @override
   String get ratingTitle => 'Rate Service';
@@ -631,7 +634,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationPickerConfirmBtn => 'Confirm Location';
 
   @override
-  String get locationNoteLabel => 'Landmark note (optional)';
+  String get locationNoteLabel => 'Landmark note · optional';
 
   @override
   String get locationNoteHint =>
@@ -894,7 +897,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsKycRowTitle => 'Identity Verification (KYC)';
+  String get settingsKycRowTitle => 'Identity verification';
 
   @override
   String get settingsKycSubtitleDefault =>
@@ -1145,7 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String employeeJobsConfirmCodMessage(String amount, String jobId) {
-    return 'Confirm you have physically collected the cash payment of \$$amount (COD) from the customer.\n\nThis will mark Job #$jobId as completed.';
+    return 'Confirm you have physically collected the cash payment of \$$amount from the customer.\n\nThis will mark Job #$jobId as completed.';
   }
 
   @override
@@ -1204,7 +1207,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planProfessionalPaid => 'Professional Paid Plan';
 
   @override
-  String get walletLockedEscrow => 'Locked (Escrow)';
+  String get walletLockedEscrow => 'Locked';
 
   @override
   String get walletTransactionLedger => 'Transaction Ledger';
@@ -1213,7 +1216,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walletNoTransactions => 'No transactions recorded yet.';
 
   @override
-  String get walletAmountCredits => 'Amount (Credits)';
+  String get walletAmountCredits => 'Amount';
 
   @override
   String get cancelJobReasonLabel => 'Cancellation Reason *';
@@ -1422,7 +1425,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ratingFeatureWindow => '24h Window';
 
   @override
-  String get privateFeedbackLabel => 'Private Feedback (Optional)';
+  String get privateFeedbackLabel => 'Private feedback · optional';
 
   @override
   String get loadingStatus => 'Loading status...';
@@ -1460,11 +1463,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get payoutAccountDetailsBankHint =>
-      'IBAN (e.g. EG123456789012345678901234567)';
+      'IBAN, e.g. EG123456789012345678901234567';
 
   @override
   String get payoutAccountDetailsInstapayHint =>
-      'InstaPay Mobile / Address (e.g. 01012345678)';
+      'InstaPay mobile number or address, e.g. 01012345678';
 
   @override
   String get payoutConfirmTitle => 'Confirm Payout Request';
@@ -1619,7 +1622,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estimatedTotalLabel => 'Estimated Total:';
 
   @override
-  String get codOptionTitle => 'Cash on Delivery (COD)';
+  String get codOptionTitle => 'Cash on delivery';
 
   @override
   String get codOptionSubtitle =>
@@ -1837,7 +1840,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get negotiationExpiredBanner =>
-      'Negotiation Window Expired (5-min limit lapsed)';
+      'Negotiation window expired, 5-minute limit lapsed';
 
   @override
   String get incomingProposalCard => 'Incoming Proposal';
@@ -1871,7 +1874,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String allowedBoundLine(String min, String max) {
-    return 'Allowed bound: $min – $max (±50%)';
+    return 'Allowed bound: $min – $max, ±50%';
   }
 
   @override
@@ -1889,11 +1892,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kycOwnerDocsSub =>
-      'Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof).';
+      'Owners must upload all 4 documents: identity card front, identity card back, selfie, business proof.';
 
   @override
   String get kycEmployeeDocsSub =>
-      'Employees must upload all 3 documents (ID Front, ID Back, Selfie).';
+      'Employees must upload all 3 documents: identity card front, identity card back, selfie.';
 
   @override
   String get profileInfoCardTitle => 'Profile Information';
@@ -2120,10 +2123,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get employeeSetActiveStatus => 'Set account to Active (Unfreeze)';
+  String get employeeSetActiveStatus => 'Account active';
 
   @override
-  String get employeeSetFrozenStatus => 'Set account to Frozen (Suspended)';
+  String get employeeSetFrozenStatus => 'Account frozen';
 
   @override
   String get stepInTransitTitle => 'In Transit';
@@ -2174,7 +2177,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subFreeFeatureRouting => 'Standard routing optimization';
 
   @override
-  String get subFreeFeatureCod => 'Cash on Delivery (COD) bookings';
+  String get subFreeFeatureCod => 'Cash on delivery bookings';
 
   @override
   String get subFreeFeatureSupport => 'Community support';
@@ -2362,27 +2365,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kycRejectedBanner =>
-      'Your document submission was rejected. Please review the reason below and re-upload the corrected document(s).';
+      'Your document submission was rejected. Please review the reason below and re-upload the corrected documents.';
 
   @override
   String get kycUploadAllBanner =>
       'Please upload all required verification documents below to complete identity verification.';
 
   @override
-  String get ownerKybTitle => 'Owner Verification (KYB)';
+  String get ownerKybTitle => 'Owner verification';
 
   @override
-  String get employeeKyeTitle => 'Employee Verification (KYE)';
+  String get employeeKyeTitle => 'Employee verification';
 
   @override
-  String get idFrontTitle => 'ID Card (Front)';
+  String get idFrontTitle => 'Identity card front';
 
   @override
   String get idFrontDesc =>
       'Clear photo of the front side of your National ID or Passport.';
 
   @override
-  String get idBackTitle => 'ID Card (Back)';
+  String get idBackTitle => 'Identity card back';
 
   @override
   String get idBackDesc => 'Clear photo of the back side of your National ID.';
@@ -2398,7 +2401,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get businessProofDesc =>
-      'Official commercial register or tax registration document (PDF, JPEG, or PNG).';
+      'Official commercial register or tax registration document in PDF, JPEG, or PNG format.';
 
   @override
   String get userProfileTitle => 'User Profile';
@@ -2621,12 +2624,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String fileSizeExceededError(String size) {
-    return 'File size exceeds maximum allowed size of 10MB (${size}MB).';
+    return 'File size exceeds maximum allowed size of 10MB, got ${size}MB.';
   }
 
   @override
   String documentOnFile(String filename) {
-    return 'Document on file ($filename)';
+    return 'Document on file: $filename';
   }
 
   @override
@@ -2652,7 +2655,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ticketSubmittedSuccess(String id) {
-    return 'Ticket submitted successfully! (Ticket ID: $id)';
+    return 'Ticket submitted successfully! Ticket ID: $id';
   }
 
   @override

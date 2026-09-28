@@ -486,6 +486,36 @@ Shared-widget notes (both additive, existing call sites unaffected):
 exposes `actionLabel`/`onAction` rendering a `SnackBarAction` mirroring the
 `showError` retry pattern.
 
+## 22. Label copy rules: no parens, sentence case, units in the input
+
+User-facing labels and hints never contain parentheses. Units and
+currency live in the input's `suffixText`/`prefixText` ("Coverage radius"
++ suffix "km"; "Base price" + prefix "$"), never in the label text.
+Optionality is expressed one consistent way — a trailing "· optional"
+in the label (`locationNoteLabel`, `privateFeedbackLabel`) — never
+"(Optional)". Read-only state is expressed with a lock icon plus helper
+text, never "(Read-Only)" (`my_account_screen.dart:441-459`: disabled
+email field with lock `prefixIcon` and `myAccountEmailNote` caption).
+Acronyms expand to plain words in labels ("Cash on delivery", "Identity
+verification"); the acronym may appear once in a helper/subtitle if
+users need it (`codOptionSubtitle`, `betaEscrowNote`). Labels and
+buttons use sentence case throughout (proper nouns and brand names like
+InstaPay keep their casing). Examples in hints use a comma, not
+"(e.g. ...)". Balance-strip and chip labels stay short enough not to
+truncate at 360dp (`walletTotalBalance` "Total", `walletWithdrawable`
+"Available", `walletLockedEscrow` "Locked", `balanceTrendChipMock`
+"+8.4%" — the longer predecessors overflowed the hero/strip rows with
+yellow/black stripes in the wallet goldens). Language-picker entries
+keep native endonyms with no parens (`langArabic` "عربي مصري",
+`langAuto` "System default" / "لغة الجهاز").
+
+Reference: F3 relabel pass (41 ARB keys rewritten EN + Egyptian-AR with
+exact key parity; `ThemedTextField` `prefixText`/`suffixText`
+passthrough; `unitKm` l10n key for the localizable "km"/"كم" suffix).
+Guarded by `test/arb_label_guard_test.dart` (paren ban outside an
+explicit — currently empty — allowlist, EN/AR key parity, inline-unit
+ban on unit labels).
+
 ## Completion (full 62-finding audit closed)
 
 Rules 1–4 came from audit group A (A1–A10); Rules 5–7 from audit group C

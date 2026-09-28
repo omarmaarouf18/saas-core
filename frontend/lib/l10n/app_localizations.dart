@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @langAuto.
   ///
   /// In en, this message translates to:
-  /// **'Auto (System)'**
+  /// **'System default'**
   String get langAuto;
 
   /// No description provided for @langEnglish.
@@ -197,7 +197,7 @@ abstract class AppLocalizations {
   /// No description provided for @langArabic.
   ///
   /// In en, this message translates to:
-  /// **'العربية (مصر)'**
+  /// **'عربي مصري'**
   String get langArabic;
 
   /// No description provided for @settingsTitle.
@@ -317,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @myAccountEmailLabel.
   ///
   /// In en, this message translates to:
-  /// **'Email Address (Read-Only)'**
+  /// **'Email address'**
   String get myAccountEmailLabel;
 
   /// No description provided for @myAccountEmailHint.
@@ -413,7 +413,7 @@ abstract class AppLocalizations {
   /// No description provided for @myAccountAddressesSub.
   ///
   /// In en, this message translates to:
-  /// **'Save quick locations for faster booking (max 10).'**
+  /// **'Save quick locations for faster booking, max 10.'**
   String get myAccountAddressesSub;
 
   /// No description provided for @myAccountNewAddressLabel.
@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerConfigRadiusLabel.
   ///
   /// In en, this message translates to:
-  /// **'Coverage Radius (KM)'**
+  /// **'Coverage radius'**
   String get ownerConfigRadiusLabel;
 
   /// No description provided for @ownerConfigRadiusHint.
@@ -587,13 +587,13 @@ abstract class AppLocalizations {
   /// No description provided for @ownerConfigAddressInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid address (at least 3 characters).'**
+  /// **'Enter a valid address with at least 3 characters.'**
   String get ownerConfigAddressInvalid;
 
   /// No description provided for @ownerConfigHoursInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter valid working hours (e.g. 8:00 AM - 10:00 PM).'**
+  /// **'Enter valid working hours, e.g. 8:00 AM - 10:00 PM.'**
   String get ownerConfigHoursInvalid;
 
   /// No description provided for @scheduleTitle.
@@ -707,7 +707,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerConfigBasePriceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Base Price (\$)'**
+  /// **'Base price'**
   String get ownerConfigBasePriceLabel;
 
   /// No description provided for @ownerConfigBasePriceHint.
@@ -725,7 +725,7 @@ abstract class AppLocalizations {
   /// No description provided for @ownerConfigPricePerKmLabel.
   ///
   /// In en, this message translates to:
-  /// **'Price per KM (\$)'**
+  /// **'Price per km'**
   String get ownerConfigPricePerKmLabel;
 
   /// No description provided for @ownerConfigPricePerKmHint.
@@ -1127,8 +1127,14 @@ abstract class AppLocalizations {
   /// No description provided for @customerMarketplaceFilterRadius.
   ///
   /// In en, this message translates to:
-  /// **'Max Distance (KM)'**
+  /// **'Max distance'**
   String get customerMarketplaceFilterRadius;
+
+  /// No description provided for @unitKm.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get unitKm;
 
   /// No description provided for @customerMarketplaceChooseMap.
   ///
@@ -1271,13 +1277,13 @@ abstract class AppLocalizations {
   /// No description provided for @walletTotalBalance.
   ///
   /// In en, this message translates to:
-  /// **'Total Balance'**
+  /// **'Total'**
   String get walletTotalBalance;
 
   /// No description provided for @walletWithdrawable.
   ///
   /// In en, this message translates to:
-  /// **'Withdrawable'**
+  /// **'Available'**
   String get walletWithdrawable;
 
   /// No description provided for @ratingTitle.
@@ -1307,7 +1313,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationNoteLabel.
   ///
   /// In en, this message translates to:
-  /// **'Landmark note (optional)'**
+  /// **'Landmark note · optional'**
   String get locationNoteLabel;
 
   /// No description provided for @locationNoteHint.
@@ -1746,7 +1752,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsKycRowTitle.
   ///
   /// In en, this message translates to:
-  /// **'Identity Verification (KYC)'**
+  /// **'Identity verification'**
   String get settingsKycRowTitle;
 
   /// No description provided for @settingsKycSubtitleDefault.
@@ -2172,7 +2178,7 @@ abstract class AppLocalizations {
   /// No description provided for @employeeJobsConfirmCodMessage.
   ///
   /// In en, this message translates to:
-  /// **'Confirm you have physically collected the cash payment of \${amount} (COD) from the customer.\n\nThis will mark Job #{jobId} as completed.'**
+  /// **'Confirm you have physically collected the cash payment of \${amount} from the customer.\n\nThis will mark Job #{jobId} as completed.'**
   String employeeJobsConfirmCodMessage(String amount, String jobId);
 
   /// No description provided for @employeeJobsConfirmNonCodMessage.
@@ -2274,7 +2280,7 @@ abstract class AppLocalizations {
   /// No description provided for @walletLockedEscrow.
   ///
   /// In en, this message translates to:
-  /// **'Locked (Escrow)'**
+  /// **'Locked'**
   String get walletLockedEscrow;
 
   /// No description provided for @walletTransactionLedger.
@@ -2292,7 +2298,7 @@ abstract class AppLocalizations {
   /// No description provided for @walletAmountCredits.
   ///
   /// In en, this message translates to:
-  /// **'Amount (Credits)'**
+  /// **'Amount'**
   String get walletAmountCredits;
 
   /// No description provided for @cancelJobReasonLabel.
@@ -2688,7 +2694,7 @@ abstract class AppLocalizations {
   /// No description provided for @privateFeedbackLabel.
   ///
   /// In en, this message translates to:
-  /// **'Private Feedback (Optional)'**
+  /// **'Private feedback · optional'**
   String get privateFeedbackLabel;
 
   /// No description provided for @loadingStatus.
@@ -2760,13 +2766,13 @@ abstract class AppLocalizations {
   /// No description provided for @payoutAccountDetailsBankHint.
   ///
   /// In en, this message translates to:
-  /// **'IBAN (e.g. EG123456789012345678901234567)'**
+  /// **'IBAN, e.g. EG123456789012345678901234567'**
   String get payoutAccountDetailsBankHint;
 
   /// No description provided for @payoutAccountDetailsInstapayHint.
   ///
   /// In en, this message translates to:
-  /// **'InstaPay Mobile / Address (e.g. 01012345678)'**
+  /// **'InstaPay mobile number or address, e.g. 01012345678'**
   String get payoutAccountDetailsInstapayHint;
 
   /// No description provided for @payoutConfirmTitle.
@@ -3024,7 +3030,7 @@ abstract class AppLocalizations {
   /// No description provided for @codOptionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Cash on Delivery (COD)'**
+  /// **'Cash on delivery'**
   String get codOptionTitle;
 
   /// No description provided for @codOptionSubtitle.
@@ -3420,7 +3426,7 @@ abstract class AppLocalizations {
   /// No description provided for @negotiationExpiredBanner.
   ///
   /// In en, this message translates to:
-  /// **'Negotiation Window Expired (5-min limit lapsed)'**
+  /// **'Negotiation window expired, 5-minute limit lapsed'**
   String get negotiationExpiredBanner;
 
   /// No description provided for @incomingProposalCard.
@@ -3480,7 +3486,7 @@ abstract class AppLocalizations {
   /// No description provided for @allowedBoundLine.
   ///
   /// In en, this message translates to:
-  /// **'Allowed bound: {min} – {max} (±50%)'**
+  /// **'Allowed bound: {min} – {max}, ±50%'**
   String allowedBoundLine(String min, String max);
 
   /// No description provided for @verificationStatusCardTitle.
@@ -3510,13 +3516,13 @@ abstract class AppLocalizations {
   /// No description provided for @kycOwnerDocsSub.
   ///
   /// In en, this message translates to:
-  /// **'Owners must upload all 4 documents (ID Front, ID Back, Selfie, Business Proof).'**
+  /// **'Owners must upload all 4 documents: identity card front, identity card back, selfie, business proof.'**
   String get kycOwnerDocsSub;
 
   /// No description provided for @kycEmployeeDocsSub.
   ///
   /// In en, this message translates to:
-  /// **'Employees must upload all 3 documents (ID Front, ID Back, Selfie).'**
+  /// **'Employees must upload all 3 documents: identity card front, identity card back, selfie.'**
   String get kycEmployeeDocsSub;
 
   /// No description provided for @profileInfoCardTitle.
@@ -3894,13 +3900,13 @@ abstract class AppLocalizations {
   /// No description provided for @employeeSetActiveStatus.
   ///
   /// In en, this message translates to:
-  /// **'Set account to Active (Unfreeze)'**
+  /// **'Account active'**
   String get employeeSetActiveStatus;
 
   /// No description provided for @employeeSetFrozenStatus.
   ///
   /// In en, this message translates to:
-  /// **'Set account to Frozen (Suspended)'**
+  /// **'Account frozen'**
   String get employeeSetFrozenStatus;
 
   /// No description provided for @stepInTransitTitle.
@@ -4002,7 +4008,7 @@ abstract class AppLocalizations {
   /// No description provided for @subFreeFeatureCod.
   ///
   /// In en, this message translates to:
-  /// **'Cash on Delivery (COD) bookings'**
+  /// **'Cash on delivery bookings'**
   String get subFreeFeatureCod;
 
   /// No description provided for @subFreeFeatureSupport.
@@ -4332,7 +4338,7 @@ abstract class AppLocalizations {
   /// No description provided for @kycRejectedBanner.
   ///
   /// In en, this message translates to:
-  /// **'Your document submission was rejected. Please review the reason below and re-upload the corrected document(s).'**
+  /// **'Your document submission was rejected. Please review the reason below and re-upload the corrected documents.'**
   String get kycRejectedBanner;
 
   /// No description provided for @kycUploadAllBanner.
@@ -4344,19 +4350,19 @@ abstract class AppLocalizations {
   /// No description provided for @ownerKybTitle.
   ///
   /// In en, this message translates to:
-  /// **'Owner Verification (KYB)'**
+  /// **'Owner verification'**
   String get ownerKybTitle;
 
   /// No description provided for @employeeKyeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Employee Verification (KYE)'**
+  /// **'Employee verification'**
   String get employeeKyeTitle;
 
   /// No description provided for @idFrontTitle.
   ///
   /// In en, this message translates to:
-  /// **'ID Card (Front)'**
+  /// **'Identity card front'**
   String get idFrontTitle;
 
   /// No description provided for @idFrontDesc.
@@ -4368,7 +4374,7 @@ abstract class AppLocalizations {
   /// No description provided for @idBackTitle.
   ///
   /// In en, this message translates to:
-  /// **'ID Card (Back)'**
+  /// **'Identity card back'**
   String get idBackTitle;
 
   /// No description provided for @idBackDesc.
@@ -4398,7 +4404,7 @@ abstract class AppLocalizations {
   /// No description provided for @businessProofDesc.
   ///
   /// In en, this message translates to:
-  /// **'Official commercial register or tax registration document (PDF, JPEG, or PNG).'**
+  /// **'Official commercial register or tax registration document in PDF, JPEG, or PNG format.'**
   String get businessProofDesc;
 
   /// No description provided for @userProfileTitle.
@@ -4788,13 +4794,13 @@ abstract class AppLocalizations {
   /// Validation error when uploaded file is larger than 10MB
   ///
   /// In en, this message translates to:
-  /// **'File size exceeds maximum allowed size of 10MB ({size}MB).'**
+  /// **'File size exceeds maximum allowed size of 10MB, got {size}MB.'**
   String fileSizeExceededError(String size);
 
   /// Indicator that a document is already uploaded and on file
   ///
   /// In en, this message translates to:
-  /// **'Document on file ({filename})'**
+  /// **'Document on file: {filename}'**
   String documentOnFile(String filename);
 
   /// No description provided for @notificationsJobsTag.
@@ -4842,7 +4848,7 @@ abstract class AppLocalizations {
   /// Success notification when a support ticket is created
   ///
   /// In en, this message translates to:
-  /// **'Ticket submitted successfully! (Ticket ID: {id})'**
+  /// **'Ticket submitted successfully! Ticket ID: {id}'**
   String ticketSubmittedSuccess(String id);
 
   /// No description provided for @estimatedPriceCourierNotice.

@@ -218,9 +218,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Owner role displays 4 slots
-    expect(find.text('Owner Verification (KYB)'), findsOneWidget);
-    expect(find.text('ID Card (Front)'), findsOneWidget);
-    expect(find.text('ID Card (Back)'), findsOneWidget);
+    expect(find.text('Owner verification'), findsOneWidget);
+    expect(find.text('Identity card front'), findsOneWidget);
+    expect(find.text('Identity card back'), findsOneWidget);
     expect(find.text('Selfie Photo'), findsOneWidget);
     expect(find.text('Business Proof / Commercial Register'), findsOneWidget);
     expect(find.text('Upload Document'), findsNWidgets(4));
@@ -229,9 +229,9 @@ void main() {
     mockAuth.setMockUser(employeeUser);
     await tester.pumpAndSettle();
 
-    expect(find.text('Employee Verification (KYE)'), findsOneWidget);
-    expect(find.text('ID Card (Front)'), findsOneWidget);
-    expect(find.text('ID Card (Back)'), findsOneWidget);
+    expect(find.text('Employee verification'), findsOneWidget);
+    expect(find.text('Identity card front'), findsOneWidget);
+    expect(find.text('Identity card back'), findsOneWidget);
     expect(find.text('Selfie Photo'), findsOneWidget);
     expect(find.text('Business Proof / Commercial Register'), findsNothing);
     expect(find.text('Upload Document'), findsNWidgets(3));
@@ -338,7 +338,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Tap Upload Document for ID Card (Front) - the first button
+    // Tap Upload Document for Identity card front - the first button
     await tester.tap(find.text('Upload Document').first);
     await tester.pumpAndSettle();
 

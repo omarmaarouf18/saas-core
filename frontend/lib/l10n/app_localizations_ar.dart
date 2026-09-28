@@ -51,13 +51,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get themeSystem => 'حسب الجهاز';
 
   @override
-  String get langAuto => 'تلقائي (حسب الجهاز)';
+  String get langAuto => 'لغة الجهاز';
 
   @override
   String get langEnglish => 'English';
 
   @override
-  String get langArabic => 'العربية (مصر)';
+  String get langArabic => 'عربي مصري';
 
   @override
   String get settingsTitle => 'الإعدادات';
@@ -117,7 +117,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myAccountHeaderSub => 'إدارة بياناتك الشخصية والعناوين المحفوظة';
 
   @override
-  String get myAccountEmailLabel => 'البريد الإلكتروني (للعرض فقط)';
+  String get myAccountEmailLabel => 'البريد الإلكتروني';
 
   @override
   String get myAccountEmailHint => 'الإيميل بتاعك';
@@ -168,7 +168,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get myAccountAddressesSub =>
-      'احفظ عناوينك السريعة لسهولة الطلب (حد أقصى 10).';
+      'احفظ عناوينك السريعة لسهولة الطلب، بحد أقصى 10.';
 
   @override
   String get myAccountNewAddressLabel => 'عنوان جديد';
@@ -248,7 +248,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownerConfigHoursHint => 'مثلاً: 8 صباحاً - 10 مساءً';
 
   @override
-  String get ownerConfigRadiusLabel => 'نطاق التغطية (كيلومتر)';
+  String get ownerConfigRadiusLabel => 'نطاق التغطية';
 
   @override
   String get ownerConfigRadiusHint => 'مثلاً: 25.0';
@@ -258,11 +258,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownerConfigAddressInvalid =>
-      'أدخل عنواناً صالحاً (3 أحرف على الأقل).';
+      'أدخل عنواناً صالحاً لا يقل عن 3 أحرف.';
 
   @override
   String get ownerConfigHoursInvalid =>
-      'أدخل مواعيد عمل صالحة (مثلاً: 8 صباحاً - 10 مساءً).';
+      'أدخل مواعيد عمل صالحة، مثلاً: 8 صباحاً - 10 مساءً.';
 
   @override
   String get scheduleTitle => 'مواعيد الأسبوع';
@@ -322,7 +322,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get ownerConfigBasePriceLabel => 'الفتح / السعر الأساسي (\$)';
+  String get ownerConfigBasePriceLabel => 'السعر الأساسي';
 
   @override
   String get ownerConfigBasePriceHint => 'مثلاً: 10.00';
@@ -332,7 +332,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'السعر الأساسي لازم يكون أكبر من أو يساوي 0.';
 
   @override
-  String get ownerConfigPricePerKmLabel => 'سعر الكيلومتر (\$)';
+  String get ownerConfigPricePerKmLabel => 'سعر الكيلومتر';
 
   @override
   String get ownerConfigPricePerKmHint => 'مثلاً: 1.50';
@@ -412,7 +412,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signupUsernameHint => 'johndoe';
 
   @override
-  String get signupUsernameReq => 'لازم تكتب اسم المستخدم (من 3 لـ 30 حرف).';
+  String get signupUsernameReq => 'لازم تكتب اسم المستخدم من 3 لـ 30 حرف.';
 
   @override
   String get signupEmailLabel => 'البريد الإلكتروني';
@@ -537,7 +537,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerMarketplaceFilterCategory => 'القسم';
 
   @override
-  String get customerMarketplaceFilterRadius => 'أقصى مسافة (كم)';
+  String get customerMarketplaceFilterRadius => 'أقصى مسافة';
+
+  @override
+  String get unitKm => 'كم';
 
   @override
   String get customerMarketplaceChooseMap => 'حدد المكان على الخريطة';
@@ -610,10 +613,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationsClear => 'مسح الكل';
 
   @override
-  String get walletTotalBalance => 'إجمالي الرصيد';
+  String get walletTotalBalance => 'الإجمالي';
 
   @override
-  String get walletWithdrawable => 'القابل للسحب';
+  String get walletWithdrawable => 'للسحب';
 
   @override
   String get ratingTitle => 'تقييم الخدمة';
@@ -628,7 +631,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationPickerConfirmBtn => 'تأكيد الموقع';
 
   @override
-  String get locationNoteLabel => 'علامة مميزة (اختياري)';
+  String get locationNoteLabel => 'علامة مميزة · اختياري';
 
   @override
   String get locationNoteHint =>
@@ -885,7 +888,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get settingsKycRowTitle => 'تأكيد الهوية (KYC)';
+  String get settingsKycRowTitle => 'تأكيد الهوية';
 
   @override
   String get settingsKycSubtitleDefault => 'أكد هويتك وارفع مستندات حسابك';
@@ -1190,7 +1193,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planProfessionalPaid => 'الباقة الاحترافية المدفوعة';
 
   @override
-  String get walletLockedEscrow => 'المحجوز (الضمان)';
+  String get walletLockedEscrow => 'المحجوز';
 
   @override
   String get walletTransactionLedger => 'سجل المعاملات';
@@ -1199,7 +1202,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletNoTransactions => 'لا توجد معاملات مسجلة حتى الآن.';
 
   @override
-  String get walletAmountCredits => 'المبلغ (الرصيد)';
+  String get walletAmountCredits => 'المبلغ';
 
   @override
   String get cancelJobReasonLabel => 'سبب الإلغاء *';
@@ -1406,7 +1409,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ratingFeatureWindow => 'مهلة 24 ساعة';
 
   @override
-  String get privateFeedbackLabel => 'ملاحظة خاصة (اختياري)';
+  String get privateFeedbackLabel => 'ملاحظة خاصة · اختياري';
 
   @override
   String get loadingStatus => 'جاري تحميل الحالة...';
@@ -1600,7 +1603,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get estimatedTotalLabel => 'الإجمالي التقديري:';
 
   @override
-  String get codOptionTitle => 'الدفع عند الاستلام (كاش)';
+  String get codOptionTitle => 'الدفع عند الاستلام كاش';
 
   @override
   String get codOptionSubtitle => 'ادفع كاش للسايق مباشرة لما يوصلك';
@@ -1702,7 +1705,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String devOtpAutoFilled(String otp) {
-    return 'وضع التجربة: كود التحقق ($otp) اتضاف تلقائيًا.';
+    return 'وضع التجربة: كود التحقق $otp اتضاف تلقائيًا.';
   }
 
   @override
@@ -1814,7 +1817,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get negotiationExpiredBanner => 'مهلة التفاوض خلصت (عدّت 5 دقايق)';
+  String get negotiationExpiredBanner => 'مهلة التفاوض خلصت، عدّت 5 دقايق';
 
   @override
   String get incomingProposalCard => 'عرض واصل من الطرف التاني';
@@ -1847,7 +1850,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String allowedBoundLine(String min, String max) {
-    return 'الحدود المسموحة: $min – $max (±50%)';
+    return 'الحدود المسموحة: $min – $max، ±50%';
   }
 
   @override
@@ -1864,11 +1867,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kycOwnerDocsSub =>
-      'الملاك لازم يرفعوا الـ4 مستندات (هوية وش، هية ضهر، سيلفي، سجل تجاري).';
+      'الملاك لازم يرفعوا الـ4 مستندات: وش البطاقة، ضهر البطاقة، سيلفي، سجل تجاري.';
 
   @override
   String get kycEmployeeDocsSub =>
-      'الموظفين لازم يرفعوا الـ3 مستندات (هوية وش، هية ضهر، سيلفي).';
+      'الموظفين لازم يرفعوا الـ3 مستندات: وش البطاقة، ضهر البطاقة، سيلفي.';
 
   @override
   String get profileInfoCardTitle => 'بيانات الحساب';
@@ -2056,7 +2059,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String otpSentToEmail(String email) {
-    return 'اكتب كود التحقق (6 أرقام) اللي اتبعت على $email.';
+    return 'اكتب كود التحقق المكوّن من 6 أرقام اللي اتبعت على $email.';
   }
 
   @override
@@ -2087,10 +2090,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get employeeSetActiveStatus => 'تحويل الحساب لنشط (فك التجميد)';
+  String get employeeSetActiveStatus => 'الحساب نشط';
 
   @override
-  String get employeeSetFrozenStatus => 'تحويل الحساب لمجمّد (موقوف)';
+  String get employeeSetFrozenStatus => 'الحساب مجمّد';
 
   @override
   String get stepInTransitTitle => 'في الطريق';
@@ -2141,7 +2144,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subFreeFeatureRouting => 'تحسين مسارات قياسي';
 
   @override
-  String get subFreeFeatureCod => 'حجوزات دفع عند الاستلام (كاش)';
+  String get subFreeFeatureCod => 'حجوزات الدفع كاش عند الاستلام';
 
   @override
   String get subFreeFeatureSupport => 'دعم من المجتمع';
@@ -2332,20 +2335,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'من فضلك ارفع كل مستندات التحقق المطلوبة أدناه لإكمال توثيق الهوية.';
 
   @override
-  String get ownerKybTitle => 'توثيق النشاط التجاري (KYB)';
+  String get ownerKybTitle => 'توثيق النشاط التجاري';
 
   @override
-  String get employeeKyeTitle => 'توثيق الموظف (KYE)';
+  String get employeeKyeTitle => 'توثيق الموظف';
 
   @override
-  String get idFrontTitle => 'بطاقة الهوية (الوجه)';
+  String get idFrontTitle => 'وجه بطاقة الهوية';
 
   @override
   String get idFrontDesc =>
       'صورة واضحة للوجه الأمامي من بطاقة الهوية أو جواز السفر.';
 
   @override
-  String get idBackTitle => 'بطاقة الهوية (الظهر)';
+  String get idBackTitle => 'ضهر بطاقة الهوية';
 
   @override
   String get idBackDesc => 'صورة واضحة للوجه الخلفي من بطاقة الهوية.';
@@ -2361,7 +2364,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get businessProofDesc =>
-      'سجل تجاري رسمي أو مستند ضريبي (PDF أو JPEG أو PNG).';
+      'سجل تجاري رسمي أو مستند ضريبي بصيغة PDF أو JPEG أو PNG.';
 
   @override
   String get userProfileTitle => 'الملف الشخصي';
@@ -2580,12 +2583,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String fileSizeExceededError(String size) {
-    return 'حجم الملف يتجاوز الحد الأقصى المسموح به 10 ميجابايت ($size ميجابايت).';
+    return 'حجم الملف يتجاوز الحد الأقصى المسموح به 10 ميجابايت، حجم ملفك $size ميجابايت.';
   }
 
   @override
   String documentOnFile(String filename) {
-    return 'المستند مسجل ($filename)';
+    return 'المستند مسجل: $filename';
   }
 
   @override
@@ -2611,7 +2614,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String ticketSubmittedSuccess(String id) {
-    return 'تم إرسال التذكرة بنجاح! (رقم التذكرة: $id)';
+    return 'تم إرسال التذكرة بنجاح! رقم التذكرة: $id';
   }
 
   @override
@@ -2757,7 +2760,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSecuritySub => 'المصادقة الثنائية وحماية تسجيل الدخول';
 
   @override
-  String get settingsTwoFactorAuth => 'المصادقة الثنائية (2FA)';
+  String get settingsTwoFactorAuth => 'المصادقة الثنائية';
 
   @override
   String get settingsTwoFactorAuthSub =>

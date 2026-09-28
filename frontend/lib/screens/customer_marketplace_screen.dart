@@ -431,6 +431,7 @@ class CustomerMarketplaceScreenState extends State<CustomerMarketplaceScreen> {
                     ThemedTextField(
                       controller: _radiusController,
                       labelText: l10n.customerMarketplaceFilterRadius,
+                      suffixText: l10n.unitKm,
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: AppSpacing.lg),

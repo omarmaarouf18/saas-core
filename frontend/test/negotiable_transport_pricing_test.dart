@@ -363,7 +363,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('negotiation_expired_banner')), findsOneWidget);
-    expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
+    expect(find.text('Negotiation window expired, 5-minute limit lapsed'),
         findsOneWidget);
   });
 }

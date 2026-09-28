@@ -533,7 +533,7 @@ void main() {
     // 2. Warning banner must be present
     final bannerFinder = find.byKey(const Key('owner_config_kyc_banner'));
     expect(bannerFinder, findsOneWidget);
-    expect(find.text('Identity Verification (KYC)'), findsOneWidget);
+    expect(find.text('Identity verification'), findsOneWidget);
 
     // 3. Tapping banner must navigate to KycDocumentUploadScreen
     await tester.ensureVisible(bannerFinder);

@@ -496,7 +496,7 @@ void main() {
     expect(find.text('Confirm Cash Collection & Complete'), findsOneWidget);
     expect(
       find.textContaining(
-          'Confirm you have physically collected the cash payment of \$25.50 (COD) from the customer.'),
+          'Confirm you have physically collected the cash payment of \$25.50 from the customer.'),
       findsOneWidget,
     );
     expect(find.text('Confirm Cash Collected & Complete'), findsOneWidget);
@@ -614,7 +614,7 @@ void main() {
 
     expect(find.byKey(const Key('complete_job_button_job-awaiting-price-005')),
         findsNothing);
-    expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
+    expect(find.text('Negotiation window expired, 5-minute limit lapsed'),
         findsOneWidget);
   });
 
@@ -775,7 +775,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Existing expired-copy state, not a clock.
-    expect(find.text('Negotiation Window Expired (5-min limit lapsed)'),
+    expect(find.text('Negotiation window expired, 5-minute limit lapsed'),
         findsOneWidget);
     final acceptBtn =
         find.byKey(const Key('employee_price_accept_job-awaiting-price-005'));
