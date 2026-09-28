@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -122,6 +123,18 @@ func Load() (*Config, error) {
 	resendFromEmail := os.Getenv("RESEND_FROM_EMAIL")
 	if resendAPIKey != "" && resendFromEmail == "" {
 		return nil, errors.New("config: RESEND_FROM_EMAIL is required when RESEND_API_KEY is set")
+	}
+
+	// A5: production-shaped config must never run with isLocal. CloudWatch
+	// shipping is wired only in the production compose file (staging and
+	// local dev never set CLOUDWATCH_LOG_GROUP), so APP_ENV=local together
+	// with a log group means a production-observed instance would serve
+	// dev_otp in API responses. Refuse to start; staging is unaffected.
+	// (Secret-value sniffing was rejected as the signal: staging itself
+	// runs local with real secrets by design, so no secret shape can
+	// distinguish it from a production misconfiguration.)
+	if strings.EqualFold(appEnv, "local") && os.Getenv("CLOUDWATCH_LOG_GROUP") != "" {
+		return nil, errors.New("config: refusing to start with APP_ENV=local while CLOUDWATCH_LOG_GROUP is set (production telemetry and dev_otp exposure are mutually exclusive)")
 	}
 
 	return &Config{

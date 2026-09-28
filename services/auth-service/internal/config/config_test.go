@@ -181,3 +181,66 @@ func TestLoad_MongoDatabaseDefaults(t *testing.T) {
 		t.Errorf("expected MongoDatabase to be 'custom_auth_db', got %q", cfg.MongoDatabase)
 	}
 }
+
+func TestLoad_RefusesLocalWithCloudWatch(t *testing.T) {
+	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
+	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
+	os.Setenv("TLS_CERT_PATH", "dummy-cert")
+	os.Setenv("TLS_KEY_PATH", "dummy-key")
+	os.Setenv("TLS_CA_PATH", "dummy-ca")
+	os.Setenv("REDIS_URI", "redis://localhost:6379")
+	os.Setenv("APP_ENV", "local")
+	os.Setenv("CLOUDWATCH_LOG_GROUP", "prod-log-group")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("GATEWAY_SECRET")
+		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
+		os.Unsetenv("TLS_CERT_PATH")
+		os.Unsetenv("TLS_KEY_PATH")
+		os.Unsetenv("TLS_CA_PATH")
+		os.Unsetenv("REDIS_URI")
+		os.Unsetenv("APP_ENV")
+		os.Unsetenv("CLOUDWATCH_LOG_GROUP")
+	}()
+
+	if _, err := config.Load(); err == nil {
+		t.Fatalf("expected Load to refuse local + CloudWatch, got nil error")
+	} else if !strings.Contains(err.Error(), "CLOUDWATCH_LOG_GROUP") {
+		t.Fatalf("expected CloudWatch refusal, got: %v", err)
+	}
+}
+
+func TestLoad_AllowsLocalWithoutCloudWatch(t *testing.T) {
+	os.Setenv("JWT_SECRET", "dummy-jwt-secret")
+	os.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+	os.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
+	os.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
+	os.Setenv("TLS_CERT_PATH", "dummy-cert")
+	os.Setenv("TLS_KEY_PATH", "dummy-key")
+	os.Setenv("TLS_CA_PATH", "dummy-ca")
+	os.Setenv("REDIS_URI", "redis://localhost:6379")
+	os.Setenv("APP_ENV", "local")
+	os.Unsetenv("CLOUDWATCH_LOG_GROUP")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("DOCUMENT_SIGNING_SECRET")
+		os.Unsetenv("GATEWAY_SECRET")
+		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
+		os.Unsetenv("TLS_CERT_PATH")
+		os.Unsetenv("TLS_KEY_PATH")
+		os.Unsetenv("TLS_CA_PATH")
+		os.Unsetenv("REDIS_URI")
+		os.Unsetenv("APP_ENV")
+	}()
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("local without CloudWatch (staging shape) must start, got: %v", err)
+	}
+	if cfg.AppEnv != "local" {
+		t.Errorf("expected AppEnv local, got %q", cfg.AppEnv)
+	}
+}
