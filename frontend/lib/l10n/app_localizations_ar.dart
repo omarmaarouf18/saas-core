@@ -638,9 +638,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'مثلاً: جنب كشك عم أحمد، الدور التالت — عشان السواق يوصلك بسهولة';
 
   @override
-  String get addDestinationNoteBtn => 'ضيف علامة مميزة';
-
-  @override
   String get ticketSubjectReq => 'عنوان التذكرة مطلوب.';
 
   @override

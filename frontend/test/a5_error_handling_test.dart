@@ -182,6 +182,11 @@ void main() {
           scrollable: find.byType(Scrollable).first);
       await tester.tap(bookBtn);
       await tester.pumpAndSettle();
+      // F4: the taller pickup preview pushes the destination action below
+      // the fold — scroll it into view before tapping.
+      await tester
+          .ensureVisible(find.byKey(const Key('choose_destination_button')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('choose_destination_button')));
       await tester.pumpAndSettle();
       await tester

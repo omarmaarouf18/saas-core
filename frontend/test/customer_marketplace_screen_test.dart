@@ -422,6 +422,8 @@ void main() {
     // Open destination picker
     final chooseDestBtn = find.byKey(const Key('choose_destination_button'));
     expect(chooseDestBtn, findsOneWidget);
+    await tester.ensureVisible(chooseDestBtn);
+    await tester.pumpAndSettle();
     await tester.tap(chooseDestBtn);
     await tester.pumpAndSettle();
 
@@ -829,6 +831,9 @@ void main() {
     expect(find.text('Confirm Booking'), findsOneWidget);
 
     // Destination picker carries the optional note field ...
+    await tester
+        .ensureVisible(find.byKey(const Key('choose_destination_button')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('choose_destination_button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('destination_location_picker_dialog')),
@@ -869,7 +874,7 @@ void main() {
   });
 
   testWidgets(
-      'Option C: destination without note shows mini-map plus add affordance',
+      'F4: destination without note shows mini-map with a single Change action',
       (WidgetTester tester) async {
     final customerUser = UserProfile(
       id: 'cust-1',
@@ -903,24 +908,35 @@ void main() {
     await tester.pumpAndSettle();
 
     // Pick destination WITHOUT typing a note.
+    await tester
+        .ensureVisible(find.byKey(const Key('choose_destination_button')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('choose_destination_button')));
     await tester.pumpAndSettle();
     await tester
         .tap(find.byKey(const Key('confirm_destination_location_button')));
     await tester.pumpAndSettle();
 
-    // Spatial preview beats raw numbers; add-note affordance offered.
+    // Pickup block: spatial preview, never bare coordinates, one control.
+    expect(find.byKey(const Key('booking_pickup_minimap')), findsOneWidget);
+    expect(find.byKey(const Key('booking_pickup_coords_text')), findsNothing);
+    expect(find.byKey(const Key('choose_pickup_button')), findsOneWidget);
+    expect(find.byKey(const Key('use_current_location_pickup_button')),
+        findsNothing);
+
+    // Spatial preview beats raw numbers; note editing lives inside the
+    // picker, so the second button is gone and one control remains.
     expect(
         find.byKey(const Key('booking_destination_minimap')), findsOneWidget);
     expect(
         find.byKey(const Key('booking_destination_coords_text')), findsNothing);
-    expect(
-        find.byKey(const Key('add_destination_note_button')), findsOneWidget);
+    expect(find.byKey(const Key('add_destination_note_button')), findsNothing);
+    expect(find.byKey(const Key('choose_destination_button')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'Use-current-location opens the picker pre-centered on the GPS fix instead of silently applying',
+      'F4: current location flows through the picker FAB, never applied silently',
       (WidgetTester tester) async {
     final customerUser = UserProfile(
       id: 'cust-1',
@@ -953,8 +969,22 @@ void main() {
     await tester.tap(find.text('Book'));
     await tester.pumpAndSettle();
 
-    // Pickup starts at the screen-level fix (31.2001, 29.9187).
-    expect(find.text('31.2001, 29.9187'), findsOneWidget);
+    // Pickup starts at the screen-level fix: mini-map preview, and the
+    // standalone current-location button is gone (one intent, one control).
+    expect(find.byKey(const Key('booking_pickup_minimap')), findsOneWidget);
+    expect(find.byKey(const Key('use_current_location_pickup_button')),
+        findsNothing);
+
+    // The single Change action opens the picker at the current pickup.
+    await tester.ensureVisible(find.byKey(const Key('choose_pickup_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('choose_pickup_button')));
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const Key('pickup_location_picker_dialog')), findsOneWidget);
+    var dialog =
+        tester.widget<LocationPickerDialog>(find.byType(LocationPickerDialog));
+    expect(dialog.initialLocation, const LatLng(31.2001, 29.9187));
 
     // Fresh GPS fix, deliberately different from the current pickup.
     mockGeolocator.mockPosition = Position(
@@ -970,18 +1000,15 @@ void main() {
       speedAccuracy: 0,
     );
 
-    await tester
-        .tap(find.byKey(const Key('use_current_location_pickup_button')));
+    // The picker's own current-location FAB re-centers the pending
+    // selection (same permission/error path as before, now single-sourced).
+    await tester.tap(find.byKey(const Key('use_current_location_button')));
     await tester.pumpAndSettle();
 
-    // The SAME picker-and-confirm flow as manual placement opens...
+    // Still no silent apply: the dialog stays open with the GPS fix staged,
+    // and the card behind it still shows the old preview.
     expect(
         find.byKey(const Key('pickup_location_picker_dialog')), findsOneWidget);
-    final dialog =
-        tester.widget<LocationPickerDialog>(find.byType(LocationPickerDialog));
-    expect(dialog.initialLocation, const LatLng(30.1, 31.1));
-    // ...but nothing was applied yet: the old coords still stand behind
-    // the dialog (no silent bypass).
     expect(find.text('31.2001, 29.9187'), findsOneWidget);
 
     // Explicit Confirm applies the fix (adjustable in between).
@@ -990,12 +1017,17 @@ void main() {
 
     expect(
         find.byKey(const Key('pickup_location_picker_dialog')), findsNothing);
+    expect(find.byKey(const Key('booking_pickup_minimap')), findsOneWidget);
+    // The staged GPS fix landed: the preview caption carries it
+    // (re-opening the picker here would race the 600ms tap debounce, so
+    // the user-visible caption is the assertion, not a second open).
     expect(find.text('30.1000, 31.1000'), findsOneWidget);
+    expect(find.text('31.2001, 29.9187'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-      'Use-current-location permission-denied keeps the old error path (snackbar, no dialog)',
+      'F4: picker FAB permission-denied keeps the error path and applies nothing',
       (WidgetTester tester) async {
     mockGeolocator.initialPermission = LocationPermission.denied;
     mockGeolocator.requestedPermission = LocationPermission.denied;
@@ -1031,15 +1063,32 @@ void main() {
     await tester.tap(find.text('Book'));
     await tester.pumpAndSettle();
 
-    await tester
-        .tap(find.byKey(const Key('use_current_location_pickup_button')));
+    // Single entry into the picker.
+    await tester.ensureVisible(find.byKey(const Key('choose_pickup_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('choose_pickup_button')));
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const Key('pickup_location_picker_dialog')), findsOneWidget);
+
+    // Denied permission surfaces the unchanged snackbar; the pending
+    // selection is untouched and the dialog stays open.
+    await tester.tap(find.byKey(const Key('use_current_location_button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Location permission denied. Defaulting to Cairo.'),
         findsOneWidget);
     expect(
-        find.byKey(const Key('pickup_location_picker_dialog')), findsNothing);
+        find.byKey(const Key('pickup_location_picker_dialog')), findsOneWidget);
+
+    // Confirming now applies the pre-denial selection (denied permission
+    // keeps the Cairo default screen fix), proving nothing was staged
+    // behind the snackbar.
+    await tester.tap(find.byKey(const Key('confirm_pickup_location_button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('booking_pickup_minimap')), findsOneWidget);
+    expect(find.text('30.0444, 31.2357'), findsOneWidget);
     await tester.pumpAndSettle();
   });
 }

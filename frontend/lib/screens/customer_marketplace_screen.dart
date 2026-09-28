@@ -748,10 +748,6 @@ class _BookingDialogState extends State<_BookingDialog> {
   String _destinationNote = '';
   double? _tripDistanceKM;
   double? _estimatedPrice;
-  // Current-location fetch in flight (disables the button + shows busy
-  // while GPS resolves; the result opens the picker, never applies
-  // silently).
-  bool _isFetchingCurrentLocation = false;
 
   @override
   void initState() {
@@ -793,51 +789,11 @@ class _BookingDialogState extends State<_BookingDialog> {
     }
   }
 
-  Future<void> _useCurrentLocationForPickup() async {
-    if (_isFetchingCurrentLocation) return;
-    setState(() => _isFetchingCurrentLocation = true);
-    try {
-      final perm = await requestLocationPermission();
-      if (perm == LocationPermissionResult.granted) {
-        final pos = await Geolocator.getCurrentPosition();
-        if (mounted) {
-          // Same open-picker-and-confirm flow as manual pin placement,
-          // pre-centered on the GPS fix with the pin already there: the
-          // person sees the pin, can drag/adjust it, fill the note field,
-          // and explicitly Confirm. Current-location is a faster starting
-          // point, not a silent bypass (previously this setState'd the
-          // coords with zero visual feedback).
-          _openLocationPicker(
-            isPickup: true,
-            initialOverride: LatLng(pos.latitude, pos.longitude),
-          );
-        }
-      } else {
-        if (mounted) {
-          ThemedSnackBar.showError(
-            context,
-            context.l10n.locationPermissionDeniedDefault,
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ThemedSnackBar.showError(context, friendlyErrorMessage(e));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isFetchingCurrentLocation = false);
-      }
-    }
-  }
-
-  void _openLocationPicker({required bool isPickup, LatLng? initialOverride}) {
+  void _openLocationPicker({required bool isPickup}) {
     final l10n = context.l10n;
-    LatLng tempLocation = initialOverride ??
-        (isPickup
-            ? LatLng(_pickupLat, _pickupLon)
-            : LatLng(
-                _destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon));
+    LatLng tempLocation = isPickup
+        ? LatLng(_pickupLat, _pickupLon)
+        : LatLng(_destinationLat ?? _pickupLat, _destinationLon ?? _pickupLon);
     LocationPickerDialog.show(
       context,
       dialogKey: Key(isPickup
@@ -989,8 +945,11 @@ class _BookingDialogState extends State<_BookingDialog> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    // Option C: typed landmark replaces raw coordinates;
-                    // coordinates remain only when no note was added.
+                    // One intent, one control: the typed landmark note when
+                    // present, otherwise the spatial mini-map preview — never
+                    // raw coordinates. The single Change action below opens
+                    // the picker, where the note field and the
+                    // current-location FAB already live.
                     if (_pickupNote.trim().isNotEmpty)
                       Text(
                         _pickupNote.trim(),
@@ -1001,42 +960,24 @@ class _BookingDialogState extends State<_BookingDialog> {
                         ),
                       )
                     else
-                      Text(
-                        "${_pickupLat.toStringAsFixed(4)}, ${_pickupLon.toStringAsFixed(4)}",
-                        key: const Key('booking_pickup_coords_text'),
-                        style: AppTypography.labelMd.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      JobLocationMiniMap(
+                        key: const Key('booking_pickup_minimap'),
+                        height: 110,
+                        location: JobLocation(
+                          latitude: _pickupLat,
+                          longitude: _pickupLon,
                         ),
                       ),
                     const SizedBox(height: AppSpacing.xs),
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: AppSpacing.xs,
-                        children: [
-                          SecondaryButton(
-                            key:
-                                const Key('use_current_location_pickup_button'),
-                            text: l10n.locationPickerUseMyLocation,
-                            icon: Icons.my_location,
-                            isOutlined: true,
-                            isFullWidth: false,
-                            isLoading: _isFetchingCurrentLocation,
-                            onPressed: _isFetchingCurrentLocation
-                                ? null
-                                : _useCurrentLocationForPickup,
-                          ),
-                          SecondaryButton(
-                            key: const Key('choose_pickup_button'),
-                            text: l10n.changePickupLocationBtn,
-                            icon: Icons.edit_location_alt_outlined,
-                            isOutlined: true,
-                            isFullWidth: false,
-                            onPressed: () =>
-                                _openLocationPicker(isPickup: true),
-                          ),
-                        ],
+                      child: SecondaryButton(
+                        key: const Key('choose_pickup_button'),
+                        text: l10n.changePickupLocationBtn,
+                        icon: Icons.edit_location_alt_outlined,
+                        isOutlined: true,
+                        isFullWidth: false,
+                        onPressed: () => _openLocationPicker(isPickup: true),
                       ),
                     ),
                   ],
@@ -1065,9 +1006,10 @@ class _BookingDialogState extends State<_BookingDialog> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    // Option C: typed landmark replaces raw coordinates. No
-                    // note yet → spatial preview (mini-map) beats raw
-                    // numbers, plus an affordance to add a note.
+                    // One intent, one control: the typed landmark note when
+                    // present, otherwise the spatial mini-map preview — never
+                    // raw coordinates. Note editing happens inside the picker
+                    // (single Change action below), so no second button.
                     if (hasDestination && _destinationNote.trim().isNotEmpty)
                       Text(
                         _destinationNote.trim(),
@@ -1077,7 +1019,7 @@ class _BookingDialogState extends State<_BookingDialog> {
                           fontWeight: FontWeight.w600,
                         ),
                       )
-                    else if (hasDestination) ...[
+                    else if (hasDestination)
                       JobLocationMiniMap(
                         key: const Key('booking_destination_minimap'),
                         height: 110,
@@ -1085,20 +1027,8 @@ class _BookingDialogState extends State<_BookingDialog> {
                           latitude: _destinationLat!,
                           longitude: _destinationLon!,
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: SecondaryButton(
-                          key: const Key('add_destination_note_button'),
-                          text: l10n.addDestinationNoteBtn,
-                          icon: Icons.edit_outlined,
-                          isOutlined: true,
-                          isFullWidth: false,
-                          onPressed: () => _openLocationPicker(isPickup: false),
-                        ),
-                      ),
-                    ] else
+                      )
+                    else
                       Text(
                         l10n.selectDestinationPrompt,
                         style: AppTypography.bodySm.copyWith(

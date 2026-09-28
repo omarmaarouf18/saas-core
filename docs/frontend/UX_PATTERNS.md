@@ -516,6 +516,31 @@ Guarded by `test/arb_label_guard_test.dart` (paren ban outside an
 explicit — currently empty — allowlist, EN/AR key parity, inline-unit
 ban on unit labels).
 
+## 23. One intent, one control per location block
+
+Each booking location block (pickup, destination) is one card with one
+spatial summary and ONE edit affordance. The summary shows the typed
+street/house/landmark note when present, otherwise `JobLocationMiniMap`
+as the spatial preview — never bare coordinate text as the primary
+summary (the mini-map's small secondary caption is the sanctioned
+exception, kept deliberately for rural-handoff precision). The single
+"Change" action (or whole-card tap) opens the picker, where the note
+field already lives — so no second "add note" button may end in the
+same picker. Likewise "use my current location" exists once, as the FAB
+inside `LocationPickerMap` (same permission-denied snackbar and error
+path); no second standalone button may end in the same picker unless it
+produces a distinct outcome. Loading, permission-denied, and error
+behavior of the surviving entry point are preserved, not reimplemented.
+
+Reference: F4 unification in `customer_marketplace_screen.dart`
+(`_BookingDialogState` pickup + destination blocks; removed
+`use_current_location_pickup_button`,
+`booking_pickup_coords_text`, `add_destination_note_button`,
+`_useCurrentLocationForPickup`, and the dead `addDestinationNoteBtn`
+ARB keys; added `booking_pickup_minimap`). Tests pin one edit control
+per block, no primary-coords text in either block, and the FAB flow
+(stage-without-apply, confirm-applies, denied-snackbar-applies-nothing).
+
 ## Completion (full 62-finding audit closed)
 
 Rules 1–4 came from audit group A (A1–A10); Rules 5–7 from audit group C

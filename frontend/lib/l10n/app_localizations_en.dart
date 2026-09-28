@@ -641,9 +641,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'e.g. next to Ahmed\'s kiosk, 3rd floor — helps your driver find you';
 
   @override
-  String get addDestinationNoteBtn => 'Add landmark note';
-
-  @override
   String get ticketSubjectReq => 'Subject is required.';
 
   @override
