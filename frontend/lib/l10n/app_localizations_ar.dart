@@ -2511,7 +2511,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get depositMaxLimitError =>
-      'أقصى مبلغ للإيداع الواحد هو 1,000,000 credit';
+      'أقصى مبلغ للإيداع الواحد هو 1,000,000 كريدت';
 
   @override
   String get verifyNewEmailBtn => 'تأكيد البريد الجديد';

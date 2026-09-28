@@ -1009,7 +1009,7 @@
   "notificationsAlerts": "تنبيهات",
   "confirmActionDefault": "تأكيد",
   "cancelActionDefault": "إلغاء",
-  "depositMaxLimitError": "أقصى مبلغ للإيداع الواحد هو 1,000,000 credit",
+  "depositMaxLimitError": "أقصى مبلغ للإيداع الواحد هو 1,000,000 كريدت",
   "verifyNewEmailBtn": "تأكيد البريد الجديد",
   "enterCompleteOtpError": "أدخل الرمز المكوّن من 6 أرقام بالكامل",
   "listEmptyTitle": "لا توجد عناصر",
