@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.6'
+          go-version: '1.26.9'
           cache: false
 
       - name: Verify Formatting
@@ -53,8 +53,8 @@ jobs:
       - name: Verify Go Version Consistency (Drift Guard)
         run: |
           CANONICAL_GO_VERSION="1.26"
-          CANONICAL_GO_PATCH_VERSION="1.26.6"
-          CANONICAL_GO_TOOLCHAIN="go1.26.6"
+          CANONICAL_GO_PATCH_VERSION="1.26.9"
+          CANONICAL_GO_TOOLCHAIN="go1.26.9"
           DRIFT_FAILED=0
           for f in go.work services/*/go.mod shared/infra/go.mod tools/*/go.mod tests/*/go.mod; do
             if [ -f "$f" ]; then
@@ -135,7 +135,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.6'
+          go-version: '1.26.9'
           cache-dependency-path: ${{ matrix.service.path }}/go.sum
 
       - name: Install dependencies

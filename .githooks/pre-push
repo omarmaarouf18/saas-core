@@ -85,8 +85,8 @@ fi
 # 4. Verify Go version consistency (drift guard)
 echo "-- checking Go version consistency across go.work, go.mod, ci.yml, and Dockerfiles --"
 CANONICAL_GO_VERSION="1.26"
-CANONICAL_GO_PATCH_VERSION="1.26.6"
-CANONICAL_GO_TOOLCHAIN="go1.26.6"
+CANONICAL_GO_PATCH_VERSION="1.26.9"
+CANONICAL_GO_TOOLCHAIN="go1.26.9"
 DRIFT_FAILED=0
 
 for f in go.work services/*/go.mod shared/infra/go.mod tools/*/go.mod tests/*/go.mod; do
