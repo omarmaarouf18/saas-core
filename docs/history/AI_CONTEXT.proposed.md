@@ -113,6 +113,8 @@ Backend:
 - Chat token cache has no bound or eviction: `tokenCache` map in `services/chat-service/internal/handlers/chat.go`.
 - `TestComplaintRoutingConcurrency` still wraps `CreateTicketAndAssign` in a 3-attempt retry loop (`chat_test.go`).
 - SSE `Last-Event-ID` replay is not implemented. The 15 s heartbeat exists.
+- Chat `Hub.Run()` (`services/chat-service/internal/chat/hub.go`) loops forever with no context or stop path.
+  This interacts with ADR-0005 and needs an ADR addendum.
 - `BroadcastLocation` does not validate the `job:`/`fleet:` channel format. Only `X-Internal-Token` gates it.
 - XFF parsing takes the first entry: `ResolveClientIP` in `services/api-gateway/internal/iputil/iputil.go`.
   The fix needs a trusted-proxy-count decision (ADR-level).
