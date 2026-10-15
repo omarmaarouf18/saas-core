@@ -2,8 +2,16 @@
 
 Before doing anything in this repo, read `AI_CONTEXT.md` at the repo root.
 It has the current project state, what's done, what's deferred, what's
-still open, and the immediate next task. Update it in the same commit as
-any change you make — do not leave it stale.
+still open, and the immediate next task.
+
+> [!IMPORTANT]
+> **Parallel agent workflow (WF-01)**: on an agent branch, do NOT edit
+> `AI_CONTEXT.md`, `docs/changelog/**`, or `docs/frontend/STATUS.md`.
+> Instead, create or append one file `docs/worklog/<TASK-ID>.md`
+> (template in [docs/worklog/README.md](docs/worklog/README.md)); the owner
+> folds it into the shared docs at merge time. The full procedure for
+> starting, reviewing, and integrating agent worktrees lives in
+> [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 Detailed history lives in [docs/changelog/](docs/changelog/), split by category — consult the relevant category file when investigating something specific, don't read all of them by default.
 
@@ -11,44 +19,58 @@ For frontend-related work, you must also consult [docs/frontend/STATUS.md](docs/
 
 To prevent documentation drift, any other agent-specific instruction files created in the future (e.g., CODEX.md, .cursorrules, etc.) must be created as short pointer files stating "Follow CLAUDE.md verbatim", never as copies.
 
-## Branch & Hotfix Syncing Policy
-- All active development happens on `logic-exploitation`.
-- Merges to `main` happen via fast-forward merge after verifying the full test suite and CI.
-- **Production CD Hotfix Procedure**: Emergency hotfixes for live production CD/deploy pipeline failures may be committed directly to `main` when necessary to unblock deployment, but MUST be synced back to `logic-exploitation` via fast-forward (`git checkout logic-exploitation && git merge --ff-only origin/main && git push origin logic-exploitation`) as the very next action afterward so the two branches remain in sync.
+## Branch & Push Policy (WF-01)
 
+- Agents work ONLY on `agent/<TASK-ID>-<slug>` branches in their own git worktree, created from the main worktree with `make worktree-new TASK=<TASK-ID> SLUG=<slug>` (helper: `scripts/agent-worktree.sh`, layout and owner procedure: [docs/WORKFLOW.md](docs/WORKFLOW.md)).
+- Agents NEVER push, never merge, never rebase or force-update `logic-exploitation` (the integration branch) or `main`, and never use `--no-verify`. Pushes from linked worktrees and `agent/*` branches are blocked by two independent layers (per-worktree `remote.origin.pushurl` + the pre-push hook) and `make push` refuses there too.
+- The owner reviews each agent branch, merges it into `logic-exploitation`, and pushes from the main worktree via `make push`.
+- Merges to `main` happen via fast-forward merge after verifying the full test suite and CI (owner action).
+- **Production CD Hotfix Procedure (owner only)**: Emergency hotfixes for live production CD/deploy pipeline failures may be committed directly to `main` when necessary to unblock deployment, but MUST be synced back to `logic-exploitation` via fast-forward as the very next action afterward so the two branches remain in sync.
 
+## Task lane rules (WF-01)
+
+- **Lane rule**: every task prompt states its allowed paths (the lane). Editing anything outside the lane means stop and ask — never fix, refactor, or "helpfully" extend out of lane.
+- **Hot paths**: `shared/infra/**`, `go.work`, any `go.mod`/`go.sum`, `infrastructure/**`, `.github/**`, `Makefile`, `.githooks/**`, `pubspec.yaml`/`pubspec.lock`. Only a task whose prompt explicitly grants ownership may touch them, and at most one running task may own each hot path at a time.
+- **Stop conditions**: a needed decision, an out-of-lane change, a failing gate you cannot fix within your lane, or a conflict with the base branch. Write the question in `docs/worklog/<TASK-ID>.md` and stop — do not guess.
 
 ## Auto-commit policy
-After completing any change, you must verify it before committing or pushing:
+After completing any change, you must verify it before committing:
 
 1. `gofmt -l .` must return empty (run `gofmt -w .` to format).
 2. `go build ./...` and `go vet ./...` must succeed for every module touched.
 3. `go test ./...` must succeed for every module touched (including running `shared/infra` tests whenever a changelog file is edited).
-4. The Commit SHA in any changelog entry must be written AFTER running `git commit` (never before), captured directly via `git rev-parse HEAD`, and then verified with `git cat-file -e <sha>^{commit}` to confirm it actually exists before the entry is considered final.
-5. Do not fabricate, guess, or approximate a commit SHA under any circumstances. If the real SHA can't be determined, mark the entry as unverified and flag it instead of writing a placeholder.
-6. Never run `git commit --amend` on a commit whose hash has already been cited elsewhere in the repo (a changelog entry, AI_CONTEXT.md, an ADR, etc.) — amending changes the hash, orphaning the cited reference and breaking CI's SHA validation. If a commit needs correcting after its hash may have been cited anywhere, create a NEW commit instead, even for a trivial fix. Only amend a commit that has not yet been pushed and is not yet referenced anywhere in committed documentation.
-7. When referring to a commit hash in explanatory prose that is NOT a live citation (e.g. describing a historical mistake, an orphaned/superseded hash, or any other non-authoritative mention), always write it truncated (e.g. the first 7-10 characters followed by ..., such as `05b5ca7...`) — never the full 40-character form — so it cannot be mistaken for, or trigger validation as, a live commit citation. Full 40-character hashes anywhere in this repo's markdown files are always treated as live citations that must resolve to a real, reachable commit; there is no legitimate reason to write one out in full for any other purpose.
-8. When citing a commit SHA for a specific feature or fix in documentation, verify with `git show --stat <sha>` that the commit's actual file changes and commit message match the feature being described — not just that the SHA exists and is reachable (existence checks alone cannot catch a valid-but-wrong hash pointing at a different feature).
+4. Run `make ci` before every commit — not raw `go test` against shared services. `make ci` takes a lock under the common `.git` dir, so parallel worktrees never run integration tests against the shared local Mongo/Redis at the same time.
+5. One commit per logical change. Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes.
 
-Before performing `git add`, every commit and push sequence must explicitly execute:
+Before performing `git add`, every commit sequence must explicitly execute:
 ```bash
 git config core.hooksPath .githooks
 ```
-as the literal first command in the sequence, unconditionally and idempotently. This line must NEVER be skipped or assumed to be already done, even mid-session, and even if it was run earlier in the same session. (Alternatively, use `make commit MSG="..."` and `make push` which execute `ensure-hooks` as an unavoidable prerequisite).
+as the literal first command in the sequence, unconditionally and idempotently. This line must NEVER be skipped or assumed to be already done, even mid-session, and even if it was run earlier in the same session. (Alternatively, use `make commit FILES="..." MSG="..."`, which executes `ensure-hooks` as an unavoidable prerequisite and never sweeps untracked files into the commit — `FILES` is required.)
 
-Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes. Once verified, run `git config core.hooksPath .githooks`, `git add`, `git commit` with a specific message, and push to origin/logic-exploitation via `make push`.
+Once verified, commit with `make commit FILES="..." MSG="..."` (or the raw `git config core.hooksPath .githooks` + `git add -- <paths>` + `git commit` sequence). Agents do NOT push — the owner merges and pushes (see [docs/WORKFLOW.md](docs/WORKFLOW.md)).
 
 ### Shared Widget Changes
 Any change touching a shared/reusable widget (anything in `frontend/lib/widgets/`) as a side effect of an otherwise-scoped feature task must be called out as its own explicit item in the commit message and the task report — e.g., a separate section/paragraph titled "Unrelated shared-widget fix" — rather than folded silently into the feature diff. This makes it possible to review or revert it independently of the feature it was bundled with.
 
-### Reporting Push Verification
-- The agent MUST run `make push` (not raw `git push`) for the final push of any task.
-- The agent's final report MUST include the literal, unedited output of `make push` (the `PUSH_VERIFIED: <hash>` line) pasted as-is.
-- The agent must NOT write a sentence re-stating, re-typing, or "confirming" the hash separately anywhere else in its response (e.g. no "Local HEAD Hash: X / Remote Hash: X, both match" section). The `PUSH_VERIFIED` line from the script IS the mechanical confirmation — retyping it in prose is prohibited to prevent manual transcription drift. If `make push` prints `PUSH_VERIFIED`, the agent may state "push verified" in prose without retyping the hash itself; if it needs to reference the hash for a changelog entry, it must copy it from that same pasted output block.
-- Whenever reporting a PUSH_VERIFIED hash in a chat response, the exact string MUST come from running `make report-hash` immediately before writing the report — copy its raw output character-for-character. Never write a commit hash from memory or from an earlier line in the conversation, even if it was seen moments ago.
+## Commit SHA citation rules
 
-### Proactive Commit Disclosure Rule
-At the start of EVERY response to the user (not just when asked), if any commits exist that were not already reported in a previous response, the agent MUST proactively list them before doing anything else — run `git log --oneline <last-reported-SHA>..HEAD` (or `make since-last-report SINCE=<last-reported-SHA>`) and paste the full list, even if the user's current message is about something unrelated. The agent must track (e.g., in a comment or scratch note) which SHA was last reported to the user, so this check is always relative to the true last-disclosed state, not just 'since I last checked.' Silence about intervening commits is not acceptable, even if the work was correct and tests passed — the user must always have visibility into everything that changed, not just what they asked about.
+- On agent branches (`agent/<TASK-ID>-<slug>`), NO full 40-character commit SHAs may appear anywhere in committed files — `docs/worklog/<TASK-ID>.md` included — because a rebase or merge changes them. Short SHAs belong in the final chat report only.
+- The rules below apply to shared docs (`AI_CONTEXT.md`, `docs/changelog/**`, ADRs, etc.), which only the owner edits after merging an agent branch into `logic-exploitation`:
+  1. The Commit SHA in any changelog entry must be written AFTER running `git commit` (never before), captured directly via `git rev-parse HEAD`, and then verified with `git cat-file -e <sha>^{commit}` to confirm it actually exists before the entry is considered final.
+  2. Do not fabricate, guess, or approximate a commit SHA under any circumstances. If the real SHA can't be determined, mark the entry as unverified and flag it instead of writing a placeholder.
+  3. Never run `git commit --amend` on a commit whose hash has already been cited elsewhere in the repo (a changelog entry, AI_CONTEXT.md, an ADR, etc.) — amending changes the hash, orphaning the cited reference and breaking CI's SHA validation. If a commit needs correcting after its hash may have been cited anywhere, create a NEW commit instead, even for a trivial fix. Only amend a commit that has not yet been pushed and is not yet referenced anywhere in committed documentation.
+  4. When referring to a commit hash in explanatory prose that is NOT a live citation (e.g. describing a historical mistake, an orphaned/superseded hash, or any other non-authoritative mention), always write it truncated (e.g. the first 7-10 characters followed by ..., such as `05b5ca7...`) — never the full 40-character form — so it cannot be mistaken for, or trigger validation as, a live commit citation. Full 40-character hashes anywhere in this repo's markdown files are always treated as live citations that must resolve to a real, reachable commit; there is no legitimate reason to write one out in full for any other purpose.
+  5. When citing a commit SHA for a specific feature or fix in documentation, verify with `git show --stat <sha>` that the commit's actual file changes and commit message match the feature being described — not just that the SHA exists and is reachable (existence checks alone cannot catch a valid-but-wrong hash pointing at a different feature).
+
+## Final report contents (WF-01)
+
+The final report of every agent task replaces the old PUSH_VERIFIED / `make report-hash` / proactive-commit-disclosure rules and must include:
+
+- The literal output of `git log --oneline logic-exploitation..HEAD` (or against the base commit the task started from).
+- The literal output of `git diff --stat` for the same range.
+- Each verification/acceptance command and its literal output.
+- Anything claimed but not verified, with the reason.
 
 ## No Illustrative or Reconstructed Output
 
@@ -57,6 +79,3 @@ When presenting command output (test results, build logs, hook output, etc.) in 
 If you did not directly capture a piece of output (e.g., you're summarizing from memory, or reconstructing what a log likely said), you must say so explicitly — e.g., "I did not capture the literal text of this line; based on the script's logic, no output would print here" — rather than writing a plausible-looking log line as if it were real.
 
 This rule exists because a fabricated-but-plausible log line is functionally indistinguishable from a hallucinated one to anyone reading the report, even when the underlying work was done correctly. "Illustrative" output defeats the entire purpose of raw-output verification.
-
-
-

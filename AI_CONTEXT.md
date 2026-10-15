@@ -7,6 +7,9 @@
 
 This file serves as a persistent, model-agnostic, single source of truth for the technical stack, architecture, feature status, security logs, and current gaps of the Quick Delivery platform. Any agent or developer modifying this repository must update this document in the same commit. (Note: The repository and codebase are internally named saas-core for historical reasons.)
 
+> [!NOTE]
+> **Parallel agent workflow (WF-01)**: agents work in their own git worktrees on `agent/<TASK-ID>-<slug>` branches and never push — the owner reviews, merges, and pushes (see [docs/WORKFLOW.md](docs/WORKFLOW.md)). Agent branches must NOT edit this file, `docs/changelog/**`, or `docs/frontend/STATUS.md`; they record their work in `docs/worklog/<TASK-ID>.md`, and the owner folds it into the shared docs at merge time.
+
 ---
 
 ## Project Summary
