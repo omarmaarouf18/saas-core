@@ -45,6 +45,7 @@ One row per tracked file under `docs/`, plus the root-level `DESIGN.md`, `IMPLEM
 | [reports/P1_DARK_THEME_UNIFICATION_REPORT.md](reports/P1_DARK_THEME_UNIFICATION_REPORT.md) | Phase 1 report: dark theme and AppColors tokens | Historical | 2026-08-19 | 0 | |
 | [reports/P2_SCREEN_MIGRATION_REPORT.md](reports/P2_SCREEN_MIGRATION_REPORT.md) | Phase 2 report: screens moved to AppShell and templates | Historical | 2026-08-20 | 1 | |
 | [history/ai-context-archive-2026-09.md](history/ai-context-archive-2026-09.md) | Verbatim archive of the history sections of `AI_CONTEXT.md` (CLN-01) | Historical | 2026-10-15 | 0 | |
+| [history/AI_CONTEXT-full-2026-09.md](history/AI_CONTEXT-full-2026-09.md) | Full verbatim copy of `AI_CONTEXT.md` at `logic-exploitation` before the slim swap, including the current-state sections the slice archive leaves out (CLN-01) | Historical | 2026-10-15 | 0 | |
 | [history/AI_CONTEXT.proposed.md](history/AI_CONTEXT.proposed.md) | Draft slim `AI_CONTEXT.md`. Moves to the repo root after WF-01 merges, then this row goes | Current (draft) | 2026-10-15 | 0 | |
 | [worklog/CLN-01.md](worklog/CLN-01.md) | CLN-01 worklog | Historical | 2026-10-15 | n/a | |
 

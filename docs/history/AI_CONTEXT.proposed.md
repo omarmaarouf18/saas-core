@@ -174,5 +174,6 @@ These rules are not in `CLAUDE.md`. Rules that `CLAUDE.md` already states are no
 
 - Docs index: [docs/README.md](docs/README.md)
 - History of this file to 2026-09: [docs/history/ai-context-archive-2026-09.md](docs/history/ai-context-archive-2026-09.md)
+- Full pre-slim copy of this file (all sections, verbatim): [docs/history/AI_CONTEXT-full-2026-09.md](docs/history/AI_CONTEXT-full-2026-09.md)
 - Change history by category: [docs/changelog/](docs/changelog/)
 - Frontend: [docs/frontend/STATUS.md](docs/frontend/STATUS.md), [frontend/README.md](frontend/README.md)
