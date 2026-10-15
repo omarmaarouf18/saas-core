@@ -1,10 +1,45 @@
 #!/bin/bash
 set -e
-echo "== pre-push gate: running checks =="
 
 # Git exports GIT_DIR=. into hook environments; the Flutter tool misreads it
 # and fails package resolution ("Flutter SDK is not available"). Sanitize.
+# (Also required before the agent push guard below reads the real git dir.)
 unset GIT_DIR GIT_WORK_TREE
+
+# ---------------------------------------------------------------------------
+# WF-01 agent push guard (Layer B) — must run before any other check.
+#
+# Layer A is the per-worktree remote.origin.pushurl that
+# scripts/agent-worktree.sh sets in every agent worktree, which fails
+# `git push origin` there. This layer independently blocks ANY real push made
+# from a linked worktree or from an agent/* branch — including pushes to other
+# remotes (e.g. a throwaway local bare remote) — because agents never push:
+# the owner merges each agent branch into the integration branch and pushes
+# from the main worktree. See docs/WORKFLOW.md.
+#
+# This script is also the `make ci` gate, which invokes it WITHOUT arguments;
+# git always invokes a pre-push hook with at least the remote name as $1, so
+# the guard only fires for real hook invocations.
+# ---------------------------------------------------------------------------
+if [ "${1:-}" != "" ]; then
+  HOOK_GIT_DIR=$(git rev-parse --git-dir)
+  HOOK_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  case "$HOOK_GIT_DIR" in
+    */worktrees/*)
+      echo "BLOCKED: agents never push; the owner merges and pushes from the main worktree"
+      exit 1
+      ;;
+  esac
+  case "$HOOK_BRANCH" in
+    agent/*)
+      echo "BLOCKED: agents never push; the owner merges and pushes from the main worktree"
+      exit 1
+      ;;
+  esac
+fi
+# --- end WF-01 agent push guard ---
+
+echo "== pre-push gate: running checks =="
 
 # Set default authenticated Mongo & Redis URIs for host-level unit/integration tests
 export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin}"
