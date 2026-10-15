@@ -140,6 +140,8 @@ Refactor backlog (no work started):
 2. Pagination parsing is repeated in admin list handlers. There is no shared `ParsePaginationParams` yet.
 3. `services/user-service/internal/handlers/jobs_handlers.go` is about 3,950 lines. Split it by domain.
 4. Console `web/app.js` modularization (separate repo, unverified here).
+5. `CompleteJob` legacy fallback to `AssignedEmployeeLocation` for jobs with no `Destination` (pre-2026-09-17) in
+   `jobs_handlers.go`. Its code comment points here. Remove it once the comment's one-off `db.jobs.count` query returns 0.
 
 ## Standing working rules
 
