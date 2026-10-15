@@ -401,3 +401,51 @@ APPLICATION_MAP.md is fresh.
 4. Do changelog files allow link-target-only edits? This decides whether CLN-02 rewrites links inside
    `docs/changelog/`.
 5. Should the missing `infrastructure/Caddyfile` become its own small task?
+
+## Review follow-up (2026-10-15)
+
+The owner reviewed the work and independently verified the five slices, the SHA check and the proposed file's limits.
+Four corrections were requested. They are made below as new commits only, with no rebase, amend or push.
+
+### Correction 1: empty "Literal" sections in the first report
+
+The final report's sections 3–5 reached the owner with headings and no output. This file cannot fix that. The
+follow-up report pastes every output under its heading and says explicitly when something cannot be pasted.
+
+### Correction 2: the old worktrees were moved, not gone
+
+The first inventory claimed the five "prunable" worktrees' directories were gone and recommended `git worktree prune`.
+That was wrong: the repo moved from `/mnt/windows_data/CS tools/Antigravity/` to `/home/omarmaarouf/CS tools/Antigravity/`
+and the folders moved with it. All five exist. Two are clean, and three hold uncommitted files (2, 2 and 4
+`status --short` lines). Inventory section 6 now has the per-worktree evidence, the repair-or-delete options and a
+warning against pruning from an environment that cannot see the folders. Lesson: "prunable" means "registered path
+not found", not "folder deleted".
+
+### Correction 3: full verbatim copy
+
+Added `docs/history/AI_CONTEXT-full-2026-09.md`. It is `git show logic-exploitation:AI_CONTEXT.md` with a 3-line header
+above the copied content. The slice archive `ai-context-archive-2026-09.md` is unchanged (verbatim-protected). The new
+file is indexed in `docs/README.md` and in the proposed AI_CONTEXT's pointer list. Proof (literal):
+
+```text
+$ tail -n +4 docs/history/AI_CONTEXT-full-2026-09.md | cmp - <(git show logic-exploitation:AI_CONTEXT.md)
+cmp exit=0
+```
+
+`cmp` printed nothing and exited 0, so the copy is byte-identical.
+
+### Correction 4: owner answers to the open questions
+
+| Question | Owner answer | Where recorded |
+| :--- | :--- | :--- |
+| 1. Fate of `AI_CONTEXT.proposed.md` after the swap | The swap commit runs `git mv docs/history/AI_CONTEXT.proposed.md AI_CONTEXT.md`, so the file leaves `docs/history/` | inventory §3 "CLN-02 step list" step 1 |
+| 2. `CI_CD_AND_HOOKS.md` vs `WORKFLOW.md` | Keep separate and cross-link. CI_CD covers hook and CI mechanics; WORKFLOW covers owner/agent process. A CLN-02 step; neither file edited now | inventory §3 step 2 |
+| 3. Class of `UI_UX_AUDIT_2026-09.md` | Current while §5 questions are open | `docs/README.md` row fixed (was Historical); removed from the inventory §3 move table (15 → 14 docs) |
+| 4. Link-only changelog edits | Allowed in CLN-02 if `go test ./shared/infra/...` (incl. `changelog_validation_test.go`) passes and no SHA changes | inventory §3 notes |
+| 5. Missing `infrastructure/Caddyfile` | Separate small task | new inventory §8 "Infrastructure findings", with `git log --all` evidence; stack not started |
+
+### Follow-up commits
+
+One commit per correction that changes files: correction 2 (inventory §6), correction 3 (full copy plus index and
+pointer), correction 4 (this worklog section, inventory §3 and §8, the `docs/README.md` class fix). Correction 1
+changes only the report. The hashes are in the follow-up report's `git log`.

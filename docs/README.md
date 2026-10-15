@@ -112,7 +112,7 @@ only ADR-0019 to ADR-0027 explicitly.
 | [frontend/DESIGN_SYSTEM.md](frontend/DESIGN_SYSTEM.md) | Design system spec (tokens, components) | Reference | 2026-09-26 | 8 | |
 | [frontend/BRAND_IDENTITY.md](frontend/BRAND_IDENTITY.md) | Brand identity and visual language | Reference | 2026-08-17 | 5 | |
 | [frontend/LOCALIZATION_AUDIT.md](frontend/LOCALIZATION_AUDIT.md) | i18n setup and string extraction record | Reference | 2026-08-30 | 3 | |
-| [frontend/UI_UX_AUDIT_2026-09.md](frontend/UI_UX_AUDIT_2026-09.md) | UX audit 2026-09: 62/62 findings fixed. §5 questions left open | Historical | 2026-09-25 | 6 | |
+| [frontend/UI_UX_AUDIT_2026-09.md](frontend/UI_UX_AUDIT_2026-09.md) | UX audit 2026-09: 62/62 findings fixed. §5 questions Q1–Q11 still open, so it stays Current (owner decision 2026-10-15) | Current | 2026-09-25 | 6 | |
 | [frontend/UI_VISUAL_AUDIT_2026-09.md](frontend/UI_VISUAL_AUDIT_2026-09.md) | Visual audit 2026-09, steps V1–V4 | Historical | 2026-09-26 | 4 | |
 | [frontend/UI_UX_AUDIT.md](frontend/UI_UX_AUDIT.md) | 28-screen UI/UX audit at `4ab627e` (A8 baseline) | Historical | 2026-08-23 | 3 | Followed by [frontend/UI_UX_AUDIT_2026-09.md](frontend/UI_UX_AUDIT_2026-09.md), which says it does not duplicate earlier audits, so this is follow-on rather than replacement |
 | [frontend/UI_UX_ENTERPRISE_ROADMAP.md](frontend/UI_UX_ENTERPRISE_ROADMAP.md) | Phased UI/UX roadmap (Phases 0–6) | Historical | 2026-08-21 | 5 | STATUS.md Phase 29 (stated in the file) |

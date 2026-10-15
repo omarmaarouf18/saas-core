@@ -16,8 +16,8 @@ Executing these moves and deletions is a separate task (CLN-02).
 | 1c | `kinetic_logistics-light/` and `nocturne_amber-dark/` (about 1.6 MiB) | delete | Low | Low |
 | 1d | All of `design/` | move-to-other-repo (a design-assets repo), only if the owner wants a lean code repo | Medium | Medium |
 | 2 | Root `index.html` ("Logic Vetting Interface") | delete | Low | Low |
-| 2b | `infrastructure/docker-compose.yml` and the staging compose mount a `./Caddyfile`. Only the staging one exists | keep; fix in its own task | n/a | Medium (finding, not cleanup) |
-| 3 | 15 historical docs | archive-move to `docs/history/` and update links mechanically | Low–Medium | Medium |
+| 2b | `infrastructure/docker-compose.yml` mounts a `./Caddyfile` that does not exist (section 8) | separate small task | n/a | Medium (finding, not cleanup) |
+| 3 | 14 historical docs (`UI_UX_AUDIT_2026-09.md` stays Current per owner) | archive-move to `docs/history/` and update links mechanically | Low–Medium | Medium |
 | 4 | `IMPLEMENTATION.md` | archive-move to `docs/history/` | Low | Low |
 | 4b | `DESIGN.md` | keep in place (docgen code hard-codes the path) and trim its stale Section 1 | Medium if moved | Low |
 | 4c | `QA-COVERAGE.md` | keep; optionally move under `docs/qa/` | Low | Low |
@@ -293,7 +293,7 @@ Reading this:
 **Side finding, not cleanup:** `infrastructure/docker-compose.yml:288` mounts `./Caddyfile`, but no
 `infrastructure/Caddyfile` is tracked, ignored or in history (output above). Unless the developer creates one by hand,
 Docker would create an empty directory at that path and Caddy would fail to load its config (unverified: I did not
-start the stack). Raise it as its own small task. Do not fold it into CLN-02.
+start the stack). Raise it as its own small task. Do not fold it into CLN-02. Details and evidence: section 8.
 
 ## 3. Historical docs: proposed targets and link-update list
 
@@ -309,7 +309,6 @@ Classification comes from `docs/README.md`. The proposed target keeps the relati
 | `docs/reports/P1_DARK_THEME_UNIFICATION_REPORT.md` | `docs/history/reports/P1_DARK_THEME_UNIFICATION_REPORT.md` |
 | `docs/reports/P2_SCREEN_MIGRATION_REPORT.md` | `docs/history/reports/P2_SCREEN_MIGRATION_REPORT.md` |
 | `docs/frontend/UI_UX_AUDIT.md` | `docs/history/frontend/UI_UX_AUDIT.md` |
-| `docs/frontend/UI_UX_AUDIT_2026-09.md` | `docs/history/frontend/UI_UX_AUDIT_2026-09.md` |
 | `docs/frontend/UI_VISUAL_AUDIT_2026-09.md` | `docs/history/frontend/UI_VISUAL_AUDIT_2026-09.md` |
 | `docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md` | `docs/history/frontend/UI_UX_ENTERPRISE_ROADMAP.md` |
 | `docs/frontend/STITCH_VISUAL_AUDIT.md` | `docs/history/frontend/STITCH_VISUAL_AUDIT.md` |
@@ -420,13 +419,28 @@ Notes for doing the move mechanically:
 - After any move, relative links inside the moved file change depth (for example `../../frontend/lib/...` in
   `STITCH_VISUAL_AUDIT_V2.md` and `UI_UX_AUDIT.md`). Re-check them with a link checker, or with
   `grep -o '](\.\./[^)]*)'`.
-- `docs/changelog/*.md` is append-only history. Updating link targets there changes no SHA, but confirm the
-  changelog policy allows link-only edits. Otherwise leave changelog mentions as plain historical text.
+- `docs/changelog/*.md`: **owner decision (2026-10-15)**: link-only edits are allowed in CLN-02, on two conditions.
+  `go test ./shared/infra/...` must pass (this includes `changelog_validation_test.go`), and no SHA in any changelog
+  may change. Edit link targets only; never touch entry text or SHAs.
 - NON-MD hits are comments in Flutter tests (`frontend/test/*.dart`) that cite audit finding IDs by doc name. Update
   the path in the comment or leave it. Nothing parses them.
 - `AI_CONTEXT.md` mentions disappear when it is replaced by the slim file, which links only `docs/README.md`.
-- `UI_UX_AUDIT_2026-09.md` has open §5 questions Q1–Q11. If the owner treats them as live, keep that file in place
-  (class Current) and move only the others.
+- `UI_UX_AUDIT_2026-09.md`: **owner decision (2026-10-15)**: it stays in place and is classed Current while its §5
+  questions Q1–Q11 are open. It was removed from the move table above. Its rows in the link evidence block are left
+  as captured (literal output) and need no action.
+
+### CLN-02 step list (owner-decided items)
+
+1. **AI_CONTEXT swap** (after WF-01 merges, in one commit):
+   `git mv docs/history/AI_CONTEXT.proposed.md AI_CONTEXT.md`, replacing the old file. Re-add WF-01's pointer
+   paragraph. Then remove the `history/AI_CONTEXT.proposed.md` row from `docs/README.md`, because the file no longer
+   exists there.
+2. **Cross-link, do not merge:** `docs/CI_CD_AND_HOOKS.md` (hook and CI mechanics) and `docs/WORKFLOW.md`
+   (owner/agent process) stay separate. Add a one-line pointer from each to the other, and fix the CI_CD row's
+   superseded-by note in `docs/README.md`.
+3. **Move the 14 Historical docs** in the table above. Update links from the evidence block, including link-only
+   changelog edits under the conditions above.
+4. Run `go test ./shared/infra/...` and the markdown-SHA check before committing.
 
 ## 4. Root docs: overlap
 
@@ -736,3 +750,67 @@ staticcheck is not installed and installing it needs network access, which this 
 unused-identifier check, so it cannot stand in. **Skipped.** To run it later:
 `go install honnef.co/go/tools/cmd/staticcheck@latest`, then
 `staticcheck -checks U1000 ./...` in each of `services/*`, `shared/infra`, `tools/*`, `tests/*`.
+
+## 8. Infrastructure findings
+
+### 8.1 Local compose mounts a Caddyfile that does not exist
+
+`infrastructure/docker-compose.yml` (service `caddy`, container `saas-caddy`) bind-mounts
+`./Caddyfile:/etc/caddy/Caddyfile:ro`. `infrastructure/Caddyfile` is not in the repo, is not git-ignored, and has
+never existed in any commit on any ref. Only `infrastructure/staging/Caddyfile` is tracked, and the staging compose
+mounts that one from its own folder.
+
+```bash
+echo '$ git log --all -- infrastructure/Caddyfile'
+git log --all -- infrastructure/Caddyfile
+echo "(exit=$?, end of output)"
+echo '$ git ls-files infrastructure | grep -i caddy'
+git ls-files infrastructure | grep -i caddy
+echo '$ ls -la infrastructure/Caddyfile'
+ls -la infrastructure/Caddyfile 2>&1
+echo '$ git check-ignore -v infrastructure/Caddyfile'
+git check-ignore -v infrastructure/Caddyfile; echo "(exit=$?)"
+echo '$ sed -n 279,292p infrastructure/docker-compose.yml'
+sed -n 279,292p infrastructure/docker-compose.yml
+```
+
+Output (literal):
+
+```text
+$ git log --all -- infrastructure/Caddyfile
+(exit=0, end of output)
+$ git ls-files infrastructure | grep -i caddy
+infrastructure/staging/Caddyfile
+$ ls -la infrastructure/Caddyfile
+ls: cannot access 'infrastructure/Caddyfile': No such file or directory
+$ git check-ignore -v infrastructure/Caddyfile
+(exit=1)
+$ sed -n 279,292p infrastructure/docker-compose.yml
+  caddy:
+    image: caddy:2-alpine
+    container_name: saas-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - saas-net
+```
+
+`git log --all -- infrastructure/Caddyfile` printed no commits (exit 0): the path has never been in history.
+
+**Effect (expected, not observed):** when the host source of a bind mount is missing, Docker creates it as an empty
+**directory**. Caddy then finds a directory where it expects the config file `/etc/caddy/Caddyfile` and fails on
+start, which takes down the local HTTP entry point on ports 80 and 443. I did not start the stack, as instructed. If
+someone ever ran `docker compose up` here, a root-owned empty `infrastructure/Caddyfile/` directory may now exist
+locally. It would show as untracked or empty. None exists in this worktree (the `ls` output above).
+
+**Recommendation:** a separate small task, not part of CLN-02. Add a minimal `infrastructure/Caddyfile` for local dev
+(reverse-proxy to `api-gateway`, modelled on `infrastructure/staging/Caddyfile`), or drop the `caddy` service from the
+local compose if local dev talks to the gateway directly on `${API_GATEWAY_PORT}`. Verify with
+`docker compose config` and a start of the `caddy` service only. Risk: low. Value: medium (a broken local entry point).
