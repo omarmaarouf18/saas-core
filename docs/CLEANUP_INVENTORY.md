@@ -22,7 +22,7 @@ Executing these moves and deletions is a separate task (CLN-02).
 | 4b | `DESIGN.md` | keep in place (docgen code hard-codes the path) and trim its stale Section 1 | Medium if moved | Low |
 | 4c | `QA-COVERAGE.md` | keep; optionally move under `docs/qa/` | Low | Low |
 | 5 | `frontend/{macos,windows,linux,web}` | keep for now; remove after checking `quick-delivery-mobile` CI | Medium | Low |
-| 6 | 4 stashes, 4 merged branches, `frontend-split`, 5 prunable worktrees | delete merged branches; owner reviews stashes; keep `frontend-split` until owner confirms | Low (merged) / Medium (stashes) | Low |
+| 6 | 4 stashes, 4 merged branches, `frontend-split`, 5 old worktrees registered at the pre-move path | delete merged branches; owner reviews stashes; keep `frontend-split` until owner confirms; repair or deliberately remove the 5 worktrees, never blind-prune | Low (merged) / Medium (stashes) | Low |
 | 7 | Dead Go code (U1000) | not run (staticcheck is not installed) | n/a | n/a |
 
 ## 1. `design/stitch-export`
@@ -615,19 +615,106 @@ root commit of logic-exploitation: 205466ec7c
 
 | Item | Finding | Recommendation |
 | :--- | :--- | :--- |
-| `a8-uiux-remediation` | 0 commits not in `logic-exploitation`; ancestor; has a prunable worktree | delete branch and prune worktree |
-| `frontend-visual-fixes` | same tip as `a8-uiux-remediation`; 0 unique commits | delete |
-| `visual-fixes` | 0 unique commits; ancestor; prunable worktree | delete branch and prune worktree |
-| `qa-audit-dispatch-order` | 0 unique commits; ancestor; prunable worktree | delete branch and prune worktree |
+| `a8-uiux-remediation` | 0 commits not in `logic-exploitation`; ancestor. Checked out in worktree `saas-core-frontend-a8` (registered at the old path, see below) | delete the branch after that worktree is repaired-and-removed or deleted-and-pruned (git refuses to delete a branch checked out in a registered worktree) |
+| `frontend-visual-fixes` | same tip as `a8-uiux-remediation`; 0 unique commits; not checked out anywhere | delete |
+| `visual-fixes` | 0 unique commits; ancestor. Checked out in worktree `saas-core-frontend-visual-fixes` | delete the branch after its worktree is handled (see below) |
+| `qa-audit-dispatch-order` | 0 unique commits; ancestor. Checked out in worktree `saas-core-qa-audit-dispatch` | delete the branch after its worktree is handled (see below) |
 | `frontend-split` | 60 commits, **no common history** with `logic-exploitation` (different root). It looks like an old frontend-only subtree split (last commit 2026-07-31, "add standalone quick-delivery-mobile frontend repo") | keep until the owner confirms `quick-delivery-mobile` has these commits, then delete |
 | `stash@{0}` | its own message says "superseded … do not apply" | drop (owner) |
 | `stash@{1}` | "mid-flight unverified Q24 revert"; Q24 was fixed later on `logic-exploitation` | drop after a glance (owner) |
 | `stash@{2}` | WIP on the Stitch Batch E commit `53ccd06`, 9 files, +1010/−584; that batch has landed | owner reviews, then drop |
 | `stash@{3}` | WIP on the initial `main` baseline `205466e` (2026-06-22) | drop (owner) |
-| 5 prunable worktrees (`/mnt/windows_data/...`) | the worktree list marks them `prunable` (their directories are gone) | `git worktree prune` (owner) |
+| 5 old worktrees registered at `/mnt/windows_data/...` | `git worktree list` says "prunable", but the folders still exist: the repo moved to `/home/omarmaarouf/CS tools/Antigravity/` and they moved with it. Git only sees the stale registered path | see "Old worktrees" below. Do **not** run `git worktree prune` blindly |
 
 Risk: deleting merged branches is low risk (the commits are in `logic-exploitation`). Dropping stashes cannot be undone
 easily, so leave that to the owner.
+
+### Old worktrees (moved, not gone)
+
+The repo was moved from `/mnt/windows_data/CS tools/Antigravity/` to `/home/omarmaarouf/CS tools/Antigravity/`, and
+the five worktree folders moved with it. Their `.git` files still point at the old repo path, so plain
+`git -C "<new path>"` fails. The script below reads HEAD from the registered gitdir inside the main repo and runs
+`status` by passing `--git-dir`/`--work-tree` explicitly with `GIT_OPTIONAL_LOCKS=0` (read-only, no repair).
+Detached HEADs are truncated to 10 characters inside the script.
+
+```bash
+M="/home/omarmaarouf/CS tools/Antigravity/SaaS prototype/.git"
+for n in saas-core-final-cleanup saas-core-frontend-a8 saas-core-frontend-visual-fixes saas-core-qa-audit-dispatch saas-core-ux-review; do
+  p="/home/omarmaarouf/CS tools/Antigravity/$n"
+  echo "== $n"
+  ls -d "$p" 2>&1
+  h=$(cat "$M/worktrees/$n/HEAD"); case "$h" in ref:*) ;; *) h="${h:0:10}... (detached; truncated)";; esac; echo "registered gitdir HEAD: $h"
+  echo "plain git -C status: $(git -C "$p" status --short 2>&1 | head -1)"
+  echo "status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): $(GIT_OPTIONAL_LOCKS=0 git --git-dir="$M/worktrees/$n" --work-tree="$p" status --short | wc -l)"
+  GIT_OPTIONAL_LOCKS=0 git --git-dir="$M/worktrees/$n" --work-tree="$p" status --short | sed 's/^/    /'
+done
+for s in 47981460 69df526c; do echo "$s ancestor of logic-exploitation: $(git merge-base --is-ancestor $s logic-exploitation && echo yes || echo no)"; done
+```
+
+Output (literal):
+
+```text
+== saas-core-final-cleanup
+/home/omarmaarouf/CS tools/Antigravity/saas-core-final-cleanup
+registered gitdir HEAD: 4798146030... (detached; truncated)
+plain git -C status: fatal: gitfile does not point to a valid repository: /home/omarmaarouf/CS tools/Antigravity/saas-core-final-cleanup/.git
+status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): 0
+== saas-core-frontend-a8
+/home/omarmaarouf/CS tools/Antigravity/saas-core-frontend-a8
+registered gitdir HEAD: ref: refs/heads/a8-uiux-remediation
+plain git -C status: fatal: gitfile does not point to a valid repository: /home/omarmaarouf/CS tools/Antigravity/saas-core-frontend-a8/.git
+status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): 0
+== saas-core-frontend-visual-fixes
+/home/omarmaarouf/CS tools/Antigravity/saas-core-frontend-visual-fixes
+registered gitdir HEAD: ref: refs/heads/visual-fixes
+plain git -C status: fatal: gitfile does not point to a valid repository: /home/omarmaarouf/CS tools/Antigravity/saas-core-frontend-visual-fixes/.git
+status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): 2
+    ?? frontend/test/goldens_scratch/
+    ?? frontend/test/scratch_evidence_test.dart
+== saas-core-qa-audit-dispatch
+/home/omarmaarouf/CS tools/Antigravity/saas-core-qa-audit-dispatch
+registered gitdir HEAD: ref: refs/heads/qa-audit-dispatch-order
+plain git -C status: fatal: gitfile does not point to a valid repository: /home/omarmaarouf/CS tools/Antigravity/saas-core-qa-audit-dispatch/.git
+status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): 2
+    ?? services/notification-service/internal/handlers/qa_audit_notification_leak_test.go
+    ?? services/user-service/internal/handlers/qa_audit_dispatch_flow_test.go
+== saas-core-ux-review
+/home/omarmaarouf/CS tools/Antigravity/saas-core-ux-review
+registered gitdir HEAD: 69df526c54... (detached; truncated)
+plain git -C status: fatal: gitfile does not point to a valid repository: /home/omarmaarouf/CS tools/Antigravity/saas-core-ux-review/.git
+status --short line count (via registered gitdir, GIT_OPTIONAL_LOCKS=0): 4
+     M frontend/pubspec.yaml
+    ?? _ux_review_screenshots/
+    ?? frontend/assets/fonts/NotoSansArabic-Regular.ttf
+    ?? frontend/test/ux_review_dump_test.dart
+47981460 ancestor of logic-exploitation: yes
+69df526c ancestor of logic-exploitation: yes
+```
+
+| Worktree (new path) | Folder exists | HEAD | `status --short` lines | Notes |
+| :--- | :--- | :--- | ---: | :--- |
+| `saas-core-final-cleanup` | yes | detached `4798146030...` (in `logic-exploitation`) | 0 | clean |
+| `saas-core-frontend-a8` | yes | `a8-uiux-remediation` | 0 | clean |
+| `saas-core-frontend-visual-fixes` | yes | `visual-fixes` | 2 | untracked scratch goldens and a scratch test |
+| `saas-core-qa-audit-dispatch` | yes | `qa-audit-dispatch-order` | 2 | two untracked QA audit test files |
+| `saas-core-ux-review` | yes | detached `69df526c54...` (in `logic-exploitation`) | 4 | modified `frontend/pubspec.yaml`, untracked screenshots, font and test |
+
+Options for each one (owner's choice, after looking at the uncommitted files above):
+
+1. **Re-link and keep:** `git worktree repair "/home/omarmaarouf/CS tools/Antigravity/<name>"` from the main repo,
+   for the paths you want to keep. It rewrites both the `.git` file and the registry. Then remove a worktree normally
+   with `git worktree remove` once it is no longer needed.
+2. **Discard:** inspect and save anything of value (for example the untracked QA test files in
+   `saas-core-qa-audit-dispatch`), delete the folder, then run `git worktree prune`.
+
+> [!WARNING]
+> Never run `git worktree prune` from an environment that cannot see the real folders (a container, a sandbox, or a
+> machine where `/home/omarmaarouf/CS tools/Antigravity/` is not mounted). Prune unregisters every worktree whose
+> registered path is missing *from where it runs*, which would also unregister live worktrees such as
+> `saas-core-wt/*`. Run it only after option 2 deletes the folders, on the machine that holds them.
+
+The fully merged branches (`a8-uiux-remediation`, `frontend-visual-fixes`, `visual-fixes`, `qa-audit-dispatch-order`)
+can still be deleted. Three of them can go only after their worktree is handled.
 
 ## 7. Dead Go code (U1000)
 
