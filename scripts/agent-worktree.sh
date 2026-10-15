@@ -194,8 +194,10 @@ cmd_remove() {
 			git worktree remove "$wt_path"
 		fi
 	else
-		# Stale registration: the directory is already gone.
-		git worktree prune
+		# Stale registration: the directory is already gone. Remove only this
+		# registration; `git worktree prune` would also unregister every other
+		# stale worktree.
+		git worktree remove --force "$wt_path"
 	fi
 
 	if [ "$force" -eq 1 ]; then
