@@ -182,7 +182,8 @@ cmd_remove() {
 		die "no branch found checked out at $wt_path (no worktree for '${task_id}'? run 'scripts/agent-worktree.sh list')"
 	fi
 
-	if ! git merge-base --is-ancestor "refs/heads/${branch}" "refs/heads/${INTEGRATION_BRANCH}"; then
+	if [ "$force" -eq 0 ] &&
+		! git merge-base --is-ancestor "refs/heads/${branch}" "refs/heads/${INTEGRATION_BRANCH}"; then
 		die "branch '${branch}' is not merged into ${INTEGRATION_BRANCH}; refusing to remove (use --force to override)"
 	fi
 
