@@ -40,6 +40,29 @@ fi
 # --- end WF-01 agent push guard ---
 
 # ---------------------------------------------------------------------------
+# WF-02 delete-only push: when EVERY ref line git passes on stdin
+# ("<local ref> <local sha> <remote ref> <remote sha>") has an all-zero local
+# sha, the push only deletes remote refs and publishes no code, so the gate is
+# skipped. Runs AFTER the agent push guard (agents still cannot delete) and
+# only for real pushes ($1 set); `make ci` never reads stdin.
+# ---------------------------------------------------------------------------
+if [ "${1:-}" != "" ]; then
+  REF_LINES=0
+  NON_DELETE=0
+  while read -r _local_ref local_sha _remote_ref _remote_sha; do
+    [ -n "${_local_ref}${local_sha}" ] || continue
+    REF_LINES=$((REF_LINES + 1))
+    case "$local_sha" in
+      *[!0]* | "") NON_DELETE=1 ;;
+    esac
+  done
+  if [ "$REF_LINES" -gt 0 ] && [ "$NON_DELETE" -eq 0 ]; then
+    echo "delete-only push: gate skipped"
+    exit 0
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # WF-02 CI lock: every gate run — `make ci` AND a real `git push` — runs under
 # flock on <git-common-dir>/ci.lock, so parallel worktrees never run
 # integration tests against the shared local Mongo/Redis at the same time.
