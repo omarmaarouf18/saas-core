@@ -38,11 +38,15 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_e2e_adr0008_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping E2E test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -246,11 +250,13 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 	defer userServiceServer.Close()
 
 	// 3. Seed active job and subscription in store
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	jobID := testutil.ID("job-e2e-adr0008")
 	job := &models.Job{

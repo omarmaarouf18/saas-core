@@ -34,11 +34,15 @@ func TestUserServiceHandlers(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping user-service integration tests: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -140,9 +144,11 @@ func TestUserServiceHandlers(t *testing.T) {
 	// employee assignment). kyc-pending-owner stays KYC-blocked (403) after
 	// passing the open gate.
 	for _, tenant := range []string{"kyc-approved-owner", "kyc-pending-owner"} {
-		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+		if err := s.UpsertSubscription(context.Background(), &models.Subscription{
 			TenantID: tenant, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 	}
 
 	// Test 1: KYC gating blocks CreateService for non-approved owners
@@ -256,7 +262,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			UserID:     "client-user-999",
 			Status:     "pending",
 		}
-		_ = s.CreateJob(ctx, testJob)
+		if err := s.CreateJob(ctx, testJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenMismatchedUser, _ := jwtutil.GenerateToken("mismatched-user", "user", "mismatched-user", "mismatch@example.com")
 		tokenJobOwner, _ := jwtutil.GenerateToken("job-owner-999", "owner", "job-owner-999", "owner@example.com")
@@ -333,7 +341,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 6: CompleteJob Access Control
 	t.Run("CompleteJob Access Control", func(t *testing.T) {
 		ctx := context.Background()
-		s.CreateService(ctx, &models.Service{
+		mustCreateService(t, s, ctx, &models.Service{
 			ID:               "svc-001",
 			TenantID:         "job-owner-888",
 			Name:             "Delivery Service",
@@ -350,7 +358,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, testJob)
+		if err := s.CreateJob(ctx, testJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenMismatchedUser, _ := jwtutil.GenerateToken("mismatched-user-888", "user", "mismatched-user-888", "mismatch@example.com")
 		tokenJobOwner, _ := jwtutil.GenerateToken("job-owner-888", "owner", "job-owner-888", "owner@example.com")
@@ -369,8 +379,10 @@ func TestUserServiceHandlers(t *testing.T) {
 			t.Errorf("Expected 200 OK for internal token, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 
-		// Reset job status to active for subsequent tests
-		_ = s.UpdateJobStatus(ctx, "test-job-888", models.JobStatusActive)
+		// test-job-888 stays completed: the store rejects completed -> active,
+		// so the old "reset to active" call here always failed silently. B is
+		// rejected on the requester check before status matters, and C uses
+		// its own job (TST-02).
 
 		// B. Mismatched requester_id -> 403 Forbidden
 		reqBody = map[string]any{
@@ -396,7 +408,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, testJobC)
+		if err := s.CreateJob(ctx, testJobC); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody = map[string]any{
 			"job_id":         "test-job-888-c",
@@ -435,11 +449,13 @@ func TestUserServiceHandlers(t *testing.T) {
 			AllowTestPaymentBypass: true,
 		}
 		u3 := NewUserService(s, cfg3, rdb)
-		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+		if err := s.UpsertSubscription(context.Background(), &models.Subscription{
 			TenantID:  "tenant-id",
 			Tier:      models.PlanPaid,
 			ExpiresAt: time.Now().Add(24 * time.Hour),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 
 		// A. Valid deposit limit: 500,000 -> 200 OK
 		reqBody := map[string]any{
@@ -516,12 +532,14 @@ func TestUserServiceHandlers(t *testing.T) {
 	// Test 8: UpdateJobLocation Gating and Verification
 	t.Run("UpdateJobLocation Gating and Verification", func(t *testing.T) {
 		ctx := context.Background()
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-owner-777",
 			TenantID:  "owner-777",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 		activeJob := &models.Job{
 			ID:            "active-job-777",
 			OwnerID:       "owner-777",
@@ -530,7 +548,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, activeJob)
+		if err := s.CreateJob(ctx, activeJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		pendingJob := &models.Job{
 			ID:            "pending-job-777",
@@ -540,7 +560,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusPending,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, pendingJob)
+		if err := s.CreateJob(ctx, pendingJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
 		tokenMismatched, _ := jwtutil.GenerateToken("mismatched-user", "user", "mismatched-user", "mismatch@example.com")
@@ -604,18 +626,22 @@ func TestUserServiceHandlers(t *testing.T) {
 		// Setup 3 owners with different subscription tiers
 		tokenEmployee, _ := jwtutil.GenerateToken("emp-777", "employee", "paid-owner", "emp@example.com")
 
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-pending",
 			TenantID:  "pending-owner",
 			Tier:      models.PlanPendingPayment,
 			StartedAt: time.Now(),
-		})
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-paid",
 			TenantID:  "paid-owner",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 
 		// Active jobs
 		jobFree := &models.Job{
@@ -630,9 +656,15 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID: "job-paid", OwnerID: "paid-owner", EmployeeID: "emp-777", UserID: "client-3",
 			Status: models.JobStatusActive, PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobFree)
-		_ = s.CreateJob(ctx, jobPending)
-		_ = s.CreateJob(ctx, jobPaid)
+		if err := s.CreateJob(ctx, jobFree); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.CreateJob(ctx, jobPending); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.CreateJob(ctx, jobPaid); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// 1. Free tenant → HTTP 402 Upgrade Required
 		reqBody := map[string]any{
@@ -688,8 +720,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			ID: "job-throttle-B", OwnerID: "paid-owner", EmployeeID: "emp-888", UserID: "client-b",
 			Status: models.JobStatusActive, PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobA)
-		_ = s.CreateJob(ctx, jobB)
+		if err := s.CreateJob(ctx, jobA); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.CreateJob(ctx, jobB); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// 1. Initial push for Job A → succeeds (200 OK)
 		reqBody := map[string]any{
@@ -739,20 +775,28 @@ func TestUserServiceHandlers(t *testing.T) {
 		defer cancel()
 
 		// Seed required data to make the subtest self-contained
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-owner-777",
 			TenantID:  "owner-777",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
-		_ = s.CreateJob(ctx, &models.Job{
-			ID:            "active-job-777",
-			OwnerID:       "owner-777",
-			EmployeeID:    "employee-777",
-			UserID:        "client-777",
-			Status:        models.JobStatusActive,
-			PaymentMethod: "cod",
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		// An earlier subtest already created this job; create it only when the
+		// subtest runs on its own (TST-02).
+		if s.GetJob(ctx, "active-job-777") == nil {
+			if err := s.CreateJob(ctx, &models.Job{
+				ID:            "active-job-777",
+				OwnerID:       "owner-777",
+				EmployeeID:    "employee-777",
+				UserID:        "client-777",
+				Status:        models.JobStatusActive,
+				PaymentMethod: "cod",
+			}); err != nil {
+				t.Fatalf("seed CreateJob: %v", err)
+			}
+		}
 
 		tokenEmployee, _ := jwtutil.GenerateToken("employee-777", "employee", "owner-777", "employee@example.com")
 
@@ -905,14 +949,16 @@ func TestUserServiceHandlers(t *testing.T) {
 		ownerID := "owner-require-tier-err"
 		empID := "emp-require-tier-err"
 
-		_ = s.CreateJob(context.Background(), &models.Job{
+		if err := s.CreateJob(context.Background(), &models.Job{
 			ID:         jobID,
 			OwnerID:    ownerID,
 			EmployeeID: empID,
 			Status:     models.JobStatusActive,
 			Location:   models.Location{Latitude: 30.0, Longitude: 30.0},
 			CreatedAt:  time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@example.com")
 
@@ -963,7 +1009,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			EmployeeID: "rate-employee-123",
 			Status:     models.JobStatusCompleted,
 		}
-		_ = s.CreateJob(ctx, testJob)
+		if err := s.CreateJob(ctx, testJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// Create mock tokens for owner and employee
 		tokenOwner, _ := jwtutil.GenerateToken("rate-owner-123", "owner", "rate-owner-123", "owner@example.com")
@@ -1141,7 +1189,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusPending,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobPending1)
+		if err := s.CreateJob(ctx, jobPending1); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody := map[string]any{
 			"job_id":       "job-pending-1",
@@ -1170,7 +1220,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusPending,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobPending2)
+		if err := s.CreateJob(ctx, jobPending2); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody = map[string]any{
 			"job_id":       "job-pending-2",
@@ -1198,7 +1250,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobActive1)
+		if err := s.CreateJob(ctx, jobActive1); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody = map[string]any{
 			"job_id":       "job-active-1",
@@ -1241,7 +1295,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusCompleted,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobCompleted1)
+		if err := s.CreateJob(ctx, jobCompleted1); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody = map[string]any{
 			"job_id":       "job-completed-1",
@@ -1289,7 +1345,9 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// 8. Test Escrow Refund on Cancellation for Non-COD Job
 		// Setup wallet deposit for non-COD refund testing
-		_ = s.Deposit(ctx, "kyc-approved-owner", 500.0)
+		if err := s.Deposit(ctx, "kyc-approved-owner", 500.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		// Create a test service
 		testSvc := &models.Service{
@@ -1302,7 +1360,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		wBefore, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner")
 
@@ -1316,7 +1374,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			LockedEscrowAmount: 10.0,
 			Location:           models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, jobNonCOD)
+		if err := s.CreateJob(ctx, jobNonCOD); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// Calculate escrow amount (dist = 0, base price = 10.0)
 		escrowAmount := 10.0
@@ -1376,7 +1436,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 1. Success case: Active employee completing job
 		jobActiveEmp := &models.Job{
@@ -1388,7 +1448,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobActiveEmp)
+		if err := s.CreateJob(ctx, jobActiveEmp); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody := map[string]any{
 			"job_id":         "job-active-emp",
@@ -1414,7 +1476,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Status:        models.JobStatusActive,
 			PaymentMethod: "cod",
 		}
-		_ = s.CreateJob(ctx, jobDeactEmp)
+		if err := s.CreateJob(ctx, jobDeactEmp); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody = map[string]any{
 			"job_id":         "job-deact-emp",
@@ -1449,7 +1513,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 1. TrackJob request with deactivated employee -> rejected
 		reqBody := map[string]any{
@@ -1509,13 +1573,15 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   "kyc-approved-owner",
 			EmployeeID: "active-employee-under-kyc-approved-owner",
 			Latitude:   30.0444,
 			Longitude:  31.2357,
 			UpdatedAt:  time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
 		reqBody["employee_id"] = tokenActiveEmp
 		body, _ = json.Marshal(reqBody)
@@ -1545,7 +1611,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 1. TrackJob request with deactivated employee -> rejected
 		reqBody := map[string]any{
@@ -1604,13 +1670,15 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// 5. Assigning a valid, active employee belonging to the correct owner -> succeeds
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   "kyc-approved-owner",
 			EmployeeID: "active-employee-under-kyc-approved-owner",
 			Latitude:   30.0444,
 			Longitude:  31.2357,
 			UpdatedAt:  time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 		tokenActiveEmp, _ := jwtutil.GenerateToken("active-employee-under-kyc-approved-owner", "employee", "kyc-approved-owner", "active@example.com")
 		reqBody["employee_id"] = tokenActiveEmp
 		body, _ = json.Marshal(reqBody)
@@ -1641,18 +1709,26 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 2. Setup subscription and wallet for owner using public store APIs
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-integrity-owner",
 			TenantID:  "kyc-approved-owner-integrity",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
-		_ = s.Deposit(ctx, "kyc-approved-owner-integrity", 150.0)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-A", 100.0)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-B", 50.0)
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		if err := s.Deposit(ctx, "kyc-approved-owner-integrity", 150.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-A", 100.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-integrity", "job-integrity-B", 50.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		// 3. Setup two jobs for the same owner
 		jobA := &models.Job{
@@ -1687,8 +1763,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
 
-		_ = s.CreateJob(ctx, jobA)
-		_ = s.CreateJob(ctx, jobB)
+		if err := s.CreateJob(ctx, jobA); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.CreateJob(ctx, jobB); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// (a) Regression Test: CompleteJob capped at LockedEscrowAmount
 		reqBody := map[string]any{
@@ -1755,7 +1835,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, jobC)
+		if err := s.CreateJob(ctx, jobC); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// Set last update time to 1 hour ago
 		u.setTestLocationLastUpdate(jobC.ID, time.Now().Add(-1*time.Hour))
@@ -1791,7 +1873,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-zeroval", "owner", "kyc-approved-owner-zeroval", "owner@example.com")
 		// ADR-0024: open subscription so TrackJob passes the closed-tenant gate
 		// and reaches the zero-escrow rollback path under test.
-		_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "kyc-approved-owner-zeroval", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+		if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "kyc-approved-owner-zeroval", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 
 		// 1. Setup service
 		testSvc := &models.Service{
@@ -1804,10 +1888,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 2. Setup wallet for owner
-		_ = s.Deposit(ctx, "kyc-approved-owner-zeroval", 100.0)
+		if err := s.Deposit(ctx, "kyc-approved-owner-zeroval", 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		// (a) Test: CompleteJob/CancelJob with LockedEscrowAmount == 0 fails closed
 		jobZero := &models.Job{
@@ -1825,8 +1911,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, jobZero)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-zeroval", "job-zeroval-zero", 50.0) // lock some wallet escrow but job record has 0
+		if err := s.CreateJob(ctx, jobZero); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-zeroval", "job-zeroval-zero", 50.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		} // lock some wallet escrow but job record has 0
 
 		// Attempt CompleteJob
 		reqBody := map[string]any{
@@ -1873,14 +1963,18 @@ func TestUserServiceHandlers(t *testing.T) {
 		}
 
 		// Deposit funds for the track job
-		_ = s.Deposit(ctx, "kyc-approved-owner-zeroval", 500.0)
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.Deposit(ctx, "kyc-approved-owner-zeroval", 500.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   "kyc-approved-owner-zeroval",
 			EmployeeID: "active-employee-under-kyc-approved-owner-zeroval",
 			Latitude:   30.1,
 			Longitude:  30.1,
 			UpdatedAt:  time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 
 		tokenUser, _ := jwtutil.GenerateToken("customer-123", "user", "kyc-approved-owner-zeroval", "customer@example.com")
 		trackReqBody := map[string]any{
@@ -1949,10 +2043,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 2. Setup wallet for owner
-		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 500.0)
+		if err := s.Deposit(ctx, "kyc-approved-owner-concurrency", 500.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		// (a) Test: Concurrent CompleteJob vs CancelJob
 		job := &models.Job{
@@ -1970,8 +2066,12 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, job)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-AB", 100.0)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-AB", 100.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		var wg sync.WaitGroup
 		wg.Add(2)
@@ -2050,10 +2150,16 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, jobC)
+		if err := s.CreateJob(ctx, jobC); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		// Deposit and Lock Escrow
-		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-CC", 100.0)
+		if err := s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-CC", 100.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		wg.Add(2)
 		recComp1 := httptest.NewRecorder()
@@ -2112,10 +2218,16 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, jobX)
+		if err := s.CreateJob(ctx, jobX); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		// Deposit and Lock Escrow
-		_ = s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0)
-		_ = s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-XX", 100.0)
+		if err := s.Deposit(ctx, "kyc-approved-owner-concurrency", 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "kyc-approved-owner-concurrency", "job-concurrency-XX", 100.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		wg.Add(2)
 		recCancel1 := httptest.NewRecorder()
@@ -2175,7 +2287,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-1 * time.Hour),
 		}
-		_ = s.CreateJob(ctx, jobCOD)
+		if err := s.CreateJob(ctx, jobCOD); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// Record initial platform and owner wallet balances
 		wBefore, _ := s.GetOrCreateWallet(ctx, "kyc-approved-owner-concurrency")
@@ -2253,14 +2367,16 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         0.0,
 			Longitude:        0.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-coords-validation",
 			TenantID:  "kyc-approved-owner",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 
 		activeJob := &models.Job{
 			ID:            "job-coords-validation",
@@ -2273,7 +2389,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			Location:      models.Location{Latitude: 0.0, Longitude: 0.0},
 			CreatedAt:     time.Now().Add(-1 * time.Hour),
 		}
-		s.CreateJob(ctx, activeJob)
+		if err := s.CreateJob(ctx, activeJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenEmp, _ := jwtutil.GenerateToken("active-employee", "employee", "kyc-approved-owner", "employee@example.com")
 
@@ -2391,7 +2509,7 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        31.0,
 		}
-		s.CreateService(context.Background(), mockSvc)
+		mustCreateService(t, s, context.Background(), mockSvc)
 
 		// Let's verify: a customer booking a job with service_id resolves owner ID server-side.
 		// (a) Customer books WITHOUT supplying owner_id in request body
@@ -2462,7 +2580,9 @@ func TestUserServiceHandlers(t *testing.T) {
 		// ADR-0024: keep other-owner open so the spoofing attempt reaches the
 		// tenant-match check (403) instead of the closed-tenant gate (402);
 		// closed-tenant rejection itself is covered by the closed-status tests.
-		_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "other-owner", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+		if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: "other-owner", Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 		reqBodySpoofToken := map[string]any{
 			"owner_id":       tokenOtherOwner, // valid token but for a different owner!
 			"user_id":        tokenClientUser,
@@ -2506,26 +2626,32 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, svcCoords)
+		mustCreateService(t, s, ctx, svcCoords)
 
 		// 2. Setup subscription and deposit enough funds in owner wallet
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-pricing-owner",
 			TenantID:  "kyc-approved-owner-pricing",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
-		_ = s.Deposit(ctx, "kyc-approved-owner-pricing", 100.0)
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		if err := s.Deposit(ctx, "kyc-approved-owner-pricing", 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		tokenApprovedOwnerPricing, _ := jwtutil.GenerateToken("kyc-approved-owner-pricing", "owner", "kyc-approved-owner-pricing", "pricing@example.com")
 		tokenEmpPricing, _ := jwtutil.GenerateToken("emp-under-kyc-approved-owner-pricing", "employee", "kyc-approved-owner-pricing", "emp@pricing.com")
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			EmployeeID: "emp-under-kyc-approved-owner-pricing",
 			TenantID:   "kyc-approved-owner-pricing",
 			Latitude:   30.0,
 			Longitude:  30.0,
 			UpdatedAt:  time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 
 		// 3. Request coordinates identical or very close to service coordinates
 		reqBody := map[string]any{
@@ -2574,12 +2700,14 @@ func TestUserServiceHandlers(t *testing.T) {
 		ctx := context.Background()
 
 		// 1. Setup subscription and active job
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-speed-check-owner",
 			TenantID:  "kyc-approved-owner-speed",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 		activeJob := &models.Job{
 			ID:            "job-speed-check-cumulative",
 			OwnerID:       "kyc-approved-owner-speed",
@@ -2589,7 +2717,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			PaymentMethod: "cod",
 			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, activeJob)
+		if err := s.CreateJob(ctx, activeJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		tokenEmployeeSpeed, _ := jwtutil.GenerateToken("employee-123-speed", "employee", "kyc-approved-owner-speed", "emp@example.com")
 
@@ -2649,12 +2779,14 @@ func TestUserServiceHandlers(t *testing.T) {
 		u2.appEnv = "test"
 
 		// 2. Setup subscription and job
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-throttle-owner",
 			TenantID:  "kyc-approved-owner-throttle",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 		activeJob := &models.Job{
 			ID:            "job-throttle-sharing",
 			OwnerID:       "kyc-approved-owner-throttle",
@@ -2664,7 +2796,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			PaymentMethod: "cod",
 			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, activeJob)
+		if err := s.CreateJob(ctx, activeJob); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		tokenEmployeeThrottle, _ := jwtutil.GenerateToken("employee-123-throttle", "employee", "kyc-approved-owner-throttle", "emp@example.com")
 
 		// 3. Make an update on u1 -> succeeds
@@ -2720,21 +2854,25 @@ func TestUserServiceHandlers(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, testSvc)
+		mustCreateService(t, s, ctx, testSvc)
 
 		// 2. Setup subscription and deposit enough funds in owner wallet
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID:        "sub-complete-coords-owner",
 			TenantID:  "kyc-approved-owner-complete",
 			Tier:      models.PlanPaid,
 			StartedAt: time.Now(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 
 		tokenEmployeeComplete, _ := jwtutil.GenerateToken("employee-123-complete", "employee", "kyc-approved-owner-complete", "emp@example.com")
 
 		// Case A: COD Payment Path
 		t.Run("COD Path", func(t *testing.T) {
-			_ = s.Deposit(ctx, "kyc-approved-owner-complete", 200.0)
+			if err := s.Deposit(ctx, "kyc-approved-owner-complete", 200.0); err != nil {
+				t.Fatalf("seed Deposit: %v", err)
+			}
 
 			job := &models.Job{
 				ID:            "job-complete-coords-cod",
@@ -2746,10 +2884,14 @@ func TestUserServiceHandlers(t *testing.T) {
 				PaymentMethod: "cod",
 				Location:      models.Location{Latitude: 30.0, Longitude: 30.0}, // Original: dist = 0, price = 10.0
 			}
-			_ = s.CreateJob(ctx, job)
+			if err := s.CreateJob(ctx, job); err != nil {
+				t.Fatalf("seed CreateJob: %v", err)
+			}
 
 			// Live location update to somewhere far away (dist = 111 km, which would increase cost significantly)
-			_ = s.UpdateJobLocation(ctx, job.ID, 31.0, 30.0)
+			if err := s.UpdateJobLocation(ctx, job.ID, 31.0, 30.0); err != nil {
+				t.Fatalf("seed UpdateJobLocation: %v", err)
+			}
 
 			reqBody := map[string]any{
 				"job_id":         job.ID,
@@ -2779,7 +2921,9 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// Case B: Escrow Payment Path
 		t.Run("Escrow Path", func(t *testing.T) {
-			_ = s.Deposit(ctx, "kyc-approved-owner-complete", 200.0)
+			if err := s.Deposit(ctx, "kyc-approved-owner-complete", 200.0); err != nil {
+				t.Fatalf("seed Deposit: %v", err)
+			}
 
 			job := &models.Job{
 				ID:                 "job-complete-coords-escrow",
@@ -2792,11 +2936,17 @@ func TestUserServiceHandlers(t *testing.T) {
 				LockedEscrowAmount: 100.0,
 				Location:           models.Location{Latitude: 30.0, Longitude: 30.0}, // Original: dist = 0, price = 10.0
 			}
-			_ = s.CreateJob(ctx, job)
-			_ = s.LockEscrow(ctx, "kyc-approved-owner-complete", job.ID, 100.0)
+			if err := s.CreateJob(ctx, job); err != nil {
+				t.Fatalf("seed CreateJob: %v", err)
+			}
+			if err := s.LockEscrow(ctx, "kyc-approved-owner-complete", job.ID, 100.0); err != nil {
+				t.Fatalf("seed LockEscrow: %v", err)
+			}
 
 			// Live location update to somewhere far away
-			_ = s.UpdateJobLocation(ctx, job.ID, 31.0, 30.0)
+			if err := s.UpdateJobLocation(ctx, job.ID, 31.0, 30.0); err != nil {
+				t.Fatalf("seed UpdateJobLocation: %v", err)
+			}
 
 			reqBody := map[string]any{
 				"job_id":       job.ID,
@@ -2848,7 +2998,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			PaymentMethod: "cod",
 			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// Subtest A: Employee of the job attempts direct cancel -> rejected
 		// with 401 Unauthorized (ADR-0027 removed the employee role from
@@ -2937,9 +3089,13 @@ func TestUserServiceHandlers(t *testing.T) {
 		tokenTenantB, _ := jwtutil.GenerateToken("tenant-b-owner", "owner", "tenant-b", "ownerB@example.com")
 
 		// Create Wallet for Tenant A
-		_ = s.Deposit(ctx, "tenant-a-owner", 50.0)
+		if err := s.Deposit(ctx, "tenant-a-owner", 50.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 		// Create Ledger for Tenant A
-		_ = s.LockEscrow(ctx, "tenant-a-owner", "job-tenant-a", 10.0)
+		if err := s.LockEscrow(ctx, "tenant-a-owner", "job-tenant-a", 10.0); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		// 1. GetJob access check
 		jobA := &models.Job{
@@ -2950,7 +3106,9 @@ func TestUserServiceHandlers(t *testing.T) {
 			PaymentMethod: "cod",
 			Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, jobA)
+		if err := s.CreateJob(ctx, jobA); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		t.Run("GetJob Tenant Mismatch", func(t *testing.T) {
 			req := httptest.NewRequest("GET", "/users/jobs/get?id=job-tenant-a&requester_id="+tokenTenantB, nil)
@@ -3012,18 +3170,22 @@ func TestUserServiceHandlers(t *testing.T) {
 			tokenOwner, _ := jwtutil.GenerateToken("kyc-approved-owner-alias", "owner", "kyc-approved-owner-alias", "ownerAlias@example.com")
 			tokenCustomer, _ := jwtutil.GenerateToken("customer-alias", "user", "", "customerAlias@example.com")
 			tokenEmployee, _ := jwtutil.GenerateToken("employee-under-kyc-approved-owner-alias", "employee", "kyc-approved-owner-alias", "employeeAlias@example.com")
-			_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 				TenantID:   "kyc-approved-owner-alias",
 				EmployeeID: "employee-under-kyc-approved-owner-alias",
 				Latitude:   30.0,
 				Longitude:  31.0,
 				UpdatedAt:  time.Now().UTC(),
-			})
-			_ = s.UpsertSubscription(ctx, &models.Subscription{
+			}); err != nil {
+				t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+			}
+			if err := s.UpsertSubscription(ctx, &models.Subscription{
 				TenantID:  "kyc-approved-owner-alias",
 				Tier:      models.PlanPaid,
 				ExpiresAt: time.Now().Add(24 * time.Hour),
-			})
+			}); err != nil {
+				t.Fatalf("seed UpsertSubscription: %v", err)
+			}
 
 			// A. CreateService using owner_token
 			reqBody := map[string]any{
@@ -3125,12 +3287,14 @@ func TestUserServiceHandlers(t *testing.T) {
 			}
 
 			// G. UpdateJobLocation using requester_token
-			s.UpsertSubscription(context.Background(), &models.Subscription{
+			if err := s.UpsertSubscription(context.Background(), &models.Subscription{
 				ID:        "sub-alias-kyc-approved-owner-alias",
 				TenantID:  "kyc-approved-owner-alias",
 				Tier:      models.PlanPaid,
 				StartedAt: time.Now().UTC(),
-			})
+			}); err != nil {
+				t.Fatalf("seed UpsertSubscription: %v", err)
+			}
 
 			reqBodyLoc := map[string]any{
 				"job_id":          jobID,
@@ -3265,11 +3429,15 @@ func TestGetJobsByOwner(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_owner_jobs_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping TestGetJobsByOwner integration test: MongoDB not available (%v)", err)
 		return
@@ -3442,11 +3610,15 @@ func TestGetJobsByCustomer(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_customer_jobs_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping TestGetJobsByCustomer integration test: MongoDB not available (%v)", err)
 		return
@@ -3656,11 +3828,15 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -3714,7 +3890,9 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 
 	ownerID := "rec-owner-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	userID := "rec-user-1"
 	serviceID := "svc-rec-1"
 
@@ -3728,7 +3906,7 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, mockSvc)
+	mustCreateService(t, s, ctx, mockSvc)
 
 	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
 		t.Fatalf("Failed to deposit funds: %v", err)
@@ -3746,13 +3924,15 @@ func TestTrackJob_EscrowRollbackFailure_ReconciliationRequired(t *testing.T) {
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
 	tokenEmp, _ := jwtutil.GenerateToken("emp-under-rec-owner-1", "employee", ownerID, "emp@example.com")
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		EmployeeID: "emp-under-rec-owner-1",
 		TenantID:   ownerID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	trackReqBody := map[string]any{
 		"owner_id":       tokenOwner,
@@ -3823,11 +4003,15 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -3881,7 +4065,9 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 
 	ownerID := "idem-owner-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	userID := "idem-user-1"
 	serviceID := "svc-idem-1"
 
@@ -3895,7 +4081,7 @@ func TestTrackJob_IdempotencyKey(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, mockSvc)
+	mustCreateService(t, s, ctx, mockSvc)
 
 	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
 		t.Fatalf("Failed to deposit funds: %v", err)
@@ -4310,7 +4496,9 @@ func TestRoleEnforcement_JobLifecycle(t *testing.T) {
 		Status:   models.JobStatusActive,
 		Location: models.Location{Latitude: 30.0, Longitude: 30.0},
 	}
-	_ = s.CreateJob(context.Background(), dummyJob)
+	if err := s.CreateJob(context.Background(), dummyJob); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	// 1. GetJob by employee list passing owner token MUST fail with 401 Unauthorized
 	reqGetEmp := httptest.NewRequest("GET", "/users/jobs?requester_id="+ownerToken, nil)
@@ -4419,11 +4607,15 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -4482,19 +4674,25 @@ func TestTrackJob_RedisBackedIdempotency_MultiInstanceAndTTL(t *testing.T) {
 
 	ownerID := "redis-owner-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	userID := "redis-user-1"
 	serviceID := "redis-svc-1"
 
-	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.Deposit(ctx, ownerID, 500.0)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	mustCreateService(t, s, ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-under-redis-owner-1",
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "user@example.com")
@@ -4565,11 +4763,15 @@ func TestNegotiableTransportPricing(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -4581,7 +4783,9 @@ func TestNegotiableTransportPricing(t *testing.T) {
 
 	ownerID := "kyc-approved-owner-transport-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	empID := "emp-transport-1"
 	custID := "cust-transport-1"
 	unrelatedID := "unrelated-user-1"
@@ -4655,7 +4859,7 @@ func TestNegotiableTransportPricing(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcTransport)
+	mustCreateService(t, s, ctx, svcTransport)
 
 	// Seed delivery service
 	svcDelivery := &models.Service{
@@ -4668,14 +4872,16 @@ func TestNegotiableTransportPricing(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcDelivery)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	mustCreateService(t, s, ctx, svcDelivery)
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	var reqCounter int
 	nextIP := func() string {
@@ -5129,7 +5335,9 @@ func TestNegotiableTransportPricing(t *testing.T) {
 
 		// Manually set PriceProposalExpiresAt to past in store
 		expiredTime := time.Now().UTC().Add(-1 * time.Minute)
-		s.UpdateJobPriceProposal(ctx, jobID, floatPtr(120.0), "customer", &expiredTime)
+		if err := s.UpdateJobPriceProposal(ctx, jobID, floatPtr(120.0), "customer", &expiredTime); err != nil {
+			t.Fatalf("seed UpdateJobPriceProposal: %v", err)
+		}
 
 		// GetJob triggers lazy expiry
 		reqGet := httptest.NewRequest("GET", "/users/jobs/get?id="+jobID+"&requester_id="+tokenCust, nil)
@@ -5226,11 +5434,15 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -5276,12 +5488,14 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 	u1 := NewUserService(s, cfg, rdb1)
 	u2 := NewUserService(s, cfg, rdb2)
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-multi-owner",
 		TenantID:  "multi-owner-123",
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	activeJob := &models.Job{
 		ID:            "job-multi-instance-throttle",
@@ -5292,7 +5506,9 @@ func TestUpdateJobLocation_RedisBackedThrottle_MultiInstance(t *testing.T) {
 		PaymentMethod: "cod",
 		Location:      models.Location{Latitude: 30.0, Longitude: 30.0},
 	}
-	_ = s.CreateJob(ctx, activeJob)
+	if err := s.CreateJob(ctx, activeJob); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	tokenEmp, _ := jwtutil.GenerateToken("emp-multi-123", "employee", "multi-owner-123", "emp@example.com")
 
 	reqBody := map[string]any{
@@ -5381,11 +5597,15 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -5418,12 +5638,14 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 
 	u := NewUserService(s, cfg, nil)
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-speed-owner",
 		TenantID:  "speed-owner-123",
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	tokenEmp, _ := jwtutil.GenerateToken("emp-speed-123", "employee", "speed-owner-123", "emp@example.com")
 
@@ -5447,7 +5669,9 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 			},
 			CurrentLocation: &models.Location{Latitude: 30.25, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, jobCum)
+		if err := s.CreateJob(ctx, jobCum); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody := map[string]any{
 			"job_id":       jobCum.ID,
@@ -5490,7 +5714,9 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 			},
 			CurrentLocation: &models.Location{Latitude: 30.004, Longitude: 30.0},
 		}
-		_ = s.CreateJob(ctx, jobSlow)
+		if err := s.CreateJob(ctx, jobSlow); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody := map[string]any{
 			"job_id":       jobSlow.ID,
@@ -5524,7 +5750,9 @@ func TestUpdateJobLocation_SpeedCheck_CumulativeAndStep(t *testing.T) {
 			CurrentLocation: &models.Location{Latitude: 30.0, Longitude: 30.0},
 			CreatedAt:       time.Now().Add(-60 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobStep)
+		if err := s.CreateJob(ctx, jobStep); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		reqBody := map[string]any{
 			"job_id":       jobStep.ID,
@@ -5556,11 +5784,15 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -5604,7 +5836,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, delivSvc)
+	mustCreateService(t, s, ctx, delivSvc)
 
 	// Create Transport Service (Base = $10, Rate = $2/km)
 	transSvc := &models.Service{
@@ -5617,14 +5849,16 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, transSvc)
+	mustCreateService(t, s, ctx, transSvc)
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-adr7-owner",
 		TenantID:  "owner-adr7-123",
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken("owner-adr7-123", "owner", "owner-adr7-123", "owner@example.com")
 
@@ -5647,7 +5881,9 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-30 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobA)
+		if err := s.CreateJob(ctx, jobA); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		compReq := map[string]any{
 			"job_id":          jobA.ID,
@@ -5689,7 +5925,9 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-30 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobB)
+		if err := s.CreateJob(ctx, jobB); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		compReq := map[string]any{
 			"job_id":          jobB.ID,
@@ -5727,7 +5965,7 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		Latitude:         30.9,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, delivSvcLong)
+	mustCreateService(t, s, ctx, delivSvcLong)
 
 	// (c) Actual distance under 70% of booked — lands in escrow_reconciliation_required with note, NOT auto-completed
 	t.Run("Actual distance under 70% of booked flags job for reconciliation review", func(t *testing.T) {
@@ -5747,7 +5985,9 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-30 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobC)
+		if err := s.CreateJob(ctx, jobC); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		compReq := map[string]any{
 			"job_id":          jobC.ID,
@@ -5796,7 +6036,9 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-30 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobD)
+		if err := s.CreateJob(ctx, jobD); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		compReq := map[string]any{
 			"job_id":          jobD.ID,
@@ -5833,9 +6075,15 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 			},
 			CreatedAt: time.Now().Add(-30 * time.Minute),
 		}
-		_ = s.CreateJob(ctx, jobE)
-		_ = s.Deposit(ctx, "owner-adr7-123", 100.0)
-		_ = s.LockEscrow(ctx, "owner-adr7-123", jobE.ID, 21.10)
+		if err := s.CreateJob(ctx, jobE); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
+		if err := s.Deposit(ctx, "owner-adr7-123", 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
+		if err := s.LockEscrow(ctx, "owner-adr7-123", jobE.ID, 21.10); err != nil {
+			t.Fatalf("seed LockEscrow: %v", err)
+		}
 
 		compReq := map[string]any{
 			"job_id":          jobE.ID,
@@ -5866,11 +6114,15 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -5932,11 +6184,13 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, transSvc)
+	mustCreateService(t, s, ctx, transSvc)
 
 	// 1. Non-COD accept with successful escrow lock
 	t.Run("Non-COD Accept with Successful Escrow Lock", func(t *testing.T) {
-		_ = s.Deposit(ctx, ownerID, 300.0)
+		if err := s.Deposit(ctx, ownerID, 300.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		job1 := &models.Job{
 			ID:            "job-respond-wallet-success",
@@ -5951,7 +6205,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job1)
+		if err := s.CreateJob(ctx, job1); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		respReq := map[string]any{
 			"job_id":          job1.ID,
@@ -6000,7 +6256,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job2)
+		if err := s.CreateJob(ctx, job2); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		walletBefore, _ := s.GetOrCreateWallet(ctx, ownerID)
 
@@ -6047,7 +6305,7 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		}
-		s.CreateService(ctx, poorSvc)
+		mustCreateService(t, s, ctx, poorSvc)
 
 		job3 := &models.Job{
 			ID:            "job-respond-insufficient-funds",
@@ -6062,7 +6320,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job3)
+		if err := s.CreateJob(ctx, job3); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		respReq := map[string]any{
 			"job_id":          job3.ID,
@@ -6104,8 +6364,10 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		}
-		s.CreateService(ctx, svcRB)
-		_ = s.Deposit(ctx, ownerIDRollback, 500.0)
+		mustCreateService(t, s, ctx, svcRB)
+		if err := s.Deposit(ctx, ownerIDRollback, 500.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		job4 := &models.Job{
 			ID:            "job-respond-rollback-success",
@@ -6120,7 +6382,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job4)
+		if err := s.CreateJob(ctx, job4); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		mockCtx := &contextMock{Context: context.Background()}
 		respReq := map[string]any{
@@ -6162,8 +6426,10 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			Latitude:  30.0,
 			Longitude: 30.0,
 		}
-		s.CreateService(ctx, svcRec)
-		_ = s.Deposit(ctx, ownerIDRec, 500.0)
+		mustCreateService(t, s, ctx, svcRec)
+		if err := s.Deposit(ctx, ownerIDRec, 500.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		job5 := &models.Job{
 			ID:            "job-respond-reconciliation-fallback",
@@ -6178,7 +6444,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job5)
+		if err := s.CreateJob(ctx, job5); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		u.rollbackEscrowHook = func(ctx context.Context, tenantID string, amount float64) error {
 			return fmt.Errorf("simulated rollback failure")
@@ -6248,8 +6516,10 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			Latitude:         30.0,
 			Longitude:        30.0,
 		}
-		s.CreateService(ctx, svcE2E)
-		_ = s.Deposit(ctx, ownerIDE2E, 400.0)
+		mustCreateService(t, s, ctx, svcE2E)
+		if err := s.Deposit(ctx, ownerIDE2E, 400.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		job6 := &models.Job{
 			ID:            "job-respond-e2e-full-chain",
@@ -6264,7 +6534,9 @@ func TestRespondPrice_EscrowLockingAndReconciliationFallback(t *testing.T) {
 			CreatedAt:     time.Now().UTC(),
 			UpdatedAt:     time.Now().UTC(),
 		}
-		_ = s.CreateJob(ctx, job6)
+		if err := s.CreateJob(ctx, job6); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		// 1. RespondPrice Accept
 		respReq := map[string]any{
@@ -6330,11 +6602,15 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -6387,19 +6663,25 @@ func TestTrackJob_IdempotencyReplayRequiresAuthentication(t *testing.T) {
 
 	victimOwnerID := "idem-victim-owner-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: victimOwnerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: victimOwnerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	victimUserID := "idem-victim-user-1"
 	serviceID := "idem-svc-1"
 
-	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: victimOwnerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.Deposit(ctx, victimOwnerID, 500.0)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	mustCreateService(t, s, ctx, &models.Service{ID: serviceID, TenantID: victimOwnerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.Deposit(ctx, victimOwnerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   victimOwnerID,
 		EmployeeID: "emp-under-idem-victim-owner-1",
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(victimOwnerID, "owner", victimOwnerID, "victim-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(victimUserID, "user", victimOwnerID, "victim-user@example.com")

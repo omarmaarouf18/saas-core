@@ -30,16 +30,22 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 	paidOwnerID := "paid-owner-matrix-2"
 
 	// Seed Paid subscription for paidOwnerID
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-paid-" + paidOwnerID,
 		TenantID:  paidOwnerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// Seed wallet balances
-	_ = s.Deposit(ctx, freeOwnerID, 1000.0)
-	_ = s.Deposit(ctx, paidOwnerID, 1000.0)
+	if err := s.Deposit(ctx, freeOwnerID, 1000.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.Deposit(ctx, paidOwnerID, 1000.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	freeOwnerToken, _ := jwtutil.GenerateToken(freeOwnerID, "owner", freeOwnerID, "free@matrix.com")
 	paidOwnerToken, _ := jwtutil.GenerateToken(paidOwnerID, "owner", paidOwnerID, "paid@matrix.com")
@@ -56,7 +62,7 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		Latitude:         30.0444,
 		Longitude:        31.2357,
 	}
-	s.CreateService(ctx, freeSvc)
+	mustCreateService(t, s, ctx, freeSvc)
 
 	paidSvc := &models.Service{
 		ID:               "svc-paid-matrix",
@@ -68,11 +74,11 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		Latitude:         30.0444,
 		Longitude:        31.2357,
 	}
-	s.CreateService(ctx, paidSvc)
+	mustCreateService(t, s, ctx, paidSvc)
 
 	// Pre-create jobs for status tests
 	activeJobID := "job-active-free-matrix"
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:                 activeJobID,
 		OwnerID:            freeOwnerID,
 		UserID:             "cust-matrix-user",
@@ -82,10 +88,12 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		LockedEscrowAmount: 50.0,
 		PaymentMethod:      "wallet",
 		CreatedAt:          time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	completedJobID := "job-completed-free-matrix"
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:                 completedJobID,
 		OwnerID:            freeOwnerID,
 		UserID:             "cust-matrix-user",
@@ -95,10 +103,12 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		LockedEscrowAmount: 0,
 		PaymentMethod:      "wallet",
 		CreatedAt:          time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	reconJobID := "job-recon-free-matrix"
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:                 reconJobID,
 		OwnerID:            freeOwnerID,
 		UserID:             "cust-matrix-user",
@@ -108,7 +118,9 @@ func TestPaidTierGatingMatrix(t *testing.T) {
 		LockedEscrowAmount: 50.0,
 		PaymentMethod:      "wallet",
 		CreatedAt:          time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	// =========================================================================
 	// PART 1: Read-Only Endpoints (Free Owner MUST succeed)

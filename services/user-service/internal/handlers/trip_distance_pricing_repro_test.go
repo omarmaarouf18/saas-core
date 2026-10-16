@@ -59,16 +59,20 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		custID := "repro-cust-direct"
 		svcID := "svc-repro-direct"
 
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID: "sub-" + ownerID, TenantID: ownerID, Tier: models.PlanPaid, StartedAt: time.Now().UTC(),
-		})
-		s.CreateService(ctx, &models.Service{
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		mustCreateService(t, s, ctx, &models.Service{
 			ID: svcID, TenantID: ownerID, Name: "Transport Service", Category: "transport",
 			TenantBasePrice: basePrice, TenantPricePerKM: pricePerKM, Latitude: 30.0444, Longitude: 31.2357,
 		})
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID: ownerID, EmployeeID: empID, Latitude: courierCloseCairo.Latitude, Longitude: courierCloseCairo.Longitude, UpdatedAt: time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 
 		tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@repro.com")
 		tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@repro.com")
@@ -118,16 +122,20 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		custID := "repro-cust-cascade"
 		svcID := "svc-repro-cascade"
 
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID: "sub-" + ownerID, TenantID: ownerID, Tier: models.PlanPaid, StartedAt: time.Now().UTC(),
-		})
-		s.CreateService(ctx, &models.Service{
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		mustCreateService(t, s, ctx, &models.Service{
 			ID: svcID, TenantID: ownerID, Name: "Transport Service", Category: "transport",
 			TenantBasePrice: basePrice, TenantPricePerKM: pricePerKM, Latitude: 30.0444, Longitude: 31.2357,
 		})
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID: ownerID, EmployeeID: empID, Latitude: courierCloseCairo.Latitude, Longitude: courierCloseCairo.Longitude, UpdatedAt: time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 
 		tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@repro.com")
 		tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@repro.com")
@@ -189,19 +197,23 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		custID := "repro-cust-mirror"
 		svcID := "svc-repro-mirror"
 
-		_ = s.UpsertSubscription(ctx, &models.Subscription{
+		if err := s.UpsertSubscription(ctx, &models.Subscription{
 			ID: "sub-" + ownerID, TenantID: ownerID, Tier: models.PlanPaid, StartedAt: time.Now().UTC(),
-		})
-		s.CreateService(ctx, &models.Service{
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
+		mustCreateService(t, s, ctx, &models.Service{
 			ID: svcID, TenantID: ownerID, Name: "Transport Service", Category: "transport",
 			TenantBasePrice: basePrice, TenantPricePerKM: pricePerKM, Latitude: 30.0444, Longitude: 31.2357,
 		})
 
 		// Courier is far away in Alexandria (~181 km away)
 		courierFarAlexandria := models.Location{Latitude: 31.2089, Longitude: 29.9092}
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID: ownerID, EmployeeID: empID, Latitude: courierFarAlexandria.Latitude, Longitude: courierFarAlexandria.Longitude, UpdatedAt: time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 
 		// Trip is very short: Cairo Downtown to Tahrir Museum (~0.43 km)
 		destTahrirMuseum := models.Location{Latitude: 30.0478, Longitude: 31.2336}

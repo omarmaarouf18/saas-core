@@ -26,7 +26,7 @@ func TestTrackJob_AddressNoteRoundTrip(t *testing.T) {
 	u, _ := trackJobClosedStatusHarness(t, s)
 
 	seedClosedStatusSub(t, s, ctx, "note-owner", models.PlanPaid, time.Now().UTC().Add(time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-note", TenantID: "note-owner", Name: "Note Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -81,7 +81,7 @@ func TestTrackJob_AddressNoteTooLongRejected(t *testing.T) {
 	u, _ := trackJobClosedStatusHarness(t, s)
 
 	seedClosedStatusSub(t, s, ctx, "note-owner-2", models.PlanPaid, time.Now().UTC().Add(time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-note-2", TenantID: "note-owner-2", Name: "Note Shop 2",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -113,7 +113,7 @@ func TestTrackJob_NoAddressNoteBehavesAsBefore(t *testing.T) {
 	u, _ := trackJobClosedStatusHarness(t, s)
 
 	seedClosedStatusSub(t, s, ctx, "note-owner-3", models.PlanPaid, time.Now().UTC().Add(time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-note-3", TenantID: "note-owner-3", Name: "Note Shop 3",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,

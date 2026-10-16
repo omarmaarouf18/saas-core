@@ -27,13 +27,17 @@ func TestCompleteJob_RateLimiting(t *testing.T) {
 	ownerID := "rlc-owner"
 	empID := "rlc-emp"
 	svcID := "rlc-svc"
-	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.Deposit(ctx, ownerID, 500.0)
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 	job := &models.Job{ID: "rlc-job", OwnerID: ownerID, UserID: "rlc-cust", EmployeeID: empID,
 		ServiceID: svcID, Status: models.JobStatusActive, PaymentMethod: "wallet",
 		LockedEscrowAmount: 5.0, Location: models.Location{Latitude: 30.0, Longitude: 30.0},
 		CreatedAt: time.Now().Add(-time.Hour)}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	if err := s.LockEscrow(ctx, ownerID, job.ID, 5.0); err != nil {
 		t.Fatalf("setup lock failed: %v", err)
 	}
@@ -65,13 +69,17 @@ func TestResolveReconciliation_RateLimiting(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "rlr-owner"
 	svcID := "rlr-svc"
-	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.Deposit(ctx, ownerID, 500.0)
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 	job := &models.Job{ID: "rlr-job", OwnerID: ownerID, UserID: "rlr-cust", ServiceID: svcID,
 		Status: models.JobStatusEscrowReconciliationRequired, PaymentMethod: "wallet",
 		LockedEscrowAmount: 10.0, Location: models.Location{Latitude: 30.0, Longitude: 30.0},
 		CreatedAt: time.Now().Add(-time.Hour)}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	if err := s.LockEscrow(ctx, ownerID, job.ID, 10.0); err != nil {
 		t.Fatalf("setup lock failed: %v", err)
 	}
@@ -103,7 +111,9 @@ func TestRequestPayout_RateLimiting(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "rlp-owner"
-	_ = s.Deposit(ctx, ownerID, 100.0)
+	if err := s.Deposit(ctx, ownerID, 100.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "rlp-owner@example.com")
 
@@ -134,7 +144,9 @@ func TestGetPayoutRequests_RateLimiting(t *testing.T) {
 	u, s, _, cleanup := idemRaceSetup(t)
 	defer cleanup()
 
-	_ = s.Deposit(context.Background(), "rlg-owner", 10.0)
+	if err := s.Deposit(context.Background(), "rlg-owner", 10.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 	tokenOwner, _ := jwtutil.GenerateToken("rlg-owner", "owner", "rlg-owner", "rlg@example.com")
 
 	codes := make([]int, 0, 31)

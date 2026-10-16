@@ -76,7 +76,7 @@ func TestUpdateJobLocation_NoThrottleReservationBeforeAuth(t *testing.T) {
 	t.Cleanup(func() { _ = hookedClient.Close(); h.rdb = oldRDB })
 
 	ownerID := "owner-throttle-order"
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-throttle", TenantID: ownerID, Name: "T", Category: "delivery",
 		TenantBasePrice: 10, Latitude: 30.0444, Longitude: 31.2357,
 	})

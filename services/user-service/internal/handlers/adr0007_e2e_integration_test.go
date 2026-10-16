@@ -30,11 +30,15 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_e2e_adr0007_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping E2E test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -117,13 +121,15 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	tokenCust, _ := jwtutil.GenerateToken(custID, "customer", ownerID, "cust@example.com")
 
 	// Seed active subscription for owner
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-e2e-adr0007",
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
 		ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// Long Delivery Service: Base=$10, Rate=$2/km, Pickup at (30.9, 30.0) -> Booked distance ~100 km ($209.80)
 	svcLongDelivery := &models.Service{
@@ -136,7 +142,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		Latitude:         30.9,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcLongDelivery)
+	mustCreateService(t, s, ctx, svcLongDelivery)
 
 	// Standard Delivery Service: Base=$10, Rate=$2/km, Pickup at (30.1, 30.0) -> Booked distance ~11.1 km ($32.22)
 	svcStdDelivery := &models.Service{
@@ -149,15 +155,17 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		Latitude:         30.1,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcStdDelivery)
+	mustCreateService(t, s, ctx, svcStdDelivery)
 
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.9,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// The X-Real-IP values double as Redis rate-limiter keys
 	// (ratelimit:<prefix>:count:<ip>), so they carry the per-run suffix.
@@ -202,7 +210,9 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		}
 
 		// Simulate employee recording waypoints total ~5 km (far less than booked 100 km)
-		_ = s.UpdateJobLocation(ctx, jobID, 30.045, 30.0)
+		if err := s.UpdateJobLocation(ctx, jobID, 30.045, 30.0); err != nil {
+			t.Fatalf("seed UpdateJobLocation: %v", err)
+		}
 
 		// Attempt CompleteJob
 		compReq := map[string]any{
@@ -246,16 +256,20 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	// -------------------------------------------------------------------------
 	t.Run("E2E Step 4: Over-distance detour applies guaranteed floor and non-COD escrow cap", func(t *testing.T) {
 		// Deposit $100 in owner wallet
-		_ = s.Deposit(ctx, ownerID, 100.0)
+		if err := s.Deposit(ctx, ownerID, 100.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		tokenCust2, _ := jwtutil.GenerateToken(testutil.ID("cust2-adr0007"), "customer", ownerID, "cust2@example.com")
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   ownerID,
 			EmployeeID: empID,
 			Latitude:   30.1,
 			Longitude:  30.0,
 			UpdatedAt:  time.Now().UTC(),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcStdDelivery.ID,
@@ -287,8 +301,12 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		lockedEscrow, _ := jobData["locked_escrow_amount"].(float64)
 
 		// Simulate driver taking a detour (waypoints adding ~27 km -> A_actual ~$65.60)
-		_ = s.UpdateJobLocation(ctx, jobID, 30.15, 30.0)
-		_ = s.UpdateJobLocation(ctx, jobID, 30.25, 30.0)
+		if err := s.UpdateJobLocation(ctx, jobID, 30.15, 30.0); err != nil {
+			t.Fatalf("seed UpdateJobLocation: %v", err)
+		}
+		if err := s.UpdateJobLocation(ctx, jobID, 30.25, 30.0); err != nil {
+			t.Fatalf("seed UpdateJobLocation: %v", err)
+		}
 
 		// Complete job
 		compReq := map[string]any{

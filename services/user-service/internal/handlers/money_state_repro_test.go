@@ -29,21 +29,27 @@ func TestRepro_Q3_ReconciliationRelease_ZeroLockedEscrow(t *testing.T) {
 	jobID := "job-q3-recon"
 	empID := "emp-q3-courier"
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// Create wallet for owner and deposit funds so escrow release can credit owner
-	_ = s.Deposit(ctx, ownerID, 100.0)
+	if err := s.Deposit(ctx, ownerID, 100.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	// Lock escrow for the job
-	_ = s.LockEscrow(ctx, ownerID, jobID, 50.0)
+	if err := s.LockEscrow(ctx, ownerID, jobID, 50.0); err != nil {
+		t.Fatalf("seed LockEscrow: %v", err)
+	}
 
 	// Create a job in escrow_reconciliation_required status with 50.0 locked escrow
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:                 jobID,
 		OwnerID:            ownerID,
 		UserID:             "cust-q3",
@@ -53,7 +59,9 @@ func TestRepro_Q3_ReconciliationRelease_ZeroLockedEscrow(t *testing.T) {
 		LockedEscrowAmount: 50.0,
 		PaymentMethod:      "wallet",
 		CreatedAt:          time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@q3.com")
 
@@ -147,14 +155,16 @@ func TestRepro_Q6_JobStatusCAS_GuardsBypass(t *testing.T) {
 	ctx := context.Background()
 	jobID := "job-q6-cas"
 
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:        jobID,
 		OwnerID:   "owner-q6",
 		UserID:    "cust-q6",
 		ServiceID: "svc-q6",
 		Status:    models.JobStatusCancelled, // Terminal status
 		CreatedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	// 1. Attempt UpdateJobStatus on a cancelled job -> must fail
 	errStatus := s.UpdateJobStatus(ctx, jobID, models.JobStatusCompleted)
@@ -238,14 +248,16 @@ func TestRepro_Q10_UpdateService_ConcurrentFieldLevelClobber(t *testing.T) {
 	ownerID := "owner-q10"
 	svcID := "svc-q10"
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Initial Name",

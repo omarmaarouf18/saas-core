@@ -33,11 +33,15 @@ func TestEscrowRepriceDown_ReleasesAndRefundsExactLockedAmount(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -83,12 +87,14 @@ func TestEscrowRepriceDown_ReleasesAndRefundsExactLockedAmount(t *testing.T) {
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "reprice-owner@example.com")
 	tokenEmp, _ := jwtutil.GenerateToken("reprice-employee-1", "employee", ownerID, "reprice-emp@example.com")
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: serviceID, TenantID: ownerID,
 		TenantBasePrice: 1.0, TenantPricePerKM: 0.1, // prices ALREADY lowered post-booking
 		Latitude: 30.0, Longitude: 30.0,
 	})
-	_ = s.Deposit(ctx, ownerID, 500.0)
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	lockedComplete := 155.60
 	jobComplete := &models.Job{
@@ -99,7 +105,9 @@ func TestEscrowRepriceDown_ReleasesAndRefundsExactLockedAmount(t *testing.T) {
 		Location:           models.Location{Latitude: 30.05, Longitude: 30.05}, // recompute would be ~1.56 << locked
 		CreatedAt:          time.Now().Add(-1 * time.Hour),
 	}
-	_ = s.CreateJob(ctx, jobComplete)
+	if err := s.CreateJob(ctx, jobComplete); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	if err := s.LockEscrow(ctx, ownerID, jobComplete.ID, lockedComplete); err != nil {
 		t.Fatalf("escrow lock setup failed: %v", err)
 	}
@@ -133,8 +141,12 @@ func TestEscrowRepriceDown_ReleasesAndRefundsExactLockedAmount(t *testing.T) {
 		Location:           models.Location{Latitude: 30.05, Longitude: 30.05},
 		CreatedAt:          time.Now().Add(-1 * time.Hour),
 	}
-	_ = s.CreateJob(ctx, jobCancel)
-	_ = s.LockEscrow(ctx, ownerID, jobCancel.ID, lockedCancel)
+	if err := s.CreateJob(ctx, jobCancel); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
+	if err := s.LockEscrow(ctx, ownerID, jobCancel.ID, lockedCancel); err != nil {
+		t.Fatalf("seed LockEscrow: %v", err)
+	}
 	walMid := s.GetWallet(ctx, ownerID)
 
 	// --- CancelJob by owner must refund exactly LockedEscrowAmount ---

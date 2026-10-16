@@ -30,11 +30,15 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_audit_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -56,7 +60,9 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 	custID := "cust-audit-1"
 	empID := "emp-audit-1"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -112,15 +118,17 @@ func Test1_FullLifecycleStateAudit(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svc)
+	mustCreateService(t, s, ctx, svc)
 
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Deposit initial funds into owner wallet
 	initialDeposit := 500.0
@@ -300,11 +308,15 @@ func Test3_CrossFeatureInteraction_RespondPrice_And_ADR0007_SpeedCheck(t *testin
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_interact_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -380,22 +392,28 @@ func Test3_CrossFeatureInteraction_RespondPrice_And_ADR0007_SpeedCheck(t *testin
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svc)
-	_ = s.Deposit(ctx, ownerID, 600.0)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	mustCreateService(t, s, ctx, svc)
+	if err := s.Deposit(ctx, ownerID, 600.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-interact-1",
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().Add(-1 * time.Hour),
 		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// 1. Create Job with TrackJob
 	trackReq := map[string]any{

@@ -31,9 +31,13 @@ func setupClosedStatusHarness(t *testing.T) (*store.MongoDB, *UserService, conte
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	dbName := fmt.Sprintf("saas_platform_closed_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		cancel()
 		t.Skipf("Skipping closed-status test: MongoDB not available at %s (%v)", mongoURI, err)
@@ -158,7 +162,7 @@ func TestListServices_ExcludesClosedTenants(t *testing.T) {
 		if tc.seedSub {
 			seedClosedStatusSub(t, s, ctx, tenant, tc.tier, tc.expires)
 		}
-		s.CreateService(ctx, &models.Service{
+		mustCreateService(t, s, ctx, &models.Service{
 			ID:               "svc-" + tenant,
 			TenantID:         tenant,
 			Name:             "Service " + tenant,
@@ -242,7 +246,7 @@ func TestTrackJob_ClosedTenantRejected(t *testing.T) {
 	u, _ := trackJobClosedStatusHarness(t, s)
 
 	seedClosedStatusSub(t, s, ctx, "closed-owner", models.PlanPaid, time.Now().UTC().Add(-time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-closed", TenantID: "closed-owner", Name: "Closed Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -309,7 +313,7 @@ func TestTrackJob_OpenTenantProceeds(t *testing.T) {
 	u, _ := trackJobClosedStatusHarness(t, s)
 
 	seedClosedStatusSub(t, s, ctx, "open-owner", models.PlanPaid, time.Now().UTC().Add(time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-open", TenantID: "open-owner", Name: "Open Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -351,13 +355,13 @@ func TestTrackJob_ClosedBookingAuditEvent(t *testing.T) {
 	defer func() { shipSecurityEventFunc = prev }()
 
 	seedClosedStatusSub(t, s, ctx, "closed-ev-owner", models.PlanPaid, time.Now().UTC().Add(-time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-closed-ev", TenantID: "closed-ev-owner", Name: "Closed Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
 	})
 	seedClosedStatusSub(t, s, ctx, "open-ev-owner", models.PlanPaid, time.Now().UTC().Add(time.Hour))
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-open-ev", TenantID: "open-ev-owner", Name: "Open Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,

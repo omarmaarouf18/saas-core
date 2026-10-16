@@ -28,7 +28,9 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-b01-repro"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	cust1ID := "cust1-b01-repro"
 	cust2ID := "cust2-b01-repro"
 	svcID := "svc-b01-repro"
@@ -36,7 +38,7 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 	pickupLat := 30.0444
 	pickupLon := 31.2357
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Express Delivery",
@@ -52,21 +54,25 @@ func TestRepro_B01_CourierWithPendingOfferNotReoffered(t *testing.T) {
 
 	now := time.Now().UTC()
 	// Courier A is closer (~0.5 km)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empA,
 		Latitude:   30.0489,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 	// Courier B is slightly farther (~1.5 km)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empB,
 		Latitude:   30.0579,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust1, _ := jwtutil.GenerateToken(cust1ID, "user", ownerID, "cust1@test.com")
 	tokenCust2, _ := jwtutil.GenerateToken(cust2ID, "user", ownerID, "cust2@test.com")
@@ -143,14 +149,16 @@ func TestRepro_B02_CourierInReconciliationExcludedFromOffers(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-b02-repro"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-b02-repro"
 	svcID := "svc-b02-repro"
 
 	pickupLat := 30.0444
 	pickupLon := 31.2357
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Express Delivery",
@@ -166,25 +174,29 @@ func TestRepro_B02_CourierInReconciliationExcludedFromOffers(t *testing.T) {
 
 	now := time.Now().UTC()
 	// Courier A is closer (~0.5 km)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empA,
 		Latitude:   30.0489,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 	// Courier B is slightly farther (~1.5 km)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empB,
 		Latitude:   30.0579,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Courier A is locked in escrow_reconciliation_required for an earlier job
 	reconJobID := "job-recon-b02"
-	_ = s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:         reconJobID,
 		OwnerID:    ownerID,
 		EmployeeID: empA,
@@ -192,8 +204,12 @@ func TestRepro_B02_CourierInReconciliationExcludedFromOffers(t *testing.T) {
 		ServiceID:  svcID,
 		Status:     models.JobStatusEscrowReconciliationRequired,
 		Location:   models.Location{Latitude: pickupLat, Longitude: pickupLon},
-	})
-	_, _ = s.TryAcquireCourierLock(ctx, ownerID, empA, reconJobID)
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
+	if _, err := s.TryAcquireCourierLock(ctx, ownerID, empA, reconJobID); err != nil {
+		t.Fatalf("seed TryAcquireCourierLock: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 
@@ -245,7 +261,7 @@ func TestRepro_A01_EquidistantCouriersDeterministicTieBreaking(t *testing.T) {
 	pickupLat := 30.0444
 	pickupLon := 31.2357
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Branch Service",
@@ -262,13 +278,15 @@ func TestRepro_A01_EquidistantCouriersDeterministicTieBreaking(t *testing.T) {
 
 	now := time.Now().UTC()
 	for _, emp := range []string{emp1, emp2, emp3} {
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   ownerID,
 			EmployeeID: emp,
 			Latitude:   pickupLat,
 			Longitude:  pickupLon,
 			UpdatedAt:  now,
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 	}
 
 	firstPicks := make(map[string]int)
@@ -278,7 +296,7 @@ func TestRepro_A01_EquidistantCouriersDeterministicTieBreaking(t *testing.T) {
 	for i := 0; i < 9; i++ {
 		// Drop and re-insert in rotated order: [0,1,2], [1,2,0], [2,0,1]
 		_ = s.DropDatabase(ctx)
-		s.CreateService(ctx, &models.Service{
+		mustCreateService(t, s, ctx, &models.Service{
 			ID:               svcID,
 			TenantID:         ownerID,
 			Name:             "Branch Service",
@@ -294,13 +312,15 @@ func TestRepro_A01_EquidistantCouriersDeterministicTieBreaking(t *testing.T) {
 			candidates[(i+2)%3],
 		}
 		for _, emp := range order {
-			_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+			if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 				TenantID:   ownerID,
 				EmployeeID: emp,
 				Latitude:   pickupLat,
 				Longitude:  pickupLon,
 				UpdatedAt:  now,
-			})
+			}); err != nil {
+				t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+			}
 		}
 
 		candidate, err := u.findNextAvailableEmployee(ctx, ownerID, models.Location{Latitude: pickupLat, Longitude: pickupLon}, nil)

@@ -33,11 +33,15 @@ func TestRespondPrice_ConcurrencyRace_DoubleEscrowPrevention(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_race_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping race condition test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -113,7 +117,7 @@ func TestRespondPrice_ConcurrencyRace_DoubleEscrowPrevention(t *testing.T) {
 		TenantBasePrice:  50.0,
 		TenantPricePerKM: 10.0,
 	}
-	s.CreateService(ctx, svc)
+	mustCreateService(t, s, ctx, svc)
 
 	// 2. Fund Owner Wallet (500.0 — enough for multiple locks if not protected)
 	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
@@ -229,11 +233,15 @@ func TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention(t *testing.T
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_race_propose_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping proposal race test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -280,7 +288,7 @@ func TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention(t *testing.T
 	u := NewUserService(s, cfg, rdb2)
 
 	svc := &models.Service{ID: svcID, TenantID: ownerID, Name: "Ride", Category: "transport", BasePrice: 50.0}
-	s.CreateService(ctx, svc)
+	mustCreateService(t, s, ctx, svc)
 
 	jobID := "job-race-propose-1"
 	job := &models.Job{
@@ -295,7 +303,9 @@ func TestProposePrice_ConcurrencyRace_OverwrittenProposalPrevention(t *testing.T
 		CreatedAt:      time.Now().UTC(),
 		UpdatedAt:      time.Now().UTC(),
 	}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	custToken, _ := jwtutil.GenerateToken(custID, "customer", ownerID, "cust@example.com")
 
@@ -366,11 +376,15 @@ func TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback(t *
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_rollback_fail_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping rollback failure test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -417,8 +431,10 @@ func TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback(t *
 	u := NewUserService(s, cfg, rdb)
 
 	svc := &models.Service{ID: svcID, TenantID: ownerID, Name: "Ride", Category: "transport", BasePrice: 50.0}
-	s.CreateService(ctx, svc)
-	_ = s.Deposit(ctx, ownerID, 500.0)
+	mustCreateService(t, s, ctx, svc)
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	jobID := "job-rollback-fail-1"
 	job := &models.Job{
@@ -433,13 +449,17 @@ func TestRespondPrice_JobStateChanged_RollbackFailure_ReconciliationFallback(t *
 		CreatedAt:      time.Now().UTC(),
 		UpdatedAt:      time.Now().UTC(),
 	}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	empToken, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@example.com")
 
 	// Hook 1: Right before UpdateJobAgreedPrice write, simulate concurrent status change in DB
 	u.updateJobAgreedPriceBeforeWriteHook = func(ctx context.Context) {
-		_ = s.UpdateJobCancellation(ctx, jobID, models.JobStatusCancelled, "concurrent_cancel_race")
+		if err := s.UpdateJobCancellation(ctx, jobID, models.JobStatusCancelled, "concurrent_cancel_race"); err != nil {
+			t.Fatalf("seed UpdateJobCancellation: %v", err)
+		}
 	}
 	defer func() { u.updateJobAgreedPriceBeforeWriteHook = nil }()
 

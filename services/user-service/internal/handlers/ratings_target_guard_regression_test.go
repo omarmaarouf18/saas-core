@@ -110,11 +110,15 @@ func newRatingsRoleHarness(t *testing.T) *ratingsRoleHarness {
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
 
 	dbName := fmt.Sprintf("saas_platform_test_q24_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return nil
@@ -217,7 +221,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 1. Customer rates Courier (Primary bug: was 403 Forbidden)
 	t.Run("Customer rates Courier (201 Created)", func(t *testing.T) {
 		job := newJob("job-c-rates-e", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, customerID, "customer", employeeID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("customer rating courier: got %d %s, want 201 Created", w.Code, w.Body.String())
@@ -227,7 +233,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 2. Courier rates Customer (was 403 Forbidden)
 	t.Run("Courier rates Customer (201 Created)", func(t *testing.T) {
 		job := newJob("job-e-rates-c", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, employeeID, "employee", customerID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("courier rating customer: got %d %s, want 201 Created", w.Code, w.Body.String())
@@ -237,7 +245,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 3. Customer rates Owner (was 403 Forbidden)
 	t.Run("Customer rates Owner (201 Created)", func(t *testing.T) {
 		job := newJob("job-c-rates-o", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, customerID, "customer", ownerID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("customer rating owner: got %d %s, want 201 Created", w.Code, w.Body.String())
@@ -247,7 +257,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 4. Owner rates Courier (pre-existing authorized path)
 	t.Run("Owner rates Courier (201 Created)", func(t *testing.T) {
 		job := newJob("job-o-rates-e", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, ownerID, "owner", employeeID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("owner rating courier: got %d %s, want 201 Created", w.Code, w.Body.String())
@@ -257,7 +269,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 5. Courier rates Owner (pre-existing authorized path)
 	t.Run("Courier rates Owner (201 Created)", func(t *testing.T) {
 		job := newJob("job-e-rates-o", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, employeeID, "employee", ownerID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("courier rating owner: got %d %s, want 201 Created", w.Code, w.Body.String())
@@ -267,7 +281,9 @@ func TestRateJob_RoleAuthorizationMatrix(t *testing.T) {
 	// 6. Owner rates Customer (201 Created)
 	t.Run("Owner rates Customer (201 Created)", func(t *testing.T) {
 		job := newJob("job-o-rates-c", string(models.JobStatusCompleted))
-		_ = s.CreateJob(ctx, job)
+		if err := s.CreateJob(ctx, job); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 		w := postRate(job.ID, ownerID, "owner", customerID)
 		if w.Code != http.StatusCreated {
 			t.Errorf("owner rating customer: got %d %s, want 201 Created", w.Code, w.Body.String())

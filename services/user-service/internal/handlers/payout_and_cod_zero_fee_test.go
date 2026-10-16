@@ -29,11 +29,15 @@ func TestCODZeroFeeCompletion(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_cod_zero_fee_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return
@@ -73,14 +77,16 @@ func TestCODZeroFeeCompletion(t *testing.T) {
 	ownerID := "owner-cod-zero"
 	jobID := "job-cod-zero-1"
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:              "svc-cod",
 		TenantID:        ownerID,
 		Name:            "COD Service",
@@ -162,11 +168,15 @@ func TestOwnerPayoutRequestFlow(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_payout_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return
@@ -206,15 +216,19 @@ func TestOwnerPayoutRequestFlow(t *testing.T) {
 	ownerID := "owner-payout-1"
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@payout.com")
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// Deposit 500 to owner wallet
-	s.GetOrCreateWallet(ctx, ownerID)
+	if _, err := s.GetOrCreateWallet(ctx, ownerID); err != nil {
+		t.Fatalf("seed GetOrCreateWallet: %v", err)
+	}
 	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
 		t.Fatalf("failed to deposit: %v", err)
 	}
@@ -294,11 +308,15 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_flag_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return
@@ -340,12 +358,14 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	ownerToken, _ := jwtutil.GenerateToken("owner-flag", "owner", "owner-flag", "owner@flag.com")
 	custToken, _ := jwtutil.GenerateToken("cust-flag", "customer", "tenant-flag", "cust@flag.com")
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-owner-flag",
 		TenantID:  "owner-flag",
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	reqBody := map[string]any{
 		"owner_id":       "owner-flag",
@@ -375,7 +395,7 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	}
 	svcEnabled := NewUserService(s, cfgEnabled, rdb)
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:              "svc-flag",
 		TenantID:        "owner-flag",
 		Name:            "Flag Service",
@@ -384,8 +404,12 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 		Latitude:        30.0444,
 		Longitude:       31.2357,
 	})
-	s.GetOrCreateWallet(ctx, "owner-flag")
-	s.Deposit(ctx, "owner-flag", 200.0)
+	if _, err := s.GetOrCreateWallet(ctx, "owner-flag"); err != nil {
+		t.Fatalf("seed GetOrCreateWallet: %v", err)
+	}
+	if err := s.Deposit(ctx, "owner-flag", 200.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	req2 := httptest.NewRequest("POST", "/users/jobs/track", bytes.NewReader(body))
 	req2.Header.Set("Authorization", "Bearer "+ownerToken)

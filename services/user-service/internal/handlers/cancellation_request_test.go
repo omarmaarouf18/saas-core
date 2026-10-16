@@ -105,7 +105,7 @@ func setupCancellationTest(t *testing.T) (*UserService, *store.MongoDB, context.
 
 func cxService(t *testing.T, s *store.MongoDB, ctx context.Context, id, owner string) {
 	t.Helper()
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: id, TenantID: owner,
 		TenantBasePrice: 1.0, TenantPricePerKM: 0.1,
 		Latitude: 30.0, Longitude: 30.0,
@@ -146,7 +146,9 @@ func TestCancellationRequest_CreatesPendingWithoutStatusChange(t *testing.T) {
 	}
 	defer cleanup()
 
-	_ = s.CreateJob(ctx, cxJob("cx-job-req-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive))
+	if err := s.CreateJob(ctx, cxJob("cx-job-req-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive)); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	rec := cxSubmitRequest(t, u, "cx-job-req-1", a.empTok, "Vehicle broke down")
 	if rec.Code != http.StatusOK {
@@ -183,7 +185,9 @@ func TestCancellationRequest_RejectClearsAndContinues(t *testing.T) {
 	}
 	defer cleanup()
 
-	_ = s.CreateJob(ctx, cxJob("cx-job-rej-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive))
+	if err := s.CreateJob(ctx, cxJob("cx-job-rej-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive)); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	if rec := cxSubmitRequest(t, u, "cx-job-rej-1", a.empTok, "Need a break"); rec.Code != http.StatusOK {
 		t.Fatalf("Setup request failed: %d %s", rec.Code, rec.Body.String())
 	}
@@ -222,11 +226,15 @@ func TestCancellationRequest_AcceptCancelsWithRefund(t *testing.T) {
 	defer cleanup()
 
 	cxService(t, s, ctx, "cx-svc-2", a.owner)
-	_ = s.Deposit(ctx, a.owner, 500.0)
+	if err := s.Deposit(ctx, a.owner, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 	const locked = 80.0
 	escrowJob := cxJob("cx-job-acc-1", a.owner, a.cust, a.emp, "cx-svc-2", "wallet", models.JobStatusActive)
 	escrowJob.LockedEscrowAmount = locked
-	_ = s.CreateJob(ctx, escrowJob)
+	if err := s.CreateJob(ctx, escrowJob); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	if err := s.LockEscrow(ctx, a.owner, "cx-job-acc-1", locked); err != nil {
 		t.Fatalf("escrow lock setup failed: %v", err)
 	}
@@ -267,7 +275,9 @@ func TestCancellationRequest_EmployeeDirectCancelRejected(t *testing.T) {
 	}
 	defer cleanup()
 
-	_ = s.CreateJob(ctx, cxJob("cx-job-role-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive))
+	if err := s.CreateJob(ctx, cxJob("cx-job-role-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive)); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	rec := cxPost(u, u.CancelJob, map[string]any{
 		"job_id": "cx-job-role-1", "requester_id": a.empTok, "reason": "trying direct cancel",
 	})
@@ -305,7 +315,9 @@ func TestCancellationRequest_LazyExpiryUnassignsAndRedispatches(t *testing.T) {
 	defer cleanup()
 
 	cxService(t, s, ctx, "cx-svc-3", a.owner)
-	_ = s.Deposit(ctx, a.owner, 500.0)
+	if err := s.Deposit(ctx, a.owner, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 	const locked = 80.0
 	cxStalePendingJob(t, s, ctx, a, "cx-job-exp-1", "wallet", locked)
 	if err := s.LockEscrow(ctx, a.owner, "cx-job-exp-1", locked); err != nil {
@@ -314,10 +326,12 @@ func TestCancellationRequest_LazyExpiryUnassignsAndRedispatches(t *testing.T) {
 	walBefore := s.GetWallet(ctx, a.owner)
 
 	// Second courier, fresh location: the cascade must find THEM, not emp1.
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID: a.owner, EmployeeID: a.emp2,
 		Latitude: 30.051, Longitude: 30.051, UpdatedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	job := s.GetJob(ctx, "cx-job-exp-1")
 	if !u.checkLazyCancellationRequestExpiry(ctx, job) {
@@ -433,7 +447,9 @@ func TestCancellationRequest_RateLimited(t *testing.T) {
 	}
 	defer cleanup()
 
-	_ = s.CreateJob(ctx, cxJob("cx-job-rl-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive))
+	if err := s.CreateJob(ctx, cxJob("cx-job-rl-1", a.owner, a.cust, a.emp, "cx-svc-1", "cod", models.JobStatusActive)); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 	var last *httptest.ResponseRecorder
 	for i := 0; i < 12; i++ {
 		last = cxSubmitRequest(t, u, "cx-job-rl-1", a.empTok, "spam")

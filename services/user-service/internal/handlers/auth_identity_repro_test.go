@@ -149,7 +149,7 @@ func TestRepro_PartB_OwnerPriceNegotiationScope(t *testing.T) {
 	empID := "emp-partb-courier"
 	svcID := "svc-partb-transport"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Transport Express",
@@ -161,7 +161,7 @@ func TestRepro_PartB_OwnerPriceNegotiationScope(t *testing.T) {
 	})
 
 	jobID := "job-partb-negotiation"
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:            jobID,
 		OwnerID:       ownerID,
 		UserID:        custID,
@@ -171,7 +171,9 @@ func TestRepro_PartB_OwnerPriceNegotiationScope(t *testing.T) {
 		Location:      models.Location{Latitude: 30.0444, Longitude: 31.2357},
 		CreatedAt:     time.Now().UTC(),
 		PaymentMethod: "cod",
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@test.com")
 

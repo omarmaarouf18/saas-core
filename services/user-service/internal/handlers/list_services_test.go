@@ -23,11 +23,15 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_list_svc_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping ListServices test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -49,7 +53,7 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 	u := NewUserService(s, cfg, rdb)
 
 	for i := 1; i <= 3; i++ {
-		s.CreateService(ctx, &models.Service{
+		mustCreateService(t, s, ctx, &models.Service{
 			ID:               fmt.Sprintf("test-list-svc-%d", i),
 			TenantID:         "test-owner-list",
 			Name:             fmt.Sprintf("Test Service %d", i),
@@ -64,13 +68,15 @@ func TestListServices_CoordinateBoundsValidation(t *testing.T) {
 	// ADR-0024: the public listing excludes closed tenants, so the fixture
 	// tenant needs an open subscription (paid, unexpired) for the
 	// below-threshold subtests to observe the seeded services.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-test-owner-list",
 		TenantID:  "test-owner-list",
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
 		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// (a) Out-of-range lat (999) is rejected with 400 invalid_coordinates when near_by=true
 	t.Run("Invalid Latitude Bounds (near_by=true)", func(t *testing.T) {
