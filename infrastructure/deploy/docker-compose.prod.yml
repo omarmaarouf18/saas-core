@@ -253,8 +253,8 @@ services:
   # KYC/KYB/KYE Reviewer Console (saas-core ADR-0021, separate repo)
   # ---------------------------------------------------------------------------
   # Internal-network component that holds the internal token and proxies
-  # reviewer actions to auth-service. NOT publicly bound: Caddy (host network,
-  # sibling stack) terminates kyc.<domain> and reaches it on loopback only.
+  # reviewer actions to auth-service. NOT publicly bound: the `caddy` service
+  # below terminates kyc.<domain> and reaches it on saas-net.
   # Image is built by omarmaarouf18/kyc-reviewer-console's own CI; pin via
   # KYC_CONSOLE_IMAGE_TAG in .env (falls back to latest).
   kyc-reviewer-console:
@@ -285,6 +285,32 @@ services:
     networks:
       - saas-net
 
+  # ---------------------------------------------------------------------------
+  # Public TLS edge (ADR-0011): the only service published on 80/443
+  # ---------------------------------------------------------------------------
+  # Replaces the hand-started saas-caddy container (same name, same network,
+  # same certificate volume); cutover steps in docs/runbooks/OPS-HARDEN-cutover.md.
+  # Image pinned to an exact tag: 2.11.4-alpine was pushed to Docker Hub on
+  # 2026-09-23, more than 14 days before it was pinned (2026-10-16); the
+  # newer 2.11.6/2.11.7 builds were younger than 14 days.
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: saas-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api-gateway
+      - kyc-reviewer-console
+    networks:
+      - saas-net
+
 # ---------------------------------------------------------------------------
 # Persistent Volumes
 # ---------------------------------------------------------------------------
@@ -301,6 +327,14 @@ volumes:
   attachments_data:
     driver: local
     name: saas_platform_attachments_data
+  # Let's Encrypt account and certificates of the hand-started Caddy. External
+  # so compose never creates, renames or deletes it: the certs must survive.
+  caddy_data:
+    external: true
+    name: caddy_data
+  caddy_config:
+    driver: local
+    name: saas_platform_caddy_config
 
 # ---------------------------------------------------------------------------
 # Network

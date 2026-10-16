@@ -1,0 +1,35 @@
+# =============================================================================
+# SaaS Platform — Production Caddyfile (public TLS edge)
+# =============================================================================
+# Source of truth for the `caddy` service in docker-compose.prod.yml. The
+# update-deployment-repo job in build-and-publish.yml copies it to
+# saas-core-deploy/Caddyfile, which compose mounts read-only at
+# /etc/caddy/Caddyfile. Certificates live in the external `caddy_data` volume.
+# =============================================================================
+
+api.logiclinkeg.tech {
+	# The admin API (/api/v1/admin/*, today only version-config) is used from
+	# the VM only, by exec-ing into the gateway container (see
+	# docs/runbooks/OPS-HARDEN-cutover.md). It is not served publicly: the
+	# token check stays in the gateway, this is defence in depth.
+	@admin path /api/v1/admin /api/v1/admin/*
+	respond @admin 404
+
+	reverse_proxy https://api-gateway:8080 {
+		transport http {
+			# The gateway serves TLS with a certificate signed by the internal,
+			# self-generated mTLS CA (deploy.yml), which Caddy does not trust,
+			# so verification is skipped on this hop. The hop never leaves the
+			# saas-net bridge network.
+			# Follow-up: mount certs/ca.crt into this container and replace this
+			# line with `tls_trust_pool file <path to ca.crt>` plus a
+			# `tls_server_name` matching a SAN of the certificate the gateway
+			# serves (api-gateway or api-gateway-external; check which first).
+			tls_insecure_skip_verify
+		}
+	}
+}
+
+kyc.logiclinkeg.tech {
+	reverse_proxy kyc-reviewer-console:8090
+}
