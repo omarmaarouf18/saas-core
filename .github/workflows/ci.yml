@@ -152,6 +152,45 @@ jobs:
           GOSEC_BIN: ${{ steps.tools.outputs.GOSEC_BIN }}
         run: '"$GOSEC_BIN" ./...'
 
+  # WF-03: secret scan of the pushed range only (old history still holds
+  # long-removed staging credentials; see .gitleaks.toml). Same pinned
+  # gitleaks, config and script as the local gate; values are redacted.
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+          cache: false
+
+      - name: Install pinned gitleaks
+        id: tools
+        run: bash scripts/install-tools.sh >> "$GITHUB_OUTPUT"
+
+      # push: github.event.before..github.sha (an all-zero or unknown
+      # "before", e.g. a new branch or a force-push, scans the head commit
+      # only). pull_request: base..head of the PR.
+      - name: Scan pushed range
+        env:
+          GITLEAKS_BIN: ${{ steps.tools.outputs.GITLEAKS_BIN }}
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            bash scripts/gitleaks-scan.sh range "$PR_BASE" "$PR_HEAD"
+          else
+            bash scripts/gitleaks-scan.sh range "$PUSH_BEFORE" "$GITHUB_SHA"
+          fi
+
   # WF-03 parity: the local gate has always run tests/contracts; CI did not.
   contracts-test:
     name: API Contract Tests

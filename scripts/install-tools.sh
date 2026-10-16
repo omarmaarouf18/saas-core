@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# scripts/install-tools.sh — install the pinned security-scan tools (WF-02).
+# scripts/install-tools.sh — install the pinned security-scan tools (WF-02;
+# gitleaks added in WF-03).
 #
 # Used by both .githooks/pre-push (the local gate / `make ci`) and
 # .github/workflows/ci.yml, so local runs and CI scan with the same versions.
@@ -11,7 +12,8 @@
 # A cached binary is reused without any network access. A failed install is
 # fatal: there is no fallback to @latest and no "skip the scan" path.
 #
-# stdout: one KEY=<absolute path> line per tool (GOSEC_BIN=..., GOVULNCHECK_BIN=...).
+# stdout: one KEY=<absolute path> line per tool (GOSEC_BIN=..., GOVULNCHECK_BIN=...,
+# GITLEAKS_BIN=...).
 # stderr: progress messages.
 set -euo pipefail
 
@@ -21,7 +23,7 @@ VERSIONS_FILE="${ROOT}/tools/versions.env"
 # shellcheck source=../tools/versions.env
 . "$VERSIONS_FILE"
 
-for var in GO_VERSION GOSEC_VERSION GOSEC_XTOOLS_VERSION GOVULNCHECK_VERSION; do
+for var in GO_VERSION GOSEC_VERSION GOSEC_XTOOLS_VERSION GOVULNCHECK_VERSION GITLEAKS_VERSION; do
 	[ -n "${!var:-}" ] || { echo "ERROR: $var is not set in $VERSIONS_FILE" >&2; exit 1; }
 done
 
@@ -76,5 +78,25 @@ install_gosec() {
 	echo "GOSEC_BIN=$bin"
 }
 
+install_gitleaks() {
+	local dir="${CACHE_ROOT}/gitleaks-${GITLEAKS_VERSION}-go${GO_VERSION}"
+	local bin="${dir}/gitleaks"
+	if [ ! -x "$bin" ]; then
+		echo "install-tools: building gitleaks ${GITLEAKS_VERSION} -> $bin" >&2
+		# -X sets the version string `gitleaks version` prints (release builds
+		# set it the same way).
+		(cd "$WORK_DIR" && GOBIN="$WORK_DIR/gitleaks-bin" \
+			go install -ldflags "-X github.com/zricethezav/gitleaks/v8/version.Version=${GITLEAKS_VERSION}" \
+			"github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}") >&2 || {
+			echo "ERROR: failed to install gitleaks ${GITLEAKS_VERSION}" >&2
+			exit 1
+		}
+		mkdir -p "$dir"
+		mv "$WORK_DIR/gitleaks-bin/gitleaks" "$bin"
+	fi
+	echo "GITLEAKS_BIN=$bin"
+}
+
 install_govulncheck
 install_gosec
+install_gitleaks

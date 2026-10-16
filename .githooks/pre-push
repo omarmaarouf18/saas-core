@@ -132,6 +132,63 @@ export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saa
 export REDIS_URI="${REDIS_URI:-redis://:devpassword123@localhost:6380}"
 
 
+# An explicit GOVULNCHECK_BIN in the environment overrides the pinned binary
+# (used to test the gate's error handling, e.g. GOVULNCHECK_BIN=/bin/false).
+GOVULNCHECK_BIN_OVERRIDE="${GOVULNCHECK_BIN:-}"
+
+# Resolve the pinned gate tools (gosec, govulncheck, gitleaks).
+# Versions come only from tools/versions.env; scripts/install-tools.sh builds
+# them once into a versioned cache and reuses the cached binaries without
+# network access. CI uses the same script. No @latest fallback, no skipping.
+stage_begin install-tools
+TOOLS_OUT=$(bash scripts/install-tools.sh) || {
+  echo "BLOCKED: scripts/install-tools.sh could not install the pinned gate tools (see tools/versions.env)"
+  exit 1
+}
+GOSEC_BIN=$(printf '%s\n' "$TOOLS_OUT" | sed -n 's/^GOSEC_BIN=//p')
+GOVULNCHECK_BIN=$(printf '%s\n' "$TOOLS_OUT" | sed -n 's/^GOVULNCHECK_BIN=//p')
+GITLEAKS_BIN=$(printf '%s\n' "$TOOLS_OUT" | sed -n 's/^GITLEAKS_BIN=//p')
+if [ ! -x "$GOSEC_BIN" ] || [ ! -x "$GOVULNCHECK_BIN" ] || [ ! -x "$GITLEAKS_BIN" ]; then
+  echo "BLOCKED: scripts/install-tools.sh did not report executable gosec/govulncheck/gitleaks binaries:"
+  echo "$TOOLS_OUT"
+  exit 1
+fi
+if [ -n "$GOVULNCHECK_BIN_OVERRIDE" ]; then
+  echo "NOTE: GOVULNCHECK_BIN overridden from the environment: $GOVULNCHECK_BIN_OVERRIDE (pinned: $GOVULNCHECK_BIN)"
+  GOVULNCHECK_BIN="$GOVULNCHECK_BIN_OVERRIDE"
+fi
+echo "-- security tools: $GOVULNCHECK_BIN, $GOSEC_BIN, $GITLEAKS_BIN --"
+stage_end
+
+# 0. Secret scan (WF-03): gitleaks over the change only — the pushed commit
+# range on a real push, otherwise merge-base..HEAD plus staged, unstaged and
+# untracked files. Values are always redacted (scripts/gitleaks-scan.sh).
+stage_begin gitleaks
+if [ "${1:-}" != "" ]; then
+  while read -r _lref lsha _rref rsha; do
+    [ -n "${_lref}${lsha}" ] || continue
+    case "$lsha" in *[!0]*) ;; *) continue ;; esac # delete line
+    from="$rsha"
+    case "$rsha" in
+      *[!0]*) ;;
+      *)
+        # New remote ref: scan from its merge-base with the integration branch.
+        from=""
+        for cand in origin/logic-exploitation logic-exploitation; do
+          if git rev-parse --verify --quiet "$cand^{commit}" >/dev/null; then
+            from=$(git merge-base "$lsha" "$cand")
+            break
+          fi
+        done
+        ;;
+    esac
+    GITLEAKS_BIN="$GITLEAKS_BIN" bash scripts/gitleaks-scan.sh range "$from" "$lsha" || exit 1
+  done <<<"$PUSH_LINES"
+else
+  GITLEAKS_BIN="$GITLEAKS_BIN" bash scripts/gitleaks-scan.sh worktree "${SCOPE_BASE:-logic-exploitation}" || exit 1
+fi
+stage_end
+
 # 1. Verify Go formatting: the whole repo on a full run, otherwise the
 # scoped module directories (plus tests/contracts when in scope).
 if [ "$SCOPE_MODE" = "full" ] || [ -n "$SCOPE_GO_MODULES" ] || [ "$SCOPE_CONTRACTS" = 1 ]; then
@@ -201,32 +258,6 @@ fi
 
 # 5. Per-module Go build, vet, test and security scans.
 if [ -n "$SCOPE_GO_MODULES" ]; then
-  # An explicit GOVULNCHECK_BIN in the environment overrides the pinned binary
-  # (used to test the gate's error handling, e.g. GOVULNCHECK_BIN=/bin/false).
-  GOVULNCHECK_BIN_OVERRIDE="${GOVULNCHECK_BIN:-}"
-
-  # Resolve the pinned security-scan tools (gosec & govulncheck).
-  # Versions come only from tools/versions.env; scripts/install-tools.sh builds
-  # them once into a versioned cache and reuses the cached binaries without
-  # network access. CI uses the same script. No @latest fallback, no skipping.
-  stage_begin install-tools
-  TOOLS_OUT=$(bash scripts/install-tools.sh) || {
-    echo "BLOCKED: scripts/install-tools.sh could not install the pinned gate tools (see tools/versions.env)"
-    exit 1
-  }
-  GOSEC_BIN=$(printf '%s\n' "$TOOLS_OUT" | sed -n 's/^GOSEC_BIN=//p')
-  GOVULNCHECK_BIN=$(printf '%s\n' "$TOOLS_OUT" | sed -n 's/^GOVULNCHECK_BIN=//p')
-  if [ ! -x "$GOSEC_BIN" ] || [ ! -x "$GOVULNCHECK_BIN" ]; then
-    echo "BLOCKED: scripts/install-tools.sh did not report executable gosec/govulncheck binaries:"
-    echo "$TOOLS_OUT"
-    exit 1
-  fi
-  if [ -n "$GOVULNCHECK_BIN_OVERRIDE" ]; then
-    echo "NOTE: GOVULNCHECK_BIN overridden from the environment: $GOVULNCHECK_BIN_OVERRIDE (pinned: $GOVULNCHECK_BIN)"
-    GOVULNCHECK_BIN="$GOVULNCHECK_BIN_OVERRIDE"
-  fi
-  echo "-- security tools: $GOVULNCHECK_BIN, $GOSEC_BIN --"
-  stage_end
 
   for mod in $SCOPE_GO_MODULES; do
     echo "-- checking $mod --"
