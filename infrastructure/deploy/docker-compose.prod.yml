@@ -19,6 +19,13 @@ x-logging: &default-logging
     max-size: "10m"
     max-file: "3"
 
+# Memory (OPS-HARDEN): the VM has 891 MB of RAM. mem_limit values add up to
+# 728 MiB, which leaves about 160 MiB for the OS, dockerd and the Actions
+# runner. Each limit is several times the RSS measured in production on
+# 2026-10-16; the per-service reasoning is in docs/worklog/OPS-HARDEN.md.
+# Go services also get GOMEMLIMIT (about 80 % of mem_limit) so the garbage
+# collector works harder before the kernel OOM-kills the container.
+
 services:
   # ---------------------------------------------------------------------------
   # Data Stores
@@ -27,13 +34,19 @@ services:
     image: mongo:7
     container_name: saas-mongo
     logging: *default-logging
+    mem_limit: 400m
+    mem_reservation: 192m
     restart: unless-stopped
     # --quiet drops the per-connection "Connection accepted/ended" lines (the
     # 1.6 GB log was mostly connection noise; locally, one healthcheck run
     # logged 20 lines without --quiet and 12 with it). Warnings and errors are
     # still logged. Command output and replication-activity lines are also
     # suppressed, which is acceptable for this single-node setup.
-    command: ["--quiet"]
+    # --wiredTigerCacheSizeGB 0.25 (the minimum): pins the cache instead of
+    # relying on mongod detecting the container limit (otherwise it sizes the
+    # cache from the RAM it sees). 400m = 256 MiB cache + mongod
+    # overhead + the mongosh healthcheck process, which runs in this cgroup.
+    command: ["--quiet", "--wiredTigerCacheSizeGB", "0.25"]
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
@@ -57,6 +70,8 @@ services:
     image: redis:7-alpine
     container_name: saas-redis
     logging: *default-logging
+    mem_limit: 48m
+    mem_reservation: 16m
     restart: unless-stopped
     ports:
       - "127.0.0.1:6380:6379"
@@ -64,7 +79,13 @@ services:
       - redis_data:/data
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    # maxmemory 32mb + noeviction: every key here has a TTL, including the
+    # session-revocation keys (jwt:invalidated_before:*, jwt:denylist:*), so any
+    # volatile-* or allkeys-* policy could evict a revocation and re-validate a
+    # revoked token. With noeviction, a full Redis rejects writes instead; the
+    # rate limiters and revocation then fail closed (429/503). Measured RSS is
+    # 3.4 MB, so 32mb is roughly 10x headroom.
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "32mb", "--maxmemory-policy", "noeviction"]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 10s
@@ -81,6 +102,7 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-api-gateway:IMAGE_TAG
     container_name: saas-api-gateway
     logging: *default-logging
+    mem_limit: 32m
     restart: unless-stopped
     # Not published on the host (OPS-HARDEN): the only public entry point is
     # Caddy, which reaches the gateway over saas-net. A host port let clients
@@ -96,6 +118,7 @@ services:
       - ./certs/api-gateway-external.crt:/app/certs/api-gateway-external.crt:ro
       - ./certs/api-gateway-external.key:/app/certs/api-gateway-external.key:ro
     environment:
+      GOMEMLIMIT: 25MiB
       PORT: ${API_GATEWAY_PORT}
       MONGO_URI: ${MONGO_URI}
       REDIS_URI: ${REDIS_URI}
@@ -127,6 +150,7 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-chat-service:IMAGE_TAG
     container_name: saas-chat-service
     logging: *default-logging
+    mem_limit: 56m
     restart: unless-stopped
     expose:
       - "${CHAT_SERVICE_PORT}"
@@ -136,6 +160,7 @@ services:
       - ./certs/chat-service.key:/app/certs/chat-service.key:ro
       - attachments_data:/app/data/attachments
     environment:
+      GOMEMLIMIT: 45MiB
       PORT: ${CHAT_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
       CHAT_MONGO_DATABASE: ${CHAT_MONGO_DATABASE:-chat_db}
@@ -169,6 +194,7 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-auth-service:IMAGE_TAG
     container_name: saas-auth-service
     logging: *default-logging
+    mem_limit: 56m
     restart: unless-stopped
     expose:
       - "${AUTH_SERVICE_PORT}"
@@ -178,6 +204,7 @@ services:
       - ./certs/auth-service.key:/app/certs/auth-service.key:ro
       - documents_data:/app/data/documents
     environment:
+      GOMEMLIMIT: 45MiB
       PORT: ${AUTH_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
       AUTH_MONGO_DATABASE: ${AUTH_MONGO_DATABASE:-auth_db}
@@ -212,6 +239,7 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-user-service:IMAGE_TAG
     container_name: saas-user-service
     logging: *default-logging
+    mem_limit: 48m
     restart: unless-stopped
     expose:
       - "${USER_SERVICE_PORT}"
@@ -220,6 +248,7 @@ services:
       - ./certs/user-service.crt:/app/certs/user-service.crt:ro
       - ./certs/user-service.key:/app/certs/user-service.key:ro
     environment:
+      GOMEMLIMIT: 38MiB
       PORT: ${USER_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
       USER_MONGO_DATABASE: ${USER_MONGO_DATABASE:-user_db}
@@ -248,6 +277,7 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-notification-service:IMAGE_TAG
     container_name: saas-notification-service
     logging: *default-logging
+    mem_limit: 32m
     restart: unless-stopped
     expose:
       - "${NOTIFICATION_SERVICE_PORT}"
@@ -256,6 +286,7 @@ services:
       - ./certs/notification-service.crt:/app/certs/notification-service.crt:ro
       - ./certs/notification-service.key:/app/certs/notification-service.key:ro
     environment:
+      GOMEMLIMIT: 25MiB
       PORT: ${NOTIFICATION_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
       NOTIFICATION_MONGO_DATABASE: ${NOTIFICATION_MONGO_DATABASE:-notification_db}
@@ -290,6 +321,7 @@ services:
     image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
     container_name: saas-kyc-reviewer-console
     logging: *default-logging
+    mem_limit: 16m
     restart: unless-stopped
     ports:
       - "127.0.0.1:8090:8090"
@@ -327,6 +359,7 @@ services:
     image: caddy:2.11.4-alpine
     container_name: saas-caddy
     logging: *default-logging
+    mem_limit: 40m
     restart: unless-stopped
     ports:
       - "80:80"
@@ -339,6 +372,8 @@ services:
     depends_on:
       - api-gateway
       - kyc-reviewer-console
+    environment:
+      GOMEMLIMIT: 32MiB
     networks:
       - saas-net
 
