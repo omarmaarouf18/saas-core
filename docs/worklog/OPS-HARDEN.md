@@ -49,6 +49,8 @@
 6. `OPS-HARDEN: cutover runbook for the owner`
 7. `OPS-HARDEN: worklog`
 8. `OPS-HARDEN: worklog: owner accepts redis noeviction`
+9. `OPS-HARDEN: deploy removes a hand-started saas-caddy before up -d (one-time cutover)`
+10. `OPS-HARDEN: worklog: cutover guard`
 
 ## Item reports (2–5)
 
@@ -145,6 +147,66 @@ writes ("OOM command not allowed"); the limiters and revocation then fail closed
   Caddy. The path still ends with the deploy step's `up -d`, which starts every
   service including Caddy. The downtime (purge → deploy step, longer if the pre-flight
   fails) is in the runbook.
+
+### Follow-up item: cutover guard (owner request, after items 1–6)
+- deploy.yml runs `remove_hand_started_caddy` right before the main `docker compose up -d`
+  in both the deploy step and the rollback step. The two copies are identical
+  (34 lines each, between the `# >>> cutover-guard` / `# <<< cutover-guard` markers).
+- It runs `docker rm -f saas-caddy` and logs `removing hand-started saas-caddy
+  (one-time cutover)` only when:
+  - the compose file being applied defines a `caddy` service;
+  - the current project name is known (top-level `name` from
+    `docker compose config --format json`; empty → warning, no removal);
+  - a container named `saas-caddy` exists;
+  - its `com.docker.compose.project` label is missing or differs from the project.
+- A compose-managed `saas-caddy` is never removed.
+- Decision beyond the request: the first condition was added. Without it, an automatic
+  rollback to a pre-OPS-HARDEN compose (no `caddy` service) would delete a
+  hand-started Caddy that nothing then recreates. In that case the guard does nothing.
+- The rollback step runs with `set -euo pipefail`, so the guard uses readers that
+  consume all input (`grep -x … >/dev/null`, `sed -n '1…p'`, no `grep -q`/`head`).
+  Its two command substitutions fall back to empty on failure, so neither a closed
+  pipe nor a failed inspect can abort the step or make it remove a compose-managed
+  container.
+- Runbook §2 rewritten: the guard is the default path, and the manual `docker rm -f` +
+  `docker compose up -d --remove-orphans` is the fallback. §6 now says the next deploy
+  replaces a hand-restored Caddy unless the Caddy commit is reverted.
+- Test (local, Docker 29.9.1 / Compose v5.6.0). The guard block was extracted verbatim
+  from deploy.yml and run with `bash -euo pipefail` in a project directory named
+  `saas-core-deploy`, whose compose file has a `caddy` service with
+  `container_name: saas-caddy`:
+
+  ```
+  === (a) hand-started saas-caddy
+  before: id=e8fa38b2b0be label=''
+  removing hand-started saas-caddy (one-time cutover)
+    saas-caddy project label: '', current project: 'saas-core-deploy'
+  saas-caddy
+  guard exit=0
+   Container saas-caddy Starting
+   Container saas-caddy Started
+  up exit=0
+  after:  id=d25a193c771c label='saas-core-deploy'
+  === (b) compose-managed saas-caddy
+  guard exit=0 (no output above = untouched)
+  after:  id=d25a193c771c label='saas-core-deploy' same_container=yes
+   Container saas-caddy Running
+  up exit=0
+   Network saas-core-deploy_default Removed
+  === (c) hand-started saas-caddy, compose file without caddy service (pre-OPS-HARDEN rollback)
+  guard exit=0
+  after: same_container=yes
+  === (d) saas-caddy owned by another compose project
+  removing hand-started saas-caddy (one-time cutover)
+    saas-caddy project label: 'someother', current project: 'saas-core-deploy'
+  saas-caddy
+  guard exit=0
+  after: exists=
+  ```
+
+  The lone `saas-caddy` lines are `docker rm -f` echoing the removed name.
+- Not verified: the guard inside a real GitHub Actions run on the server, and the
+  length of the downtime window between the `rm -f` and the new Caddy starting.
 
 ## Verification
 
