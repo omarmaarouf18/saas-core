@@ -67,7 +67,7 @@ The following packages under `shared/` were audited file-by-file, function-by-fu
 * **AuthRateLimiter (IsLocked, RecordFailure, Reset)**: Verified lockout verification and failure increments. Fail-closed fallback enforces 5-minute lockout when Redis fails.
 
 ### `shared/infra/handlerutil/security_logs.go`
-* **InitCloudWatch & ShipSecurityEvent**: Verified CloudWatch initialization and event shipping. Log shipping is executed asynchronously in a goroutine to prevent blocking HTTP handler execution.
+* **InitCloudWatch & ShipSecurityEvent**: Verified CloudWatch initialization and event shipping. Security events are always emitted as a structured stdout JSON line; CloudWatch shipping (when enabled) runs through a bounded queue (capacity 1000, single FIFO worker, drop counter) so HTTP handlers never block on AWS (updated 2026-10, OBS-01).
 * **GetClientIP**: Verified IP parsing and brackets trimming.
 
 ---

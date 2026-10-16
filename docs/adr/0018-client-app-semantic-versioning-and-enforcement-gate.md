@@ -117,3 +117,12 @@ We adopted an end-to-end version control architecture spanning CI/CD pipelines, 
 3. **Automated Pipeline Checks**:
    * `make ci` exit code 0 across all Go microservices.
    * `flutter analyze` 0 issues and `flutter test` 100% pass (191/191 tests).
+
+## Amendment (2026-10-16): dedicated admin token for the version-config endpoints
+
+The original decision text above is preserved verbatim for history; what follows supersedes it where they conflict. Section 2.2 called `PUT /api/v1/admin/version-config` an "Authenticated admin endpoint (`X-Internal-Token`)". That inherited the platform-wide token shared by every service, so anything that could replay the header could rewrite the version policy. SEC-02 replaced it with a dedicated credential:
+
+- Both `GET` and `PUT /api/v1/admin/version-config` now require the `X-Admin-Token` header, validated against the new required env var `ADMIN_API_TOKEN` (`config.Load` and `--check-env` fail closed when it is empty) with `subtle.ConstantTimeCompare`; an unconfigured gateway denies by default. The internal token deliberately does not grant access — the gate lives in `VersionConfigHandler`, not in the shared internal-auth path.
+- Deploy guidance: `ADMIN_API_TOKEN` must exist in the staging/prod `.env` before deploying; compose files pass it via `${ADMIN_API_TOKEN:?ADMIN_API_TOKEN is required}`. A value distinct from `INTERNAL_SERVICE_TOKEN` is recommended.
+- `PUT` additionally validates `download_url` centrally in `version.Store.UpdateConfig` (https only; host exactly `github.com` or `play.google.com`) and ships a `VERSION_CONFIG_CHANGED` security event on success.
+- Unchanged: the `VersionGate` middleware bypass list still includes `/api/v1/admin/version-config` (section 2.3) — the enforcement middleware must not block the endpoints that manage it; the admin-token gate now provides the access control instead of the internal token.

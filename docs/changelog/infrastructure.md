@@ -2,6 +2,18 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Push Gate Hardening & Commit/Worktree Helper Fixes (WF-02)
+
+- **Implementation Detail**: hardened the pre-push gate and the local workflow helpers (WF-01 findings F1–F4 plus the follow-up owner request). All mechanics are documented in `docs/WORKFLOW.md` and `docs/CI_CD_AND_HOOKS.md`.
+  - **Pinned tools**: new `tools/versions.env` is the single source for `GO_VERSION`, `GOSEC_VERSION`, `GOSEC_XTOOLS_VERSION` and `GOVULNCHECK_VERSION` (`GOVULNCHECK_VERSION=v1.8.0` — the newest v1.9.0 failed the 14-day age rule). `scripts/install-tools.sh` builds the pinned gosec/govulncheck into a cache keyed on version + Go toolchain; hook and CI call it via `bash` (with `core.fileMode=false`, a new file's `+x` bit is not recorded by `git add`). `scripts/check-go-version.sh` is now the single drift guard shared by the hook and CI (CI had a hard-coded copy), and `GOTOOLCHAIN` follows `GO_VERSION`.
+  - **Push lock**: a real `git push` takes the same shared CI lock as `make ci` (`CI_LOCK_HELD=1` is exported by `make ci` so the hook does not self-deadlock); delete-only pushes skip the gate (the agent push guard still runs first).
+  - **`make commit`**: moved to `scripts/commit.sh`; `FILES` is required (untracked files are never swept in), staged deletions and `MSG_FILE` are supported, and the commit is built through a temporary index so staged file modes survive (the previous `--only` rebuilt entries from disk and dropped an index-only `--chmod=+x`). Staged paths outside `FILES` stay staged and are warned about.
+  - **`agent-worktree.sh new`**: runs `flutter pub get` in the fresh worktree and warns instead of failing when flutter is missing.
+  - **`make ci`**: exports a sanitized per-run `TEST_DB_SUFFIX` (characters outside `[A-Za-z0-9_-]` become `_`, e.g. `SaaS_prototype-<pid>`), so parallel worktrees get isolated test databases.
+  - **Follow-up (owner request)**: govulncheck errors now BLOCK the gate (the previous `|| true` swallowed crashes and load errors); `GOVULNCHECK_BIN` accepts an environment override for acceptance testing, with a `NOTE:` line when used.
+- **Commit SHA**: ``57e9c403898549498c67fc3d879a3f8db1639f65``
+- **Verification**: `make ci` green before each of the item commits (each log ends `== pre-push gate: all checks passed ==`); literal acceptance runs: a real push from a scratch clone waited on the shared lock held by another gate, delete-only push skipped (`delete-only push: gate skipped`, rc=0), the `make commit` cases (mv/rm/typo/extra-staged/MSG_FILE/file-mode), `worktree-new` with and without flutter on PATH, and govulncheck blocking (`GOVULNCHECK_BIN=/bin/false` rc=2; deliberate syntax error and a third-party finding both rc=1). Unverified: the CI workflow changes have not run on GitHub; the main-worktree push path was not exercised (main runs the old hook until merge — the lock path was shown from a scratch clone); mixed delete+update pushes were checked only with the extracted stdin snippet. ✅
+
 ## Redis Sentinel High Availability Support & JWT Validation Graceful Degradation
 
 - **Implementation Detail**:
