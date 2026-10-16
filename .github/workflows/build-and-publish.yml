@@ -93,6 +93,9 @@ jobs:
             echo "::error::KYC_CONSOLE_IMAGE_TAG placeholder lost during sync"; exit 1;
           }
 
+          echo "=== Syncing Caddyfile ==="
+          cp saas-core/infrastructure/deploy/Caddyfile saas-core-deploy/Caddyfile
+
           echo "=== Syncing deploy.yml workflow ==="
           mkdir -p saas-core-deploy/.github/workflows
           cp saas-core/infrastructure/deploy/deploy.yml saas-core-deploy/.github/workflows/deploy.yml

@@ -73,6 +73,10 @@ jobs:
           fi
 
           if [ ! -f certs/ca.key ]; then
+            # The cert files mounted into the containers are about to be
+            # restored or regenerated. Compose cannot see file content changes,
+            # so the deploy step force-recreates every container in this case.
+            echo "CERTS_CHANGED=1" >> "$GITHUB_ENV"
             if [ -d /home/deploybot/certs ] && [ -f /home/deploybot/certs/ca.key ]; then
               echo "Restoring mTLS certificates from /home/deploybot/certs..."
               cp -r /home/deploybot/certs/* certs/
@@ -181,7 +185,34 @@ jobs:
       - name: Deploy Container Services
         run: |
           echo "Deploying updated services..."
-          docker compose up -d --force-recreate --remove-orphans
+          # Compose recreates only services whose config or image changed, so
+          # Mongo, Redis and Caddy keep running across ordinary deploys.
+          # Forced recreation is needed only when the mTLS cert files were
+          # restored or regenerated in this run (CERTS_CHANGED, set by the cert
+          # step): those are bind-mounted files and compose cannot see that
+          # their content changed. After the cert purge paths, `docker compose
+          # down` has already removed the containers, so this `up -d` starts
+          # all of them again, Caddy included.
+          if [ "${CERTS_CHANGED:-0}" = "1" ]; then
+            echo "mTLS certificates were restored or regenerated: force-recreating all containers."
+            docker compose up -d --force-recreate --remove-orphans
+          else
+            docker compose up -d --remove-orphans
+          fi
+
+          # The Caddyfile is a single-file bind mount. A checkout replaces the
+          # file, and the running container keeps the old one, while compose
+          # sees no config change. Recreate only Caddy when the mounted copy
+          # differs from the checked-out file.
+          if docker ps --format '{{.Names}}' | grep -qx saas-caddy; then
+            LIVE_SUM=$(docker exec saas-caddy sha256sum /etc/caddy/Caddyfile | cut -d' ' -f1)
+            REPO_SUM=$(sha256sum Caddyfile | cut -d' ' -f1)
+            if [ "$LIVE_SUM" != "$REPO_SUM" ]; then
+              echo "Caddyfile changed: recreating caddy only."
+              docker compose up -d --force-recreate --no-deps caddy
+            fi
+          fi
+
           echo "=== DOCKER COMPOSE CONTAINER STATUS ==="
           docker compose ps
 
@@ -269,7 +300,18 @@ jobs:
           echo "Restoring docker-compose.yml from previous commit..."
           git checkout HEAD~1 -- docker-compose.yml
 
-          if ! docker compose up -d --force-recreate --remove-orphans; then
+          # The restored file changes image tags, so compose recreates the
+          # affected services without --force-recreate. A compose file from
+          # before OPS-HARDEN has no caddy service; --remove-orphans would then
+          # delete the compose-managed saas-caddy and take the public site
+          # down, so orphans are kept in that one case.
+          ORPHANS_FLAG="--remove-orphans"
+          if ! grep -qE '^  caddy:' docker-compose.yml; then
+            echo "::warning::Restored docker-compose.yml has no caddy service; keeping orphan containers so saas-caddy keeps serving."
+            ORPHANS_FLAG=""
+          fi
+
+          if ! docker compose up -d $ORPHANS_FLAG; then
             echo "::error::ROLLBACK COMMAND ITSELF FAILED — manual intervention required immediately"
             exit 1
           fi
