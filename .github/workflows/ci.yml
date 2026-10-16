@@ -158,24 +158,28 @@ jobs:
           MONGO_INITDB_DATABASE: saas_platform_test
         run: go test ./... -count=1
 
+      # Same pinned versions and build recipe as the local gate
+      # (.githooks/pre-push): versions live only in tools/versions.env.
+      # scripts/install-tools.sh prints GOSEC_BIN=... / GOVULNCHECK_BIN=...
+      # lines, which become this step's outputs.
+      - name: Install pinned security tools
+        id: tools
+        run: ./scripts/install-tools.sh >> "$GITHUB_OUTPUT"
+
+      # Policy difference vs the local gate (documented in
+      # docs/CI_CD_AND_HOOKS.md, open question): CI fails on ANY finding,
+      # including stdlib ones; the local hook only warns on stdlib findings.
       - name: Run govulncheck
-        uses: golang/govulncheck-action@v1
-        with:
-          work-dir: ${{ matrix.service.path }}
-          cache: false
+        working-directory: ${{ matrix.service.path }}
+        env:
+          GOVULNCHECK_BIN: ${{ steps.tools.outputs.GOVULNCHECK_BIN }}
+        run: '"$GOVULNCHECK_BIN" ./...'
 
       - name: Run gosec
-        run: |
-          # gosec v2.29.0 pins golang.org/x/tools v0.49.0, which cannot read Go 1.26
-          # export data ("export data version 5 is greater than maximum supported
-          # version 4"). Build it against x/tools v0.50.0, the combination that passed
-          # on 2026-09-28. Remove this when a gosec release requires x/tools >= v0.50.0.
-          GOSEC_DIR="$(mktemp -d)"
-          (cd "$GOSEC_DIR" && go mod init gosec-build >/dev/null 2>&1 \
-            && go get github.com/securego/gosec/v2/cmd/gosec@v2.29.0 golang.org/x/tools@v0.50.0 \
-            && go build -o "$GOSEC_DIR/gosec" github.com/securego/gosec/v2/cmd/gosec)
-          "$GOSEC_DIR/gosec" ./...
         working-directory: ${{ matrix.service.path }}
+        env:
+          GOSEC_BIN: ${{ steps.tools.outputs.GOSEC_BIN }}
+        run: '"$GOSEC_BIN" ./...'
 
   flutter-test:
     name: Flutter Lint & Test
