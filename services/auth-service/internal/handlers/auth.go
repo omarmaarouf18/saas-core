@@ -2429,9 +2429,19 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	// (owner included): a partially revoked tenant is not reported as
 	// suspended. Revocations that already landed stay in place, which only
 	// logs those users out (fail closed).
+	//
+	// The employee lookup fails closed too: a store error aborts the
+	// suspension instead of being read as "no employees", which would leave
+	// every employee session alive under a suspended owner.
 	revokeIDs := []string{targetUserID}
 	if targetUser.Role == "owner" {
-		for _, emp := range a.store.GetEmployeesByOwner(ctx, targetUserID) {
+		employees, err := a.store.GetEmployeesByOwner(ctx, targetUserID)
+		if err != nil {
+			shipSecurityEvent(ctx, "ACCOUNT_SUSPEND_REVOKE_FAILED", "auth-service", reviewer.ID, targetUserID, "suspension aborted: employee lookup for session revocation failed, account not suspended", handlerutil.GetClientIP(r))
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "account suspension temporarily unavailable, please retry", err)
+			return
+		}
+		for _, emp := range employees {
 			if emp != nil && emp.ID != "" {
 				revokeIDs = append(revokeIDs, emp.ID)
 			}
@@ -3317,7 +3327,13 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	employees := a.store.GetEmployeesByOwner(ctx, owner.ID)
+	// Fail closed: a lookup error is an error response, not an empty list
+	// (an owner shown "no employees" could not freeze anyone).
+	employees, err := a.store.GetEmployeesByOwner(ctx, owner.ID)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to load employees", err)
+		return
+	}
 
 	res := make([]EmployeeResponse, 0, len(employees))
 	for _, emp := range employees {

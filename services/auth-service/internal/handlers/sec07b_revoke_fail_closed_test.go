@@ -18,6 +18,7 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -347,4 +348,63 @@ func TestSuspendAccount_OwnerCascadePartialFailure_AbortsAll(t *testing.T) {
 			t.Errorf("security event should name the employee whose revocation failed, got detail %q", e.detail)
 		}
 	}
+}
+
+// insertCorruptEmployee adds an employee of ownerID whose is_active field
+// cannot be decoded, so store.GetEmployeesByOwner returns an error.
+func insertCorruptEmployee(t *testing.T, mongoStore *store.MongoDB, ownerID string) {
+	t.Helper()
+	if _, err := mongoStore.DatabaseForTesting().Collection("users").InsertOne(context.Background(), bson.M{
+		"_id": "emp-sec07b-corrupt", "email": "corrupt-sec07b@example.com", "role": models.RoleEmployee,
+		"owner_id": ownerID, "is_active": "corrupt",
+	}); err != nil {
+		t.Fatalf("failed to insert corrupt employee: %v", err)
+	}
+}
+
+// TestSuspendAccount_EmployeeLookupFailure_FailsClosed: SEC-07b — if the
+// owner's employee lookup fails, the suspension aborts (503, owner NOT
+// suspended, security event) instead of treating it as "no employees".
+func TestSuspendAccount_EmployeeLookupFailure_FailsClosed(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	seedReviewer(t, mongoStore)
+	owner, _, _, _ := seedOwnerAndEmployee(t, mongoStore)
+	insertCorruptEmployee(t, mongoStore, owner.ID)
+	useJWTRedis(t, nil)
+	events := captureSecurityEvents(t)
+
+	rec := doSuspend(a, owner.ID)
+	assertSafeErrorCode(t, rec, http.StatusServiceUnavailable, "service_unavailable")
+	assertNotSuspended(t, mongoStore, owner.ID)
+	if !hasSecurityEvent(events(), "ACCOUNT_SUSPEND_REVOKE_FAILED") {
+		t.Fatalf("expected ACCOUNT_SUSPEND_REVOKE_FAILED security event, got %+v", events())
+	}
+}
+
+// TestGetEmployees_LookupFailure_ReturnsError: SEC-07b — GET /auth/employees
+// returns an error instead of an empty list when the lookup fails.
+func TestGetEmployees_LookupFailure_ReturnsError(t *testing.T) {
+	a, mongoStore, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	owner, _, _, _ := seedOwnerAndEmployee(t, mongoStore)
+	insertCorruptEmployee(t, mongoStore, owner.ID)
+	token, err := jwtutil.GenerateToken(owner.ID, string(owner.Role), owner.ID, owner.Email)
+	if err != nil {
+		t.Fatalf("failed to generate owner token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/employees", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.GetEmployees(rec, req)
+	assertSafeErrorCode(t, rec, http.StatusInternalServerError, "internal_error")
 }

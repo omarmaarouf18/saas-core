@@ -808,7 +808,10 @@ func (s *MongoDB) StartOTPCleanup(ctx context.Context, interval time.Duration) {
 // ---------------------------------------------------------------------------
 
 // GetEmployeesByOwner returns all employees bound to the given owner ID.
-func (s *MongoDB) GetEmployeesByOwner(ctx context.Context, ownerID string) []*models.User {
+// A query or decode failure is returned, never folded into an empty list:
+// callers that act on "every employee" (SEC-07b suspension cascade) must be
+// able to tell "no employees" from "lookup failed".
+func (s *MongoDB) GetEmployeesByOwner(ctx context.Context, ownerID string) ([]*models.User, error) {
 	cursor, err := s.users.Find(ctx, bson.M{
 		"role": models.RoleEmployee,
 		"$or": []bson.M{
@@ -817,17 +820,15 @@ func (s *MongoDB) GetEmployeesByOwner(ctx context.Context, ownerID string) []*mo
 		},
 	})
 	if err != nil {
-		log.Printf("[AUTH-STORE] GetEmployeesByOwner error: %v", err)
-		return nil
+		return nil, fmt.Errorf("get employees by owner: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	var employees []*models.User
 	if err := cursor.All(ctx, &employees); err != nil {
-		log.Printf("[AUTH-STORE] GetEmployeesByOwner decode error: %v", err)
-		return nil
+		return nil, fmt.Errorf("get employees by owner: decode: %w", err)
 	}
-	return employees
+	return employees, nil
 }
 
 // ToggleEmployeeActive sets the IsActive status for an employee.

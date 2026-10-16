@@ -241,7 +241,10 @@ func TestMongoDB_EmployeesAndAudit(t *testing.T) {
 	_ = s.CreateUser(ctx, emp1)
 
 	// 1. GetEmployeesByOwner
-	emps := s.GetEmployeesByOwner(ctx, ownerID)
+	emps, err := s.GetEmployeesByOwner(ctx, ownerID)
+	if err != nil {
+		t.Fatalf("GetEmployeesByOwner failed: %v", err)
+	}
 	if len(emps) != 1 || emps[0].ID != "emp-store-1" {
 		t.Errorf("GetEmployeesByOwner returned unexpected employees: %v", emps)
 	}
@@ -328,4 +331,34 @@ func TestMongoDB_OTPCleanup(t *testing.T) {
 	cancel()
 	s.StartOTPCleanup(ctx, 10*time.Millisecond)
 	time.Sleep(20 * time.Millisecond)
+}
+
+// TestMongoDB_GetEmployeesByOwner_ReturnsErrors: SEC-07b — a failed query or
+// an undecodable employee document is returned as an error, never folded
+// into an empty list.
+func TestMongoDB_GetEmployeesByOwner_ReturnsErrors(t *testing.T) {
+	s, cleanup := setupTestStore(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ownerID := "owner-store-err"
+
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if emps, err := s.GetEmployeesByOwner(canceled, ownerID); err == nil {
+		t.Fatalf("expected an error for a canceled context, got employees %v", emps)
+	}
+
+	// is_active must decode into a bool; a string makes cursor.All fail.
+	if _, err := s.DatabaseForTesting().Collection("users").InsertOne(context.Background(), bson.M{
+		"_id": "emp-store-corrupt", "email": "corrupt@example.com", "role": models.RoleEmployee,
+		"owner_id": ownerID, "is_active": "corrupt",
+	}); err != nil {
+		t.Fatalf("failed to insert corrupt employee: %v", err)
+	}
+	if emps, err := s.GetEmployeesByOwner(context.Background(), ownerID); err == nil {
+		t.Fatalf("expected a decode error, got employees %v", emps)
+	}
 }
