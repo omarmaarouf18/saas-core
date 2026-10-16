@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/project/shared/infra/testutil"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -41,9 +42,16 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndQ18Resolution(t *testing.T) {
 	sseHub2.SetRedisClient(rdb2)
 	defer sseHub2.Close()
 
+	// Per-run tenant: it names the Redis Pub/Sub channel
+	// (notify:tenant:<tenantID>), so two concurrent runs on the same real
+	// Redis must not deliver each other's notifications. The hubs'
+	// PSubscribe("notify:*") still receives foreign messages, but
+	// deliverLocal filters by tenant.
+	tenantID := testutil.ID("tenant-docker-cross")
+
 	sseClient1 := &SSEClient{
 		ID:       "sse-client-instance-1",
-		TenantID: "tenant-docker-cross",
+		TenantID: tenantID,
 		Role:     RoleOwner,
 		Send:     make(chan []byte, 10),
 	}
@@ -51,7 +59,7 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndQ18Resolution(t *testing.T) {
 
 	sseClient2 := &SSEClient{
 		ID:       "sse-client-instance-2",
-		TenantID: "tenant-docker-cross",
+		TenantID: tenantID,
 		Role:     RoleOwner,
 		Send:     make(chan []byte, 10),
 	}
@@ -59,7 +67,7 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndQ18Resolution(t *testing.T) {
 
 	notification := Notification{
 		Type:     "job_alert",
-		TenantID: "tenant-docker-cross",
+		TenantID: tenantID,
 		Title:    "New Job Assignment",
 		Body:     "Job #1001 assigned",
 	}
@@ -91,7 +99,7 @@ func TestRealDockerRedis_MultiInstanceSSEHubAndQ18Resolution(t *testing.T) {
 
 		notif2 := Notification{
 			Type:     "status_update",
-			TenantID: "tenant-docker-cross",
+			TenantID: tenantID,
 			Title:    "Status Update",
 			Body:     "Job #1001 in progress",
 		}

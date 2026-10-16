@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/testutil"
 
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
@@ -43,9 +44,9 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		s.Close(context.Background())
 	}()
 
-	ownerID := "owner-e2e-adr0007"
-	empID := "emp-e2e-adr0007"
-	custID := "cust-e2e-adr0007"
+	ownerID := testutil.ID("owner-e2e-adr0007")
+	empID := testutil.ID("emp-e2e-adr0007")
+	custID := testutil.ID("cust-e2e-adr0007")
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -158,10 +159,13 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		UpdatedAt:  time.Now().UTC(),
 	})
 
+	// The X-Real-IP values double as Redis rate-limiter keys
+	// (ratelimit:<prefix>:count:<ip>), so they carry the per-run suffix.
+	ipBase := testutil.ID("rate-ip-e2e-adr0007")
 	var reqCounter int
 	nextIP := func() string {
 		reqCounter++
-		return fmt.Sprintf("192.168.210.%d", reqCounter)
+		return fmt.Sprintf("%s-%d", ipBase, reqCounter)
 	}
 
 	// -------------------------------------------------------------------------
@@ -244,7 +248,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 		// Deposit $100 in owner wallet
 		_ = s.Deposit(ctx, ownerID, 100.0)
 
-		tokenCust2, _ := jwtutil.GenerateToken("cust2-adr0007", "customer", ownerID, "cust2@example.com")
+		tokenCust2, _ := jwtutil.GenerateToken(testutil.ID("cust2-adr0007"), "customer", ownerID, "cust2@example.com")
 		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   ownerID,
 			EmployeeID: empID,
@@ -315,7 +319,7 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	// STEP 5: GPS SPEED-PLAUSIBILITY CHECK (>150 KM/H REJECTION)
 	// -------------------------------------------------------------------------
 	t.Run("E2E Step 5: Speed check (>150km/h) rejects teleportation jumps", func(t *testing.T) {
-		tokenCust3, _ := jwtutil.GenerateToken("cust3-adr0007", "customer", ownerID, "cust3@example.com")
+		tokenCust3, _ := jwtutil.GenerateToken(testutil.ID("cust3-adr0007"), "customer", ownerID, "cust3@example.com")
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcStdDelivery.ID,

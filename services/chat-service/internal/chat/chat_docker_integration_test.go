@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/project/shared/infra/testutil"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -39,6 +40,10 @@ func TestRealDockerRedis_MultiInstanceChatHub(t *testing.T) {
 	go hub2.Run()
 	defer hub2.Close()
 
+	// Per-run channel: two concurrent runs on the same real Redis must not
+	// receive each other's Pub/Sub fan-out.
+	channel := "job:" + testutil.ID("real-cross-test")
+
 	client1 := &Client{
 		ID:       "client-instance-1",
 		Username: "Alice",
@@ -46,7 +51,7 @@ func TestRealDockerRedis_MultiInstanceChatHub(t *testing.T) {
 		Send:     make(chan []byte, 10),
 	}
 	hub1.Register <- client1
-	hub1.Subscribe(client1, "job:real-cross-test")
+	hub1.Subscribe(client1, channel)
 
 	client2 := &Client{
 		ID:       "client-instance-2",
@@ -55,12 +60,12 @@ func TestRealDockerRedis_MultiInstanceChatHub(t *testing.T) {
 		Send:     make(chan []byte, 10),
 	}
 	hub2.Register <- client2
-	hub2.Subscribe(client2, "job:real-cross-test")
+	hub2.Subscribe(client2, channel)
 
 	time.Sleep(200 * time.Millisecond)
 
 	msg := &Message{
-		Channel:        "job:real-cross-test",
+		Channel:        channel,
 		SenderID:       client1.ID,
 		SenderUsername: client1.Username,
 		Content:        "Hello from Instance 1 across real Docker Redis!",

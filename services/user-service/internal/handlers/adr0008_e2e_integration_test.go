@@ -16,6 +16,7 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gorilla/websocket"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/testutil"
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
@@ -51,9 +52,9 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 		s.Close(context.Background())
 	}()
 
-	ownerID := "owner-e2e-adr0008"
-	empID := "emp-e2e-adr0008"
-	custID := "cust-e2e-adr0008"
+	ownerID := testutil.ID("owner-e2e-adr0008")
+	empID := testutil.ID("emp-e2e-adr0008")
+	custID := testutil.ID("cust-e2e-adr0008")
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -251,7 +252,7 @@ func TestADR0008_E2E_LiveEmployeeMapTracking(t *testing.T) {
 		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 	})
 
-	jobID := "job-e2e-adr0008"
+	jobID := testutil.ID("job-e2e-adr0008")
 	job := &models.Job{
 		ID:            jobID,
 		OwnerID:       ownerID,
