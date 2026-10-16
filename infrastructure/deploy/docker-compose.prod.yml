@@ -10,6 +10,15 @@
 #   docker compose --env-file .env down
 # =============================================================================
 
+# Log rotation for every container (OPS-HARDEN). The VM has no daemon.json
+# limits, and the unbounded json-file log of mongo alone reached 1.6 GB.
+# 10 MB x 3 files caps each container at 30 MB of logs on disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # ---------------------------------------------------------------------------
   # Data Stores
@@ -17,7 +26,14 @@ services:
   mongo:
     image: mongo:7
     container_name: saas-mongo
+    logging: *default-logging
     restart: unless-stopped
+    # --quiet drops the per-connection "Connection accepted/ended" lines (the
+    # 1.6 GB log was mostly connection noise; locally, one healthcheck run
+    # logged 20 lines without --quiet and 12 with it). Warnings and errors are
+    # still logged. Command output and replication-activity lines are also
+    # suppressed, which is acceptable for this single-node setup.
+    command: ["--quiet"]
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
@@ -28,7 +44,9 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping')\""]
-      interval: 10s
+      # 30s, not 10s: each check opens several mongosh connections and still
+      # logs about 12 lines under --quiet (client metadata, authentication).
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -38,6 +56,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: saas-redis
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - "127.0.0.1:6380:6379"
@@ -61,6 +80,7 @@ services:
   api-gateway:
     image: ghcr.io/omarmaarouf18/saas-core-api-gateway:IMAGE_TAG
     container_name: saas-api-gateway
+    logging: *default-logging
     restart: unless-stopped
     # Not published on the host (OPS-HARDEN): the only public entry point is
     # Caddy, which reaches the gateway over saas-net. A host port let clients
@@ -106,6 +126,7 @@ services:
   chat-service:
     image: ghcr.io/omarmaarouf18/saas-core-chat-service:IMAGE_TAG
     container_name: saas-chat-service
+    logging: *default-logging
     restart: unless-stopped
     expose:
       - "${CHAT_SERVICE_PORT}"
@@ -147,6 +168,7 @@ services:
   auth-service:
     image: ghcr.io/omarmaarouf18/saas-core-auth-service:IMAGE_TAG
     container_name: saas-auth-service
+    logging: *default-logging
     restart: unless-stopped
     expose:
       - "${AUTH_SERVICE_PORT}"
@@ -189,6 +211,7 @@ services:
   user-service:
     image: ghcr.io/omarmaarouf18/saas-core-user-service:IMAGE_TAG
     container_name: saas-user-service
+    logging: *default-logging
     restart: unless-stopped
     expose:
       - "${USER_SERVICE_PORT}"
@@ -224,6 +247,7 @@ services:
   notification-service:
     image: ghcr.io/omarmaarouf18/saas-core-notification-service:IMAGE_TAG
     container_name: saas-notification-service
+    logging: *default-logging
     restart: unless-stopped
     expose:
       - "${NOTIFICATION_SERVICE_PORT}"
@@ -265,6 +289,7 @@ services:
   kyc-reviewer-console:
     image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
     container_name: saas-kyc-reviewer-console
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - "127.0.0.1:8090:8090"
@@ -301,6 +326,7 @@ services:
   caddy:
     image: caddy:2.11.4-alpine
     container_name: saas-caddy
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - "80:80"
