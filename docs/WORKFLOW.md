@@ -8,6 +8,10 @@ into `logic-exploitation`, and push yourself.
 The push block described at the end of this file is a **guardrail, not a
 security boundary** — it prevents accidents, not determined evasion.
 
+For the gate's mechanics (check order, `tools/versions.env`,
+`scripts/install-tools.sh`, the tool cache, how to bump a tool), see
+[docs/CI_CD_AND_HOOKS.md](CI_CD_AND_HOOKS.md).
+
 ---
 
 ## 1. Starting a task
@@ -30,6 +34,11 @@ make worktree-new TASK=<TASK-ID> SLUG=<slug>        # BASE=<branch> is optional
 - Configures `extensions.worktreeConfig`, a per-worktree
   `remote.origin.pushurl` that kills `git push origin` there (Layer A), and
   `core.hooksPath .githooks`.
+- Runs `flutter pub get` in the new worktree's `frontend/` (without
+  `frontend/.dart_tool`, `make ci` fails at the dart format step). If
+  `flutter` is not on `PATH`, or `pub get` fails, it prints a `WARNING` and
+  still creates the worktree; run `flutter pub get` there by hand before
+  `make ci`.
 - Inspect all agent worktrees anytime with:
 
 ```bash
@@ -98,12 +107,30 @@ the worklog). Commit the fold:
 make commit FILES="AI_CONTEXT.md docs/changelog/<category>.md" MSG="docs: fold WF-XX worklog"
 ```
 
+`make commit` rules (owner and agents alike):
+
+- `FILES` is required (no `git add -A`). Exactly one of `MSG` or
+  `MSG_FILE=<path>` is required. Use `MSG_FILE` for multi-line messages,
+  e.g. a body or a `Co-Authored-By:` trailer (committed with `git commit -F`).
+- A path in `FILES` may be a staged deletion (`git rm`, or the old side of a
+  `git mv` — list both old and new paths). A path that exists nowhere (not
+  on disk, not in the index, not in HEAD) fails with
+  `ERROR: path '<p>' does not exist on disk, in the index, or in HEAD`.
+- Only `FILES` are committed, exactly as staged (content and mode, so
+  `git update-index --chmod=+x` survives `core.fileMode=false`). Other
+  staged paths stay staged and uncommitted; a `WARNING` lists them.
+- Paths containing spaces are not supported in `FILES`.
+
 Then push and clean up:
 
 ```bash
 make push
 make worktree-remove TASK=<TASK-ID>
 ```
+
+The push runs the full gate under the CI lock (see "CI lock" below), so it
+waits for any agent's `make ci` that is running. A delete-only push
+(`git push origin --delete <branch>`) skips the gate and returns at once.
 
 `make worktree-remove` refuses while the branch is not merged into
 `logic-exploitation`; pass `FORCE=1` to override (e.g. to discard an abandoned
@@ -157,6 +184,11 @@ Two independent layers, both created by `scripts/agent-worktree.sh` /
 Layer B blocks even pushes to *other* remotes (e.g. a throwaway local bare
 remote), which is exactly what Layer A cannot cover.
 
+Right after Layer B, the hook skips the gate for **delete-only pushes**: when
+every ref line on stdin has an all-zero local sha, it prints
+`delete-only push: gate skipped` and exits 0. Because the guard runs first, a
+delete from an agent worktree or `agent/*` branch is still BLOCKED.
+
 **This is a guardrail, not a security boundary.** An agent with full shell
 access could bypass it (e.g. `--no-verify` — forbidden by CLAUDE.md, or
 `git -c core.hooksPath=`), so review diffs before merging; the layers exist
@@ -165,11 +197,27 @@ of confusion.
 
 ### CI lock
 
-`make ci` wraps the gate in `flock` on a lock file under the common
-`.git` dir (`$(git rev-parse --git-common-dir)/ci.lock`), so two worktrees
-never run integration tests against the shared local Mongo/Redis at the same
-time. The second run prints `waiting for CI lock: ...` and starts only after
-the first finishes.
+Every gate run takes `flock` on a lock file under the common `.git` dir
+(`$(git rev-parse --git-common-dir)/ci.lock`), so two worktrees never run
+integration tests against the shared local Mongo/Redis at the same time:
+
+- `make ci` takes the lock, then runs the hook with `CI_LOCK_HELD=1`.
+- A real `git push` (including `make push`) runs the hook, which takes the
+  same lock itself unless `CI_LOCK_HELD=1` is set. Before WF-02 the owner's
+  push did not lock (WF-01 finding F1).
+
+The second run prints
+`waiting for CI lock: <file> is held by another gate run (make ci or git push)`
+and starts only after the first finishes.
+
+### TEST_DB_SUFFIX
+
+`make ci`, and the hook when it takes the lock itself, export
+`TEST_DB_SUFFIX=<worktree dir name>-<pid>` unless it is already set
+(characters outside `[A-Za-z0-9_-]` become `_`, e.g. `SaaS_prototype-12345`,
+`WF-02-12345`). Tests can use it to give each run its own Mongo databases,
+Redis keys and pub/sub channels; once they all do, the lock could be relaxed.
+To reproduce a run, set it yourself: `TEST_DB_SUFFIX=debug make ci`.
 
 ### Stale worktrees
 
