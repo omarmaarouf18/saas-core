@@ -164,7 +164,7 @@ jobs:
       # lines, which become this step's outputs.
       - name: Install pinned security tools
         id: tools
-        run: ./scripts/install-tools.sh >> "$GITHUB_OUTPUT"
+        run: bash scripts/install-tools.sh >> "$GITHUB_OUTPUT"
 
       # Policy difference vs the local gate (documented in
       # docs/CI_CD_AND_HOOKS.md, open question): CI fails on ANY finding,

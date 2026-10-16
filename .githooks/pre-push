@@ -132,7 +132,7 @@ fi
 # Versions come only from tools/versions.env; scripts/install-tools.sh builds
 # them once into a versioned cache and reuses the cached binaries without
 # network access. CI uses the same script. No @latest fallback, no skipping.
-TOOLS_OUT=$(./scripts/install-tools.sh) || {
+TOOLS_OUT=$(bash scripts/install-tools.sh) || {
   echo "BLOCKED: scripts/install-tools.sh could not install the pinned gosec/govulncheck (see tools/versions.env)"
   exit 1
 }
