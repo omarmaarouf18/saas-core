@@ -927,7 +927,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := jwtutil.RevokeAllUserTokens(emp.ID); err != nil {
 			log.Printf("[AUTH ERROR] ToggleEmployee failed to revoke sessions for employee %s: %v", emp.ID, err)
-			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to freeze employee account", err)
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "failed to freeze employee account, please retry", err)
 			return
 		}
 	}
