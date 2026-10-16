@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/testutil"
 
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
@@ -43,9 +44,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		s.Close(context.Background())
 	}()
 
-	ownerID := "owner-e2e-adr0006"
-	empID := "emp-e2e-adr0006"
-	custID := "cust-e2e-adr0006"
+	ownerID := testutil.ID("owner-e2e-adr0006")
+	empID := testutil.ID("emp-e2e-adr0006")
+	custID := testutil.ID("cust-e2e-adr0006")
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
 	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour)})
 
@@ -151,10 +152,13 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	}
 	s.CreateService(ctx, svcDelivery)
 
+	// The X-Real-IP values double as Redis rate-limiter keys
+	// (ratelimit:<prefix>:count:<ip>), so they carry the per-run suffix.
+	ipBase := testutil.ID("rate-ip-e2e-adr0006")
 	var reqCounter int
 	nextIP := func() string {
 		reqCounter++
-		return fmt.Sprintf("192.168.200.%d", reqCounter)
+		return fmt.Sprintf("%s-%d", ipBase, reqCounter)
 	}
 
 	// -------------------------------------------------------------------------
@@ -237,7 +241,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	// STEP 3B: LAZY PROPOSAL EXPIRY TEST
 	// -------------------------------------------------------------------------
 	t.Run("E2E Step 3B: Proposal window expiry triggers lazy cancellation", func(t *testing.T) {
-		tokenCust2, _ := jwtutil.GenerateToken("cust2-e2e", "customer", ownerID, "cust2@example.com")
+		tokenCust2, _ := jwtutil.GenerateToken(testutil.ID("cust2-e2e"), "customer", ownerID, "cust2@example.com")
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcTransport.ID,
@@ -309,7 +313,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	// STEP 3C: DELIVERY CATEGORY UNAFFECTED REGRESSION CHECK
 	// -------------------------------------------------------------------------
 	t.Run("E2E Step 3C: Delivery category job uses fixed pricing formula unchanged", func(t *testing.T) {
-		tokenCust3, _ := jwtutil.GenerateToken("cust3-e2e", "customer", ownerID, "cust3@example.com")
+		tokenCust3, _ := jwtutil.GenerateToken(testutil.ID("cust3-e2e"), "customer", ownerID, "cust3@example.com")
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcDelivery.ID,
@@ -351,7 +355,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		// Deposit $200 into owner wallet
 		_ = s.Deposit(ctx, ownerID, 200.0)
 
-		tokenCust4, _ := jwtutil.GenerateToken("cust4-e2e", "customer", ownerID, "cust4@example.com")
+		tokenCust4, _ := jwtutil.GenerateToken(testutil.ID("cust4-e2e"), "customer", ownerID, "cust4@example.com")
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcTransport.ID,
