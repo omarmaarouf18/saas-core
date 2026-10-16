@@ -46,6 +46,22 @@ var (
 // tests can assert that fail-closed paths emit their security event.
 var shipSecurityEvent = handlerutil.ShipSecurityEvent
 
+// reRevokeAfterPersist runs a second, best-effort RevokeAllUserTokens for each
+// user after a revoke-first state change has been saved (SEC-07b). The first
+// revocation happens before the save, so a token minted in a later second
+// but before the save landed (e.g. a login racing a freeze, reset or
+// suspension) would otherwise survive. The state is already saved and the
+// first revocation succeeded, so a failure here is logged and reported as
+// eventType but does not fail the request.
+func reRevokeAfterPersist(ctx context.Context, eventType, actorID, tenantID, clientIP string, userIDs ...string) {
+	for _, id := range userIDs {
+		if err := jwtutil.RevokeAllUserTokens(id); err != nil {
+			log.Printf("[SECURITY WARNING] %s: post-save session re-revocation failed for user_id=%s: %v", eventType, id, err)
+			shipSecurityEvent(ctx, eventType, "auth-service", actorID, tenantID, fmt.Sprintf("post-save session re-revocation failed for user %s; state saved, first revocation succeeded", id), clientIP)
+		}
+	}
+}
+
 func isValidEmail(email string) bool {
 	if len(email) < 3 || len(email) > 254 {
 		return false
@@ -925,6 +941,10 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 			"error": "employee not found or not authorized for this owner",
 		})
 		return
+	}
+
+	if !req.SetActive {
+		reRevokeAfterPersist(ctx, "EMPLOYEE_FREEZE_REREVOKE_FAILED", owner.ID, owner.ID, clientIP, emp.ID)
 	}
 
 	statusStr := "frozen"
@@ -2466,6 +2486,8 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	reRevokeAfterPersist(ctx, "ACCOUNT_SUSPEND_REREVOKE_FAILED", reviewer.ID, targetUserID, handlerutil.GetClientIP(r), revokeIDs...)
+
 	// Append audit log
 	if err := a.store.AppendAudit(ctx, models.AuditEntry{
 		EmployeeID: reviewer.ID,
@@ -3195,6 +3217,8 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	reRevokeAfterPersist(ctx, "PASSWORD_RESET_REREVOKE_FAILED", user.ID, user.TenantID, clientIP, user.ID)
 
 	log.Printf("[AUTH] Password reset successfully for email=%s user_id=%s", user.Email, user.ID)
 
