@@ -13,6 +13,8 @@ What the deploy changes:
 - Every container gets json-file log rotation (10 MB × 3) and a memory limit
   (728 MiB in total). Mongo runs with `--quiet` and a 0.25 GB WiredTiger cache.
   Redis runs with `maxmemory 32mb` and `noeviction`.
+- deploy.yml removes the hand-started `saas-caddy` itself, once, right before
+  `up -d` (section 2). The manual `docker rm -f` is only a fallback.
 - deploy.yml no longer force-recreates every container on each deploy. It
   force-recreates everything only when the mTLS cert files were restored or
   regenerated in that run. It recreates only Caddy when the Caddyfile changed.
@@ -112,35 +114,48 @@ to the user you normally deploy with.
 The hand-started container is called `saas-caddy`, and so is the new compose
 service. Compose cannot create its container while the old one exists.
 
-**Do not let the deploy run into the clash.** Tested locally (Docker 29.9.1,
-Compose v5.6.0): when `docker compose up -d` hits a name conflict, it exits 1, and
-containers it had already (re)created for other services are left **Created but
-not started**. In production that would mean every recreated service (at least
-`api-gateway`, whose ports change) stays down until someone runs `compose up`
-again. The deploy step would fail, the health-check step and the automatic
-rollback would be skipped. The server's compose version may behave differently,
-but do not rely on that.
+Why the clash matters: tested locally (Docker 29.9.1, Compose v5.6.0), when
+`docker compose up -d` hits a name conflict it exits 1. Containers it had already
+(re)created for other services are left **Created but not started**. In production
+that would leave every recreated service (at least `api-gateway`, whose ports
+change) down, with the health checks and the automatic rollback skipped.
 
-### Option A (recommended): remove the old Caddy just before the deploy step
+### Default: deploy.yml removes the hand-started Caddy itself
 
-1. Merge the branch to `logic-exploitation`, then fast-forward `main` and push as usual.
-2. `build-and-publish.yml` builds the images, then the update-deployment-repo job syncs
+deploy.yml runs a cutover guard right before its main `docker compose up -d`, in
+both the deploy step and the rollback step. It runs `docker rm -f saas-caddy` only
+when **all** of these hold:
+
+- the compose file being applied defines a `caddy` service;
+- the compose project name could be determined;
+- a container named `saas-caddy` exists;
+- that container's `com.docker.compose.project` label is missing or differs from
+  the current project (`saas-core-deploy`).
+
+When it does, the job log shows `removing hand-started saas-caddy (one-time
+cutover)`, followed by the label it found. A compose-managed `saas-caddy` (label
+equal to the project) is never removed, so later deploys do nothing here.
+
+So the cutover is:
+
+1. Run the pre-checks (section 1). Pre-check 2 must show an empty `project=` for the
+   current `saas-caddy`, which is what makes the guard act.
+2. Merge the branch to `logic-exploitation`, then fast-forward `main` and push as usual.
+3. `build-and-publish.yml` builds the images, then the update-deployment-repo job syncs
    `docker-compose.yml`, `Caddyfile` and `deploy.yml` into saas-core-deploy. That push
    starts `deploy.yml` on the VM runner.
-3. Watch the saas-core-deploy Actions run. When **"Pull Production Container
-   Images"** has finished (the next step only lists images), remove the old Caddy:
+4. In the "Deploy Container Services" step, check for the guard's log line. The public
+   site is down from that `docker rm -f` until `up -d` starts the new `saas-caddy`
+   (after the gateway and console it depends on). That window is expected to be
+   seconds; it was not measured on the server.
+5. Run the post-checks (section 3).
 
-   ```bash
-   docker rm -f saas-caddy
-   ```
+### Fallback: remove it by hand
 
-   From here the public site is down until the deploy step creates the new
-   `saas-caddy`. That is usually seconds to a minute, depending on how close to the
-   deploy step you are.
-4. The deploy step (`docker compose up -d --remove-orphans`) creates the new
-   `saas-caddy` with the same `caddy_data` volume. Then the health checks run.
-
-If you are late and the deploy step already failed on the clash:
+Needed only if the guard did not remove the old container: no log line, plus a
+`Conflict. The container name "/saas-caddy" is already in use` error in the deploy
+step. One possible cause is the guard's warning `could not determine the compose
+project name`. Then, in the deploy directory:
 
 ```bash
 cd "$DEPLOY"
@@ -149,24 +164,11 @@ docker compose up -d --remove-orphans
 docker compose ps
 ```
 
-Then run the post-checks (section 3). The Actions run stays red. Re-run it
-from GitHub when convenient: it is idempotent.
-
-### Option B: remove and recreate by hand right after the deploy
-
-This works only when nothing in the deploy step had to be recreated before
-`caddy`. That is not the case on this first deploy, because the gateway changes.
-So on this deploy, Option B equals the "if you are late" block above: expect a red
-run, and recreated services stay stopped until you act. Use Option B only if you
-accept that gap. If you do:
-
-```bash
-cd "$DEPLOY"
-docker rm -f saas-caddy && docker compose up -d --remove-orphans
-```
-
-Use `up -d` for the whole project, not `up -d caddy`. `up -d caddy` starts caddy and
-its dependencies (gateway, console), but not auth, user, chat or notification.
+Use `up -d` for the whole project, not `up -d caddy`. After a failed `up`, the
+recreated services may be stopped, and `up -d caddy` starts only caddy and its
+dependencies (gateway, console), not auth, user, chat or notification. Then run the
+post-checks. The Actions run stays red. Re-run it from GitHub when convenient: it
+is idempotent.
 
 ## 3. Post-checks
 
@@ -308,9 +310,10 @@ The flags are the ones recorded for the original container. If you already moved
 Caddyfile in section 5, mount the `.bak` file instead. The gateway is reachable on
 `saas-net` without a host port, so the old Caddyfile still works.
 
-After a manual rollback, the **next deploy will hit the name clash again**: compose
-still declares `saas-caddy`. Before the next push to `main`, either revert the
-OPS-HARDEN Caddy commit, or repeat section 2 Option A.
+After a manual rollback, the **next deploy removes your hand-started Caddy again**.
+The cutover guard sees a `saas-caddy` without this project's label and replaces it
+with the compose one. If you want to keep the hand-started one, revert the
+OPS-HARDEN Caddy commit before the next push to `main`.
 
 If the automatic rollback in deploy.yml ever restores the pre-OPS-HARDEN
 `docker-compose.yml` (no `caddy` service), it now skips `--remove-orphans` for that
