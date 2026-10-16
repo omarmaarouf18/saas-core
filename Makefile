@@ -63,16 +63,13 @@ contract-test: ensure-hooks
 
 # WF-01: no `git add -A` — FILES is required, so untracked files (including
 # .env*) can never be swept into a commit.
+# WF-02: implemented in scripts/commit.sh, which reads FILES / MSG / MSG_FILE
+# from the environment (make exports command-line variables), so quotes and
+# multi-line messages are safe. Exactly one of MSG / MSG_FILE is required;
+# staged deletions in FILES work; only FILES are committed (other staged paths
+# stay staged, with a warning).
 commit: ensure-hooks
-	@if [ -z "$${FILES:-}" ]; then \
-		echo "ERROR: FILES is required and must be non-empty: make commit FILES=\"<paths>\" MSG=\"<message>\""; \
-		exit 1; \
-	fi; \
-	if [ -z "$${MSG:-}" ]; then \
-		echo "ERROR: MSG is required: make commit FILES=\"<paths>\" MSG=\"<message>\""; \
-		exit 1; \
-	fi; \
-	git add -- $(FILES) && git commit -m "$(MSG)"
+	@bash scripts/commit.sh
 
 # WF-01 push block: refuses from a linked worktree or an agent/* branch; the
 # owner keeps using it from the main worktree.
