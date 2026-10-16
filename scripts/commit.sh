@@ -15,8 +15,9 @@
 # - A path in FILES may be a staged deletion (already `git rm`ed, or the old
 #   side of a `git mv`). A path that exists nowhere — not on disk, not in the
 #   index, not in HEAD — is an error.
-# - ONLY the FILES paths are committed (`git commit --only`). Other paths that
-#   were already staged stay staged and uncommitted; a warning lists them.
+# - ONLY the FILES paths are committed, as staged (content and mode). Other
+#   paths that were already staged stay staged and uncommitted; a warning
+#   lists them.
 set -euo pipefail
 
 die() {
@@ -76,8 +77,24 @@ if [ -n "$others" ]; then
 	printf '%s\n' "$others" | sed 's/^/  /' >&2
 fi
 
-if [ -n "${MSG_FILE:-}" ]; then
-	git commit --only -F "$MSG_FILE" -- "${paths[@]}"
+# Commit ONLY the FILES paths, exactly as they are staged in the real index
+# (content AND mode — with core.fileMode=false, `git update-index --chmod=+x`
+# lives only in the index, and `git commit --only` would drop it for new
+# files). Build a temporary index = HEAD + the real index entries under FILES,
+# and commit that. The real index is left alone, so other staged paths stay
+# staged; its FILES entries already match the new HEAD.
+tmp_index="$(mktemp)"
+trap 'rm -f "$tmp_index"' EXIT
+if [ "$has_head" -eq 1 ]; then
+	GIT_INDEX_FILE="$tmp_index" git read-tree HEAD
 else
-	git commit --only -m "$MSG" -- "${paths[@]}"
+	GIT_INDEX_FILE="$tmp_index" git read-tree --empty
+fi
+GIT_INDEX_FILE="$tmp_index" git rm -r -q --cached --ignore-unmatch -- "${paths[@]}"
+git ls-files --stage -- "${paths[@]}" | GIT_INDEX_FILE="$tmp_index" git update-index --index-info
+
+if [ -n "${MSG_FILE:-}" ]; then
+	GIT_INDEX_FILE="$tmp_index" git commit -F "$MSG_FILE"
+else
+	GIT_INDEX_FILE="$tmp_index" git commit -m "$MSG"
 fi
