@@ -51,12 +51,14 @@ var shipSecurityEvent = handlerutil.ShipSecurityEvent
 // revocation happens before the save, so a token minted in a later second
 // but before the save landed (e.g. a login racing a freeze, reset or
 // suspension) would otherwise survive. The state is already saved and the
-// first revocation succeeded, so a failure here is logged and reported as
-// eventType but does not fail the request.
+// first revocation succeeded, so a failure here is reported as a security
+// event (eventType) but does not fail the request.
 func reRevokeAfterPersist(ctx context.Context, eventType, actorID, tenantID, clientIP string, userIDs ...string) {
 	for _, id := range userIDs {
+		// RevokeAllUserTokens already logs the Redis error; the structured
+		// security event is the record here (no request-derived ID in a
+		// log.Printf line, gosec G706).
 		if err := jwtutil.RevokeAllUserTokens(id); err != nil {
-			log.Printf("[SECURITY WARNING] %s: post-save session re-revocation failed for user_id=%s: %v", eventType, id, err)
 			shipSecurityEvent(ctx, eventType, "auth-service", actorID, tenantID, fmt.Sprintf("post-save session re-revocation failed for user %s; state saved, first revocation succeeded", id), clientIP)
 		}
 	}
