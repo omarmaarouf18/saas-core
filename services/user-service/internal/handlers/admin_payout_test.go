@@ -315,14 +315,22 @@ func TestAdminPayout_List(t *testing.T) {
 	// Seed multiple payouts
 	t1 := "tenant-list-1"
 	t2 := "tenant-list-2"
-	_ = mongoStore.Deposit(ctx, t1, 1000.0)
-	_ = mongoStore.Deposit(ctx, t2, 1000.0)
+	if err := mongoStore.Deposit(ctx, t1, 1000.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := mongoStore.Deposit(ctx, t2, 1000.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	p1, _ := mongoStore.CreatePayoutRequest(ctx, t1, models.CreatePayoutRequestInput{TenantID: t1, Amount: 100, PayoutMethod: "instapay"})
-	_, _ = mongoStore.CreatePayoutRequest(ctx, t2, models.CreatePayoutRequestInput{TenantID: t2, Amount: 200, PayoutMethod: "bank_transfer"})
+	if _, err := mongoStore.CreatePayoutRequest(ctx, t2, models.CreatePayoutRequestInput{TenantID: t2, Amount: 200, PayoutMethod: "bank_transfer"}); err != nil {
+		t.Fatalf("seed CreatePayoutRequest: %v", err)
+	}
 
 	// Reject p1
-	_ = mongoStore.RejectPayoutRequest(ctx, p1.ID, "rejected for test")
+	if err := mongoStore.RejectPayoutRequest(ctx, p1.ID, "rejected for test"); err != nil {
+		t.Fatalf("seed RejectPayoutRequest: %v", err)
+	}
 
 	t.Run("List All Payouts", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/payouts", nil)

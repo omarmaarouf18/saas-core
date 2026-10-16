@@ -31,11 +31,15 @@ func setupCODFeeHarness(t *testing.T) (*UserService, *store.MongoDB, context.Con
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
 
 	dbName := fmt.Sprintf("saas_platform_test_codfee_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return nil, nil, nil
@@ -102,7 +106,7 @@ func TestCompleteJob_CODCapturesActualCashCollected(t *testing.T) {
 	}
 
 	ownerID := "owner-cod-cash"
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-cod-cash", TenantID: ownerID, Name: "Cash Svc", Category: "cleaning",
 		TenantBasePrice: 100.0, Latitude: 30.0444, Longitude: 31.2357,
 	})
@@ -160,7 +164,7 @@ func TestCompleteJob_NonCODResponseMatchesRealCredit(t *testing.T) {
 	}
 
 	ownerID := "owner-phantom-fee"
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-phantom", TenantID: ownerID, Name: "Phantom Svc", Category: "cleaning",
 		TenantBasePrice: 100.0, Latitude: 30.0444, Longitude: 31.2357,
 	})

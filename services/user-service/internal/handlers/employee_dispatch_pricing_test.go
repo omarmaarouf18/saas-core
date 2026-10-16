@@ -238,13 +238,15 @@ func TestUpdateEmployeeLocation_Endpoint(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   "teleport-owner",
 			EmployeeID: empTeleport,
 			Latitude:   30.0444,
 			Longitude:  31.2357,
 			UpdatedAt:  time.Now().UTC().Add(-10 * time.Second),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+		}
 		u.setTestLocationLastUpdate("emp:"+empTeleport, time.Now().Add(-10*time.Second))
 
 		body2, _ := json.Marshal(models.EmployeeLocationPingRequest{
@@ -281,22 +283,26 @@ func TestDispatch_FreshVsStaleAvailabilityQuery(t *testing.T) {
 	now := time.Now().UTC()
 
 	// Courier 1: fresh ping (2 minutes ago)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   tenantID,
 		EmployeeID: "emp-under-tenant-fresh-stale-1",
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  now.Add(-2 * time.Minute),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Courier 2: stale ping (8 minutes ago, > 5 min window)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   tenantID,
 		EmployeeID: "emp-under-tenant-fresh-stale-2",
 		Latitude:   30.1,
 		Longitude:  30.1,
 		UpdatedAt:  now.Add(-8 * time.Minute),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	fresh, err := s.GetFreshEmployeeLocations(ctx, tenantID, 5*time.Minute)
 	if err != nil {
@@ -326,7 +332,7 @@ func TestDispatch_NearestEmployeeSelection(t *testing.T) {
 	ownerID := "tenant-multi-candidate"
 	svcID := "svc-multi-cand"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Multi-Courier Delivery",
@@ -342,40 +348,48 @@ func TestDispatch_NearestEmployeeSelection(t *testing.T) {
 	now := time.Now().UTC()
 
 	// Candidate A: Maadi (30.0, 31.3) — ~10 km away
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-A-under-tenant-multi-candidate",
 		Latitude:   30.0,
 		Longitude:  31.3,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Candidate B (CLOSEST): Dokki (30.0380, 31.2120) — ~1.7 km away
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-B-under-tenant-multi-candidate",
 		Latitude:   30.0380,
 		Longitude:  31.2120,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Candidate C: Heliopolis (30.0900, 31.3200) — ~13 km away
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-C-under-tenant-multi-candidate",
 		Latitude:   30.0900,
 		Longitude:  31.3200,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Candidate D: Inactive courier close by
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-deactivated-under-tenant-multi-candidate",
 		Latitude:   30.0230,
 		Longitude:  31.2140,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	nearest, err := u.findNextAvailableEmployee(ctx, ownerID, custLoc, nil)
 	if err != nil {
@@ -403,9 +417,11 @@ func TestDispatch_RejectionPaths(t *testing.T) {
 	svcID := "svc-no-courier"
 
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -486,16 +502,18 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	custID := "cust-pricing-proof"
 	svcID := "svc-pricing-proof"
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// 1. Registered business address: Cairo downtown (30.0444, 31.2357)
 	// Base Price = $50.00, Rate = $2.00 / km
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Proof Transport Service",
@@ -520,13 +538,15 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	oldCourierDistance := haversineKm(customerLoc.Latitude, customerLoc.Longitude, courierLat, courierLon)
 	oldCourierBuggyPrice := math.Round((50.0+(oldCourierDistance*2.0))*100) / 100
 
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   courierLat,
 		Longitude:  courierLon,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@test.com")

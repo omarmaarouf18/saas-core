@@ -68,11 +68,13 @@ func setupTestUserService(t *testing.T) (*UserService, *store.MongoDB, func()) {
 	svc := NewUserService(s, cfg, rdb)
 
 	for _, tenant := range []string{"owner-1", "tenant-1", "t-1", "t-prod", "owner-prod"} {
-		_ = s.UpsertSubscription(context.Background(), &models.Subscription{
+		if err := s.UpsertSubscription(context.Background(), &models.Subscription{
 			TenantID:  tenant,
 			Tier:      models.PlanPaid,
 			ExpiresAt: time.Now().Add(24 * time.Hour),
-		})
+		}); err != nil {
+			t.Fatalf("seed UpsertSubscription: %v", err)
+		}
 	}
 
 	cleanup := func() {

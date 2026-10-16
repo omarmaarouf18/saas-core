@@ -33,9 +33,13 @@ func setupHoursHarness(t *testing.T) (*store.MongoDB, *UserService, context.Cont
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	dbName := fmt.Sprintf("saas_platform_hours_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		cancel()
 		t.Skipf("Skipping working-hours test: MongoDB not available at %s (%v)", mongoURI, err)
@@ -74,11 +78,13 @@ func setupHoursHarness(t *testing.T) (*store.MongoDB, *UserService, context.Cont
 
 func seedHoursOpenSub(t *testing.T, s *store.MongoDB, ctx context.Context, tenantID string) {
 	t.Helper()
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID: "sub-hours-" + tenantID, TenantID: tenantID,
 		Tier: models.PlanPaid, StartedAt: time.Now().UTC().Add(-time.Hour),
 		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 }
 
 // perDayTodayOff builds a per-day table where today is off and every other
@@ -113,12 +119,12 @@ func TestListServices_AttachesHoursFields(t *testing.T) {
 
 	seedHoursOpenSub(t, s, ctx, "hours-unknown-tenant")
 	seedHoursOpenSub(t, s, ctx, "hours-off-tenant")
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-hours-unknown", TenantID: "hours-unknown-tenant", Name: "Always Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
 	})
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-hours-off", TenantID: "hours-off-tenant", Name: "Resting Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -177,14 +183,14 @@ func TestTrackJob_HoursClosedRejected(t *testing.T) {
 
 	seedHoursOpenSub(t, s, ctx, "hours-track-closed")
 	seedHoursOpenSub(t, s, ctx, "hours-track-open")
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-track-closed", TenantID: "hours-track-closed", Name: "Closed Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
 		ScheduleMode: models.ScheduleModePerDay, PerDaySchedule: perDayTodayOff(),
 		Timezone: "Africa/Cairo",
 	})
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-track-open", TenantID: "hours-track-open", Name: "Open Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,
@@ -302,7 +308,7 @@ func TestUpdateService_ScheduleValidation(t *testing.T) {
 	ownerID := "hours-update-owner"
 	seedHoursOpenSub(t, s, ctx, ownerID)
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-hours-upd", TenantID: ownerID, Name: "Upd Shop",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0444, Longitude: 31.2357,

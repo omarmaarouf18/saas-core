@@ -30,11 +30,15 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_e2e_adr0006_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping E2E test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -48,7 +52,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	empID := testutil.ID("emp-e2e-adr0006")
 	custID := testutil.ID("cust-e2e-adr0006")
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(30 * 24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	mockAuthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -129,15 +135,17 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcTransport)
+	mustCreateService(t, s, ctx, svcTransport)
 
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Seed delivery service (Fixed Price = $40.00)
 	svcDelivery := &models.Service{
@@ -150,7 +158,7 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 		Latitude:         30.0,
 		Longitude:        30.0,
 	}
-	s.CreateService(ctx, svcDelivery)
+	mustCreateService(t, s, ctx, svcDelivery)
 
 	// The X-Real-IP values double as Redis rate-limiter keys
 	// (ratelimit:<prefix>:count:<ip>), so they carry the per-run suffix.
@@ -274,7 +282,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 
 		// Artificially expire proposal in store
 		expiredAt := time.Now().UTC().Add(-10 * time.Minute)
-		_ = s.UpdateJobPriceProposal(ctx, jobID, floatPtr(110.0), "customer", &expiredAt)
+		if err := s.UpdateJobPriceProposal(ctx, jobID, floatPtr(110.0), "customer", &expiredAt); err != nil {
+			t.Fatalf("seed UpdateJobPriceProposal: %v", err)
+		}
 
 		// Driver attempts to accept expired proposal
 		respReq := map[string]any{
@@ -353,7 +363,9 @@ func TestADR0006_E2E_NegotiableTransportPricing(t *testing.T) {
 	// -------------------------------------------------------------------------
 	t.Run("E2E Step 4: Escrow locking uses final agreed price ($100.00), not suggested price ($80.00)", func(t *testing.T) {
 		// Deposit $200 into owner wallet
-		_ = s.Deposit(ctx, ownerID, 200.0)
+		if err := s.Deposit(ctx, ownerID, 200.0); err != nil {
+			t.Fatalf("seed Deposit: %v", err)
+		}
 
 		tokenCust4, _ := jwtutil.GenerateToken(testutil.ID("cust4-e2e"), "customer", ownerID, "cust4@example.com")
 		trackReq := map[string]any{

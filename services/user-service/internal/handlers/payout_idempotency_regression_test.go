@@ -37,11 +37,13 @@ func TestRequestPayout_IdempotencyKeyReplaysAndDeduplicates(t *testing.T) {
 	if err := s.Deposit(ctx, ownerID, 500); err != nil {
 		t.Fatalf("deposit: %v", err)
 	}
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@idem.test")
 
 	doPost := func(key string) (*httptest.ResponseRecorder, models.PayoutRequest) {

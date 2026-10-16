@@ -31,12 +31,14 @@ func TestCascade_TrackJob_CreatesPendingDispatchWithoutPricing(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-cascade-create"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-cascade-create"
 	empID := "emp-under-tenant-cascade-create"
 	svcID := "svc-cascade-create"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -49,13 +51,15 @@ func TestCascade_TrackJob_CreatesPendingDispatchWithoutPricing(t *testing.T) {
 
 	// Seed fresh courier location (1 km away)
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0450,
 		Longitude:  31.2360,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 
@@ -119,11 +123,13 @@ func TestCascade_TrackJob_ZeroCouriers_ReturnsUnavailableNot422(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-zero-couriers"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-zero-couriers"
 	svcID := "svc-zero-couriers"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -179,13 +185,15 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 	ctx := context.Background()
 	ownerID := "tenant-cascade-adv"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-cascade-adv"
 	empClose := "emp-close-under-tenant-cascade-adv"
 	empFar := "emp-far-under-tenant-cascade-adv"
 	svcID := "svc-cascade-adv"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Transport Service",
@@ -201,22 +209,26 @@ func TestCascade_SequentialOffers_DeclineAdvancesAndPricingAtAccept(t *testing.T
 	custLoc := models.Location{Latitude: 30.0000, Longitude: 31.0000}
 
 	// empClose is ~1.11 km away (0.01 deg lat difference)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empClose,
 		Latitude:   30.0100,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// empFar is ~5.55 km away (0.05 deg lat difference)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empFar,
 		Latitude:   30.0500,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 	tokenClose, _ := jwtutil.GenerateToken(empClose, "employee", ownerID, "close@test.com")
@@ -324,12 +336,14 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-race-two-jobs"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	empSolo := "emp-solo-under-tenant-race-two-jobs"
 	empBackup := "emp-backup-under-tenant-race-two-jobs"
 	svcID := "svc-race-two-jobs"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -342,21 +356,25 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 
 	now := time.Now().UTC()
 	// empSolo is closest (1 km away)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empSolo,
 		Latitude:   30.0100,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 	// empBackup is farther (5 km away)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empBackup,
 		Latitude:   30.0500,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust1, _ := jwtutil.GenerateToken("cust-1", "user", ownerID, "cust1@test.com")
 	tokenSolo, _ := jwtutil.GenerateToken(empSolo, "employee", ownerID, "solo@test.com")
@@ -379,7 +397,7 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 	// Create Job 2 offered to empSolo (simulating concurrent offer scenario)
 	expires := now.Add(60 * time.Second)
 	job2ID := "job-race1-job2"
-	_ = s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:                       job2ID,
 		OwnerID:                  ownerID,
 		UserID:                   "cust-2",
@@ -393,7 +411,9 @@ func TestCascade_Race1_TwoJobsToSameCourier_AcceptOnlyOne(t *testing.T) {
 		Destination:              models.Location{Latitude: 30.05, Longitude: 31.05},
 		CreatedAt:                now,
 		UpdatedAt:                now,
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	// Courier accepts Job 1 -> SUCCESS!
 	acceptReq1 := httptest.NewRequest("POST", fmt.Sprintf("/users/employee/jobs/%s/accept", job1ID), nil)
@@ -441,11 +461,13 @@ func TestCascade_Race2_BoundaryExpiry(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-race-boundary"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	empID := "emp-under-tenant-race-boundary"
 	svcID := "svc-race-boundary"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -457,13 +479,15 @@ func TestCascade_Race2_BoundaryExpiry(t *testing.T) {
 	})
 
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0100,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Create job with an offer that expired 1 millisecond ago
 	expired := now.Add(-1 * time.Millisecond)
@@ -481,7 +505,9 @@ func TestCascade_Race2_BoundaryExpiry(t *testing.T) {
 		CreatedAt:                now.Add(-61 * time.Second),
 		UpdatedAt:                now.Add(-61 * time.Second),
 	}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@test.com")
 
@@ -517,12 +543,14 @@ func TestCascade_Race3_StaleCourierLocation_AutoDeclines(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-stale-loc"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	empStale := "emp-stale-under-tenant-stale-loc"
 	empFresh := "emp-fresh-under-tenant-stale-loc"
 	svcID := "svc-stale-loc"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -535,22 +563,26 @@ func TestCascade_Race3_StaleCourierLocation_AutoDeclines(t *testing.T) {
 
 	now := time.Now().UTC()
 	// empStale ping was 6 minutes ago (> 5 min freshness window)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empStale,
 		Latitude:   30.0100,
 		Longitude:  31.0000,
 		UpdatedAt:  now.Add(-6 * time.Minute),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// empFresh ping was just now
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empFresh,
 		Latitude:   30.0200,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Create job with offer to empStale
 	future := now.Add(50 * time.Second)
@@ -568,7 +600,9 @@ func TestCascade_Race3_StaleCourierLocation_AutoDeclines(t *testing.T) {
 		CreatedAt:                now,
 		UpdatedAt:                now,
 	}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenStale, _ := jwtutil.GenerateToken(empStale, "employee", ownerID, "stale@test.com")
 
@@ -604,13 +638,15 @@ func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T)
 	ctx := context.Background()
 	ownerID := "tenant-cancel-cascade"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	emp1 := "emp1-under-tenant-cancel-cascade"
 	emp2 := "emp2-under-tenant-cancel-cascade"
 	svcID := "svc-cancel-cascade"
 	custID := "cust-canceller"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -622,20 +658,24 @@ func TestCascade_CustomerCancelsDuringPendingDispatch_HaltsCascade(t *testing.T)
 	})
 
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: emp1,
 		Latitude:   30.0100,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: emp2,
 		Latitude:   30.0200,
 		Longitude:  31.0000,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 	tokenEmp1, _ := jwtutil.GenerateToken(emp1, "employee", ownerID, "emp1@test.com")
@@ -736,13 +776,15 @@ func TestCascade_OfferedCourierCanViewJobDetails_F01(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-f01-view"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-f01-view"
 	empOffered := "emp-under-tenant-f01-view-1"
 	empOther := "emp-under-tenant-f01-view-2"
 	svcID := "svc-f01-view"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery F01",
@@ -754,20 +796,24 @@ func TestCascade_OfferedCourierCanViewJobDetails_F01(t *testing.T) {
 	})
 
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empOffered,
 		Latitude:   30.0444,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empOther,
 		Latitude:   30.0450,
 		Longitude:  31.2360,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	expiry := now.Add(60 * time.Second)
 	job := &models.Job{
@@ -832,11 +878,13 @@ func TestCascade_CourierDoubleAcceptRace_F02(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-f02-race"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	empID := "emp-under-tenant-f02-race"
 	svcID := "svc-f02-race"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery F02",
@@ -848,13 +896,15 @@ func TestCascade_CourierDoubleAcceptRace_F02(t *testing.T) {
 	})
 
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0444,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	expiry := now.Add(60 * time.Second)
 	job1 := &models.Job{
@@ -978,13 +1028,15 @@ func TestCascade_EscrowLockFailureCancelsJob_F05(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "tenant-f05-escrow"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-f05-escrow"
 	emp1 := "emp-under-tenant-f05-escrow-1"
 	emp2 := "emp-under-tenant-f05-escrow-2"
 	svcID := "svc-f05-escrow"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery F05",
@@ -996,23 +1048,29 @@ func TestCascade_EscrowLockFailureCancelsJob_F05(t *testing.T) {
 	})
 
 	now := time.Now().UTC()
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: emp1,
 		Latitude:   30.0444,
 		Longitude:  31.2357,
 		UpdatedAt:  now,
-	})
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: emp2,
 		Latitude:   30.0450,
 		Longitude:  31.2360,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Ensure wallet has 0 withdrawable balance
-	_, _ = s.GetOrCreateWallet(ctx, ownerID)
+	if _, err := s.GetOrCreateWallet(ctx, ownerID); err != nil {
+		t.Fatalf("seed GetOrCreateWallet: %v", err)
+	}
 
 	expiry := now.Add(60 * time.Second)
 	job := &models.Job{

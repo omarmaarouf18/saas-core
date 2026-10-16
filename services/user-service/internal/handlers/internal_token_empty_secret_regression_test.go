@@ -78,7 +78,7 @@ func TestCancelJob_EmptyInternalTokenNeverAuthenticates(t *testing.T) {
 func seedCompletedWalletJob(t *testing.T, h *ratingsRoleHarness) string {
 	t.Helper()
 	owner := "q23-escrow-owner"
-	h.store.CreateService(h.ctx, &models.Service{
+	mustCreateService(t, h.store, h.ctx, &models.Service{
 		ID: "svc-q23", TenantID: owner, Name: "T", Category: "delivery",
 		TenantBasePrice: 40, Latitude: 30.0444, Longitude: 31.2357,
 	})

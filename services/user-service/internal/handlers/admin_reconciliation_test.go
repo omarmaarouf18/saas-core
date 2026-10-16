@@ -405,8 +405,12 @@ func TestAdminReconciliation_CASConcurrencyRace(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := "owner-race"
-	_ = mongoStore.Deposit(ctx, ownerID, 500.0)
-	_ = mongoStore.LockEscrow(ctx, ownerID, "job-race-target", 100.0)
+	if err := mongoStore.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := mongoStore.LockEscrow(ctx, ownerID, "job-race-target", 100.0); err != nil {
+		t.Fatalf("seed LockEscrow: %v", err)
+	}
 
 	jobRace := &models.Job{
 		ID:                  "job-race-target",

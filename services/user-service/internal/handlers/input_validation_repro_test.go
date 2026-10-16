@@ -27,7 +27,7 @@ func TestRepro_Q20_CancelJob_UnboundedReason(t *testing.T) {
 	custID := "cust-q20-cancel"
 	svcID := "svc-q20-cancel"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery Service",
@@ -39,7 +39,7 @@ func TestRepro_Q20_CancelJob_UnboundedReason(t *testing.T) {
 	})
 
 	jobID := "job-q20-cancel"
-	s.CreateJob(ctx, &models.Job{
+	if err := s.CreateJob(ctx, &models.Job{
 		ID:            jobID,
 		OwnerID:       ownerID,
 		UserID:        custID,
@@ -48,7 +48,9 @@ func TestRepro_Q20_CancelJob_UnboundedReason(t *testing.T) {
 		Location:      models.Location{Latitude: 30.0444, Longitude: 31.2357},
 		CreatedAt:     time.Now().UTC(),
 		PaymentMethod: "cod",
-	})
+	}); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@test.com")
 
@@ -88,7 +90,9 @@ func TestRepro_Q20_RequestPayout_UnboundedAccountDetails(t *testing.T) {
 	ownerID := "tenant-q20-payout"
 
 	// Create wallet with balance
-	_ = s.Deposit(ctx, ownerID, 1000.0)
+	if err := s.Deposit(ctx, ownerID, 1000.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@test.com")
 
@@ -163,7 +167,9 @@ func TestRepro_Q21_RequestPayout_ArbitraryPayoutMethod(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "tenant-q21-method"
-	_ = s.Deposit(ctx, ownerID, 500.0)
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@test.com")
 
@@ -202,7 +208,7 @@ func TestRepro_Q21_TrackJob_ArbitraryPaymentMethod(t *testing.T) {
 	custID := "cust-q21-paym"
 	svcID := "svc-q21-paym"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Delivery",

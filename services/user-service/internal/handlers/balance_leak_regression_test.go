@@ -31,12 +31,14 @@ func TestTrackJob_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "leak-owner" // deliberately funded with ZERO balance
 	svcID := "leak-svc"
-	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 40.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 40.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "leak-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken("leak-cust", "user", ownerID, "leak-cust@example.com")
@@ -65,14 +67,18 @@ func TestTrackJob_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) {
 
 func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) {
 	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
-	s, err := store.NewMongoDB(ctx, mongoURI,
+	s, err := store.NewMongoDB(connectCtx, mongoURI,
 		fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano()))
 	if err != nil {
 		t.Skipf("Skipping: MongoDB not available (%v)", err)
@@ -117,25 +123,29 @@ func TestRespondPrice_EscrowFailureWarningDoesNotLeakOwnerBalance(t *testing.T) 
 	}
 	u := NewUserService(s, cfg, rdb)
 
-	s.CreateService(ctx, &models.Service{ID: svcID, Category: "transport", TenantID: ownerID,
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, Category: "transport", TenantID: ownerID,
 		TenantBasePrice: 50.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
 	// ADR-0024: TrackJob rejects closed tenants, so the fixture tenant needs
 	// an open subscription for the booking below to reach the escrow path.
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "leak-emp@example.com")
 	tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "leak-cust2@example.com")
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Customer books transport job WITH pre-assigned employee -> awaiting_price_response.
 	bookBody, _ := json.Marshal(map[string]any{

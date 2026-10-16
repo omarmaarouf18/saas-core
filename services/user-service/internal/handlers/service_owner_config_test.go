@@ -27,11 +27,15 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_owner_config_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping user-service integration tests: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -96,16 +100,20 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 		t.Fatalf("failed to generate second owner token: %v", err)
 	}
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID1,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID2,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// 1. CreateService with new Owner Configuration fields
 	t.Run("CreateService with Owner Configuration fields", func(t *testing.T) {

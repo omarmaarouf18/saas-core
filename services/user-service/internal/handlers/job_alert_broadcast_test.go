@@ -129,7 +129,7 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 	defer mockNotifServer.Close()
 
 	svcID := "service-cleaning-1"
-	testStore.CreateService(context.Background(), &models.Service{
+	mustCreateService(t, testStore, context.Background(), &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Home Cleaning",
@@ -140,19 +140,23 @@ func TestJobAlertBroadcast_EndToEnd(t *testing.T) {
 		Longitude:        31.2357,
 	})
 
-	_ = testStore.UpsertEmployeeLocation(context.Background(), &models.EmployeeLocation{
+	if err := testStore.UpsertEmployeeLocation(context.Background(), &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empID,
 		Latitude:   30.0444,
 		Longitude:  31.2357,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
-	_ = testStore.UpsertSubscription(context.Background(), &models.Subscription{
+	if err := testStore.UpsertSubscription(context.Background(), &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	cfg := &config.Config{
 		AppEnv:                 "test",

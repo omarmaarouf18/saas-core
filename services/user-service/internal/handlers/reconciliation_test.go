@@ -28,11 +28,15 @@ func TestGetReconciliationQueue(t *testing.T) {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_recon_queue_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping TestGetReconciliationQueue: MongoDB not available (%v)", err)
 		return
@@ -101,9 +105,15 @@ func TestGetReconciliationQueue(t *testing.T) {
 		UpdatedAt:           time.Now(),
 	}
 
-	_ = s.CreateJob(ctx, job1)
-	_ = s.CreateJob(ctx, job2)
-	_ = s.CreateJob(ctx, job3)
+	if err := s.CreateJob(ctx, job1); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
+	if err := s.CreateJob(ctx, job2); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
+	if err := s.CreateJob(ctx, job3); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	ownerAToken, _ := jwtutil.GenerateToken(ownerA, "owner", ownerA, "ownerA@example.com")
 	ownerBToken, _ := jwtutil.GenerateToken(ownerB, "owner", ownerB, "ownerB@example.com")
@@ -192,11 +202,15 @@ func TestResolveReconciliation(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_recon_resolve_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping TestResolveReconciliation: MongoDB not available (%v)", err)
 		return
@@ -225,19 +239,27 @@ func TestResolveReconciliation(t *testing.T) {
 	u := NewUserService(s, userCfg, rdb)
 
 	// Setup wallet and lock escrow for Customer and Owner A
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerA,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerB,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	// Deposit 100 into Customer wallet, lock 50 for Job 1
-	_ = s.Deposit(ctx, ownerA, 100.0)
-	_ = s.LockEscrow(ctx, ownerA, "job-resolve-1", 50.0)
+	if err := s.Deposit(ctx, ownerA, 100.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.LockEscrow(ctx, ownerA, "job-resolve-1", 50.0); err != nil {
+		t.Fatalf("seed LockEscrow: %v", err)
+	}
 
 	// Job 1: Flagged for reconciliation, 50 locked escrow
 	job1 := &models.Job{
@@ -254,11 +276,17 @@ func TestResolveReconciliation(t *testing.T) {
 		CreatedAt:           time.Now().Add(-1 * time.Hour),
 		UpdatedAt:           time.Now(),
 	}
-	_ = s.CreateJob(ctx, job1)
+	if err := s.CreateJob(ctx, job1); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	// Setup Job 2: Customer deposit 100, lock 40 for Job 2
-	_ = s.Deposit(ctx, ownerA, 100.0)
-	_ = s.LockEscrow(ctx, ownerA, "job-resolve-2", 40.0)
+	if err := s.Deposit(ctx, ownerA, 100.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.LockEscrow(ctx, ownerA, "job-resolve-2", 40.0); err != nil {
+		t.Fatalf("seed LockEscrow: %v", err)
+	}
 
 	job2 := &models.Job{
 		ID:                  "job-resolve-2",
@@ -274,7 +302,9 @@ func TestResolveReconciliation(t *testing.T) {
 		CreatedAt:           time.Now().Add(-1 * time.Hour),
 		UpdatedAt:           time.Now(),
 	}
-	_ = s.CreateJob(ctx, job2)
+	if err := s.CreateJob(ctx, job2); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	ownerAToken, _ := jwtutil.GenerateToken(ownerA, "owner", ownerA, "ownerA@example.com")
 	ownerBToken, _ := jwtutil.GenerateToken(ownerB, "owner", ownerB, "ownerB@example.com")
@@ -374,7 +404,9 @@ func TestResolveReconciliation(t *testing.T) {
 			CreatedAt:          time.Now(),
 			UpdatedAt:          time.Now(),
 		}
-		_ = s.CreateJob(ctx, job3)
+		if err := s.CreateJob(ctx, job3); err != nil {
+			t.Fatalf("seed CreateJob: %v", err)
+		}
 
 		body := map[string]string{
 			"job_id":   "job-resolve-3",

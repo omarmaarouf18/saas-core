@@ -50,7 +50,7 @@ func TestUpdateService_RejectsInvalidCoordinates(t *testing.T) {
 	defer cleanup()
 
 	ctx := context.Background()
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "coord-svc-2", TenantID: "coord-owner-2", Name: "Valid Service",
 		Category: "delivery", TenantBasePrice: 10.0, TenantPricePerKM: 1.0,
 		Latitude: 30.0, Longitude: 31.0,
@@ -90,11 +90,13 @@ func TestGetJob_UserTokenParamDoesNotShadowJobID(t *testing.T) {
 	ctx := context.Background()
 	ownerID := "shadow-owner"
 	svcID := "shadow-svc"
-	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
 	job := &models.Job{ID: "shadow-job-1", OwnerID: ownerID, UserID: "shadow-cust", ServiceID: svcID,
 		Status: models.JobStatusActive, PaymentMethod: "cod",
 		Location: models.Location{Latitude: 30.0, Longitude: 30.0}, CreatedAt: time.Now().Add(-time.Hour)}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenCust, _ := jwtutil.GenerateToken("shadow-cust", "user", ownerID, "shadow-cust@example.com")
 
@@ -132,11 +134,13 @@ func TestGetCustomerJobs_AcceptsCustomerRoleAlias(t *testing.T) {
 	ownerID := "alias-owner"
 	svcID := "alias-svc"
 	custID := "alias-cust"
-	s.CreateService(ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
+	mustCreateService(t, s, ctx, &models.Service{ID: svcID, TenantID: ownerID, TenantBasePrice: 5.0, TenantPricePerKM: 0.0, Latitude: 30.0, Longitude: 30.0})
 	job := &models.Job{ID: "alias-job-1", OwnerID: ownerID, UserID: custID, ServiceID: svcID,
 		Status: models.JobStatusActive, PaymentMethod: "cod",
 		Location: models.Location{Latitude: 30.0, Longitude: 30.0}, CreatedAt: time.Now().Add(-time.Hour)}
-	_ = s.CreateJob(ctx, job)
+	if err := s.CreateJob(ctx, job); err != nil {
+		t.Fatalf("seed CreateJob: %v", err)
+	}
 
 	tokenCustomerRole, _ := jwtutil.GenerateToken(custID, "customer", ownerID, "alias@example.com")
 

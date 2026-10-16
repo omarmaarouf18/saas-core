@@ -115,21 +115,27 @@ func TestTrackJob_ConcurrentDuplicateIdempotencyKey(t *testing.T) {
 	userID := "race-user-1"
 	serviceID := "race-svc-1"
 
-	s.CreateService(ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	mustCreateService(t, s, ctx, &models.Service{ID: serviceID, TenantID: ownerID, TenantBasePrice: 10.0, TenantPricePerKM: 1.0, Latitude: 30.0, Longitude: 30.0})
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-" + ownerID,
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		StartedAt: time.Now().UTC(),
-	})
-	_ = s.Deposit(ctx, ownerID, 500.0)
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
+	if err := s.Deposit(ctx, ownerID, 500.0); err != nil {
+		t.Fatalf("seed Deposit: %v", err)
+	}
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-race-owner-1",
 		Latitude:   30.0,
 		Longitude:  30.0,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	tokenOwner, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "race-owner@example.com")
 	tokenUser, _ := jwtutil.GenerateToken(userID, "user", ownerID, "race-user@example.com")

@@ -35,11 +35,15 @@ func setupMoneyPrecisionHarness(t *testing.T) (*UserService, *store.MongoDB, con
 	if mongoURI == "" {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
 
 	dbName := fmt.Sprintf("saas_platform_test_money_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB not available (%v)", err)
 		return nil, nil, nil
@@ -102,19 +106,23 @@ func TestTrackJob_ProposedPriceCentRounded(t *testing.T) {
 	}
 	ownerID := "owner-money-track"
 	// ADR-0024: open subscription so TrackJob passes the closed-tenant gate.
-	_ = s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)})
+	if err := s.UpsertSubscription(context.Background(), &models.Subscription{TenantID: ownerID, Tier: models.PlanPaid, ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	custID := "cust-money-track"
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-money", TenantID: ownerID, Name: "Transport Svc", Category: "transport",
 		TenantBasePrice: 66.66, Latitude: 30.0444, Longitude: 31.2357,
 	})
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: "emp-owner-money-track",
 		Latitude:   30.0444,
 		Longitude:  31.2357,
 		UpdatedAt:  time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@m.test")
 	custToken, _ := jwtutil.GenerateToken(custID, "customer", custID, "c@m.test")
 
@@ -151,7 +159,7 @@ func TestProposePrice_CentRounded(t *testing.T) {
 	custID := "cust-prop-round"
 	jobID := "job-prop-round"
 	exp := time.Now().UTC().Add(5 * time.Minute)
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-prop", TenantID: ownerID, Name: "T", Category: "transport",
 		TenantBasePrice: 66.66, Latitude: 30.0444, Longitude: 31.2357,
 	})
@@ -196,7 +204,7 @@ func TestRespondPrice_AgreedPriceCentRounded(t *testing.T) {
 	jobID := "job-resp-round"
 	exp := time.Now().UTC().Add(5 * time.Minute)
 	proposal := 44.44444444
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID: "svc-resp", TenantID: ownerID, Name: "T2", Category: "transport",
 		TenantBasePrice: 66.66, Latitude: 30.0444, Longitude: 31.2357,
 	})
@@ -240,11 +248,13 @@ func TestWalletDeposit_CentRoundsAmount(t *testing.T) {
 	if _, err := s.GetOrCreateWallet(ctx, ownerID); err != nil {
 		t.Fatalf("wallet: %v", err)
 	}
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@d.test")
 
 	body, _ := json.Marshal(map[string]any{
@@ -276,11 +286,13 @@ func TestRequestPayout_CentRoundsAmount(t *testing.T) {
 	if err := s.Deposit(ctx, ownerID, 500); err != nil {
 		t.Fatalf("deposit: %v", err)
 	}
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "o@pr.test")
 
 	body, _ := json.Marshal(map[string]any{

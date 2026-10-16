@@ -28,7 +28,7 @@ func TestGetJob_RoleBasedDTOFiltering(t *testing.T) {
 	attackerID := "attacker-unrelated-user"
 	svcID := "svc-leak-test"
 
-	s.CreateService(ctx, &models.Service{
+	mustCreateService(t, s, ctx, &models.Service{
 		ID:               svcID,
 		TenantID:         ownerID,
 		Name:             "Leak Test Service",
@@ -43,13 +43,15 @@ func TestGetJob_RoleBasedDTOFiltering(t *testing.T) {
 	offerExpiry := now.Add(5 * time.Minute)
 
 	// Seed fresh courier location for empOffered
-	_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+	if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 		TenantID:   ownerID,
 		EmployeeID: empOffered,
 		Latitude:   30.0450,
 		Longitude:  31.2360,
 		UpdatedAt:  now,
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertEmployeeLocation: %v", err)
+	}
 
 	// Active job with assigned employee and internal reconciliation/escrow data
 	activeJobID := "job-active-leak-test"

@@ -28,11 +28,15 @@ func TestOwnerConfigurationSave_ReproLiveError(t *testing.T) {
 		mongoURI = "mongodb://root:devpassword123@localhost:27017/saas_platform?authSource=admin"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// NewMongoDB gets the short connect budget; seed writes and the rest of
+	// the test use ctx, which does not inherit what setup used up (TST-02).
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer connectCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	dbName := fmt.Sprintf("saas_platform_test_%d", time.Now().UnixNano())
-	s, err := store.NewMongoDB(ctx, mongoURI, dbName)
+	s, err := store.NewMongoDB(connectCtx, mongoURI, dbName)
 	if err != nil {
 		t.Skipf("Skipping integration test: MongoDB not available at %s (%v)", mongoURI, err)
 		return
@@ -74,11 +78,13 @@ func TestOwnerConfigurationSave_ReproLiveError(t *testing.T) {
 	ownerID := "owner-config-123"
 	ownerToken, _ := jwtutil.GenerateToken(ownerID, "owner", ownerID, "owner@example.com")
 
-	_ = s.UpsertSubscription(ctx, &models.Subscription{
+	if err := s.UpsertSubscription(ctx, &models.Subscription{
 		TenantID:  ownerID,
 		Tier:      models.PlanPaid,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	// Seed existing service in DB
 	svc := &models.Service{
@@ -92,7 +98,7 @@ func TestOwnerConfigurationSave_ReproLiveError(t *testing.T) {
 		Latitude:         30.0444,
 		Longitude:        31.2357,
 	}
-	s.CreateService(ctx, svc)
+	mustCreateService(t, s, ctx, svc)
 
 	// Build the exact payload that ownerProvider.updateOwnerServiceConfig sends:
 	// Notice that the Flutter frontend passes user.id (the raw ID "owner-config-123") in owner_id,

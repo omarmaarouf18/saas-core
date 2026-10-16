@@ -183,9 +183,15 @@ func TestAdminSubscription_ListingAndFiltering(t *testing.T) {
 		StartedAt: time.Now().UTC().Add(-48 * time.Hour),
 	}
 
-	_ = mongoStore.UpsertSubscription(ctx, sub1)
-	_ = mongoStore.UpsertSubscription(ctx, sub2)
-	_ = mongoStore.UpsertSubscription(ctx, sub3)
+	if err := mongoStore.UpsertSubscription(ctx, sub1); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
+	if err := mongoStore.UpsertSubscription(ctx, sub2); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
+	if err := mongoStore.UpsertSubscription(ctx, sub3); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	t.Run("List All Subscriptions", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/users/admin/subscriptions", nil)
@@ -258,7 +264,9 @@ func TestAdminSubscription_ActivationAndRevocationLifecycle(t *testing.T) {
 		Tier:      models.PlanPendingPayment,
 		StartedAt: time.Now().UTC(),
 	}
-	_ = mongoStore.UpsertSubscription(ctx, sub)
+	if err := mongoStore.UpsertSubscription(ctx, sub); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	t.Run("Activate Pending Subscription", func(t *testing.T) {
 		body, _ := json.Marshal(models.AdminActivateSubscriptionRequest{
@@ -388,7 +396,9 @@ func TestAdminSubscription_CASConcurrencyRace(t *testing.T) {
 		Tier:      models.PlanPendingPayment,
 		StartedAt: time.Now().UTC(),
 	}
-	_ = mongoStore.UpsertSubscription(ctx, sub)
+	if err := mongoStore.UpsertSubscription(ctx, sub); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	var wg sync.WaitGroup
 	results := make([]int, 2)
@@ -436,12 +446,14 @@ func TestAdminActivateSubscription_SuspendedTenantRejected_F07(t *testing.T) {
 	ctx := context.Background()
 
 	suspendedTenantID := "tenant-suspended-sub-target"
-	_ = store.UpsertSubscription(ctx, &models.Subscription{
+	if err := store.UpsertSubscription(ctx, &models.Subscription{
 		ID:        "sub-suspended-123",
 		TenantID:  suspendedTenantID,
 		Tier:      models.PlanPendingPayment,
 		StartedAt: time.Now().UTC(),
-	})
+	}); err != nil {
+		t.Fatalf("seed UpsertSubscription: %v", err)
+	}
 
 	body, _ := json.Marshal(models.AdminActivateSubscriptionRequest{
 		TenantID:     suspendedTenantID,
