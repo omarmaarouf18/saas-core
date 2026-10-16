@@ -17,6 +17,7 @@
 #              (or the local logic-exploitation). Delete lines are ignored.
 #
 # Mapping (first match wins, per path; the scope is the union over all paths):
+#   CLAUDE.md                         -> FULL gate (checked before *.md)
 #   *.md anywhere, docs/**            -> docs (markdown SHA check)
 #                                        + shared/infra tests (changelog and
 #                                        docgen validation live there)
@@ -81,6 +82,11 @@ force_full() {
 classify() { # classify <path>
 	local p="$1"
 	case "$p" in
+	CLAUDE.md)
+		# Before the *.md rule: agent instructions change how the gate is used.
+		force_full "$p (agent instructions)"
+		return
+		;;
 	*.md | docs/*)
 		DOCS=1
 		INFRA_TESTS=1
@@ -90,7 +96,7 @@ classify() { # classify <path>
 		force_full "$p (Go workspace/module definition)"
 		return
 		;;
-	shared/infra/* | tools/* | .githooks/* | scripts/* | Makefile | .github/* | CLAUDE.md | .gitleaks.toml)
+	shared/infra/* | tools/* | .githooks/* | scripts/* | Makefile | .github/* | .gitleaks.toml)
 		force_full "$p (shared code or gate configuration)"
 		return
 		;;
