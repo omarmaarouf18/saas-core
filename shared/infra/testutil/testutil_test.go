@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"net"
 	"os"
 	"regexp"
 	"strconv"
@@ -98,5 +99,56 @@ func TestIDSanitizesPrefixAndKeepsSuffix(t *testing.T) {
 	got := ID("job:real cross")
 	if got != "job_real_cross-run-1" {
 		t.Fatalf("ID() = %q, want %q", got, "job_real_cross-run-1")
+	}
+}
+
+func TestIPIsValidStableAndDistinct(t *testing.T) {
+	t.Setenv("TEST_DB_SUFFIX", "ip-run-1")
+	resetSuffixForTest()
+
+	seen := map[string]bool{}
+	for n := 0; n <= 253; n++ {
+		ip := IP("rate-ip", n)
+		parsed := net.ParseIP(ip)
+		if parsed == nil || parsed.To4() == nil {
+			t.Fatalf("IP(%q, %d) = %q, want a valid IPv4 address", "rate-ip", n, ip)
+		}
+		if !strings.HasPrefix(ip, "10.") {
+			t.Fatalf("IP(%q, %d) = %q, want an address in 10.0.0.0/8", "rate-ip", n, ip)
+		}
+		if seen[ip] {
+			t.Fatalf("IP(%q, %d) = %q repeats an earlier value", "rate-ip", n, ip)
+		}
+		seen[ip] = true
+		if again := IP("rate-ip", n); again != ip {
+			t.Fatalf("IP(%q, %d) not stable within a run: %q then %q", "rate-ip", n, ip, again)
+		}
+	}
+}
+
+func TestIPDiffersBetweenRuns(t *testing.T) {
+	t.Setenv("TEST_DB_SUFFIX", "ip-run-1")
+	resetSuffixForTest()
+	first := IP("rate-ip", 0)
+
+	t.Setenv("TEST_DB_SUFFIX", "ip-run-2")
+	resetSuffixForTest()
+	second := IP("rate-ip", 0)
+
+	if first == second {
+		t.Fatalf("IP() gave %q for two different TEST_DB_SUFFIX values", first)
+	}
+}
+
+func TestIPPanicsOutOfRange(t *testing.T) {
+	for _, n := range []int{-1, 254} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("IP(%q, %d) did not panic", "rate-ip", n)
+				}
+			}()
+			_ = IP("rate-ip", n)
+		}()
 	}
 }

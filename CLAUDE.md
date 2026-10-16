@@ -39,7 +39,7 @@ After completing any change, you must verify it before committing:
 1. `gofmt -l .` must return empty (run `gofmt -w .` to format).
 2. `go build ./...` and `go vet ./...` must succeed for every module touched.
 3. `go test ./...` must succeed for every module touched (including running `shared/infra` tests whenever a changelog file is edited).
-4. Run `make ci` before every commit — not raw `go test` against shared services. `make ci` takes a lock under the common `.git` dir, so parallel worktrees never run integration tests against the shared local Mongo/Redis at the same time.
+4. Run `make check` before every commit; `make commit` enforces it (it refuses unless a passing `make check` stamped exactly the tree being committed). `make check` runs only the checks your change needs (it prints the scope and why; `make ci` is an alias, `make ci-full` runs everything) and holds a lock under the common `.git` dir only around tests that use the shared local Mongo/Redis — never run raw `go test` against shared services instead. GitHub CI is the full gate.
 5. One commit per logical change. Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes.
 
 Before performing `git add`, every commit sequence must explicitly execute:

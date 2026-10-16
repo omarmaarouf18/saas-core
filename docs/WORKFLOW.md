@@ -8,9 +8,32 @@ into `logic-exploitation`, and push yourself.
 The push block described at the end of this file is a **guardrail, not a
 security boundary** — it prevents accidents, not determined evasion.
 
-For the gate's mechanics (check order, `tools/versions.env`,
-`scripts/install-tools.sh`, the tool cache, how to bump a tool), see
+For the gate's mechanics (check order, scope table, `tools/versions.env`,
+`scripts/install-tools.sh`, the tool cache, gitleaks, how to bump a tool), see
 [docs/CI_CD_AND_HOOKS.md](CI_CD_AND_HOOKS.md).
+
+## 0. The loop (WF-03)
+
+Local checks run only for what changed; GitHub CI is the single full gate;
+production deploys only from `main`.
+
+```text
+make check  ->  make commit  ->  owner merges  ->  make push (scoped)
+            ->  GitHub CI (full)  ->  merge to main only when green
+```
+
+| Command | What it runs |
+|---------|--------------|
+| `make check` | the **scoped** gate: `scripts/changed-scope.sh` maps the changed paths (committed since the merge-base with `logic-exploitation` + staged + unstaged + untracked) to stages, prints the scope and why, runs them, and on a pass writes the stamp `make commit` requires |
+| `make ci` | alias of `make check` (muscle memory) |
+| `make ci-full` | everything, exactly the pre-WF-03 gate (`CI_SCOPE=full`); also writes a stamp |
+| `make commit` | refuses unless a passing stamp covers the exact tree being committed ("run make check first") |
+| `git push` / `make push` | the pre-push hook, scoped by the **pushed commit range** |
+| GitHub CI (`ci.yml`) | everything, on every push and pull request |
+
+`CI_SCOPE=full` forces the full gate anywhere (e.g. `CI_SCOPE=full git push`).
+A briefly red `logic-exploitation` on GitHub is acceptable: fix forward.
+`main` is protected (see "Protect main" below).
 
 ---
 
@@ -35,10 +58,10 @@ make worktree-new TASK=<TASK-ID> SLUG=<slug>        # BASE=<branch> is optional
   `remote.origin.pushurl` that kills `git push origin` there (Layer A), and
   `core.hooksPath .githooks`.
 - Runs `flutter pub get` in the new worktree's `frontend/` (without
-  `frontend/.dart_tool`, `make ci` fails at the dart format step). If
-  `flutter` is not on `PATH`, or `pub get` fails, it prints a `WARNING` and
-  still creates the worktree; run `flutter pub get` there by hand before
-  `make ci`.
+  `frontend/.dart_tool`, a frontend-scoped `make check` fails at the dart
+  format step). If `flutter` is not on `PATH`, or `pub get` fails, it prints
+  a `WARNING` and still creates the worktree; run `flutter pub get` there by
+  hand before `make check`.
 - Inspect all agent worktrees anytime with:
 
 ```bash
@@ -55,7 +78,8 @@ path. Every task prompt must state:
    `go.work`, any `go.mod`/`go.sum`, `infrastructure/**`, `.github/**`,
    `Makefile`, `.githooks/**`, `pubspec.yaml`/`pubspec.lock`) — at most one
    running task may own each hot path,
-4. the expectation to run `make ci` before every commit, to record work in
+4. the expectation to run `make check` before every commit (`make commit`
+   enforces it), to record work in
    `docs/worklog/<TASK-ID>.md` (template: `docs/worklog/README.md`), and to
    stop and ask on the defined stop conditions (a needed decision, an
    out-of-lane change, a failing gate it cannot fix in lane, or a conflict
@@ -71,7 +95,8 @@ From inside the task's worktree:
 cd ../saas-core-wt/<TASK-ID>
 git log --oneline logic-exploitation..agent/<TASK-ID>-<slug>
 git diff logic-exploitation...agent/<TASK-ID>-<slug>
-make ci        # full gate in this worktree; takes the shared CI lock
+make check     # scoped gate for the branch's changes (prints scope + why)
+make ci-full   # optional: everything, as GitHub CI will run it
 ```
 
 `make worktree-list` shows each worktree's branch, ahead/behind vs
@@ -87,7 +112,7 @@ first; never merge `logic-exploitation` into an agent branch):
 ```bash
 cd ../saas-core-wt/<TASK-ID>
 git rebase logic-exploitation     # only if behind
-make ci
+make check
 ```
 
 In the main worktree:
@@ -104,6 +129,7 @@ Fold the task's worklog into the shared docs — `AI_CONTEXT.md`,
 the worklog). Commit the fold:
 
 ```bash
+make check     # docs scope: markdown SHA check + shared/infra tests
 make commit FILES="AI_CONTEXT.md docs/changelog/<category>.md" MSG="docs: fold WF-XX worklog"
 ```
 
@@ -120,6 +146,18 @@ make commit FILES="AI_CONTEXT.md docs/changelog/<category>.md" MSG="docs: fold W
   `git update-index --chmod=+x` survives `core.fileMode=false`). Other
   staged paths stay staged and uncommitted; a `WARNING` lists them.
 - Paths containing spaces are not supported in `FILES`.
+- **Pass stamp (WF-03)**: it refuses with
+  `ERROR: no passing gate stamp for the tree being committed: run make check first`
+  unless a passing `make check` / `make ci` / `make ci-full` stamped exactly
+  the tree being committed, with a scope that covers the commit's own paths
+  (a docs-only commit needs the docs-scope stamp, a code commit its module's).
+  Untracked files left out of `FILES` are tolerated (they were present during
+  the check); any other uncommitted tracked change is not, and is listed —
+  commit it too, or `git stash push -- <paths>` and `make check` again.
+  Editing a file after the check means checking again. Nothing is staged on a
+  refusal. Stamps: `<git-common-dir>/gate-stamps/<tree>`, shared by all
+  worktrees, pruned after 14 days / beyond the newest 200
+  (`scripts/gate-stamp.sh`). A raw `git commit` does not check stamps.
 
 Then push and clean up:
 
@@ -128,8 +166,9 @@ make push
 make worktree-remove TASK=<TASK-ID>
 ```
 
-The push runs the full gate under the CI lock (see "CI lock" below), so it
-waits for any agent's `make ci` that is running. A delete-only push
+The push runs the gate scoped by the pushed commit range (plus a gitleaks
+scan of that range), taking the CI lock only around integration tests (see
+"CI lock" below). GitHub CI then runs the full gate. A delete-only push
 (`git push origin --delete <branch>`) skips the gate and returns at once.
 
 `make worktree-remove` refuses while the branch is not merged into
@@ -148,11 +187,11 @@ task). It removes the worktree and deletes `agent/<TASK-ID>-<slug>` with
   the fold for that task's worklog, not by merging agent-side doc edits.
 - **Code conflicts**: rebase the second branch in its worktree
   (`git rebase logic-exploitation`), resolve the conflict there, run
-  `make ci`, then `git merge --ff-only` from the main worktree. Do not create
+  `make check`, then `git merge --ff-only` from the main worktree. Do not create
   merge bubbles on `logic-exploitation`.
 - **Hot-path collisions** (e.g. two tasks both editing `go.work` or the
   `Makefile`): expect the second rebase to conflict. Resolve in favor of the
-  combination of both changes and re-run `make ci` before merging. Avoid this
+  combination of both changes and re-run `make check` before merging. Avoid this
   by not granting the same hot path to two running tasks.
 - Prefer `git rebase` in the worktree over merging; agents never rebase
   `logic-exploitation` or `main` themselves — only their own task branch.
@@ -172,7 +211,7 @@ Two independent layers, both created by `scripts/agent-worktree.sh` /
    git repository`). The main worktree's origin is unaffected.
 2. **Layer B — pre-push hook guard.** At the very top of
    `.githooks/pre-push`, before any other check: if the invocation is a real
-   git push (git passes the remote name and URL as hook arguments — `make ci`
+   git push (git passes the remote name and URL as hook arguments — `make check`
    invokes the same script with no arguments, so the gate still runs inside
    worktrees) AND the git dir contains `/worktrees/` or the current branch
    matches `agent/*`, the hook prints
@@ -197,27 +236,36 @@ of confusion.
 
 ### CI lock
 
-Every gate run takes `flock` on a lock file under the common `.git` dir
-(`$(git rev-parse --git-common-dir)/ci.lock`), so two worktrees never run
-integration tests against the shared local Mongo/Redis at the same time:
+Only the stages that use the shared local Mongo/Redis run under `flock` on a
+lock file under the common `.git` dir (`$(git rev-parse --git-common-dir)/ci.lock`,
+`scripts/ci-lock.sh`): `go test -count=1` of the integration test packages
+(those whose test binary links a Mongo or Redis client, see
+`scripts/go-test-module.sh`). gofmt, vet, gosec, govulncheck, gitleaks,
+compose validation, flutter and unit tests run without it, so parallel
+worktrees overlap everywhere else (WF-03; before that the whole gate held it).
 
-- `make ci` takes the lock, then runs the hook with `CI_LOCK_HELD=1`.
-- A real `git push` (including `make push`) runs the hook, which takes the
-  same lock itself unless `CI_LOCK_HELD=1` is set. Before WF-02 the owner's
-  push did not lock (WF-01 finding F1).
+A run that has to wait prints
+`waiting for CI lock: <file> is held by another gate run (make check or git push)`
+and `[timing] lock-wait <seconds>s`. `CI_LOCK_HELD=1` tells the gate its
+caller already holds the lock.
 
-The second run prints
-`waiting for CI lock: <file> is held by another gate run (make ci or git push)`
-and starts only after the first finishes.
+**Why the lock stays (WF-03 experiment).** Two scoped gates touching
+`services/user-service`, run concurrently from two scratch worktrees with the
+lock bypassed (`CI_LOCK_HELD=1`), passed once and then both failed: Mongo
+client timeouts under load (`client timed out waiting for server response`
+while seeding, then `job not found` / `service not found`), not data
+collisions between the runs. With the lock they serialize their integration
+tests and pass. Keep the lock until the integration tests tolerate a loaded
+Mongo (longer test timeouts) — see docs/worklog/WF-03.md.
 
 ### TEST_DB_SUFFIX
 
-`make ci`, and the hook when it takes the lock itself, export
+Every gate run (`make check`, `make ci-full`, a real push) exports
 `TEST_DB_SUFFIX=<worktree dir name>-<pid>` unless it is already set
 (characters outside `[A-Za-z0-9_-]` become `_`, e.g. `SaaS_prototype-12345`,
-`WF-02-12345`). Tests can use it to give each run its own Mongo databases,
-Redis keys and pub/sub channels; once they all do, the lock could be relaxed.
-To reproduce a run, set it yourself: `TEST_DB_SUFFIX=debug make ci`.
+`WF-02-12345`). Tests use it (via `shared/infra/testutil`) to give each run its
+own Mongo databases, Redis keys, pub/sub channels and X-Real-IP addresses.
+To reproduce a run, set it yourself: `TEST_DB_SUFFIX=debug make check`.
 
 ### Stale worktrees
 
@@ -226,3 +274,48 @@ repo) show up as `prunable` in `git worktree list`. Run
 `git worktree prune --dry-run -v` to review, and decide yourself whether to
 prune (this also orphans their branches; `git branch -d` refuses unmerged
 ones).
+
+---
+
+## 6. Protect main
+
+Production deploys only from `main`, so `main` must only move to commits
+whose GitHub CI is green. One-time setup on GitHub (owner):
+
+1. Open the repository on GitHub → **Settings** → **Rules** → **Rulesets**
+   → **New ruleset** → **New branch ruleset** (or the classic route:
+   **Settings** → **Branches** → **Add branch protection rule**, branch name
+   pattern `main`).
+2. Name it `protect-main`, set **Enforcement status** to **Active**.
+3. **Target branches** → **Add target** → **Include by pattern** → `main`.
+4. Enable **Require status checks to pass** (classic: **Require status
+   checks to pass before merging**). Click **Add checks** and add every job
+   of the `CI Gate` workflow, typing each name (a check only appears in the
+   list after it has run once on GitHub):
+   `Lint & Formatting`, `Secret Scan (gitleaks)`, `API Contract Tests`,
+   `Flutter Lint & Test`, and the six `Build & Test` matrix entries —
+   `Build & Test (services/api-gateway, api-gateway)`,
+   `Build & Test (services/auth-service, auth-service)`,
+   `Build & Test (services/chat-service, chat-service)`,
+   `Build & Test (services/notification-service, notification-service)`,
+   `Build & Test (services/user-service, user-service)`,
+   `Build & Test (shared/infra, shared-infra)`.
+   Copy the exact names from a finished run's checks list on GitHub if they
+   differ.
+5. Enable **Block force pushes** (classic: leave **Allow force pushes** off)
+   and **Restrict deletions**.
+6. Leave **Require a pull request before merging** off if you fast-forward
+   `main` from your machine with `make push`; a ruleset with required status
+   checks still rejects a push to `main` whose head commit has no green
+   checks. The commit must therefore have been pushed (to
+   `logic-exploitation`) and gone green first.
+7. **Bypass list**: leave it empty. The production CD hotfix procedure in
+   CLAUDE.md is then "push the fix to `logic-exploitation`, wait for green,
+   fast-forward `main`"; if you ever need to skip that, add yourself to the
+   bypass list temporarily and remove yourself afterwards.
+8. **Create**.
+
+Then the loop is: `make check` → `make commit` → owner merges the agent
+branch → `make push` of `logic-exploitation` (scoped hook) → GitHub CI (full)
+→ when that commit is green, `git checkout main && git merge --ff-only
+logic-exploitation && make push`.

@@ -168,12 +168,12 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	}
 
 	// The X-Real-IP values double as Redis rate-limiter keys
-	// (ratelimit:<prefix>:count:<ip>), so they carry the per-run suffix.
-	ipBase := testutil.ID("rate-ip-e2e-adr0007")
+	// (ratelimit:<prefix>:count:<ip>): testutil.IP gives a valid IPv4 per
+	// request that differs between concurrent runs.
 	var reqCounter int
 	nextIP := func() string {
 		reqCounter++
-		return fmt.Sprintf("%s-%d", ipBase, reqCounter)
+		return testutil.IP("rate-ip-e2e-adr0007", reqCounter)
 	}
 
 	// -------------------------------------------------------------------------

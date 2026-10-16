@@ -18,6 +18,11 @@
 # - ONLY the FILES paths are committed, as staged (content and mode). Other
 #   paths that were already staged stay staged and uncommitted; a warning
 #   lists them.
+# - WF-03 pass stamp: refuses unless a passing `make check` (or `make ci` /
+#   `make ci-full`) stamped exactly the tree being committed — plus the
+#   untracked files left out of FILES, which were present during the check —
+#   with a scope that covers this commit's changed paths (see
+#   scripts/gate-stamp.sh). Nothing is staged when it refuses.
 set -euo pipefail
 
 die() {
@@ -63,6 +68,56 @@ for p in "${paths[@]}"; do
 	fi
 done
 
+# WF-03 pass stamp, verified BEFORE touching the real index: build the exact
+# tree this commit will produce in a scratch copy of the index (the same
+# steps as below), then look for a passing stamp.
+stamp_tmp="$(mktemp -d)"
+tmp_index="$(mktemp)"
+trap 'rm -rf "$stamp_tmp"; rm -f "$tmp_index"' EXIT
+real_index="$(git rev-parse --path-format=absolute --git-path index)"
+if [ -f "$real_index" ]; then
+	cp "$real_index" "$stamp_tmp/index"
+fi
+if [ "${#to_add[@]}" -gt 0 ]; then
+	GIT_INDEX_FILE="$stamp_tmp/index" git add -- "${to_add[@]}"
+fi
+if [ "$has_head" -eq 1 ]; then
+	GIT_INDEX_FILE="$stamp_tmp/commit" git read-tree HEAD
+else
+	GIT_INDEX_FILE="$stamp_tmp/commit" git read-tree --empty
+fi
+GIT_INDEX_FILE="$stamp_tmp/commit" git rm -r -q --cached --ignore-unmatch -- "${paths[@]}"
+GIT_INDEX_FILE="$stamp_tmp/index" git ls-files --stage -- "${paths[@]}" |
+	GIT_INDEX_FILE="$stamp_tmp/commit" git update-index --index-info
+commit_tree="$(GIT_INDEX_FILE="$stamp_tmp/commit" git write-tree)"
+# The checked tree also held the untracked files that stay out of this commit.
+cp "$stamp_tmp/commit" "$stamp_tmp/view"
+(cd "$(git rev-parse --show-toplevel)" &&
+	GIT_INDEX_FILE="$stamp_tmp/index" git ls-files -z --others --exclude-standard |
+	GIT_INDEX_FILE="$stamp_tmp/view" xargs -0 -r git add --)
+view_tree="$(GIT_INDEX_FILE="$stamp_tmp/view" git write-tree)"
+need_key=full
+if [ "$has_head" -eq 1 ]; then
+	scope_out="$(git diff --no-renames --name-only HEAD "$commit_tree" |
+		bash scripts/changed-scope.sh --paths 2>/dev/null)"
+	eval "$scope_out" # SCOPE_KEY=... (shell-quoted)
+	need_key="$SCOPE_KEY"
+fi
+if ! bash scripts/gate-stamp.sh covers "$view_tree" "$need_key"; then
+	echo "ERROR: no passing gate stamp for the tree being committed: run make check first" >&2
+	echo "  this commit needs scope: $need_key" >&2
+	others_changed="$(comm -23 \
+		<({ git diff --no-renames --name-only; git diff --no-renames --name-only --cached; } | sort -u) \
+		<(printf '%s\n' "${paths[@]}" | sort -u))"
+	if [ -n "$others_changed" ]; then
+		echo "  tracked changes NOT in FILES (the check ran with them; commit them too, or" >&2
+		echo "  'git stash push -- <paths>' them and run make check again):" >&2
+		printf '%s\n' "$others_changed" | sed 's/^/    /' >&2
+	fi
+	exit 1
+fi
+echo "gate stamp OK for this commit (scope: $need_key)"
+
 if [ "${#to_add[@]}" -gt 0 ]; then
 	git add -- "${to_add[@]}"
 fi
@@ -83,8 +138,6 @@ fi
 # files). Build a temporary index = HEAD + the real index entries under FILES,
 # and commit that. The real index is left alone, so other staged paths stay
 # staged; its FILES entries already match the new HEAD.
-tmp_index="$(mktemp)"
-trap 'rm -f "$tmp_index"' EXIT
 if [ "$has_head" -eq 1 ]; then
 	GIT_INDEX_FILE="$tmp_index" git read-tree HEAD
 else
@@ -92,6 +145,9 @@ else
 fi
 GIT_INDEX_FILE="$tmp_index" git rm -r -q --cached --ignore-unmatch -- "${paths[@]}"
 git ls-files --stage -- "${paths[@]}" | GIT_INDEX_FILE="$tmp_index" git update-index --index-info
+
+[ "$(GIT_INDEX_FILE="$tmp_index" git write-tree)" = "$commit_tree" ] ||
+	die "internal: the tree to commit differs from the stamped tree (index changed meanwhile?)"
 
 if [ -n "${MSG_FILE:-}" ]; then
 	GIT_INDEX_FILE="$tmp_index" git commit -F "$MSG_FILE"
