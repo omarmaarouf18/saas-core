@@ -13,6 +13,8 @@
   (verified by the owner on 2026-10-16). Everything else is a runbook check.
 
 ## Decisions taken
+- **Owner decision (2026-10-16): accept Redis `maxmemory 32mb` with `noeviction` as
+  implemented.** This resolves the Redis open question below.
 - Caddy image `caddy:2.11.4-alpine`. Docker Hub `tag_last_pushed` dates on
   2026-10-16: `2.11.4-alpine` 2026-09-23 (23 days), `2.11.6-alpine` 2026-10-04 and
   `2.11.7-alpine` 2026-10-06 (both under 14 days). These are image push dates from
@@ -46,6 +48,7 @@
 5. `OPS-HARDEN: deploy recreates only changed services; forced recreate only after cert changes`
 6. `OPS-HARDEN: cutover runbook for the owner`
 7. `OPS-HARDEN: worklog`
+8. `OPS-HARDEN: worklog: owner accepts redis noeviction`
 
 ## Item reports (2–5)
 
@@ -253,4 +256,19 @@ All commands ran locally (Docker 29.9.1, Compose v5.6.0). `make ci` ran before e
     growth on the host.
   - I judged a bounded, fail-closed Redis better than that, and implemented it.
   - Owner: confirm, or pick a larger `maxmemory`, which needs memory taken from another service.
+  - **Answered 2026-10-16:** the owner accepted `maxmemory 32mb` + `noeviction` as implemented.
 - Which chain holds the temporary iptables DROP, and is it persisted? Runbook pre-check 7.
+- **Stop (gate failure outside the lane), 2026-10-16.** `make ci` for commit 8 (this
+  decision note, Markdown only) failed twice in user-service:
+  - run 1: `service_owner_config_test.go:177: Expected 201 Created, got 402. Body: {"error":"upgrade_required","message":"Service catalog creation requires a paid subscription."}`;
+  - run 2: `service_owner_config_repro_test.go:126: Expected 200 OK for UpdateService, got 402. Body: {"error":"upgrade_required","message":"Service catalog updates requires a paid subscription."}`.
+  - Cause, read from the code: both tests create `context.WithTimeout(…, 2*time.Second)`
+    (`service_owner_config_repro_test.go:31`, `service_owner_config_test.go:30`), spend
+    it on `store.NewMongoDB` (connect, indexes, seed), then reuse it for
+    `_ = s.UpsertSubscription(ctx, …)` with the error discarded
+    (`service_owner_config_repro_test.go:77`, `service_owner_config_test.go:99,104`).
+    When setup takes more than 2 s, the paid subscription is never written and the
+    handler correctly returns 402.
+  - Fix (out of lane, `services/**`): use a fresh context for the seed writes and fail
+    the test on their error.
+  - Commits 1–7 each passed the gate; this note is committed only once the gate passes.
