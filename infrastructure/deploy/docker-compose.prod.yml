@@ -62,8 +62,13 @@ services:
     image: ghcr.io/omarmaarouf18/saas-core-api-gateway:IMAGE_TAG
     container_name: saas-api-gateway
     restart: unless-stopped
-    ports:
-      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+    # Not published on the host (OPS-HARDEN): the only public entry point is
+    # Caddy, which reaches the gateway over saas-net. A host port let clients
+    # bypass Caddy and forge X-Forwarded-For (the gateway trusts its first
+    # entry). deploy.yml health checks run inside the container, so nothing on
+    # the host needs this port.
+    expose:
+      - "${API_GATEWAY_PORT}"
     volumes:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/api-gateway.crt:/app/certs/api-gateway.crt:ro
