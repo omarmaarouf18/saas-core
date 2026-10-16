@@ -77,6 +77,12 @@ if [ "${CI_LOCK_HELD:-}" != "1" ]; then
     flock 9
   fi
   export CI_LOCK_HELD=1
+  # Per-run suffix for test DB names / Redis keys (same rule as `make ci`).
+  if [ -z "${TEST_DB_SUFFIX:-}" ]; then
+    TEST_DB_SUFFIX="$(basename "$(git rev-parse --show-toplevel)" | tr -c 'A-Za-z0-9_\n-' '_')-$$"
+  fi
+  export TEST_DB_SUFFIX
+  echo "TEST_DB_SUFFIX=$TEST_DB_SUFFIX"
 fi
 
 echo "== pre-push gate: running checks =="
