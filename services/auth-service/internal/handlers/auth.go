@@ -42,6 +42,10 @@ var (
 	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 )
 
+// shipSecurityEvent is handlerutil.ShipSecurityEvent behind a variable so
+// tests can assert that fail-closed paths emit their security event.
+var shipSecurityEvent = handlerutil.ShipSecurityEvent
+
 func isValidEmail(email string) bool {
 	if len(email) < 3 || len(email) > 254 {
 		return false
@@ -3132,6 +3136,20 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-07b: revoke every existing session BEFORE the new password is
+	// persisted. If revocation fails the reset fails closed: the password is
+	// NOT changed and the reset token is NOT consumed, so the holder can
+	// retry once Redis is back. The reverse order (persist, roll back on
+	// revoke failure) can itself fail mid-rollback and leave a new password
+	// with the old sessions still alive, which is what this guards against.
+	// If revocation succeeds but the update below fails, the user is merely
+	// logged out with the old password intact (fail closed).
+	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
+		shipSecurityEvent(ctx, "PASSWORD_RESET_REVOKE_FAILED", "auth-service", user.ID, user.TenantID, "password reset aborted: session revocation failed, password unchanged", clientIP)
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "password reset temporarily unavailable, please retry", err)
+		return
+	}
+
 	// Update password and clear the token + OTP fields so neither the token
 	// nor the code can be reused for a second reset (single-use).
 	update := bson.M{
@@ -3151,10 +3169,6 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 			"error": "failed to update password",
 		})
 		return
-	}
-
-	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
-		log.Printf("[SECURITY WARNING] Failed to revoke user tokens after password reset for user_id=%s: %v", user.ID, err)
 	}
 
 	log.Printf("[AUTH] Password reset successfully for email=%s user_id=%s", user.Email, user.ID)
