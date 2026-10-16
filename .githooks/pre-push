@@ -141,6 +141,10 @@ fi
 echo "-- checking Go version consistency across go.work, go.mod, ci.yml, and Dockerfiles --"
 bash scripts/check-go-version.sh || exit 1
 
+# An explicit GOVULNCHECK_BIN in the environment overrides the pinned binary
+# (used to test the gate's error handling, e.g. GOVULNCHECK_BIN=/bin/false).
+GOVULNCHECK_BIN_OVERRIDE="${GOVULNCHECK_BIN:-}"
+
 # 5. Resolve the pinned security-scan tools (gosec & govulncheck).
 # Versions come only from tools/versions.env; scripts/install-tools.sh builds
 # them once into a versioned cache and reuses the cached binaries without
@@ -156,6 +160,10 @@ if [ ! -x "$GOSEC_BIN" ] || [ ! -x "$GOVULNCHECK_BIN" ]; then
   echo "$TOOLS_OUT"
   exit 1
 fi
+if [ -n "$GOVULNCHECK_BIN_OVERRIDE" ]; then
+  echo "NOTE: GOVULNCHECK_BIN overridden from the environment: $GOVULNCHECK_BIN_OVERRIDE (pinned: $GOVULNCHECK_BIN)"
+  GOVULNCHECK_BIN="$GOVULNCHECK_BIN_OVERRIDE"
+fi
 echo "-- security tools: $GOVULNCHECK_BIN, $GOSEC_BIN --"
 
 for mod in services/api-gateway services/auth-service services/chat-service \
@@ -168,30 +176,10 @@ for mod in services/api-gateway services/auth-service services/chat-service \
     exit 1
   }
 
-  # govulncheck check parity
-  # NOTE: We run govulncheck but filter out standard library ("stdlib") vulnerabilities locally.
-  # We also filter for vulnerabilities that are actually called (where the trace contains a package starting
-  # with "github.com/project/"), to prevent blocking on uncalled module-level dependencies that do not impact
-  # the compiled binary.
-  # If a standard library vulnerability is skipped, we print a loud warning highlighting the skipped GO-ID.
-  echo "-- running govulncheck on $mod --"
-  VULN_OUT=$( (cd "$mod" && "$GOVULNCHECK_BIN" -format json ./...) || true)
-  
-  # Check for stdlib vulnerabilities to print loud warnings
-  STDLIB_VULNS=$(echo "$VULN_OUT" | jq -r 'select(.finding != null and (.finding.trace | any(.package != null and (.package | startswith("github.com/project/")))) and .finding.trace[0].module == "stdlib") | .finding.osv' | sort -u)
-  if [ -n "$STDLIB_VULNS" ]; then
-    for id in $STDLIB_VULNS; do
-      echo "WARNING: SKIPPED ($id) (stdlib vulnerability) — verify local Go patch version"
-    done
-  fi
-
-  # Block on active third-party dependencies vulnerabilities
-  NON_STDLIB_VULNS=$(echo "$VULN_OUT" | jq -c 'select(.finding != null and (.finding.trace | any(.package != null and (.package | startswith("github.com/project/")))) and .finding.trace[0].module != "stdlib")')
-  if [ -n "$NON_STDLIB_VULNS" ]; then
-    echo "BLOCKED: $mod failed govulncheck security scan with third-party vulnerabilities:"
-    echo "$NON_STDLIB_VULNS" | jq .
-    exit 1
-  fi
+  # govulncheck: scripts/govulncheck-module.sh blocks on govulncheck errors
+  # (exit code other than 0/3, or no valid JSON config message) and on called
+  # third-party findings; called stdlib findings only warn (policy unchanged).
+  GOVULNCHECK_BIN="$GOVULNCHECK_BIN" bash scripts/govulncheck-module.sh "$mod" || exit 1
 
   # gosec check parity
   echo "-- running gosec on $mod --"

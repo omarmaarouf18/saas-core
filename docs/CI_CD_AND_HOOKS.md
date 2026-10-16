@@ -40,7 +40,7 @@ Then the checks:
    - `go build ./...`
    - `go vet ./...`
    - `go test ./... -count=1`
-   - `govulncheck -format json ./...` (warns on called stdlib vulnerabilities, blocks on called third-party vulnerabilities; see [Pinned tool versions](#pinned-tool-versions-toolsversionsenv) for the CI difference)
+   - `govulncheck -format json ./...` via `scripts/govulncheck-module.sh` (warns on called stdlib vulnerabilities, blocks on called third-party vulnerabilities; see [Pinned tool versions](#pinned-tool-versions-toolsversionsenv) for the CI difference). A govulncheck error blocks too, printing `BLOCKED: govulncheck error in <mod>` and govulncheck's stderr: an exit code other than 0 or 3, or output with no JSON `config` message. In `-format json` mode govulncheck v1.8.0 exits 0 even when it finds vulnerabilities (3 is text mode only), 1 on errors such as packages that fail to load, and 2 on usage errors. Setting `GOVULNCHECK_BIN` in the environment overrides the pinned binary, with a `NOTE:` line (used to test this path, e.g. `GOVULNCHECK_BIN=/bin/false make ci`).
    - `gosec ./...`
    - Both binaries come from `scripts/install-tools.sh` (pinned, cached; see below). There is no `@latest` fallback and no skip.
 7. **Frontend Flutter Checks**: Runs `flutter analyze` and `flutter test` inside `frontend/`.
