@@ -331,7 +331,11 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		otpCode := generate6DigitOTP()
+		otpCode, err := generate6DigitOTP()
+		if err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+			return
+		}
 		pending := &models.PendingSignup{
 			Email:    req.Email,
 			Username: req.Username,
@@ -377,8 +381,14 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := generateID()
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create user ID", err)
+		return
+	}
+
 	user := &models.User{
-		ID:        generateID(),
+		ID:        userID,
 		Email:     req.Email,
 		Username:  req.Username,
 		Password:  string(hashedPassword),
@@ -535,7 +545,11 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Generate a 6-digit OTP.
-		otpCode := generate6DigitOTP()
+		otpCode, err := generate6DigitOTP()
+		if err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+			return
+		}
 
 		// Encrypt and store in MongoDB (AES-256-GCM).
 		if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
@@ -699,8 +713,14 @@ func (a *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(req.Email)
 
 	// Build real user record now that OTP verification succeeded
+	newUserID, err := generateID()
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create user ID", err)
+		return
+	}
+
 	newUser := &models.User{
-		ID:        generateID(),
+		ID:        newUserID,
 		Email:     pending.Email,
 		Username:  pending.Username,
 		Password:  pending.Password, // already bcrypt hashed
@@ -1504,24 +1524,29 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	handlerutil.WriteJSON(w, status, data)
 }
 
+// cryptoRandRead is the entropy source used by generateID and
+// generate6DigitOTP. It is a package-level var so tests can inject a failing
+// reader; production code must not reassign it.
+var cryptoRandRead = rand.Read
+
 // generateID creates a short random hex ID (16 chars).
-func generateID() string {
+func generateID() (string, error) {
 	b := make([]byte, 8)
-	if _, err := rand.Read(b); err != nil {
-		log.Fatalf("generateID: failed to read random bytes: %v", err)
+	if _, err := cryptoRandRead(b); err != nil {
+		return "", fmt.Errorf("generateID: failed to read random bytes: %w", err)
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
 }
 
 // generate6DigitOTP returns a cryptographically random 6-digit numeric OTP.
-func generate6DigitOTP() string {
+func generate6DigitOTP() (string, error) {
 	b := make([]byte, 4)
-	if _, err := rand.Read(b); err != nil {
-		log.Fatalf("generate6DigitOTP: failed to read random bytes: %v", err)
+	if _, err := cryptoRandRead(b); err != nil {
+		return "", fmt.Errorf("generate6DigitOTP: failed to read random bytes: %w", err)
 	}
 	// Convert 4 random bytes to a number in [0, 999999].
 	num := (uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])) % 1000000
-	return fmt.Sprintf("%06d", num)
+	return fmt.Sprintf("%06d", num), nil
 }
 
 // getClientIP extracts the user's real IP from the request headers or RemoteAddr.
@@ -2775,7 +2800,11 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pending signup found: generate a fresh 6-digit OTP code and overwrite the pending signup.
-	otpCode := generate6DigitOTP()
+	otpCode, err := generate6DigitOTP()
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+		return
+	}
 	if err := a.store.SetPendingSignup(ctx, req.Email, pending, otpCode); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to set OTP", err)
 		return
@@ -2865,7 +2894,11 @@ func (a *Auth) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// User exists: generate OTP, encrypt & store in MongoDB, and dispatch.
-	otpCode := generate6DigitOTP()
+	otpCode, err := generate6DigitOTP()
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+		return
+	}
 
 	if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
 		log.Printf("[AUTH] Failed to set password reset OTP for %s: %v", user.Email, err)
@@ -3398,7 +3431,11 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	otpCode := generate6DigitOTP()
+	otpCode, err := generate6DigitOTP()
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+		return
+	}
 
 	pending := &models.PendingEmailChange{
 		UserID:   user.ID,
