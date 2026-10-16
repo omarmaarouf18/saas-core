@@ -117,30 +117,37 @@ func TestContract_APIGateway(t *testing.T) {
 		}
 	})
 
-	// 4. GET /api/v1/admin/version-config (Internal / Inter-Service) [QA-GAP-01]
+	// 4. GET /api/v1/admin/version-config (Admin / Requires X-Admin-Token) [QA-GAP-01, SEC-02]
 	t.Run("GET_Admin_Version_Config", func(t *testing.T) {
 		url := cfg.GatewayURL + "/api/v1/admin/version-config"
 
-		// Negative: Missing X-Internal-Token -> 403 Forbidden
+		// Negative: Missing X-Admin-Token -> 403 Forbidden
 		respNoToken, _, _ := DoRequestWithHeaders(ctx, http.MethodGet, url, nil, nil)
 		if respNoToken.StatusCode != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden without internal token, got %d", respNoToken.StatusCode)
+			t.Errorf("Expected 403 Forbidden without admin token, got %d", respNoToken.StatusCode)
 		}
 
-		// Negative: Invalid X-Internal-Token -> 403 Forbidden
-		respBadToken, _, _ := DoRequestWithHeaders(ctx, http.MethodGet, url, map[string]string{"X-Internal-Token": "bad-token"}, nil)
+		// Negative: Invalid X-Admin-Token -> 403 Forbidden
+		respBadToken, _, _ := DoRequestWithHeaders(ctx, http.MethodGet, url, map[string]string{"X-Admin-Token": "bad-token"}, nil)
 		if respBadToken.StatusCode != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden with bad internal token, got %d", respBadToken.StatusCode)
+			t.Errorf("Expected 403 Forbidden with bad admin token, got %d", respBadToken.StatusCode)
 		}
 
-		// Positive: Valid X-Internal-Token -> 200 OK
-		headers := map[string]string{"X-Internal-Token": cfg.InternalToken}
+		// Negative (SEC-02 lockdown): the internal service token alone must
+		// NOT grant access to the admin endpoint.
+		respInternalOnly, _, _ := DoRequestWithHeaders(ctx, http.MethodGet, url, map[string]string{"X-Internal-Token": cfg.InternalToken}, nil)
+		if respInternalOnly.StatusCode != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden when only X-Internal-Token is presented, got %d", respInternalOnly.StatusCode)
+		}
+
+		// Positive: Valid X-Admin-Token -> 200 OK
+		headers := map[string]string{"X-Admin-Token": cfg.AdminToken}
 		resp, body, err := DoRequestWithHeaders(ctx, http.MethodGet, url, headers, nil)
 		if err != nil {
 			t.Fatalf("GET version-config failed: %v", err)
 		}
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Expected 200 OK with valid internal token, got %d. Body: %s", resp.StatusCode, string(body))
+			t.Fatalf("Expected 200 OK with valid admin token, got %d. Body: %s", resp.StatusCode, string(body))
 		}
 
 		// Response Schema Validation: Verify PlatformVersions fields
@@ -164,18 +171,27 @@ func TestContract_APIGateway(t *testing.T) {
 		}
 	})
 
-	// 5. PUT /api/v1/admin/version-config (Internal / Inter-Service) [QA-GAP-01]
+	// 5. PUT /api/v1/admin/version-config (Admin / Requires X-Admin-Token) [QA-GAP-01, SEC-02]
 	t.Run("PUT_Admin_Version_Config", func(t *testing.T) {
 		url := cfg.GatewayURL + "/api/v1/admin/version-config"
 		headers := map[string]string{
-			"X-Internal-Token": cfg.InternalToken,
-			"Content-Type":     "application/json",
+			"X-Admin-Token": cfg.AdminToken,
+			"Content-Type":  "application/json",
 		}
 
-		// Negative: Missing X-Internal-Token -> 403 Forbidden
+		// Negative: Missing X-Admin-Token -> 403 Forbidden
 		respNoToken, _, _ := DoRequestWithHeaders(ctx, http.MethodPut, url, map[string]string{"Content-Type": "application/json"}, []byte("{}"))
 		if respNoToken.StatusCode != http.StatusForbidden {
-			t.Errorf("Expected 403 Forbidden without internal token, got %d", respNoToken.StatusCode)
+			t.Errorf("Expected 403 Forbidden without admin token, got %d", respNoToken.StatusCode)
+		}
+
+		// Negative (SEC-02 lockdown): internal token alone -> 403 Forbidden
+		respInternalOnly, _, _ := DoRequestWithHeaders(ctx, http.MethodPut, url, map[string]string{
+			"X-Internal-Token": cfg.InternalToken,
+			"Content-Type":     "application/json",
+		}, []byte("{}"))
+		if respInternalOnly.StatusCode != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden when only X-Internal-Token is presented, got %d", respInternalOnly.StatusCode)
 		}
 
 		// Negative: Malformed JSON -> 400 Bad Request
@@ -191,12 +207,23 @@ func TestContract_APIGateway(t *testing.T) {
 			t.Errorf("Expected 400 Bad Request for invalid semver, got %d", respBadVersion.StatusCode)
 		}
 
+		// Negative (SEC-02): download_url outside github.com/play.google.com -> 400 Bad Request
+		badURLPayload := []byte(`{
+			"latest_version": "1.2.0",
+			"minimum_supported_version": "1.0.0",
+			"download_url": "https://example.com/app-release.apk"
+		}`)
+		respBadURL, _, _ := DoRequestWithHeaders(ctx, http.MethodPut, url, headers, badURLPayload)
+		if respBadURL.StatusCode != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for disallowed download_url host, got %d", respBadURL.StatusCode)
+		}
+
 		// Positive: Valid Version Update -> 200 OK
 		validPayload := []byte(`{
 			"latest_version": "1.2.0",
 			"minimum_supported_version": "1.0.0",
 			"enforce_minimum_version": false,
-			"download_url": "https://example.com/app-release.apk"
+			"download_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"
 		}`)
 		resp, body, err := DoRequestWithHeaders(ctx, http.MethodPut, url, headers, validPayload)
 		if err != nil {

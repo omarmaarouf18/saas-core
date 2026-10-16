@@ -10,6 +10,7 @@ func TestLoad(t *testing.T) {
 	clearEnv := func() {
 		os.Unsetenv("GATEWAY_SECRET")
 		os.Unsetenv("INTERNAL_SERVICE_TOKEN")
+		os.Unsetenv("ADMIN_API_TOKEN")
 		os.Unsetenv("TLS_CERT_PATH")
 		os.Unsetenv("TLS_KEY_PATH")
 		os.Unsetenv("TLS_CA_PATH")
@@ -40,49 +41,56 @@ func TestLoad(t *testing.T) {
 		t.Errorf("Expected error for missing INTERNAL_SERVICE_TOKEN, got nil")
 	}
 
-	// 3. Missing TLS_CERT_PATH
+	// 3. Missing ADMIN_API_TOKEN
 	os.Setenv("INTERNAL_SERVICE_TOKEN", "token")
+	_, err = Load()
+	if err == nil {
+		t.Errorf("Expected error for missing ADMIN_API_TOKEN, got nil")
+	}
+
+	// 4. Missing TLS_CERT_PATH
+	os.Setenv("ADMIN_API_TOKEN", "admin-token")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing TLS_CERT_PATH, got nil")
 	}
 
-	// 4. Missing TLS_KEY_PATH
+	// 5. Missing TLS_KEY_PATH
 	os.Setenv("TLS_CERT_PATH", "/path/to/cert")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing TLS_KEY_PATH, got nil")
 	}
 
-	// 5. Missing TLS_CA_PATH
+	// 6. Missing TLS_CA_PATH
 	os.Setenv("TLS_KEY_PATH", "/path/to/key")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing TLS_CA_PATH, got nil")
 	}
 
-	// 6. Missing EXTERNAL_TLS_CERT_PATH
+	// 7. Missing EXTERNAL_TLS_CERT_PATH
 	os.Setenv("TLS_CA_PATH", "/path/to/ca")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing EXTERNAL_TLS_CERT_PATH, got nil")
 	}
 
-	// 7. Missing EXTERNAL_TLS_KEY_PATH
+	// 8. Missing EXTERNAL_TLS_KEY_PATH
 	os.Setenv("EXTERNAL_TLS_CERT_PATH", "/path/to/extcert")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing EXTERNAL_TLS_KEY_PATH, got nil")
 	}
 
-	// 8. Missing REDIS_URI
+	// 9. Missing REDIS_URI
 	os.Setenv("EXTERNAL_TLS_KEY_PATH", "/path/to/extkey")
 	_, err = Load()
 	if err == nil {
 		t.Errorf("Expected error for missing REDIS_URI, got nil")
 	}
 
-	// 9. Success with defaults
+	// 10. Success with defaults
 	os.Setenv("REDIS_URI", "redis://localhost:6379")
 	cfg, err := Load()
 	if err != nil {
@@ -94,6 +102,9 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.AllowedOrigin != "http://localhost:3000" {
 		t.Errorf("Expected default AllowedOrigin, got %q", cfg.AllowedOrigin)
+	}
+	if cfg.AdminAPIToken != "admin-token" {
+		t.Errorf("Expected AdminAPIToken to be loaded from ADMIN_API_TOKEN, got %q", cfg.AdminAPIToken)
 	}
 	if len(cfg.Routes) != 4 {
 		t.Errorf("Expected 4 default routes, got %d", len(cfg.Routes))

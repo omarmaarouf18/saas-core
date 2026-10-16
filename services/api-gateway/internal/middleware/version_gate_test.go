@@ -35,7 +35,7 @@ func TestVersionGate(t *testing.T) {
 		LatestVersion:           "1.2.0",
 		MinimumSupportedVersion: "1.1.0",
 		EnforceMinimumVersion:   true,
-		DownloadURL:             "https://example.com/app.apk",
+		DownloadURL:             "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk",
 	})
 	if err != nil {
 		t.Fatalf("Failed to update config: %v", err)

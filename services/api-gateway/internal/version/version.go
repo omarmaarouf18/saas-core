@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -115,6 +117,27 @@ func (s *Store) GetConfig(ctx context.Context) (PlatformVersions, error) {
 	return config, nil
 }
 
+// allowedDownloadHosts are the only hosts an app download URL may point at.
+var allowedDownloadHosts = map[string]struct{}{
+	"github.com":      {},
+	"play.google.com": {},
+}
+
+// ValidateDownloadURL enforces that download_url is an https URL hosted on
+// github.com or play.google.com (SEC-02). Without this, a config update could
+// redirect the in-app update prompt at an arbitrary APK host.
+func ValidateDownloadURL(raw string) error {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" {
+		return fmt.Errorf("invalid download_url: must be an https URL on github.com or play.google.com")
+	}
+	host := strings.ToLower(u.Hostname())
+	if _, ok := allowedDownloadHosts[host]; !ok {
+		return fmt.Errorf("invalid download_url: host %q is not allowed (must be github.com or play.google.com)", host)
+	}
+	return nil
+}
+
 // UpdateConfig updates the global PlatformVersions configuration in MongoDB and cache.
 func (s *Store) UpdateConfig(ctx context.Context, newConfig PlatformVersions) (PlatformVersions, error) {
 	newConfig.ID = "global"
@@ -126,6 +149,10 @@ func (s *Store) UpdateConfig(ctx context.Context, newConfig PlatformVersions) (P
 	}
 	if _, err := ParseSemVer(newConfig.MinimumSupportedVersion); err != nil {
 		return PlatformVersions{}, fmt.Errorf("invalid minimum_supported_version: %w", err)
+	}
+
+	if err := ValidateDownloadURL(newConfig.DownloadURL); err != nil {
+		return PlatformVersions{}, err
 	}
 
 	if !s.useInMemory && s.collection != nil {

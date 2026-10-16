@@ -27,8 +27,12 @@ type Config struct {
 	ExternalTLSCertPath  string
 	ExternalTLSKeyPath   string
 	InternalServiceToken string
-	RedisURI             string
-	TrustedProxyIPs      []string
+	// AdminAPIToken guards the admin version-config endpoint. It is a
+	// separate credential from InternalServiceToken (SEC-02): the internal
+	// token is known to every service, the admin token only to operators.
+	AdminAPIToken   string
+	RedisURI        string
+	TrustedProxyIPs []string
 }
 
 // Load reads configuration from environment variables.
@@ -42,6 +46,15 @@ func Load() (*Config, error) {
 	internalServiceToken := os.Getenv("INTERNAL_SERVICE_TOKEN")
 	if internalServiceToken == "" {
 		return nil, fmt.Errorf("config: required env var INTERNAL_SERVICE_TOKEN is required and must not be empty")
+	}
+
+	// SEC-02: dedicated admin credential for /api/v1/admin/version-config.
+	// Required (fail closed at startup / --check-env): without it the
+	// endpoint would have to fall back to the shared internal token, which
+	// is exactly the exposure this removes.
+	adminAPIToken := os.Getenv("ADMIN_API_TOKEN")
+	if adminAPIToken == "" {
+		return nil, fmt.Errorf("config: required env var ADMIN_API_TOKEN is required and must not be empty")
 	}
 
 	tlsCertPath := os.Getenv("TLS_CERT_PATH")
@@ -93,6 +106,7 @@ func Load() (*Config, error) {
 		ExternalTLSCertPath:  externalTLSCertPath,
 		ExternalTLSKeyPath:   externalTLSKeyPath,
 		InternalServiceToken: internalServiceToken,
+		AdminAPIToken:        adminAPIToken,
 		RedisURI:             redisURI,
 		TrustedProxyIPs:      trustedProxyIPs,
 	}

@@ -11,6 +11,40 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// allowedTestDownloadURL is a policy-compliant (SEC-02) download URL used by
+// store tests that only need a value the validator accepts.
+const allowedTestDownloadURL = "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"
+
+func TestValidateDownloadURL(t *testing.T) {
+	valid := []string{
+		allowedTestDownloadURL,
+		"https://github.com/owner/repo/releases/download/v1/app.apk",
+		"https://play.google.com/store/apps/details?id=com.project.quickdelivery",
+		"https://GITHUB.COM/owner/repo/releases/download/v1/app.apk",
+	}
+	for _, u := range valid {
+		if err := ValidateDownloadURL(u); err != nil {
+			t.Errorf("ValidateDownloadURL(%q) = %v, want nil", u, err)
+		}
+	}
+
+	invalid := []string{
+		"",
+		"http://github.com/owner/repo/releases/download/v1/app.apk",
+		"https://evil.example.com/app.apk",
+		"https://github.com.evil.example.com/app.apk",
+		"https://notgithub.com/owner/repo/app.apk",
+		"https://play.google.com.evil.example.com/app",
+		"ftp://github.com/app.apk",
+		"https:///no-host",
+	}
+	for _, u := range invalid {
+		if err := ValidateDownloadURL(u); err == nil {
+			t.Errorf("ValidateDownloadURL(%q) = nil, want error", u)
+		}
+	}
+}
+
 func setupTestVersionMongo(t *testing.T) (*mongo.Client, string, func()) {
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
@@ -57,6 +91,7 @@ func TestVersionStore_InMemoryRevisionIncrement(t *testing.T) {
 	updated, err := store.UpdateConfig(context.Background(), PlatformVersions{
 		LatestVersion:           "1.2.0",
 		MinimumSupportedVersion: "1.1.0",
+		DownloadURL:             allowedTestDownloadURL,
 	})
 	if err != nil {
 		t.Fatalf("UpdateConfig failed: %v", err)
@@ -90,7 +125,7 @@ func TestVersionStore_MongoDB_PersistBeforeCacheAndRevision(t *testing.T) {
 	v1, err := store.UpdateConfig(ctx, PlatformVersions{
 		LatestVersion:           "2.0.0",
 		MinimumSupportedVersion: "1.5.0",
-		DownloadURL:             "https://example.com/v2.apk",
+		DownloadURL:             allowedTestDownloadURL,
 	})
 	if err != nil {
 		t.Fatalf("UpdateConfig 1 failed: %v", err)
@@ -103,7 +138,7 @@ func TestVersionStore_MongoDB_PersistBeforeCacheAndRevision(t *testing.T) {
 	v2, err := store.UpdateConfig(ctx, PlatformVersions{
 		LatestVersion:           "2.1.0",
 		MinimumSupportedVersion: "2.0.0",
-		DownloadURL:             "https://example.com/v2.1.apk",
+		DownloadURL:             allowedTestDownloadURL,
 	})
 	if err != nil {
 		t.Fatalf("UpdateConfig 2 failed: %v", err)
@@ -120,6 +155,7 @@ func TestVersionStore_MongoDB_PersistBeforeCacheAndRevision(t *testing.T) {
 	_, err = store.UpdateConfig(cancelledCtx, PlatformVersions{
 		LatestVersion:           "3.0.0",
 		MinimumSupportedVersion: "3.0.0",
+		DownloadURL:             allowedTestDownloadURL,
 	})
 	if err == nil {
 		t.Fatalf("expected UpdateConfig to fail with cancelled context, got nil")
