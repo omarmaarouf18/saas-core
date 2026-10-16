@@ -51,7 +51,7 @@ func TestSignup_RandFailure_Returns500NotExit(t *testing.T) {
 	body, _ := json.Marshal(models.SignupRequest{
 		Email:    "randfail@example.com",
 		Username: "randfailuser",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleOwner,
 	})
 	req := httptest.NewRequest("POST", "/auth/signup", bytes.NewReader(body))

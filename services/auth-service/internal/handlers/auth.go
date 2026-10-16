@@ -28,6 +28,7 @@ import (
 	"github.com/project/auth-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
+	"github.com/project/shared/infra/passwordpolicy"
 	"github.com/project/shared/infra/resilience"
 	"github.com/project/shared/infra/tlsutil"
 	"github.com/redis/go-redis/v9"
@@ -187,9 +188,11 @@ func (a *Auth) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Password) < 6 {
+	// SEC-03: shared password policy (min 8 runes, max 72 bytes, common-
+	// password blocklist) instead of the old ad-hoc 6-character minimum.
+	if err := passwordpolicy.Validate(req.Password); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "password must be at least 6 characters",
+			"error": err.Error(),
 		})
 		return
 	}
@@ -3110,6 +3113,18 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Reset limiter on successful verification check
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(req.Email)
+
+	// SEC-03: enforce the shared password policy after token verification
+	// (so invalid-token probes keep returning the same generic 401 and no
+	// policy oracle is exposed before possession is proven) and before
+	// hashing. A rejected attempt does NOT consume the single-use token:
+	// the holder can retry with a compliant password.
+	if err := passwordpolicy.Validate(req.NewPassword); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {

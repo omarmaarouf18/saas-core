@@ -269,7 +269,7 @@ func TestAuthHandlers(t *testing.T) {
 	signupBody := models.SignupRequest{
 		Email:    "owner@example.com",
 		Username: "owner_username",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleOwner,
 	}
 	b, _ := json.Marshal(signupBody)
@@ -308,7 +308,7 @@ func TestAuthHandlers(t *testing.T) {
 	// 2. Test Login (Success path / OTP dispatched)
 	loginBody := models.LoginRequest{
 		Email:    "owner@example.com",
-		Password: "password123",
+		Password: sec03StrongPassword,
 	}
 	b2, _ := json.Marshal(loginBody)
 	req = httptest.NewRequest("POST", "/auth/login", bytes.NewReader(b2))
@@ -378,7 +378,7 @@ func TestAuthHandlers(t *testing.T) {
 	empSignupBody := models.SignupRequest{
 		Email:    "employee@example.com",
 		Username: "employee_username",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleEmployee,
 		OwnerID:  ownerID,
 	}
@@ -427,7 +427,7 @@ func TestAuthHandlers(t *testing.T) {
 	toggleBody := models.ToggleEmployeeRequest{
 		EmployeeEmail: "employee@example.com",
 		OwnerEmail:    "owner@example.com",
-		OwnerPassword: "password123",
+		OwnerPassword: sec03StrongPassword,
 		SetActive:     false, // Freeze the employee (triggers mock user-service call)
 	}
 	b7, _ := json.Marshal(toggleBody)
@@ -982,7 +982,7 @@ func TestSignupRollbackOnOTPFailure(t *testing.T) {
 	signupBody := models.SignupRequest{
 		Email:    "rollback_test@example.com",
 		Username: "rollback_username",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleOwner,
 	}
 	b, _ := json.Marshal(signupBody)
@@ -1189,7 +1189,7 @@ func TestOTPResendFlow(t *testing.T) {
 	signupBody := models.SignupRequest{
 		Email:    "resend_flow_test@example.com",
 		Username: "resend_flow_username",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b, _ := json.Marshal(signupBody)
@@ -1368,7 +1368,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_mismatch@example.com",
 				Username: "emp_mismatch_user",
-				Password: "password",
+				Password: sec03StrongPassword,
 				Role:     models.RoleEmployee,
 				OwnerID:  "different_owner_id",
 			}
@@ -1391,7 +1391,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_nonowner_role@example.com",
 				Username: "emp_nonowner_role_user",
-				Password: "password",
+				Password: sec03StrongPassword,
 				Role:     models.RoleEmployee,
 				OwnerID:  nonOwner.ID,
 			}
@@ -1415,7 +1415,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_no_owner@example.com",
 				Username: "emp_no_owner_user",
-				Password: "password",
+				Password: sec03StrongPassword,
 				Role:     models.RoleEmployee,
 				OwnerID:  "fake_owner_id",
 			}
@@ -1439,7 +1439,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			signupReq := models.SignupRequest{
 				Email:    "emp_not_owner_role@example.com",
 				Username: "emp_not_owner_role_user",
-				Password: "password",
+				Password: sec03StrongPassword,
 				Role:     models.RoleEmployee,
 				OwnerID:  nonOwner.ID,
 			}
@@ -1514,7 +1514,7 @@ func TestAuth_ExtraGaps(t *testing.T) {
 			// Case 1: non-existent email
 			loginReq1 := models.LoginRequest{
 				Email:    "doesnotexist@example.com",
-				Password: "password123",
+				Password: sec03StrongPassword,
 			}
 			body1, _ := json.Marshal(loginReq1)
 			req1 := httptest.NewRequest("POST", "/auth/login", bytes.NewReader(body1))
@@ -1939,7 +1939,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "valid_username@example.com",
 			Username: "valid_username_123",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -1955,7 +1955,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "missing_username@example.com",
 			Username: "",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -1974,7 +1974,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "tooshort@example.com",
 			Username: "ab",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -1993,7 +1993,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "toolong@example.com",
 			Username: "abcdefghijklmnopqrstuvwxyz12345", // 31 chars
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -2012,7 +2012,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "invalidchars@example.com",
 			Username: "user@name!",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -2031,7 +2031,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "arabic_username@example.com",
 			Username: "أحمد محمد",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -2047,7 +2047,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "mixed_username@example.com",
 			Username: "Ahmed أحمد",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -2063,7 +2063,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody := models.SignupRequest{
 			Email:    "xss_username@example.com",
 			Username: "<script>alert(1)</script>",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b, _ := json.Marshal(reqBody)
@@ -2083,7 +2083,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody1 := models.SignupRequest{
 			Email:    "user1@example.com",
 			Username: "unique_username",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b1, _ := json.Marshal(reqBody1)
@@ -2111,7 +2111,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody2 := models.SignupRequest{
 			Email:    "user2@example.com",
 			Username: "unique_username",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b2, _ := json.Marshal(reqBody2)
@@ -2129,7 +2129,7 @@ func TestSignupUsernameValidation(t *testing.T) {
 		reqBody3 := models.SignupRequest{
 			Email:    "user1@example.com",
 			Username: "different_username",
-			Password: "password123",
+			Password: sec03StrongPassword,
 			Role:     models.RoleUser,
 		}
 		b3, _ := json.Marshal(reqBody3)
@@ -2409,7 +2409,7 @@ func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
 	reqBodyAllSpaces := models.SignupRequest{
 		Email:    "spaces@example.com",
 		Username: "   ",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b1, _ := json.Marshal(reqBodyAllSpaces)
@@ -2428,7 +2428,7 @@ func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
 	reqBodyFirst := models.SignupRequest{
 		Email:    "omar@example.com",
 		Username: "omar",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b2, _ := json.Marshal(reqBodyFirst)
@@ -2457,7 +2457,7 @@ func TestSignupUsernameWhitespaceTrimming(t *testing.T) {
 	reqBodySecond := models.SignupRequest{
 		Email:    "omar_dup@example.com",
 		Username: "  omar  ",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b3, _ := json.Marshal(reqBodySecond)
@@ -2485,7 +2485,7 @@ func TestSignupUsernameCaseInsensitivity(t *testing.T) {
 	reqBodyFirst := models.SignupRequest{
 		Email:    "omar@example.com",
 		Username: "omar",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b1, _ := json.Marshal(reqBodyFirst)
@@ -2514,7 +2514,7 @@ func TestSignupUsernameCaseInsensitivity(t *testing.T) {
 	reqBodySecond := models.SignupRequest{
 		Email:    "omar_caps@example.com",
 		Username: "Omar",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b2, _ := json.Marshal(reqBodySecond)
@@ -2542,7 +2542,7 @@ func TestTokenNameAliasesInAuth(t *testing.T) {
 	reqBodyFirst := models.SignupRequest{
 		Email:    "alias_auth@example.com",
 		Username: "alias_auth",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b1, _ := json.Marshal(reqBodyFirst)
@@ -3303,7 +3303,7 @@ func TestResetPassword_OTPReusePrevention(t *testing.T) {
 		t.Fatalf("Expected reset_token in verify-code response, got %s", verifyRec.Body.String())
 	}
 
-	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":"NewPassword1"}`, email, resetToken)
+	resetBody := fmt.Sprintf(`{"email":%q,"reset_token":%q,"new_password":%q}`, email, resetToken, sec03StrongPassword)
 
 	// Call 1: First attempt -> 200 OK
 	req1 := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(resetBody))
@@ -3657,7 +3657,7 @@ func TestSignup_AbandonedSignup_SecondAttemptSucceeds(t *testing.T) {
 	signupReq1 := models.SignupRequest{
 		Email:    email,
 		Username: "abandoned_user",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b1, _ := json.Marshal(signupReq1)
@@ -3805,7 +3805,7 @@ func TestSignup_PendingSignup_ExpiresAfter5Minutes(t *testing.T) {
 	signupReq := models.SignupRequest{
 		Email:    email,
 		Username: "expired_user",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b, _ := json.Marshal(signupReq)
@@ -3867,7 +3867,7 @@ func TestSignup_WrongOTPAgainstPendingSignup_FailsWithoutUserCreation(t *testing
 	signupReq := models.SignupRequest{
 		Email:    email,
 		Username: "wrong_otp_user",
-		Password: "password123",
+		Password: sec03StrongPassword,
 		Role:     models.RoleUser,
 	}
 	b, _ := json.Marshal(signupReq)
