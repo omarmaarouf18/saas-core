@@ -233,10 +233,16 @@ if [ -n "$SCOPE_GO_MODULES" ]; then
   for mod in $SCOPE_GO_MODULES; do
     echo "-- checking $mod --"
 
-    # Go Build, Vet, Test parity
+    # Go Build, Vet, Test parity. WF-03: scripts/go-test-module.sh runs unit
+    # packages from the Go test cache and integration packages (those that
+    # link a Mongo/Redis client) always, with -count=1.
     stage_begin "go-build-vet-test:$mod"
-    (cd "$mod" && go build ./... && go vet ./... && go test ./... -count=1) || {
-      echo "BLOCKED: $mod failed build/vet/test"
+    (cd "$mod" && go build ./... && go vet ./...) || {
+      echo "BLOCKED: $mod failed build/vet"
+      exit 1
+    }
+    bash scripts/go-test-module.sh "$mod" || {
+      echo "BLOCKED: $mod failed test"
       exit 1
     }
     stage_end
@@ -267,7 +273,7 @@ if [ "$SCOPE_INFRA_TESTS" = 1 ]; then
     *)
       echo "-- running shared/infra tests (docs scope) --"
       stage_begin "go-test:shared/infra"
-      (cd shared/infra && go test ./... -count=1) || {
+      bash scripts/go-test-module.sh shared/infra || {
         echo "BLOCKED: shared/infra tests failed"
         exit 1
       }
@@ -285,7 +291,7 @@ if [ "$SCOPE_DOCGEN" = 1 ] && [ "$SCOPE_INFRA_TESTS" != 1 ]; then
     *)
       echo "-- running shared/infra/docgen tests --"
       stage_begin "go-test:shared/infra/docgen"
-      (cd shared/infra && go test -count=1 ./docgen/...) || {
+      bash scripts/go-test-module.sh shared/infra ./docgen/... || {
         echo "BLOCKED: shared/infra/docgen tests failed"
         exit 1
       }
