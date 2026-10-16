@@ -16,12 +16,18 @@ func TestRealDockerRedis_MultiInstanceChatHub(t *testing.T) {
 	if redisAddr == "" {
 		redisAddr = "localhost:6380"
 	}
+	// Same default as the notification-service twin: the dev compose Redis
+	// requires a password (without it the test skipped with NOAUTH).
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		redisPassword = "devpassword123"
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	rdb1 := redis.NewClient(&redis.Options{Addr: redisAddr})
-	rdb2 := redis.NewClient(&redis.Options{Addr: redisAddr})
+	rdb1 := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
+	rdb2 := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
 	defer rdb1.Close()
 	defer rdb2.Close()
 
