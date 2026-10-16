@@ -193,6 +193,41 @@ jobs:
           # their content changed. After the cert purge paths, `docker compose
           # down` has already removed the containers, so this `up -d` starts
           # all of them again, Caddy included.
+          # >>> cutover-guard (OPS-HARDEN): remove a hand-started saas-caddy
+          # Before OPS-HARDEN, Caddy ran as a hand-started container named saas-caddy,
+          # outside compose. Compose cannot create its own saas-caddy while that name is
+          # taken; `up -d` then exits 1 and leaves services it already recreated stopped.
+          # Remove the container only when ALL of these hold:
+          #   - the compose file being applied defines a `caddy` service;
+          #   - the current compose project name could be determined;
+          #   - a container named saas-caddy exists;
+          #   - its com.docker.compose.project label is missing or differs from this project.
+          # A compose-managed saas-caddy (label == this project) is never touched.
+          remove_hand_started_caddy() {
+            # Readers consume all input (no grep -q / head): the rollback step runs
+            # with pipefail, and an early-closing reader would fail the pipeline.
+            if ! docker compose config --services | grep -x caddy >/dev/null; then
+              return 0
+            fi
+            PROJECT=$(docker compose config --format json | grep -o '"name": *"[^"]*"' | sed -n '1s/.*"name": *"\([^"]*\)"/\1/p') || PROJECT=""
+            if [ -z "$PROJECT" ]; then
+              echo "::warning::cutover guard: could not determine the compose project name; leaving saas-caddy alone."
+              return 0
+            fi
+            if ! docker container inspect saas-caddy >/dev/null 2>&1; then
+              return 0
+            fi
+            OWNER=$(docker container inspect saas-caddy --format '{{ index .Config.Labels "com.docker.compose.project" }}') || OWNER=""
+            if [ "$OWNER" = "$PROJECT" ]; then
+              return 0
+            fi
+            echo "removing hand-started saas-caddy (one-time cutover)"
+            echo "  saas-caddy project label: '${OWNER}', current project: '${PROJECT}'"
+            docker rm -f saas-caddy
+          }
+          remove_hand_started_caddy
+          # <<< cutover-guard
+
           if [ "${CERTS_CHANGED:-0}" = "1" ]; then
             echo "mTLS certificates were restored or regenerated: force-recreating all containers."
             docker compose up -d --force-recreate --remove-orphans
@@ -310,6 +345,41 @@ jobs:
             echo "::warning::Restored docker-compose.yml has no caddy service; keeping orphan containers so saas-caddy keeps serving."
             ORPHANS_FLAG=""
           fi
+
+          # >>> cutover-guard (OPS-HARDEN): remove a hand-started saas-caddy
+          # Before OPS-HARDEN, Caddy ran as a hand-started container named saas-caddy,
+          # outside compose. Compose cannot create its own saas-caddy while that name is
+          # taken; `up -d` then exits 1 and leaves services it already recreated stopped.
+          # Remove the container only when ALL of these hold:
+          #   - the compose file being applied defines a `caddy` service;
+          #   - the current compose project name could be determined;
+          #   - a container named saas-caddy exists;
+          #   - its com.docker.compose.project label is missing or differs from this project.
+          # A compose-managed saas-caddy (label == this project) is never touched.
+          remove_hand_started_caddy() {
+            # Readers consume all input (no grep -q / head): the rollback step runs
+            # with pipefail, and an early-closing reader would fail the pipeline.
+            if ! docker compose config --services | grep -x caddy >/dev/null; then
+              return 0
+            fi
+            PROJECT=$(docker compose config --format json | grep -o '"name": *"[^"]*"' | sed -n '1s/.*"name": *"\([^"]*\)"/\1/p') || PROJECT=""
+            if [ -z "$PROJECT" ]; then
+              echo "::warning::cutover guard: could not determine the compose project name; leaving saas-caddy alone."
+              return 0
+            fi
+            if ! docker container inspect saas-caddy >/dev/null 2>&1; then
+              return 0
+            fi
+            OWNER=$(docker container inspect saas-caddy --format '{{ index .Config.Labels "com.docker.compose.project" }}') || OWNER=""
+            if [ "$OWNER" = "$PROJECT" ]; then
+              return 0
+            fi
+            echo "removing hand-started saas-caddy (one-time cutover)"
+            echo "  saas-caddy project label: '${OWNER}', current project: '${PROJECT}'"
+            docker rm -f saas-caddy
+          }
+          remove_hand_started_caddy
+          # <<< cutover-guard
 
           if ! docker compose up -d $ORPHANS_FLAG; then
             echo "::error::ROLLBACK COMMAND ITSELF FAILED — manual intervention required immediately"
