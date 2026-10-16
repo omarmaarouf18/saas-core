@@ -42,6 +42,28 @@ var (
 	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 )
 
+// shipSecurityEvent is handlerutil.ShipSecurityEvent behind a variable so
+// tests can assert that fail-closed paths emit their security event.
+var shipSecurityEvent = handlerutil.ShipSecurityEvent
+
+// reRevokeAfterPersist runs a second, best-effort RevokeAllUserTokens for each
+// user after a revoke-first state change has been saved (SEC-07b). The first
+// revocation happens before the save, so a token minted in a later second
+// but before the save landed (e.g. a login racing a freeze, reset or
+// suspension) would otherwise survive. The state is already saved and the
+// first revocation succeeded, so a failure here is reported as a security
+// event (eventType) but does not fail the request.
+func reRevokeAfterPersist(ctx context.Context, eventType, actorID, tenantID, clientIP string, userIDs ...string) {
+	for _, id := range userIDs {
+		// RevokeAllUserTokens already logs the Redis error; the structured
+		// security event is the record here (no request-derived ID in a
+		// log.Printf line, gosec G706).
+		if err := jwtutil.RevokeAllUserTokens(id); err != nil {
+			shipSecurityEvent(ctx, eventType, "auth-service", actorID, tenantID, fmt.Sprintf("post-save session re-revocation failed for user %s; state saved, first revocation succeeded", id), clientIP)
+		}
+	}
+}
+
 func isValidEmail(email string) bool {
 	if len(email) < 3 || len(email) > 254 {
 		return false
@@ -905,7 +927,7 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := jwtutil.RevokeAllUserTokens(emp.ID); err != nil {
 			log.Printf("[AUTH ERROR] ToggleEmployee failed to revoke sessions for employee %s: %v", emp.ID, err)
-			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to freeze employee account", err)
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "failed to freeze employee account, please retry", err)
 			return
 		}
 	}
@@ -921,6 +943,10 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 			"error": "employee not found or not authorized for this owner",
 		})
 		return
+	}
+
+	if !req.SetActive {
+		reRevokeAfterPersist(ctx, "EMPLOYEE_FREEZE_REREVOKE_FAILED", owner.ID, owner.ID, clientIP, emp.ID)
 	}
 
 	statusStr := "frozen"
@@ -2413,6 +2439,44 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-07b: invalidate active JWT tokens in Redis across all services
+	// BEFORE persisting the suspension, same order as SEC-07's freeze. If
+	// any revocation fails the suspension is aborted with 503 and nothing is
+	// persisted, so there is never a suspended-but-unrevoked account. The
+	// admin retries; until then ValidateToken already fails closed for every
+	// token while Redis is unreachable.
+	//
+	// F-04: when suspending an owner, the cascade covers all tenant
+	// employees. A failure on ANY of them aborts the whole suspension
+	// (owner included): a partially revoked tenant is not reported as
+	// suspended. Revocations that already landed stay in place, which only
+	// logs those users out (fail closed).
+	//
+	// The employee lookup fails closed too: a store error aborts the
+	// suspension instead of being read as "no employees", which would leave
+	// every employee session alive under a suspended owner.
+	revokeIDs := []string{targetUserID}
+	if targetUser.Role == "owner" {
+		employees, err := a.store.GetEmployeesByOwner(ctx, targetUserID)
+		if err != nil {
+			shipSecurityEvent(ctx, "ACCOUNT_SUSPEND_REVOKE_FAILED", "auth-service", reviewer.ID, targetUserID, "suspension aborted: employee lookup for session revocation failed, account not suspended", handlerutil.GetClientIP(r))
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "account suspension temporarily unavailable, please retry", err)
+			return
+		}
+		for _, emp := range employees {
+			if emp != nil && emp.ID != "" {
+				revokeIDs = append(revokeIDs, emp.ID)
+			}
+		}
+	}
+	for _, id := range revokeIDs {
+		if err := jwtutil.RevokeAllUserTokens(id); err != nil {
+			shipSecurityEvent(ctx, "ACCOUNT_SUSPEND_REVOKE_FAILED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("suspension aborted: session revocation failed for user %s, account not suspended", id), handlerutil.GetClientIP(r))
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "account suspension temporarily unavailable, please retry", err)
+			return
+		}
+	}
+
 	// Atomic CAS update: only suspend if not already suspended
 	suspended, err := a.store.SuspendUser(ctx, targetUserID, reason, reviewer.ID)
 	if err != nil {
@@ -2424,18 +2488,7 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Invalidate active JWT tokens in Redis across all services
-	_ = jwtutil.RevokeAllUserTokens(targetUserID)
-
-	// F-04: If suspending an owner, cascade token revocation and connection termination to all tenant employees
-	if targetUser.Role == "owner" {
-		employees := a.store.GetEmployeesByOwner(ctx, targetUserID)
-		for _, emp := range employees {
-			if emp != nil && emp.ID != "" {
-				_ = jwtutil.RevokeAllUserTokens(emp.ID)
-			}
-		}
-	}
+	reRevokeAfterPersist(ctx, "ACCOUNT_SUSPEND_REREVOKE_FAILED", reviewer.ID, targetUserID, handlerutil.GetClientIP(r), revokeIDs...)
 
 	// Append audit log
 	if err := a.store.AppendAudit(ctx, models.AuditEntry{
@@ -3132,6 +3185,20 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-07b: revoke every existing session BEFORE the new password is
+	// persisted. If revocation fails the reset fails closed: the password is
+	// NOT changed and the reset token is NOT consumed, so the holder can
+	// retry once Redis is back. The reverse order (persist, roll back on
+	// revoke failure) can itself fail mid-rollback and leave a new password
+	// with the old sessions still alive, which is what this guards against.
+	// If revocation succeeds but the update below fails, the user is merely
+	// logged out with the old password intact (fail closed).
+	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
+		shipSecurityEvent(ctx, "PASSWORD_RESET_REVOKE_FAILED", "auth-service", user.ID, user.TenantID, "password reset aborted: session revocation failed, password unchanged", clientIP)
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "password reset temporarily unavailable, please retry", err)
+		return
+	}
+
 	// Update password and clear the token + OTP fields so neither the token
 	// nor the code can be reused for a second reset (single-use).
 	update := bson.M{
@@ -3153,9 +3220,7 @@ func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
-		log.Printf("[SECURITY WARNING] Failed to revoke user tokens after password reset for user_id=%s: %v", user.ID, err)
-	}
+	reRevokeAfterPersist(ctx, "PASSWORD_RESET_REREVOKE_FAILED", user.ID, user.TenantID, clientIP, user.ID)
 
 	log.Printf("[AUTH] Password reset successfully for email=%s user_id=%s", user.Email, user.ID)
 
@@ -3288,7 +3353,13 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	employees := a.store.GetEmployeesByOwner(ctx, owner.ID)
+	// Fail closed: a lookup error is an error response, not an empty list
+	// (an owner shown "no employees" could not freeze anyone).
+	employees, err := a.store.GetEmployeesByOwner(ctx, owner.ID)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to load employees", err)
+		return
+	}
 
 	res := make([]EmployeeResponse, 0, len(employees))
 	for _, emp := range employees {

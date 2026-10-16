@@ -166,8 +166,8 @@ func TestToggleEmployee_FreezeRevokeFailure_FailsClosed(t *testing.T) {
 	rec := httptest.NewRecorder()
 	a.ToggleEmployee(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500 when revocation fails, got %d. Body: %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 when revocation fails, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 	var resp struct {
 		Code string `json:"code"`
@@ -175,8 +175,8 @@ func TestToggleEmployee_FreezeRevokeFailure_FailsClosed(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode error response: %v", err)
 	}
-	if resp.Code != "internal_error" {
-		t.Errorf("expected stable error code internal_error, got %q", resp.Code)
+	if resp.Code != "service_unavailable" {
+		t.Errorf("expected stable error code service_unavailable, got %q", resp.Code)
 	}
 
 	// Fail closed AND consistent: the employee must still be active (the
