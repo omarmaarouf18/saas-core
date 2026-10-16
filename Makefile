@@ -39,14 +39,16 @@ backend-frontend-parity-check: ensure-hooks
 # The gate script is invoked WITHOUT arguments here, so the WF-01 agent push
 # guard inside it (which only fires for real git push hook invocations) is
 # skipped and the full check suite runs in any worktree.
+# WF-02: a real `git push` takes the same lock inside the hook; CI_LOCK_HELD=1
+# tells the hook that this target already holds it (no self-deadlock).
 ci: ensure-hooks
 	@LOCK_FILE="$(CI_LOCK_FILE)"; \
 	exec 9>"$$LOCK_FILE" || exit 1; \
 	if ! flock -n 9; then \
-		echo "waiting for CI lock: $$LOCK_FILE is held by another make ci"; \
+		echo "waiting for CI lock: $$LOCK_FILE is held by another gate run (make ci or git push)"; \
 		flock 9 || exit 1; \
 	fi; \
-	./.githooks/pre-push
+	CI_LOCK_HELD=1 ./.githooks/pre-push
 
 contract-test: ensure-hooks
 	cd tests/contracts && go test -v -count=1 ./...

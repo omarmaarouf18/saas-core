@@ -39,6 +39,23 @@ if [ "${1:-}" != "" ]; then
 fi
 # --- end WF-01 agent push guard ---
 
+# ---------------------------------------------------------------------------
+# WF-02 CI lock: every gate run — `make ci` AND a real `git push` — runs under
+# flock on <git-common-dir>/ci.lock, so parallel worktrees never run
+# integration tests against the shared local Mongo/Redis at the same time.
+# `make ci` already holds the lock and sets CI_LOCK_HELD=1 so this does not
+# deadlock on itself.
+# ---------------------------------------------------------------------------
+if [ "${CI_LOCK_HELD:-}" != "1" ]; then
+  LOCK_FILE="$(git rev-parse --path-format=absolute --git-common-dir)/ci.lock"
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    echo "waiting for CI lock: $LOCK_FILE is held by another gate run (make ci or git push)"
+    flock 9
+  fi
+  export CI_LOCK_HELD=1
+fi
+
 echo "== pre-push gate: running checks =="
 
 # Pin the Go toolchain for the whole gate to GO_VERSION from
