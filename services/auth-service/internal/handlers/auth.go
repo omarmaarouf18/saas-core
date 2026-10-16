@@ -2417,6 +2417,34 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-07b: invalidate active JWT tokens in Redis across all services
+	// BEFORE persisting the suspension, same order as SEC-07's freeze. If
+	// any revocation fails the suspension is aborted with 503 and nothing is
+	// persisted, so there is never a suspended-but-unrevoked account. The
+	// admin retries; until then ValidateToken already fails closed for every
+	// token while Redis is unreachable.
+	//
+	// F-04: when suspending an owner, the cascade covers all tenant
+	// employees. A failure on ANY of them aborts the whole suspension
+	// (owner included): a partially revoked tenant is not reported as
+	// suspended. Revocations that already landed stay in place, which only
+	// logs those users out (fail closed).
+	revokeIDs := []string{targetUserID}
+	if targetUser.Role == "owner" {
+		for _, emp := range a.store.GetEmployeesByOwner(ctx, targetUserID) {
+			if emp != nil && emp.ID != "" {
+				revokeIDs = append(revokeIDs, emp.ID)
+			}
+		}
+	}
+	for _, id := range revokeIDs {
+		if err := jwtutil.RevokeAllUserTokens(id); err != nil {
+			shipSecurityEvent(ctx, "ACCOUNT_SUSPEND_REVOKE_FAILED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("suspension aborted: session revocation failed for user %s, account not suspended", id), handlerutil.GetClientIP(r))
+			handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "account suspension temporarily unavailable, please retry", err)
+			return
+		}
+	}
+
 	// Atomic CAS update: only suspend if not already suspended
 	suspended, err := a.store.SuspendUser(ctx, targetUserID, reason, reviewer.ID)
 	if err != nil {
@@ -2426,19 +2454,6 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	if !suspended {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "account is already suspended"})
 		return
-	}
-
-	// Invalidate active JWT tokens in Redis across all services
-	_ = jwtutil.RevokeAllUserTokens(targetUserID)
-
-	// F-04: If suspending an owner, cascade token revocation and connection termination to all tenant employees
-	if targetUser.Role == "owner" {
-		employees := a.store.GetEmployeesByOwner(ctx, targetUserID)
-		for _, emp := range employees {
-			if emp != nil && emp.ID != "" {
-				_ = jwtutil.RevokeAllUserTokens(emp.ID)
-			}
-		}
 	}
 
 	// Append audit log
