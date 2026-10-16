@@ -215,8 +215,9 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 		}
 	}
 
-	// Redis-backed per-user token invalidation check (tokens issued before stored timestamp).
-	// We explicitly fail-closed if Redis is unreachable to maintain security integrity.
+	// Redis-backed per-user token invalidation check (tokens issued at or
+	// before the stored timestamp). We explicitly fail-closed if Redis is
+	// unreachable to maintain security integrity.
 	if redisClient != nil && claims.UserID != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		invalidatedStr, err := redisClient.Get(ctx, "jwt:invalidated_before:"+claims.UserID).Result()
@@ -253,7 +254,20 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 				log.Printf("[SECURITY CRITICAL] Redis error parsing user token invalidation timestamp (FAIL CLOSED): %v. Rejecting user_id: %s", parseErr, claims.UserID)
 				return nil, fmt.Errorf("jwtutil: security check failed (invalid timestamp format): %w", parseErr)
 			}
-			if claims.IssuedAt == nil || claims.IssuedAt.Time.Unix() < ts {
+			// SEC-07: reject tokens whose iat is in the SAME second as the
+			// revocation timestamp, not just strictly older ones. JWT iat has
+			// second resolution, so with `<` a token minted in the same
+			// second as RevokeAllUserTokens survived, defeating the revoke.
+			// Fail-closed trade-off of `<=`: a token minted later in the same
+			// second (e.g. a fresh login within that second) is also
+			// rejected; the holder can simply authenticate again, while the
+			// surviving-token hole is closed. This was preferred over moving
+			// the stored value to milliseconds because iat's second
+			// resolution gives `<=` the identical decision boundary, and
+			// switching units would reinterpret any live seconds-based
+			// invalidation key as a 1970-era timestamp, silently un-revoking
+			// users across a deploy.
+			if claims.IssuedAt == nil || claims.IssuedAt.Time.Unix() <= ts {
 				return nil, errors.New("jwtutil: token has been revoked")
 			}
 		}
@@ -270,7 +284,9 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	return claims, nil
 }
 
-// RevokeAllUserTokens invalidates all tokens issued for a specific user prior to the current timestamp.
+// RevokeAllUserTokens invalidates all tokens issued for a specific user at or
+// prior to the current timestamp (whole-second precision; see the iat
+// comparison in ValidateToken for the fail-closed same-second semantics).
 // It sets a Redis key jwt:invalidated_before:<user_id> to the current Unix timestamp.
 func RevokeAllUserTokens(userID string) error {
 	if userID == "" {

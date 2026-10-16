@@ -31,6 +31,9 @@ type Config struct {
 	RedisURI      string
 	JWTSecret     string
 	InternalToken string
+	// AdminToken guards /api/v1/admin/version-config (SEC-02). Read from
+	// ADMIN_API_TOKEN; no real value is hard-coded here.
+	AdminToken string
 }
 
 func LoadConfig() *Config {
@@ -41,6 +44,7 @@ func LoadConfig() *Config {
 		RedisURI:      os.Getenv("STAGING_REDIS_URI"),
 		JWTSecret:     os.Getenv("JWT_SECRET"),
 		InternalToken: os.Getenv("INTERNAL_SERVICE_TOKEN"),
+		AdminToken:    os.Getenv("ADMIN_API_TOKEN"),
 	}
 	if cfg.GatewayURL == "" {
 		cfg.GatewayURL = "http://localhost:8088"
@@ -48,17 +52,24 @@ func LoadConfig() *Config {
 	if cfg.ConsoleURL == "" {
 		cfg.ConsoleURL = "http://localhost:8091"
 	}
+	// Fallbacks below are clearly fake placeholders matching
+	// infrastructure/staging/.env.staging.example, which is what the CI
+	// release gate (scripts/staging_up.sh) provisions the stack from.
+	// No real secret is hard-coded here; the env vars above always win.
 	if cfg.MongoURI == "" {
-		cfg.MongoURI = "mongodb://staging_root:staging_secret123@localhost:27018/?authSource=admin"
+		cfg.MongoURI = "mongodb://staging_root:CHANGE_ME_PASSWORD@localhost:27018/?authSource=admin"
 	}
 	if cfg.RedisURI == "" {
-		cfg.RedisURI = "redis://:staging_redis_secret123@localhost:6381/0"
+		cfg.RedisURI = "redis://:CHANGE_ME_PASSWORD@localhost:6381/0"
 	}
 	if cfg.JWTSecret == "" {
-		cfg.JWTSecret = "NrrYbDqT4bRD/ADvJ5U2VKmLqXr8nk21IRVAbrzVI1mqEhuMhII3IO26PPa4qJtR"
+		cfg.JWTSecret = "CHANGE_ME_64_HEX"
 	}
 	if cfg.InternalToken == "" {
-		cfg.InternalToken = "zE0JCJ9YxiqyXsYGEWJAwVFDf9kHPFV6eMJQm5M+yU8J4F6bdR1QX8/ZmH/buB9F"
+		cfg.InternalToken = "CHANGE_ME_64_HEX"
+	}
+	if cfg.AdminToken == "" {
+		cfg.AdminToken = "CHANGE_ME_64_HEX"
 	}
 	jwtutil.Init(cfg.JWTSecret)
 	return cfg

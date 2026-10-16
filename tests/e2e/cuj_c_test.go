@@ -45,7 +45,7 @@ func TestCUJ_C_CustomerRegistration(t *testing.T) {
 	}()
 
 	// -------------------------------------------------------------------------
-	// 1. NEGATIVE: Weak password (< 6 chars)
+	// 1. NEGATIVE: Weak password (< 8 chars)
 	// -------------------------------------------------------------------------
 	weakReq := map[string]string{
 		"email":    email,
@@ -60,8 +60,8 @@ func TestCUJ_C_CustomerRegistration(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected 400 Bad Request for weak password, got %d: %s", resp.StatusCode, string(body))
 	}
-	if !strings.Contains(string(body), "password must be at least 6 characters") {
-		t.Fatalf("Expected 'password must be at least 6 characters' in body, got: %s", string(body))
+	if !strings.Contains(string(body), "password must be at least 8 characters") {
+		t.Fatalf("Expected 'password must be at least 8 characters' in body, got: %s", string(body))
 	}
 	t.Logf("Verified: Weak password rejected with 400 Bad Request: %s", string(body))
 

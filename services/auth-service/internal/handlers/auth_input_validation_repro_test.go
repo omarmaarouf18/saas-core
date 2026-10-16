@@ -53,6 +53,9 @@ func setupAuthReproTest(t *testing.T) (*Auth, *store.MongoDB, func()) {
 		t.Fatalf("failed to start miniredis: %v", err)
 	}
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	// SEC-07: employee freezes now revoke sessions fail-closed, so jwtutil
+	// needs a reachable Redis in tests that exercise ToggleEmployee.
+	jwtutil.SetRedisClient(rdb)
 
 	cfg := &config.Config{
 		AppEnv:               "local",
@@ -65,6 +68,7 @@ func setupAuthReproTest(t *testing.T) (*Auth, *store.MongoDB, func()) {
 	a := NewAuth(s, mockDispatcher, cfg, rdb, mockStorage)
 
 	cleanup := func() {
+		jwtutil.SetRedisClient(nil)
 		_ = s.DropDatabase(context.Background())
 		_ = s.Close(context.Background())
 		_ = rdb.Close()

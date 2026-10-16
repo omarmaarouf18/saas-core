@@ -100,7 +100,9 @@ func main() {
 	})
 
 	// ---- Admin App Version Configuration Endpoint ----
-	mux.HandleFunc("/api/v1/admin/version-config", VersionConfigHandler(cfg.InternalServiceToken, versionStore))
+	// SEC-02: guarded by the dedicated ADMIN_API_TOKEN (X-Admin-Token), not
+	// the internal service token that every service holds.
+	mux.HandleFunc("/api/v1/admin/version-config", VersionConfigHandler(cfg.AdminAPIToken, versionStore))
 
 	// ---- Service info endpoint ----
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -215,12 +217,16 @@ func registerServiceRoutes(mux *http.ServeMux, routes []config.ServiceRoute, bui
 }
 
 // VersionConfigHandler handles GET and PUT requests for /api/v1/admin/version-config.
-func VersionConfigHandler(internalToken string, versionStore *version.Store) http.HandlerFunc {
+//
+// SEC-02: authenticated with the dedicated admin credential (X-Admin-Token),
+// NOT the internal service token shared by all services. The internal token
+// deliberately does not grant access here.
+func VersionConfigHandler(adminToken string, versionStore *version.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		gotToken := r.Header.Get("X-Internal-Token")
+		gotToken := r.Header.Get("X-Admin-Token")
 		// Empty-secret guard (QA audit Q23): never authenticate when unconfigured.
-		if internalToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(internalToken)) != 1 {
-			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid internal token"})
+		if adminToken == "" || subtle.ConstantTimeCompare([]byte(gotToken), []byte(adminToken)) != 1 {
+			handlerutil.WriteJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: invalid admin token"})
 			return
 		}
 
@@ -249,6 +255,11 @@ func VersionConfigHandler(internalToken string, versionStore *version.Store) htt
 				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 				return
 			}
+			// SEC-02: audit trail for client version-policy changes.
+			handlerutil.ShipSecurityEvent(r.Context(), "VERSION_CONFIG_CHANGED", "api-gateway", "admin", "",
+				fmt.Sprintf("latest=%s min=%s enforce=%t revision=%d",
+					updated.LatestVersion, updated.MinimumSupportedVersion, updated.EnforceMinimumVersion, updated.Revision),
+				handlerutil.GetClientIP(r))
 			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{"message": "version configuration updated successfully", "config": updated})
 			return
 		}

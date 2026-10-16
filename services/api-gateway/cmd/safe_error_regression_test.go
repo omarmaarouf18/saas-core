@@ -34,15 +34,17 @@ func unreachableMongo(t *testing.T) *mongo.Client {
 // DB/driver internals may reach the client. Curated validation copy
 // stays verbatim by design.
 func TestVersionConfig_SafeErrors(t *testing.T) {
-	internalToken := "test-internal-token-12345"
-	handler := VersionConfigHandler(internalToken, version.NewStore(nil, ""))
+	adminToken := "test-admin-token-12345"
+	handler := VersionConfigHandler(adminToken, version.NewStore(nil, ""))
 
 	t.Run("PUT persist failure sanitized", func(t *testing.T) {
 		store := version.NewStore(unreachableMongo(t), "")
-		handler := VersionConfigHandler(internalToken, store)
-		body := bytes.NewReader([]byte(`{"latest_version":"9.9.9","minimum_supported_version":"9.0.0"}`))
+		handler := VersionConfigHandler(adminToken, store)
+		// Valid download_url is required (SEC-02) so the request reaches the
+		// persist step that this test exercises.
+		body := bytes.NewReader([]byte(`{"latest_version":"9.9.9","minimum_supported_version":"9.0.0","download_url":"https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"}`))
 		req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/version-config", body)
-		req.Header.Set("X-Internal-Token", internalToken)
+		req.Header.Set("X-Admin-Token", adminToken)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 
@@ -66,7 +68,7 @@ func TestVersionConfig_SafeErrors(t *testing.T) {
 	t.Run("PUT validation copy kept verbatim", func(t *testing.T) {
 		body := bytes.NewReader([]byte(`{"latest_version":"not-a-version","minimum_supported_version":"9.0.0"}`))
 		req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/version-config", body)
-		req.Header.Set("X-Internal-Token", internalToken)
+		req.Header.Set("X-Admin-Token", adminToken)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 
