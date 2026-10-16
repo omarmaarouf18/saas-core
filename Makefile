@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup ci ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove
+.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove
 
 # --- WF-01 parallel-agent workflow constants ---------------------------------
 # The integration branch agents branch off and the owner merges into.
@@ -6,10 +6,9 @@ INTEGRATION_BRANCH := logic-exploitation
 # Push-block message, shared with .githooks/pre-push (Layer B); Layer A is the
 # per-worktree remote.origin.pushurl set by scripts/agent-worktree.sh.
 BLOCKED_MSG = "BLOCKED: agents never push; the owner merges and pushes from the main worktree"
-# CI lock lives under the COMMON git dir, so every worktree locks the same
-# file and parallel worktrees never run integration tests against the shared
-# local Mongo/Redis at the same time.
-CI_LOCK_FILE := $(shell git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || git rev-parse --git-common-dir)/ci.lock
+# The CI lock (scripts/ci-lock.sh) and the gate pass stamps
+# (scripts/gate-stamp.sh) live under the COMMON git dir, shared by all
+# worktrees.
 # -----------------------------------------------------------------------------
 
 ensure-hooks:
@@ -34,29 +33,24 @@ docs-check: ensure-hooks
 backend-frontend-parity-check: ensure-hooks
 	go run tools/paritycheck/main.go
 
-# WF-01: the gate runs under flock so parallel worktrees serialize against the
-# shared local Mongo/Redis. Prints a waiting line when the lock is held.
-# The gate script is invoked WITHOUT arguments here, so the WF-01 agent push
+# WF-03: the local gate is SCOPED to what changed; GitHub CI
+# (.github/workflows/ci.yml) is the single full gate.
+#   make check    scoped gate (scripts/changed-scope.sh prints the scope and
+#                 why); a pass writes the stamp `make commit` requires.
+#   make ci       same as `make check` (kept for muscle memory).
+#   make ci-full  everything (CI_SCOPE=full); also writes a stamp.
+# All three run .githooks/pre-push WITHOUT arguments, so the WF-01 agent push
 # guard inside it (which only fires for real git push hook invocations) is
-# skipped and the full check suite runs in any worktree.
-# WF-02: a real `git push` takes the same lock inside the hook; CI_LOCK_HELD=1
-# tells the hook that this target already holds it (no self-deadlock).
-# WF-02: exports TEST_DB_SUFFIX=<worktree dir name>-<pid> (unless already set;
-# characters outside [A-Za-z0-9_-] become "_", since Mongo DB names cannot
-# contain spaces) so tests can name per-run databases/keys/channels.
-ci: ensure-hooks
-	@LOCK_FILE="$(CI_LOCK_FILE)"; \
-	exec 9>"$$LOCK_FILE" || exit 1; \
-	if ! flock -n 9; then \
-		echo "waiting for CI lock: $$LOCK_FILE is held by another gate run (make ci or git push)"; \
-		flock 9 || exit 1; \
-	fi; \
-	if [ -z "$${TEST_DB_SUFFIX:-}" ]; then \
-		TEST_DB_SUFFIX="$$(basename "$$(git rev-parse --show-toplevel)" | tr -c 'A-Za-z0-9_\n-' '_')-$$$$"; \
-	fi; \
-	export TEST_DB_SUFFIX; \
-	echo "TEST_DB_SUFFIX=$$TEST_DB_SUFFIX"; \
-	CI_LOCK_HELD=1 ./.githooks/pre-push
+# skipped and the checks run in any worktree. The hook exports
+# TEST_DB_SUFFIX=<worktree dir name>-<pid> (unless already set) and takes the
+# CI lock itself.
+check: ensure-hooks
+	@./.githooks/pre-push
+
+ci: check
+
+ci-full: ensure-hooks
+	@CI_SCOPE=full ./.githooks/pre-push
 
 contract-test: ensure-hooks
 	cd tests/contracts && go test -v -count=1 ./...
