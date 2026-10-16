@@ -21,9 +21,13 @@
 # fails safe: a package that only links a driver for a fake still runs every
 # time, and a test cannot reach Mongo/Redis without linking a driver.
 #
+# Integration packages run under the CI lock (scripts/ci-lock.sh) once that
+# lock is narrowed to them; see .githooks/pre-push.
+#
 # Prints "[timing] go-test-<group>:<module> <seconds>s" per non-empty group.
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mod="${1:?usage: scripts/go-test-module.sh <module dir> [<package pattern> ...]}"
 shift
 [ "$#" -gt 0 ] || set -- ./...
@@ -77,5 +81,5 @@ if [ "${#repo_reader[@]}" -gt 0 ]; then
 	timed "go-test-repo-reader:$mod" go test -count=1 "${repo_reader[@]}"
 fi
 if [ "${#integration[@]}" -gt 0 ]; then
-	timed "go-test-integration:$mod" go test -count=1 "${integration[@]}"
+	timed "go-test-integration:$mod" bash "$ROOT/scripts/ci-lock.sh" go test -count=1 "${integration[@]}"
 fi

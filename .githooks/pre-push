@@ -85,20 +85,13 @@ if [ "$SCOPE_MODE" = "none" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# WF-02 CI lock: every gate run — `make check` AND a real `git push` — runs
-# under flock on <git-common-dir>/ci.lock, so parallel worktrees never run
-# integration tests against the shared local Mongo/Redis at the same time.
-# A caller that already holds the lock sets CI_LOCK_HELD=1 (no self-deadlock).
+# CI lock (WF-02, narrowed in WF-03): only the stages that use the shared
+# local Mongo/Redis — integration test packages, see scripts/go-test-module.sh
+# — run under flock on <git-common-dir>/ci.lock (scripts/ci-lock.sh). gofmt,
+# vet, gosec, govulncheck, gitleaks, flutter and unit tests run without it,
+# so parallel worktrees overlap everywhere else. A caller that already holds
+# the lock sets CI_LOCK_HELD=1.
 # ---------------------------------------------------------------------------
-if [ "${CI_LOCK_HELD:-}" != "1" ]; then
-  LOCK_FILE="$(git rev-parse --path-format=absolute --git-common-dir)/ci.lock"
-  exec 9>"$LOCK_FILE"
-  if ! flock -n 9; then
-    echo "waiting for CI lock: $LOCK_FILE is held by another gate run (make check or git push)"
-    flock 9
-  fi
-  export CI_LOCK_HELD=1
-fi
 # Per-run suffix for test DB names / Redis keys: <worktree dir name>-<pid>,
 # characters outside [A-Za-z0-9_-] become "_" (Mongo DB names cannot contain
 # spaces). An explicit TEST_DB_SUFFIX wins.
