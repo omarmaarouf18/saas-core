@@ -2,6 +2,8 @@
 
 This document provides a factual, technical breakdown of the verification, quality gate, and production deployment mechanisms operating in this repository.
 
+For the owner/agent process around the gate (worktrees, the CI lock, `make commit`, who pushes), see [docs/WORKFLOW.md](WORKFLOW.md).
+
 ---
 
 ## 1. Local Pre-Push Hook (`.githooks/pre-push`)
@@ -16,7 +18,15 @@ git config core.hooksPath .githooks
 ```
 
 ### Execution Order & Checks
-When active, `.githooks/pre-push` executes automatically before every `git push`. It runs the following checks in order:
+When active, `.githooks/pre-push` executes automatically before every `git push`; `make ci` runs the same script without arguments. Before any check it runs, in order:
+
+- **Agent push guard (WF-01, Layer B)**: on a real push (git passes the remote as `$1`) from a linked worktree or an `agent/*` branch, prints `BLOCKED: agents never push; ...` and exits 1.
+- **Delete-only push skip (WF-02)**: on a real push where every ref line on stdin has an all-zero local sha (`git push <remote> --delete <ref>`), prints `delete-only push: gate skipped` and exits 0. Runs after the guard, so agents still cannot delete remote refs.
+- **CI lock (WF-02)**: unless `CI_LOCK_HELD=1`, takes `flock` on `$(git rev-parse --git-common-dir)/ci.lock`, printing `waiting for CI lock: <file> is held by another gate run (make ci or git push)` while another gate runs. `make ci` takes the lock itself and sets `CI_LOCK_HELD=1`.
+- **`TEST_DB_SUFFIX` (WF-02)**: `make ci`, and the hook when it takes the lock itself, export `TEST_DB_SUFFIX=<worktree dir name>-<pid>` unless already set. Characters outside `[A-Za-z0-9_-]` become `_` (Mongo DB names cannot contain spaces: `SaaS prototype` → `SaaS_prototype-<pid>`). Tests may use it to name per-run databases, Redis keys and channels.
+- **Go toolchain pin (WF-02)**: sources `tools/versions.env` and exports `GOTOOLCHAIN=go$GO_VERSION`. A local Go that differs — including a distro build such as Fedora's `go1.26.9-X:nodwarf5` — makes the `go` command download and use the official toolchain.
+
+Then the checks:
 
 1. **Environment Setup**: Exports default authenticated connection strings for host-level integration testing against local Docker containers (`MONGO_URI` and `REDIS_URI`).
 2. **Go Formatting (`gofmt`)**: Runs `gofmt -l .` across the repository. Fails if any unformatted `.go` files are detected.
@@ -25,14 +35,44 @@ When active, `.githooks/pre-push` executes automatically before every `git push`
    - Scans **all `.md` files repo-wide** for 40-character hexadecimal strings and verifies each commit exists in local Git history via `git cat-file -e "$sha^{commit}"`.
    - Diffs newly added `- **Commit SHA**:` lines in `docs/changelog/*.md` against `HEAD~1`, verifying each newly cited SHA exists and is an ancestor of `HEAD`.
    - *Historical Context*: Scope was originally restricted to `docs/changelog/*.md`. It was widened repo-wide after an incident where a fabricated commit SHA located outside `docs/changelog/` went undetected by the local hook.
-5. **Go Version Drift Guard**: Asserts that `CANONICAL_GO_VERSION="1.26"` matches the Go version specified in `go.work`, `services/*/go.mod`, `shared/infra/go.mod`, `tools/docgen/go.mod`, `.github/workflows/ci.yml`, and `services/*/Dockerfile`.
+5. **Go Version Drift Guard** (`scripts/check-go-version.sh`, also run by CI): reads `GO_VERSION` from `tools/versions.env` (nothing is hard-coded) and asserts that `go.work` and every `services/*`, `shared/infra`, `tools/*`, `tests/*` `go.mod` have `go <major.minor>` and `toolchain go<GO_VERSION>`, that every `go-version:` line in `.github/workflows/ci.yml` (at least one, any quoting) equals `GO_VERSION`, and that every `FROM golang:x.y.z` in `services/*/Dockerfile` equals it.
 6. **Per-Module Go Build, Vet, Test, and Security Scans**: Iterates through 6 Go modules (`services/api-gateway`, `services/auth-service`, `services/chat-service`, `services/notification-service`, `services/user-service`, `shared/infra`):
    - `go build ./...`
    - `go vet ./...`
    - `go test ./... -count=1`
-   - `govulncheck ./...` (filters out uncalled stdlib vulnerabilities with warning output, blocks on active third-party package vulnerabilities)
+   - `govulncheck -format json ./...` via `scripts/govulncheck-module.sh` (warns on called stdlib vulnerabilities, blocks on called third-party vulnerabilities; see [Pinned tool versions](#pinned-tool-versions-toolsversionsenv) for the CI difference). A govulncheck error blocks too, printing `BLOCKED: govulncheck error in <mod>` and govulncheck's stderr: an exit code other than 0 or 3, or output with no JSON `config` message. In `-format json` mode govulncheck v1.8.0 exits 0 even when it finds vulnerabilities (3 is text mode only), 1 on errors such as packages that fail to load, and 2 on usage errors. Setting `GOVULNCHECK_BIN` in the environment overrides the pinned binary, with a `NOTE:` line (used to test this path, e.g. `GOVULNCHECK_BIN=/bin/false make ci`).
    - `gosec ./...`
+   - Both binaries come from `scripts/install-tools.sh` (pinned, cached; see below). There is no `@latest` fallback and no skip.
 7. **Frontend Flutter Checks**: Runs `flutter analyze` and `flutter test` inside `frontend/`.
+
+### Pinned tool versions (`tools/versions.env`)
+
+`tools/versions.env` is the single source of truth for gate tool versions. It is plain `KEY=value` (no quotes, no shell logic):
+
+| Key | Used for |
+|-----|----------|
+| `GO_VERSION` | `GOTOOLCHAIN` in the hook; the drift guard's expected value for go.work / go.mod / ci.yml / Dockerfiles; part of the tool cache key |
+| `GOSEC_VERSION` | gosec version built by `scripts/install-tools.sh` |
+| `GOSEC_XTOOLS_VERSION` | `golang.org/x/tools` version gosec is built against (gosec v2.29.0 pins x/tools v0.49.0, which cannot read Go 1.26 export data) |
+| `GOVULNCHECK_VERSION` | govulncheck version (`golang.org/x/vuln`) |
+
+Readers: `scripts/install-tools.sh`, `scripts/check-go-version.sh`, `.githooks/pre-push`, and `.github/workflows/ci.yml` (through the two scripts).
+
+**`scripts/install-tools.sh`** sources `tools/versions.env` and builds each tool once into a versioned cache:
+
+```text
+${XDG_CACHE_HOME:-$HOME/.cache}/saas-core-tools/govulncheck-<GOVULNCHECK_VERSION>-go<GO_VERSION>/govulncheck
+${XDG_CACHE_HOME:-$HOME/.cache}/saas-core-tools/gosec-<GOSEC_VERSION>-xtools-<GOSEC_XTOOLS_VERSION>-go<GO_VERSION>/gosec
+```
+
+- govulncheck: `go install golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION`.
+- gosec: built in a temporary module with `go get github.com/securego/gosec/v2/cmd/gosec@$GOSEC_VERSION golang.org/x/tools@$GOSEC_XTOOLS_VERSION`, then `go build`.
+- A cached binary is reused with no network access. Builds land in a temp dir and are moved into the cache only on success. A failed install exits non-zero and the gate blocks; there is no `@latest` fallback.
+- stdout is `GOSEC_BIN=<path>` and `GOVULNCHECK_BIN=<path>` lines (progress goes to stderr). The hook parses them; CI appends them to `$GITHUB_OUTPUT`.
+
+**How to bump a tool**: edit `tools/versions.env` only. The new version gets a new cache directory, so the next gate run builds it (old directories can be deleted by hand). For `GO_VERSION`, the drift guard then lists every `go.mod`, `ci.yml` `go-version:` line and Dockerfile that still has the old version; update those in the same change (`go.mod`/`go.sum` and `.github/**` are hot paths). Point Renovate regex managers at `tools/versions.env` (not yet configured).
+
+**Open question: govulncheck policy differs between local and CI.** The local hook runs `govulncheck -format json` and filters with `jq`: findings whose trace starts in `stdlib` only print `WARNING: SKIPPED (<GO-ID>) (stdlib vulnerability)`, and only called third-party findings block. CI runs plain `govulncheck ./...`, which fails on any called finding, stdlib included. Since WF-02, both use the same govulncheck binary and the same Go (`GO_VERSION`). Before WF-02, CI used `golang/govulncheck-action@v1`, which installs `govulncheck@latest` and sets up Go `stable` (latest), so CI scanned against a newer standard library than the pinned toolchain. Now a stdlib vulnerability fixed in a newer Go patch fails CI until `GO_VERSION` is bumped, while locally it only warns. The policy was deliberately not changed; the owner should decide whether local should also block on stdlib findings, or CI should also filter them.
 
 ### Makefile Wiring & Hook Bypass Limitation
 The Makefile defines `ensure-hooks` as follows:
@@ -62,11 +102,11 @@ Unlike local Git hooks, GitHub Actions CI is **authoritative and non-bypassable*
 1. **`lint-formatting`**:
    - `gofmt` verification.
    - Repo-wide markdown commit SHA verification.
-   - Go version consistency drift guard.
+   - Go version consistency drift guard (`bash scripts/check-go-version.sh`, against `tools/versions.env`).
 2. **`build-test`**:
    - Spawns MongoDB (`mongo:7`) and Redis (`redis:7-alpine`) service containers.
    - Matrix execution across 6 Go modules (`api-gateway`, `auth-service`, `chat-service`, `notification-service`, `user-service`, `shared-infra`).
-   - Executes `go mod download`, `go build ./...`, `go vet ./...`, `go test ./... -count=1`, `govulncheck`, and `gosec`.
+   - Executes `go mod download`, `go build ./...`, `go vet ./...`, `go test ./... -count=1`, then `bash scripts/install-tools.sh` (same pinned versions as the local hook) and the resulting `govulncheck ./...` and `gosec ./...` binaries.
 3. **`flutter-test`**:
    - Sets up Flutter stable channel.
    - Runs `dart format --set-exit-if-changed lib/`, `flutter analyze`, and `flutter test`.
@@ -232,7 +272,7 @@ The entire 4-repository trigger and data flow operates as follows:
 
 1. **Local Hook Bypass Risk**: Fresh clones do not execute local hooks until `make setup`, `make ci`, or another make target invoking `ensure-hooks` is run.
 2. **GHCR Package Visibility & Host Auth**: Private GHCR images require `docker login ghcr.io -u <user> -p <PAT>` with `read:packages` scope on the production host. Setting GHCR package visibility to Public eliminates host authentication requirements.
-3. **Govulncheck Standard Library Warnings**: `.githooks/pre-push` prints warning messages for standard library vulnerabilities while blocking strictly on uncalled third-party package vulnerabilities.
+3. **Govulncheck Standard Library Warnings**: `.githooks/pre-push` prints warning messages for called standard library vulnerabilities while blocking on called third-party package vulnerabilities. CI blocks on both (open question, see [Pinned tool versions](#pinned-tool-versions-toolsversionsenv)).
 4. **Git Checkout Persisted Credentials Override (`sync-mobile-frontend.yml`)**:
    - *Failure Mode*: `actions/checkout@v4` defaults to `persist-credentials: true`, injecting `GITHUB_TOKEN` into global git config (`http.extraheader`). This silently overrides embedded PAT credentials in `git push` URLs, resulting in `Permission denied to github-actions[bot]`.
    - *Resolution*: Always include `persist-credentials: false` in `actions/checkout@v4` steps when performing cross-repo PAT authentication, and format push URLs as `https://x-access-token:${PAT}@github.com/owner/repo.git`.

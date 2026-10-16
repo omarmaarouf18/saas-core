@@ -50,45 +50,10 @@ jobs:
             exit 1
           fi
 
+      # Canonical version: GO_VERSION in tools/versions.env. The script also
+      # checks the go-version lines of this file against it.
       - name: Verify Go Version Consistency (Drift Guard)
-        run: |
-          CANONICAL_GO_VERSION="1.26"
-          CANONICAL_GO_PATCH_VERSION="1.26.9"
-          CANONICAL_GO_TOOLCHAIN="go1.26.9"
-          DRIFT_FAILED=0
-          for f in go.work services/*/go.mod shared/infra/go.mod tools/*/go.mod tests/*/go.mod; do
-            if [ -f "$f" ]; then
-              v=$(grep -E '^go [0-9]+\.[0-9]+' "$f" | head -n 1 | awk '{print $2}')
-              if [ "$v" != "$CANONICAL_GO_VERSION" ]; then
-                echo "BLOCKED: Go language version drift in $f: expected $CANONICAL_GO_VERSION, found '${v:-NONE}'"
-                DRIFT_FAILED=1
-              fi
-              tc=$(grep -E '^toolchain go[0-9]+\.[0-9]+\.[0-9]+' "$f" | head -n 1 | awk '{print $2}')
-              if [ "$tc" != "$CANONICAL_GO_TOOLCHAIN" ]; then
-                echo "BLOCKED: Go toolchain version drift in $f: expected $CANONICAL_GO_TOOLCHAIN, found '${tc:-NONE}'"
-                DRIFT_FAILED=1
-              fi
-            fi
-          done
-          for v in $(grep -oE "go-version: '[0-9]+\.[0-9]+\.[0-9]+'" .github/workflows/ci.yml | grep -oE "[0-9]+\.[0-9]+\.[0-9]+"); do
-            if [ "$v" != "$CANONICAL_GO_PATCH_VERSION" ]; then
-              echo "BLOCKED: Go version drift in .github/workflows/ci.yml: expected $CANONICAL_GO_PATCH_VERSION, found '$v'"
-              DRIFT_FAILED=1
-            fi
-          done
-          for d in services/*/Dockerfile; do
-            if [ -f "$d" ]; then
-              for v in $(grep -oE "FROM golang:[0-9]+\.[0-9]+\.[0-9]+" "$d" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+"); do
-                if [ "$v" != "$CANONICAL_GO_PATCH_VERSION" ]; then
-                  echo "BLOCKED: Go version drift in $d: expected $CANONICAL_GO_PATCH_VERSION, found '$v'"
-                  DRIFT_FAILED=1
-                fi
-              done
-            fi
-          done
-          if [ "$DRIFT_FAILED" -eq 1 ]; then
-            exit 1
-          fi
+        run: bash scripts/check-go-version.sh
 
       - name: Backend-Frontend Parity Check (Informational)
         run: make backend-frontend-parity-check
@@ -158,24 +123,28 @@ jobs:
           MONGO_INITDB_DATABASE: saas_platform_test
         run: go test ./... -count=1
 
+      # Same pinned versions and build recipe as the local gate
+      # (.githooks/pre-push): versions live only in tools/versions.env.
+      # scripts/install-tools.sh prints GOSEC_BIN=... / GOVULNCHECK_BIN=...
+      # lines, which become this step's outputs.
+      - name: Install pinned security tools
+        id: tools
+        run: bash scripts/install-tools.sh >> "$GITHUB_OUTPUT"
+
+      # Policy difference vs the local gate (documented in
+      # docs/CI_CD_AND_HOOKS.md, open question): CI fails on ANY finding,
+      # including stdlib ones; the local hook only warns on stdlib findings.
       - name: Run govulncheck
-        uses: golang/govulncheck-action@v1
-        with:
-          work-dir: ${{ matrix.service.path }}
-          cache: false
+        working-directory: ${{ matrix.service.path }}
+        env:
+          GOVULNCHECK_BIN: ${{ steps.tools.outputs.GOVULNCHECK_BIN }}
+        run: '"$GOVULNCHECK_BIN" ./...'
 
       - name: Run gosec
-        run: |
-          # gosec v2.29.0 pins golang.org/x/tools v0.49.0, which cannot read Go 1.26
-          # export data ("export data version 5 is greater than maximum supported
-          # version 4"). Build it against x/tools v0.50.0, the combination that passed
-          # on 2026-09-28. Remove this when a gosec release requires x/tools >= v0.50.0.
-          GOSEC_DIR="$(mktemp -d)"
-          (cd "$GOSEC_DIR" && go mod init gosec-build >/dev/null 2>&1 \
-            && go get github.com/securego/gosec/v2/cmd/gosec@v2.29.0 golang.org/x/tools@v0.50.0 \
-            && go build -o "$GOSEC_DIR/gosec" github.com/securego/gosec/v2/cmd/gosec)
-          "$GOSEC_DIR/gosec" ./...
         working-directory: ${{ matrix.service.path }}
+        env:
+          GOSEC_BIN: ${{ steps.tools.outputs.GOSEC_BIN }}
+        run: '"$GOSEC_BIN" ./...'
 
   flutter-test:
     name: Flutter Lint & Test

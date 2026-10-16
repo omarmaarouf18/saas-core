@@ -100,6 +100,22 @@ cmd_new() {
 	# effect as `make ensure-hooks`).
 	git -C "$wt_path" config core.hooksPath .githooks
 
+	# Per-worktree setup the gate needs (WF-01 finding F4): without
+	# frontend/.dart_tool, `make ci` fails at the dart format step. A missing
+	# Flutter SDK or a failed `pub get` only warns: the worktree is usable for
+	# non-frontend work and the step can be re-run by hand.
+	if [ -d "$wt_path/frontend" ]; then
+		if command -v flutter >/dev/null 2>&1; then
+			printf 'setup:    flutter pub get in %s/frontend\n' "$wt_path"
+			# GIT_DIR confuses the Flutter tool (see .githooks/pre-push).
+			if ! (cd "$wt_path/frontend" && env -u GIT_DIR -u GIT_WORK_TREE flutter pub get); then
+				printf "WARNING: 'flutter pub get' failed in %s/frontend; run it there before 'make ci'\n" "$wt_path" >&2
+			fi
+		else
+			printf "WARNING: flutter not on PATH; run 'flutter pub get' in %s/frontend before 'make ci' (dart format fails without frontend/.dart_tool)\n" "$wt_path" >&2
+		fi
+	fi
+
 	printf 'worktree: %s\n' "$wt_path"
 	printf 'branch:   %s (from %s @ %s)\n' "$branch" "$base" "$(git -C "$wt_path" rev-parse --short HEAD)"
 	printf 'push:     DISABLED in this worktree (Layer A) — agents never push; the owner merges and pushes from the main worktree\n'

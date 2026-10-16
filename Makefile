@@ -39,30 +39,37 @@ backend-frontend-parity-check: ensure-hooks
 # The gate script is invoked WITHOUT arguments here, so the WF-01 agent push
 # guard inside it (which only fires for real git push hook invocations) is
 # skipped and the full check suite runs in any worktree.
+# WF-02: a real `git push` takes the same lock inside the hook; CI_LOCK_HELD=1
+# tells the hook that this target already holds it (no self-deadlock).
+# WF-02: exports TEST_DB_SUFFIX=<worktree dir name>-<pid> (unless already set;
+# characters outside [A-Za-z0-9_-] become "_", since Mongo DB names cannot
+# contain spaces) so tests can name per-run databases/keys/channels.
 ci: ensure-hooks
 	@LOCK_FILE="$(CI_LOCK_FILE)"; \
 	exec 9>"$$LOCK_FILE" || exit 1; \
 	if ! flock -n 9; then \
-		echo "waiting for CI lock: $$LOCK_FILE is held by another make ci"; \
+		echo "waiting for CI lock: $$LOCK_FILE is held by another gate run (make ci or git push)"; \
 		flock 9 || exit 1; \
 	fi; \
-	./.githooks/pre-push
+	if [ -z "$${TEST_DB_SUFFIX:-}" ]; then \
+		TEST_DB_SUFFIX="$$(basename "$$(git rev-parse --show-toplevel)" | tr -c 'A-Za-z0-9_\n-' '_')-$$$$"; \
+	fi; \
+	export TEST_DB_SUFFIX; \
+	echo "TEST_DB_SUFFIX=$$TEST_DB_SUFFIX"; \
+	CI_LOCK_HELD=1 ./.githooks/pre-push
 
 contract-test: ensure-hooks
 	cd tests/contracts && go test -v -count=1 ./...
 
 # WF-01: no `git add -A` — FILES is required, so untracked files (including
 # .env*) can never be swept into a commit.
+# WF-02: implemented in scripts/commit.sh, which reads FILES / MSG / MSG_FILE
+# from the environment (make exports command-line variables), so quotes and
+# multi-line messages are safe. Exactly one of MSG / MSG_FILE is required;
+# staged deletions in FILES work; only FILES are committed (other staged paths
+# stay staged, with a warning).
 commit: ensure-hooks
-	@if [ -z "$${FILES:-}" ]; then \
-		echo "ERROR: FILES is required and must be non-empty: make commit FILES=\"<paths>\" MSG=\"<message>\""; \
-		exit 1; \
-	fi; \
-	if [ -z "$${MSG:-}" ]; then \
-		echo "ERROR: MSG is required: make commit FILES=\"<paths>\" MSG=\"<message>\""; \
-		exit 1; \
-	fi; \
-	git add -- $(FILES) && git commit -m "$(MSG)"
+	@bash scripts/commit.sh
 
 # WF-01 push block: refuses from a linked worktree or an agent/* branch; the
 # owner keeps using it from the main worktree.
