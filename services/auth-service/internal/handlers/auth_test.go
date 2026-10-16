@@ -438,6 +438,15 @@ func TestAuthHandlers(t *testing.T) {
 		t.Errorf("Expected 200 OK for ToggleEmployee, got %d. Body: %s", rec.Code, rec.Body.String())
 	}
 
+	// SEC-07: the freeze revoked all tokens for this employee with fail-closed
+	// same-second semantics (iat has second resolution). Wait past the freeze
+	// second before minting the employee token used below, otherwise it would
+	// (correctly) be rejected as issued in the revocation second.
+	freezeSecond := time.Now().Unix()
+	for time.Now().Unix() <= freezeSecond {
+		time.Sleep(10 * time.Millisecond)
+	}
+
 	// 5. Test SimulateEmployeeAction (Success path)
 	// Promote employee back to active first
 	toggleBody.SetActive = true
@@ -3403,6 +3412,15 @@ func TestResetPassword_SessionInvalidation(t *testing.T) {
 	_, err = jwtutil.ValidateToken(tokenBeforeReset)
 	if err == nil || err.Error() != "jwtutil: token has been revoked" {
 		t.Fatalf("Expected token issued before password reset to be rejected after reset with 'jwtutil: token has been revoked', got: %v", err)
+	}
+
+	// SEC-07: the reset's RevokeAllUserTokens uses fail-closed same-second
+	// semantics (iat has second resolution), so a token minted in the reset's
+	// wall-clock second is also rejected. Wait past that second before
+	// asserting a post-reset token is valid.
+	resetSecond := time.Now().Unix()
+	for time.Now().Unix() <= resetSecond {
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	// Issue token AFTER password reset -> MUST BE VALID

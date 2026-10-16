@@ -880,9 +880,39 @@ func (a *Auth) ToggleEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-07: freezing an employee must revoke their sessions. Order chosen:
+	// revoke FIRST, then persist the inactive state. If revocation fails the
+	// toggle fails and the account stays active (consistent, fail closed);
+	// there is never a window where the account is frozen but its tokens are
+	// still accepted. The reverse order (persist, roll back on revoke
+	// failure) can itself fail mid-rollback and leave the account
+	// inactive-but-unrevoked, which is the exact state this guards against.
+	//
+	// Ownership is re-checked here BEFORE revoking so that a toggle aimed at
+	// another owner's employee cannot revoke that employee's sessions before
+	// ToggleEmployeeActive rejects the request. The store still re-validates
+	// atomically when persisting.
+	if !req.SetActive {
+		if emp.Role != models.RoleEmployee || emp.OwnerID != owner.ID {
+			log.Printf("[AUTH ERROR] ToggleEmployee refused for employee %q: not owned by %s", req.EmployeeEmail, owner.ID)
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "employee not found or not authorized for this owner",
+			})
+			return
+		}
+		if err := jwtutil.RevokeAllUserTokens(emp.ID); err != nil {
+			log.Printf("[AUTH ERROR] ToggleEmployee failed to revoke sessions for employee %s: %v", emp.ID, err)
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to freeze employee account", err)
+			return
+		}
+	}
+
 	// Toggle Active Status
 	err := a.store.ToggleEmployeeActive(ctx, req.EmployeeEmail, owner.ID, req.SetActive)
 	if err != nil {
+		// A revocation above may already have landed (freeze path): the
+		// account stays active in that case, which is fail-closed — sessions
+		// revoked, account not frozen.
 		log.Printf("[AUTH ERROR] ToggleEmployeeActive failed: %v", err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "employee not found or not authorized for this owner",

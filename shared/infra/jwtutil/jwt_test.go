@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"math"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -363,6 +364,15 @@ func TestRevokeAllUserTokens(t *testing.T) {
 		if err := RevokeAllUserTokens(userID1); err != nil {
 			t.Fatalf("RevokeAllUserTokens failed: %v", err)
 		}
+		// SEC-07: revocation has fail-closed same-second semantics — a token
+		// minted in the same wall-clock second as the revocation (iat has
+		// second resolution) is also rejected. Capture the revocation second
+		// AFTER the call and wait past it before minting the post-revocation
+		// token.
+		revokeSecond := time.Now().Unix()
+		for time.Now().Unix() <= revokeSecond {
+			time.Sleep(10 * time.Millisecond)
+		}
 
 		// Key should exist in miniredis
 		key := "jwt:invalidated_before:" + userID1
@@ -426,6 +436,51 @@ func TestRevokeAllUserTokens(t *testing.T) {
 			t.Error("expected RevokeAllUserTokens to fail on closed Redis client")
 		}
 	})
+}
+
+// TestValidateToken_SameSecondRevocationRejected pins the SEC-07 edge case:
+// a token whose iat is in the same whole second as the stored invalidation
+// timestamp must be rejected (fail closed), not accepted. The invalidation
+// key is seeded with exactly the token's iat second so the test is
+// deterministic regardless of wall-clock timing.
+func TestValidateToken_SameSecondRevocationRejected(t *testing.T) {
+	Init("super-secret-key-that-is-at-least-thirty-two-bytes-long")
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	// Issue and parse the token without Redis so iat is available.
+	SetRedisClient(nil)
+	tokenStr, err := GenerateToken("same-second-user", "employee", "tenant-1", "same@example.com")
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+	claims, err := ValidateToken(tokenStr)
+	if err != nil {
+		t.Fatalf("token must be valid before revocation: %v", err)
+	}
+	if claims.IssuedAt == nil {
+		t.Fatal("expected IssuedAt to be set")
+	}
+
+	SetRedisClient(rdb)
+	defer SetRedisClient(nil)
+
+	ctx := context.Background()
+	key := "jwt:invalidated_before:same-second-user"
+	if err := rdb.Set(ctx, key, strconv.FormatInt(claims.IssuedAt.Time.Unix(), 10), 8*24*time.Hour).Err(); err != nil {
+		t.Fatalf("failed to seed invalidation key: %v", err)
+	}
+
+	_, err = ValidateToken(tokenStr)
+	if err == nil || err.Error() != "jwtutil: token has been revoked" {
+		t.Fatalf("token issued in the same second as revocation must be rejected, got err: %v", err)
+	}
 }
 
 func TestGenerateSecureToken(t *testing.T) {
