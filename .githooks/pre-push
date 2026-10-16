@@ -73,9 +73,14 @@ fi
 # merge-base with logic-exploitation. CI_SCOPE=full (`make ci-full`) forces
 # the full gate. GitHub CI (.github/workflows/ci.yml) always runs everything.
 # ---------------------------------------------------------------------------
+# WF-03 pass stamp: a run without arguments records the tree it checks
+# (computed BEFORE the scope, see scripts/gate-stamp.sh) and, if every stage
+# passes and the tree did not change meanwhile, stamps it for `make commit`.
+STAMP_TREE=""
 if [ "${1:-}" != "" ]; then
   SCOPE_OUT=$(bash scripts/changed-scope.sh --push <<<"$PUSH_LINES")
 else
+  STAMP_TREE=$(bash scripts/gate-stamp.sh tree)
   SCOPE_OUT=$(bash scripts/changed-scope.sh)
 fi
 eval "$SCOPE_OUT"
@@ -340,3 +345,11 @@ fi
 
 awk -v a="$GATE_T0" -v b="$EPOCHREALTIME" 'BEGIN { printf "[timing] total %.1fs\n", b - a }'
 echo "== pre-push gate: all checks passed (scope: $SCOPE_KEY) =="
+
+if [ -n "$STAMP_TREE" ]; then
+  if [ "$(bash scripts/gate-stamp.sh tree)" = "$STAMP_TREE" ]; then
+    bash scripts/gate-stamp.sh write "$STAMP_TREE" "$SCOPE_KEY"
+  else
+    echo "WARNING: files changed while the gate ran; no stamp written. Run make check again before make commit."
+  fi
+fi
