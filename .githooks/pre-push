@@ -87,6 +87,18 @@ fi
 
 echo "== pre-push gate: running checks =="
 
+# WF-03 per-stage timing: every stage prints "[timing] <stage> <seconds>s".
+GATE_T0=$EPOCHREALTIME
+STAGE_NAME=""
+STAGE_T0=""
+stage_begin() {
+  STAGE_NAME="$1"
+  STAGE_T0=$EPOCHREALTIME
+}
+stage_end() {
+  awk -v a="$STAGE_T0" -v b="$EPOCHREALTIME" -v n="$STAGE_NAME" 'BEGIN { printf "[timing] %s %.1fs\n", n, b - a }'
+}
+
 # Pin the Go toolchain for the whole gate to GO_VERSION from
 # tools/versions.env: a local Go that differs (or a distro build) makes the go
 # command download and use the official toolchain instead.
@@ -99,6 +111,7 @@ export MONGO_URI="${MONGO_URI:-mongodb://root:devpassword123@localhost:27017/saa
 export REDIS_URI="${REDIS_URI:-redis://:devpassword123@localhost:6380}"
 
 # 1. Verify Go formatting
+stage_begin gofmt
 UNFORMATTED=$(gofmt -l . 2>&1)
 if [ -n "$UNFORMATTED" ]; then
   echo "BLOCKED: gofmt found unformatted files:"
@@ -106,7 +119,9 @@ if [ -n "$UNFORMATTED" ]; then
   exit 1
 fi
 
+stage_end
 # 2. Verify Dart formatting
+stage_begin dart-format
 if [ -d "frontend" ]; then
   echo "-- checking frontend Dart formatting --"
   UNFORMATTED_DART=$(cd frontend && dart format --output=none --set-exit-if-changed lib/ 2>&1) || {
@@ -115,8 +130,10 @@ if [ -d "frontend" ]; then
     exit 1
   }
 fi
+stage_end
 
 # 3. Verify Markdown Commit SHAs
+stage_begin md-sha
 FAILED_SHA=0
 
 for file in $(find . -type f -name "*.md" -not -path "*/node_modules/*" -not -path "*/vendor/*" -not -path "*/.git/*"); do
@@ -134,12 +151,15 @@ done
 if [ "$FAILED_SHA" -eq 1 ]; then
   exit 1
 fi
+stage_end
 
 # 4. Verify Go version consistency (drift guard). The canonical version is
 # GO_VERSION in tools/versions.env (also exported as GOTOOLCHAIN above); the
 # script checks go.work, every go.mod, ci.yml and the Dockerfiles against it.
 echo "-- checking Go version consistency across go.work, go.mod, ci.yml, and Dockerfiles --"
+stage_begin go-drift
 bash scripts/check-go-version.sh || exit 1
+stage_end
 
 # An explicit GOVULNCHECK_BIN in the environment overrides the pinned binary
 # (used to test the gate's error handling, e.g. GOVULNCHECK_BIN=/bin/false).
@@ -149,6 +169,7 @@ GOVULNCHECK_BIN_OVERRIDE="${GOVULNCHECK_BIN:-}"
 # Versions come only from tools/versions.env; scripts/install-tools.sh builds
 # them once into a versioned cache and reuses the cached binaries without
 # network access. CI uses the same script. No @latest fallback, no skipping.
+stage_begin install-tools
 TOOLS_OUT=$(bash scripts/install-tools.sh) || {
   echo "BLOCKED: scripts/install-tools.sh could not install the pinned gosec/govulncheck (see tools/versions.env)"
   exit 1
@@ -165,40 +186,50 @@ if [ -n "$GOVULNCHECK_BIN_OVERRIDE" ]; then
   GOVULNCHECK_BIN="$GOVULNCHECK_BIN_OVERRIDE"
 fi
 echo "-- security tools: $GOVULNCHECK_BIN, $GOSEC_BIN --"
+stage_end
 
 for mod in services/api-gateway services/auth-service services/chat-service \
            services/notification-service services/user-service shared/infra; do
   echo "-- checking $mod --"
   
   # Go Build, Vet, Test parity
+  stage_begin "go-build-vet-test:$mod"
   (cd "$mod" && go build ./... && go vet ./... && go test ./... -count=1) || {
     echo "BLOCKED: $mod failed build/vet/test"
     exit 1
   }
+  stage_end
 
   # govulncheck: scripts/govulncheck-module.sh blocks on govulncheck errors
   # (exit code other than 0/3, or no valid JSON config message) and on called
   # third-party findings; called stdlib findings only warn (policy unchanged).
+  stage_begin "govulncheck:$mod"
   GOVULNCHECK_BIN="$GOVULNCHECK_BIN" bash scripts/govulncheck-module.sh "$mod" || exit 1
+  stage_end
 
   # gosec check parity
   echo "-- running gosec on $mod --"
+  stage_begin "gosec:$mod"
   (cd "$mod" && "$GOSEC_BIN" ./...) || {
     echo "BLOCKED: $mod failed gosec security scan"
     exit 1
   }
+  stage_end
 done
 
 # 5. Run In-Process API Contract Tests (Phase 4 / QA-GAP-02)
 # Runs in-process in milliseconds without Docker Compose, validating inter-service
 # schema alignment, AST field tags, and strict JSON deserialization across all microservices.
+stage_begin contracts
 echo "-- running in-process API contract tests (tests/contracts) --"
 (cd tests/contracts && go test -v -count=1 ./...) || {
   echo "BLOCKED: tests/contracts failed API contract validation"
   exit 1
 }
+stage_end
 
 # 6. Frontend composition-layer gate (blocks Scaffold(/AppBar(/BoxDecoration(/Color(0xFF/.toUpperCase() in screens/)
+stage_begin frontend-composition
 if [ -d "frontend" ]; then
   echo "-- checking frontend composition gate --"
   bash scripts/frontend_composition_gate.sh || {
@@ -206,8 +237,10 @@ if [ -d "frontend" ]; then
     exit 1
   }
 fi
+stage_end
 
 # 7. Flutter analyze & test checks parity (strict without ignoring warnings/infos)
+stage_begin flutter-analyze-test
 if [ -d "frontend" ]; then
   echo "-- checking frontend Flutter analyze/test --"
   (cd frontend && flutter analyze && flutter test) || {
@@ -215,5 +248,7 @@ if [ -d "frontend" ]; then
     exit 1
   }
 fi
+stage_end
 
+awk -v a="$GATE_T0" -v b="$EPOCHREALTIME" 'BEGIN { printf "[timing] total %.1fs\n", b - a }'
 echo "== pre-push gate: all checks passed =="
