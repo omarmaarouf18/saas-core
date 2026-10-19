@@ -44,12 +44,12 @@ var KnownEndpoints = map[string]struct {
 	"GET /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Fetches current mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Reads `platform_versions` collection.",
+		Targets:     "Reads in-memory version store.",
 	},
 	"PUT /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Updates mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Updates `platform_versions` collection.",
+		Targets:     "Updates in-memory version store.",
 	},
 	"GET /": {
 		Permissions: "Public",
@@ -705,8 +705,8 @@ func GenerateEndpointsList(repoRoot string) ([]Endpoint, error) {
 	// Add api-gateway static endpoints
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health", Service: "api-gateway", Permissions: "Public", Function: "Public gateway health status.", Targets: "None.", HandlerName: "GatewayHealth"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health/internal", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Returns circuit breaker metrics.", Targets: "Reads breaker memory.", HandlerName: "GatewayInternalHealth"})
-	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads `platform_versions` collection.", HandlerName: "GetVersionConfig"})
-	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates `platform_versions` collection.", HandlerName: "UpdateVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads in-memory version store.", HandlerName: "GetVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates in-memory version store.", HandlerName: "UpdateVersionConfig"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/", Service: "api-gateway", Permissions: "Public", Function: "Root index.", Targets: "None.", HandlerName: "GatewayIndex"})
 
 	services := []struct {
