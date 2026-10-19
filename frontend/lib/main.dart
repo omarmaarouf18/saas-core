@@ -23,6 +23,7 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth_splash_screen.dart';
 import 'screens/component_library_screen.dart';
 import 'widgets/kyc_rejection_dialog_host.dart';
 
@@ -135,7 +136,24 @@ class MyApp extends StatelessWidget {
         }
         return null;
       },
-      home: auth.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+      home: const AuthGate(),
     );
+  }
+}
+
+/// UX-17: chooses the launch destination from the live AuthProvider state.
+/// While the stored session is being restored (`isLoading`) a neutral splash
+/// is shown, so the login screen is never rendered as a flash frame before
+/// the session verdict exists.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    if (auth.isLoading) {
+      return const AuthSplashScreen();
+    }
+    return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
   }
 }
