@@ -1422,5 +1422,57 @@
   "digitalPaymentsComingSoon": "Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.",
   "@digitalPaymentsComingSoon": {
     "description": "PAY-COD-ONLY: shown when an owner taps wallet top-up or payout while the backend has digital payments off."
-  }
+  },
+  "qdStatusPending": "Waiting for courier",
+  "@qdStatusPending": {
+    "description": "FE-DS: job status chip labels (qdStatus*), sentence case, one mapping in lib/ui/components/qd_status_chip.dart."
+  },
+  "qdStatusPendingDispatch": "Finding a courier",
+  "qdStatusUnavailable": "No courier available",
+  "qdStatusAwaitingPrice": "New price offered",
+  "qdStatusAssigned": "Courier assigned",
+  "qdStatusActive": "On the way",
+  "qdStatusCompleted": "Delivered",
+  "qdStatusCancelled": "Cancelled",
+  "qdStatusUnderReview": "Under review",
+  "qdStatusCancellationRequested": "Cancellation requested",
+  "qdStatusUnknown": "Unknown status",
+  "qdComingSoon": "Coming soon",
+  "qdLoading": "Loading",
+  "qdErrorTitle": "Something went wrong",
+  "qdErrorBody": "Check your connection and try again.",
+  "qdTimeLeft": "{time} left",
+  "@qdTimeLeft": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "qdPickup": "Pickup",
+  "qdDropoff": "Drop-off",
+  "qdStepProgress": "Step {current} of {total}",
+  "@qdStepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "qdTimelineDone": "Done",
+  "qdTimelineCurrent": "Current step",
+  "qdTimelineUpcoming": "Not yet",
+  "qdMoneyAmount": "EGP {amount}",
+  "@qdMoneyAmount": {
+    "description": "FE-DS: money template; amount is already formatted by QdMoney. Never use $ or a bare number.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "qdMainNavigation": "Main navigation"
 }

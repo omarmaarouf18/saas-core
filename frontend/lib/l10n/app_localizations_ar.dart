@@ -2861,4 +2861,82 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get digitalPaymentsComingSoon =>
       'قريب: شحن المحفظة وسحب الأرباح مش متاحين لسه. الحجوزات بتتدفع كاش عند الاستلام.';
+
+  @override
+  String get qdStatusPending => 'مستني مندوب';
+
+  @override
+  String get qdStatusPendingDispatch => 'بندور على مندوب';
+
+  @override
+  String get qdStatusUnavailable => 'مفيش مندوب متاح';
+
+  @override
+  String get qdStatusAwaitingPrice => 'فيه عرض سعر';
+
+  @override
+  String get qdStatusAssigned => 'المندوب قبل';
+
+  @override
+  String get qdStatusActive => 'في الطريق';
+
+  @override
+  String get qdStatusCompleted => 'اتسلم';
+
+  @override
+  String get qdStatusCancelled => 'اتلغى';
+
+  @override
+  String get qdStatusUnderReview => 'بيتراجع';
+
+  @override
+  String get qdStatusCancellationRequested => 'طلب إلغاء';
+
+  @override
+  String get qdStatusUnknown => 'حالة مش معروفة';
+
+  @override
+  String get qdComingSoon => 'قريب';
+
+  @override
+  String get qdLoading => 'بيحمّل';
+
+  @override
+  String get qdErrorTitle => 'حصلت مشكلة';
+
+  @override
+  String get qdErrorBody => 'اتأكد من النت وجرّب تاني.';
+
+  @override
+  String qdTimeLeft(String time) {
+    return 'فاضل $time';
+  }
+
+  @override
+  String get qdPickup => 'الاستلام';
+
+  @override
+  String get qdDropoff => 'التسليم';
+
+  @override
+  String qdStepProgress(int current, int total) {
+    return 'خطوة $current من $total';
+  }
+
+  @override
+  String get qdTimelineDone => 'خلصت';
+
+  @override
+  String get qdTimelineCurrent => 'الخطوة الحالية';
+
+  @override
+  String get qdTimelineUpcoming => 'لسه';
+
+  @override
+  String qdMoneyAmount(String amount) {
+    return '$amount ج.م';
+  }
+
+  @override
+  String get qdMainNavigation => 'التنقل الرئيسي';
 }

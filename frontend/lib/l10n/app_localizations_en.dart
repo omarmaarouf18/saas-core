@@ -2909,4 +2909,82 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get digitalPaymentsComingSoon =>
       'Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.';
+
+  @override
+  String get qdStatusPending => 'Waiting for courier';
+
+  @override
+  String get qdStatusPendingDispatch => 'Finding a courier';
+
+  @override
+  String get qdStatusUnavailable => 'No courier available';
+
+  @override
+  String get qdStatusAwaitingPrice => 'New price offered';
+
+  @override
+  String get qdStatusAssigned => 'Courier assigned';
+
+  @override
+  String get qdStatusActive => 'On the way';
+
+  @override
+  String get qdStatusCompleted => 'Delivered';
+
+  @override
+  String get qdStatusCancelled => 'Cancelled';
+
+  @override
+  String get qdStatusUnderReview => 'Under review';
+
+  @override
+  String get qdStatusCancellationRequested => 'Cancellation requested';
+
+  @override
+  String get qdStatusUnknown => 'Unknown status';
+
+  @override
+  String get qdComingSoon => 'Coming soon';
+
+  @override
+  String get qdLoading => 'Loading';
+
+  @override
+  String get qdErrorTitle => 'Something went wrong';
+
+  @override
+  String get qdErrorBody => 'Check your connection and try again.';
+
+  @override
+  String qdTimeLeft(String time) {
+    return '$time left';
+  }
+
+  @override
+  String get qdPickup => 'Pickup';
+
+  @override
+  String get qdDropoff => 'Drop-off';
+
+  @override
+  String qdStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get qdTimelineDone => 'Done';
+
+  @override
+  String get qdTimelineCurrent => 'Current step';
+
+  @override
+  String get qdTimelineUpcoming => 'Not yet';
+
+  @override
+  String qdMoneyAmount(String amount) {
+    return 'EGP $amount';
+  }
+
+  @override
+  String get qdMainNavigation => 'Main navigation';
 }
