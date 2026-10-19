@@ -22,7 +22,7 @@ One row per tracked file under `docs/`, plus the root-level `DESIGN.md`, `IMPLEM
 | [README.md](../README.md) | Developer setup, ops runbooks (KYC approval, subscription activation, agent and reviewer onboarding), docs list | Current | 2026-08-29 | 0 | |
 | [DESIGN.md](../DESIGN.md) | Original frontend design doc. Its own note says the Section 1 tree is the planned layout, not the current one. A docs-check keeps its dependency pins in sync with `pubspec.yaml` | Reference | 2026-08-30 | 9 | In part by [frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md) and [frontend/DESIGN_SYSTEM.md](frontend/DESIGN_SYSTEM.md) |
 | [IMPLEMENTATION.md](history/IMPLEMENTATION.md) | Frontend implementation plan, Phases 1–7. Its intro calls itself historical | Historical | 2026-08-17 | 3 | [frontend/STATUS.md](frontend/STATUS.md) (stated in the file) |
-| [QA-COVERAGE.md](../QA-COVERAGE.md) | QA strategy and regression coverage matrix (82 KB). Calls itself the source of truth for QA | Current | 2026-09-17 | 1 | |
+| [QA-COVERAGE.md](qa/QA-COVERAGE.md) | QA strategy and regression coverage matrix (82 KB). Calls itself the source of truth for QA | Current | 2026-09-17 | 1 | |
 
 ## docs/
 

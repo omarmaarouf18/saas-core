@@ -687,12 +687,12 @@ In accordance with product owner guidelines, uncovered items discovered during t
 
 ## 6. Living Reference Links
 
-- **Release Gate Specification**: [docs/RELEASE-GATE.md](docs/RELEASE-GATE.md)
-- **Staging Runbook & Topology**: [docs/STAGING.md](docs/STAGING.md)
-- **Application Architecture Map**: [docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md)
-- **Backend Capabilities & Messaging Backlog**: [docs/frontend/MESSAGING_BACKLOG.md](docs/frontend/MESSAGING_BACKLOG.md)
-- **Reviewer Console Rejection Reason**: [docs/adr/ADR-0021-reviewer-rejection-reason.md](docs/adr/ADR-0021-reviewer-rejection-reason.md)
-- **Modular Ops Console Expansion**: [docs/adr/0023-modular-ops-console-expansion.md](docs/adr/0023-modular-ops-console-expansion.md)
-- **Reverse-Proxy SSE Buffering Resolution**: [docs/changelog/bug-fixes.md](docs/changelog/bug-fixes.md)
-- **Production Deployment Standards**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **Release Gate Specification**: [../RELEASE-GATE.md](../RELEASE-GATE.md)
+- **Staging Runbook & Topology**: [../STAGING.md](../STAGING.md)
+- **Application Architecture Map**: [../APPLICATION_MAP.md](../APPLICATION_MAP.md)
+- **Backend Capabilities & Messaging Backlog**: [../frontend/MESSAGING_BACKLOG.md](../frontend/MESSAGING_BACKLOG.md)
+- **Reviewer Console Rejection Reason**: [../adr/0021-kyc-kyb-kye-reviewer-console.md](../adr/0021-kyc-kyb-kye-reviewer-console.md)
+- **Modular Ops Console Expansion**: [../adr/0023-modular-ops-console-expansion.md](../adr/0023-modular-ops-console-expansion.md)
+- **Reverse-Proxy SSE Buffering Resolution**: [../changelog/bug-fixes.md](../changelog/bug-fixes.md)
+- **Production Deployment Standards**: [../DEPLOYMENT.md](../DEPLOYMENT.md)
 
