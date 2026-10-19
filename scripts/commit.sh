@@ -118,6 +118,14 @@ if ! bash scripts/gate-stamp.sh covers "$view_tree" "$need_key"; then
 fi
 echo "gate stamp OK for this commit (scope: $need_key)"
 
+# WF-04: untracked files were present during the check ($view_tree has a passing stamp),
+# but the commit only contains $commit_tree. Record the stamp for $commit_tree
+# so the pre-commit hook (which inspects $(git write-tree) of the committed index)
+# allows it.
+if [ "$commit_tree" != "$view_tree" ]; then
+	bash scripts/gate-stamp.sh write "$commit_tree" "$need_key" >/dev/null
+fi
+
 if [ "${#to_add[@]}" -gt 0 ]; then
 	git add -- "${to_add[@]}"
 fi

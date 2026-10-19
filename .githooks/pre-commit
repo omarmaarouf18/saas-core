@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# .githooks/pre-commit — enforce passing gate stamp before committing (WF-04).
+#
+# Every commit must have a passing `make check` stamp covering the tree being
+# committed. Raw `git commit` without a prior passing check is blocked.
+#
+# Exceptions:
+# - Merge commits (MERGE_HEAD exists): owner merges with `git merge --no-ff`
+#   are covered by the owner's pre-push gate and GitHub CI.
+# - Revert commits (REVERT_HEAD exists): owner reverts are covered similarly.
+#
+# Note: An environment variable escape hatch is strictly forbidden.
+set -euo pipefail
+
+# 1. Allow merge commits and reverts (owner workflow).
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+	exit 0
+fi
+if git rev-parse -q --verify REVERT_HEAD >/dev/null 2>&1; then
+	exit 0
+fi
+
+# 2. Compute the exact tree being committed.
+# git write-tree respects GIT_INDEX_FILE, so this correctly inspects the
+# temporary index used by scripts/commit.sh as well as the standard index.
+tree="$(git write-tree)"
+
+# 3. Determine required scope for this commit against HEAD.
+top="$(git rev-parse --show-toplevel)"
+has_head=0
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+	has_head=1
+fi
+
+need_key=full
+if [ "$has_head" -eq 1 ]; then
+	scope_out="$(git diff --no-renames --name-only HEAD "$tree" |
+		bash "$top/scripts/changed-scope.sh" --paths 2>/dev/null)"
+	eval "$scope_out"
+	need_key="${SCOPE_KEY:-full}"
+fi
+
+# 4. Require a passing stamp covering the tree and needed scope.
+if ! bash "$top/scripts/gate-stamp.sh" covers "$tree" "$need_key"; then
+	echo "ERROR: no passing gate stamp for the tree being committed: run make check first" >&2
+	echo "  this commit needs scope: $need_key" >&2
+	exit 1
+fi
