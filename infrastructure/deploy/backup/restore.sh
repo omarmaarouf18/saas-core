@@ -27,7 +27,8 @@
 #   *-*.tar.gz.age           decrypt | tar -x into a temp dir, then print file
 #                            and directory counts and sizes
 #   env-*.age                decrypt into a temp file with mode 600, then print
-#                            the variable NAMES it defines (never the values)
+#                            only its path, size and line count (never any of
+#                            its contents, not even variable names)
 # If a SHA256SUMS file sits next to a file, its checksum is verified first.
 #
 # Settings (environment): RESTORE_IMAGE (mongo:7), RESTORE_TMP (${TMPDIR:-/tmp}).
@@ -179,11 +180,10 @@ restore_env() { # restore_env <file>
 	out="$(mktemp "$RESTORE_TMP/qd-restore-env-XXXXXX")"
 	SECRETS+=("$out")
 	chmod 600 "$out"
-	say "env: decrypt $(basename "$f") -> $out (mode $(stat -c %a "$out"))"
+	say "env: decrypt $(basename "$f") -> $out"
 	age -d -i "$IDENTITY" "$f" >"$out"
-	# Names only: the sed prints what precedes the first '=', never a value.
-	say "env: $(grep -cE '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' "$out" || true) variables defined (names only):"
-	sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=.*/  \2/p' "$out"
+	# Metadata only: nothing from the file's contents is ever printed.
+	say "env: $out mode $(stat -c %a "$out"), $(stat -c %s "$out") bytes, $(wc -l <"$out") lines"
 }
 
 for f in "${FILES[@]}"; do

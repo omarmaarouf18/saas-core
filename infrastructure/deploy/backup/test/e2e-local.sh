@@ -16,8 +16,9 @@
 #      signature, the Mongo password or a value from the fake .env
 #   2. restore.sh of the UPLOADED copies: per-collection document counts equal
 #      the source exactly; restored volume files equal the source (sha256);
-#      the secrets file lists variable names only, is deleted without -k, and
-#      with -k is kept with mode 600 and equal to the source
+#      the secrets file is decrypted to a mode-600 file, nothing of its
+#      contents (not even a variable name) is printed, it is deleted without
+#      -k, and with -k it is kept and equal to the source
 #   3. local retention keeps 3 runs; the lock refuses an overlapping run
 #   4. failures exit non-zero and write the marker; the next success clears it;
 #      a rejected upload logs the HTTP status and Azure code, not the SAS
@@ -137,8 +138,7 @@ export JWT_SECRET=$ENV_V2
 MONGO_ROOT_PASSWORD="$ENV_V3 with spaces"
 ENV
 chmod 600 "$WORK/env"
-ENV_NAMES="DOCUMENT_ENCRYPTION_KEY JWT_SECRET MONGO_ROOT_PASSWORD"
-echo "fake secrets file $WORK/env (variables: $ENV_NAMES)"
+echo "fake secrets file $WORK/env ($(wc -l <"$WORK/env") lines)"
 printf '%s\n' "$SIG" >"$WORK/expected-sig"
 python3 -I "$HERE/fake_blob_server.py" "$WORK/blob" "$WORK/port" "$WORK/expected-sig" >"$WORK/fake.log" 2>&1 &
 FAKE_PID=$!
@@ -158,6 +158,9 @@ export MONGO_CONTAINER="$MONGO" VOLUMES="$VOL_DOCS $VOL_ATT" OPTIONAL_VOLUMES="$
 
 secret_hits() { # secret_hits <file>: lines containing the SAS sig, the Mongo password or an .env value
 	grep -cF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" "$1" || true
+}
+env_name_hits() { # env_name_hits <file>: lines containing a variable name from the fake .env
+	grep -cF -e DOCUMENT_ENCRYPTION_KEY -e JWT_SECRET -e MONGO_ROOT_PASSWORD "$1" || true
 }
 
 # --- 1. backup -------------------------------------------------------------------
@@ -244,16 +247,17 @@ rm -rf "$WORK/restore-tmp"
 mkdir -p "$WORK/restore-tmp"
 RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -i "$WORK/key.txt" "$UP/env-$RUN1.age" >"$WORK/restore-env.log" 2>&1 ||
 	fail "restore.sh of env-$RUN1.age failed: $(cat "$WORK/restore-env.log")"
-[ "$(secret_hits "$WORK/restore-env.log")" -eq 0 ] || fail "restore.sh printed a value from the .env"
 sed -e "s|$WORK|<WORK>|g" "$WORK/restore-env.log"
-listed="$(sed -n 's/^  \([A-Za-z_][A-Za-z0-9_]*\)$/\1/p' "$WORK/restore-env.log" | tr '\n' ' ')"
-[ "$listed" = "$ENV_NAMES " ] || fail "listed names '$listed', expected '$ENV_NAMES '"
-grep -q 'mode 600' "$WORK/restore-env.log" || fail "decrypted secrets file not mode 600"
+[ "$(secret_hits "$WORK/restore-env.log")" -eq 0 ] || fail "restore.sh printed a value from the .env"
+[ "$(env_name_hits "$WORK/restore-env.log")" -eq 0 ] || fail "restore.sh printed a variable name from the .env"
+grep -q "mode 600, $(stat -c %s "$WORK/env") bytes, $(wc -l <"$WORK/env") lines" "$WORK/restore-env.log" ||
+	fail "restore.sh did not report mode 600 and the source's size and line count"
 [ -z "$(find "$WORK/restore-tmp" -mindepth 1)" ] || fail "decrypted secrets file not deleted without -k"
-pass "env: names listed ($ENV_NAMES), no value printed, temp file mode 600 and deleted without -k"
+pass "env: mode 600, size and line count of the source, no value and no variable name printed, deleted without -k"
 RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -k -i "$WORK/key.txt" "$UP/env-$RUN1.age" >"$WORK/restore-env-k.log" 2>&1 ||
 	fail "restore.sh -k of env-$RUN1.age failed"
-[ "$(secret_hits "$WORK/restore-env-k.log")" -eq 0 ] || fail "restore.sh -k printed a value from the .env"
+[ "$(secret_hits "$WORK/restore-env-k.log")" -eq 0 ] && [ "$(env_name_hits "$WORK/restore-env-k.log")" -eq 0 ] ||
+	fail "restore.sh -k printed a value or a variable name from the .env"
 mapfile -t kept < <(find "$WORK/restore-tmp" -mindepth 1)
 [ "${#kept[@]}" -eq 1 ] && [ "$(stat -c %a "${kept[0]}")" = "600" ] && cmp -s "${kept[0]}" "$WORK/env" ||
 	fail "with -k: expected one kept file, mode 600, equal to the source .env"
