@@ -1,0 +1,18 @@
+# quickdelivery-backup.timer — runs quickdelivery-backup.service daily at
+# about 03:30 Cairo time (OPS-BACKUP).
+#
+#   systemctl list-timers quickdelivery-backup.timer   next and last run
+
+[Unit]
+Description=Daily QuickDelivery backup at ~03:30 Africa/Cairo
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Africa/Cairo
+# Spread the start over 03:30-03:50 (avoids lining up with other 03:30 jobs).
+RandomizedDelaySec=20min
+AccuracySec=1min
+# A run missed while the VM was off happens at the next boot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

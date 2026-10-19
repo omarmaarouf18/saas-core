@@ -1,0 +1,45 @@
+# quickdelivery-backup.service — daily encrypted off-host backup (OPS-BACKUP).
+# Installed by install.sh into /etc/systemd/system; started by
+# quickdelivery-backup.timer. Runbook: docs/runbooks/BACKUP-RESTORE.md.
+#
+#   systemctl status quickdelivery-backup.service    last run; a failure shows
+#                                                    "BACKUP FAILED: ..." here
+#   journalctl -u quickdelivery-backup.service       one line per step
+#   systemctl start quickdelivery-backup.service     run one now (blocks)
+
+[Unit]
+Description=QuickDelivery daily encrypted off-host backup (Mongo + volumes)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+# Later: an email/Discord alert on failure (runbook "Failure alerts").
+#OnFailure=quickdelivery-backup-alert.service
+
+[Service]
+Type=oneshot
+# root: talks to the Docker socket and reads the root-only SAS file.
+User=root
+EnvironmentFile=-/etc/quickdelivery-backup/backup.env
+# The docker CLI must not need /root (ProtectHome=yes below).
+Environment=DOCKER_CONFIG=/var/lib/quickdelivery-backup/docker-cli
+ExecStart=/usr/local/lib/quickdelivery-backup/backup.sh
+# Runs after success, failure or a kill (SIGKILL, MemoryMax, timeout); on a
+# failure it writes /var/lib/quickdelivery-backup/FAILED if the script could
+# not, and prints the marker so it shows in `systemctl status`.
+ExecStopPost=/usr/local/lib/quickdelivery-backup/backup.sh --post-stop
+SyslogIdentifier=quickdelivery-backup
+# Lowest CPU and I/O priority: production traffic always wins.
+Nice=19
+IOSchedulingClass=idle
+CPUSchedulingPolicy=idle
+# Memory of THIS unit: bash, the docker CLI, age and curl (measured locally:
+# 33 MiB anon at peak). The dump and tar sidecars run in Docker's cgroups with
+# their own caps (--memory 192m / 64m, set in backup.sh).
+MemoryHigh=96M
+MemoryMax=128M
+TimeoutStartSec=2h
+UMask=0077
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+NoNewPrivileges=yes
