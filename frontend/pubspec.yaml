@@ -41,3 +41,17 @@ flutter:
   assets:
     - assets/fonts/
     - assets/branding/qd_logo.svg
+
+  # Redesign A type family (FE-DS). Bundled, never fetched at runtime;
+  # SIL OFL 1.1, license in assets/fonts/IBMPlexSansArabic-OFL.txt.
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700

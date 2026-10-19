@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>كود التأكيد</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; display: flex; flex-direction: column; padding: 20px 24px 28px; overflow: hidden">
+
+<header style="display: flex; margin: 0 -12px">
+<button aria-label="رجوع" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</header>
+
+<div style="margin-top: 32px; display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700">اكتب الكود</h1>
+<p style="margin: 0; font-size: 15px; color: #4B5563; line-height: 1.6">بعتنا كود من 6 أرقام على<br><strong style="color: #0D1321; font-weight: 600" dir="ltr">[الإيميل]</strong></p>
+</div>
+
+<form style="margin-top: 32px; display: flex; flex-direction: column; gap: 24px">
+<fieldset style="border: 0; padding: 0; margin: 0">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden">كود التأكيد</legend>
+<div dir="ltr" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px">
+<input aria-label="الرقم 1" inputmode="numeric" maxlength="1" value="4" style="height: 56px; border: 2px solid #0D1321; border-radius: 12px; text-align: center; font-size: 22px; font-weight: 700; color: #0D1321; min-width: 0">
+<input aria-label="الرقم 2" inputmode="numeric" maxlength="1" value="8" style="height: 56px; border: 2px solid #0D1321; border-radius: 12px; text-align: center; font-size: 22px; font-weight: 700; color: #0D1321; min-width: 0">
+<input aria-label="الرقم 3" inputmode="numeric" maxlength="1" style="height: 56px; border: 2px solid #FFC107; border-radius: 12px; text-align: center; font-size: 22px; font-weight: 700; color: #0D1321; min-width: 0; background: #FFF8E1">
+<input aria-label="الرقم 4" inputmode="numeric" maxlength="1" style="height: 56px; border: 1px solid #D1D5DB; border-radius: 12px; text-align: center; font-size: 22px; min-width: 0">
+<input aria-label="الرقم 5" inputmode="numeric" maxlength="1" style="height: 56px; border: 1px solid #D1D5DB; border-radius: 12px; text-align: center; font-size: 22px; min-width: 0">
+<input aria-label="الرقم 6" inputmode="numeric" maxlength="1" style="height: 56px; border: 1px solid #D1D5DB; border-radius: 12px; text-align: center; font-size: 22px; min-width: 0">
+</div>
+</fieldset>
+<button type="submit" style="height: 54px; border-radius: 14px; border: 0; background: #FFC107; color: #0D1321; font-size: 16px; font-weight: 700; cursor: pointer">تأكيد</button>
+<p style="margin: 0; text-align: center; font-size: 14px; color: #4B5563">موصلكش؟ تقدر تبعته تاني بعد <span dir="ltr" style="font-weight: 600; color: #0D1321">0:42</span></p>
+</form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الدعم: الشكاوى</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+button{font-family:inherit}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="padding: 20px 12px 8px; display: flex; align-items: center; gap: 8px">
+<button aria-label="رجوع" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<h1 style="margin: 0; font-size: 18px; font-weight: 700">الدعم</h1>
+</header>
+
+<div style="padding: 0 20px 12px">
+<div role="tablist" aria-label="حالة الشكاوى" style="display: grid; grid-template-columns: 1fr 1fr; background: #F3F4F6; border-radius: 12px; padding: 4px; gap: 4px">
+<button role="tab" aria-selected="true" style="min-height: 40px; border: 0; border-radius: 9px; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #0D1321; cursor: pointer; box-shadow: 0 1px 2px rgba(13,19,33,0.08)">مفتوحة (1)</button>
+<button role="tab" aria-selected="false" style="min-height: 40px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; color: #4B5563; cursor: pointer">اتحلت</button>
+</div>
+</div>
+
+<main style="flex: 1; padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden">
+<a href="#" style="text-decoration: none; color: #0D1321; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+<span style="font-size: 15px; font-weight: 600">[موضوع الشكوى]</span>
+<span style="font-size: 12px; font-weight: 600; color: #B45309; background: #FEF3C7; padding: 3px 10px; border-radius: 999px">مستنية رد</span>
+</div>
+<span style="font-size: 13px; color: #4B5563">عن طلب [رقم الطلب] · [من قد إيه]</span>
+<span style="font-size: 13px; color: #374151; display: flex; align-items: center; gap: 6px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+آخر رسالة: [نص قصير]
+</span>
+</a>
+
+<div style="margin-top: 24px; padding: 20px; border-radius: 16px; background: #F9FAFB; display: flex; flex-direction: column; gap: 6px; text-align: center; align-items: center">
+<span style="font-size: 15px; font-weight: 600">عندك مشكلة في طلب؟</span>
+<span style="font-size: 13px; color: #4B5563; line-height: 1.6">اختار الطلب واكتب اللي حصل، وفريق الدعم هيرد عليك هنا.</span>
+</div>
+</main>
+
+<footer style="padding: 12px 20px 24px">
+<button style="width: 100%; height: 54px; border-radius: 14px; border: 0; background: #FFC107; color: #0D1321; font-size: 16px; font-weight: 700; cursor: pointer">شكوى جديدة</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

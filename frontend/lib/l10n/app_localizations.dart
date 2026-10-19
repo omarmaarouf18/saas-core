@@ -5294,6 +5294,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.'**
   String get digitalPaymentsComingSoon;
+
+  /// FE-DS: job status chip labels (qdStatus*), sentence case, one mapping in lib/ui/components/qd_status_chip.dart.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for courier'**
+  String get qdStatusPending;
+
+  /// No description provided for @qdStatusPendingDispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding a courier'**
+  String get qdStatusPendingDispatch;
+
+  /// No description provided for @qdStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier available'**
+  String get qdStatusUnavailable;
+
+  /// No description provided for @qdStatusAwaitingPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'New price offered'**
+  String get qdStatusAwaitingPrice;
+
+  /// No description provided for @qdStatusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier assigned'**
+  String get qdStatusAssigned;
+
+  /// No description provided for @qdStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get qdStatusActive;
+
+  /// No description provided for @qdStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get qdStatusCompleted;
+
+  /// No description provided for @qdStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get qdStatusCancelled;
+
+  /// No description provided for @qdStatusUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get qdStatusUnderReview;
+
+  /// No description provided for @qdStatusCancellationRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation requested'**
+  String get qdStatusCancellationRequested;
+
+  /// No description provided for @qdStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown status'**
+  String get qdStatusUnknown;
+
+  /// No description provided for @qdComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get qdComingSoon;
+
+  /// No description provided for @qdLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get qdLoading;
+
+  /// No description provided for @qdErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get qdErrorTitle;
+
+  /// No description provided for @qdErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get qdErrorBody;
+
+  /// No description provided for @qdTimeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} left'**
+  String qdTimeLeft(String time);
+
+  /// No description provided for @qdPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get qdPickup;
+
+  /// No description provided for @qdDropoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off'**
+  String get qdDropoff;
+
+  /// No description provided for @qdStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String qdStepProgress(int current, int total);
+
+  /// No description provided for @qdTimelineDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get qdTimelineDone;
+
+  /// No description provided for @qdTimelineCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current step'**
+  String get qdTimelineCurrent;
+
+  /// No description provided for @qdTimelineUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get qdTimelineUpcoming;
+
+  /// FE-DS: money template; amount is already formatted by QdMoney. Never use $ or a bare number.
+  ///
+  /// In en, this message translates to:
+  /// **'EGP {amount}'**
+  String qdMoneyAmount(String amount);
+
+  /// No description provided for @qdMainNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Main navigation'**
+  String get qdMainNavigation;
 }
 
 class _AppLocalizationsDelegate

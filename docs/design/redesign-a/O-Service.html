@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>صاحب الشغل · إعداد الخدمة</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="width: 390px; height: 1380px; box-sizing: border-box; background: #FFFFFF; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; display: flex; flex-direction: column">
+
+<header style="padding: 20px 12px 8px; display: flex; align-items: center; gap: 8px">
+<button aria-label="رجوع" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<h1 style="margin: 0; font-size: 18px; font-weight: 700">إعداد الخدمة</h1>
+</header>
+
+<form style="flex: 1; padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 28px">
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">الخدمة</h2>
+<button type="button" style="height: 120px; border-radius: 16px; border: 1px dashed #9CA3AF; background: #F9FAFB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 14px; color: #0D1321; cursor: pointer">
+<svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>
+ضيف صورة أو لوجو
+</button>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500">اسم الخدمة زي ما العميل هيشوفه
+<input type="text" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 14px; font-size: 15px; color: #0D1321">
+</label>
+<fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-size: 14px; font-weight: 500; padding: 0; margin-bottom: 8px">النوع</legend>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px">
+<label style="min-height: 48px; border-radius: 12px; border: 2px solid #0D1321; background: #FFF8E1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600; cursor: pointer"><input type="radio" name="cat" checked style="accent-color: #0D1321; margin: 0">توصيل</label>
+<label style="min-height: 48px; border-radius: 12px; border: 1px solid #D1D5DB; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; cursor: pointer"><input type="radio" name="cat" style="accent-color: #0D1321; margin: 0">مشاوير</label>
+<label style="min-height: 48px; border-radius: 12px; border: 1px solid #D1D5DB; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; cursor: pointer"><input type="radio" name="cat" style="accent-color: #0D1321; margin: 0">شحن</label>
+</div>
+</fieldset>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">المكان والتغطية</h2>
+<button type="button" style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 14px; border-radius: 12px; border: 1px solid #D1D5DB; background: #FFFFFF; text-align: right; cursor: pointer; color: #0D1321">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500">مكان الشركة على الخريطة</span><span style="font-size: 12px; color: #B45309">لازم تحدده</span></span>
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+</button>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500">العنوان مكتوب
+<input type="text" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 14px; font-size: 15px; color: #0D1321">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500">بتخدم لحد كام كيلو؟
+<span style="display: flex; align-items: center; gap: 8px"><input type="number" inputmode="numeric" style="flex: 1; height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 14px; font-size: 15px; color: #0D1321"><span style="font-size: 14px; color: #4B5563">كم</span></span>
+</label>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">المواعيد</h2>
+<div role="tablist" aria-label="نوع المواعيد" style="display: grid; grid-template-columns: 1fr 1fr; background: #F3F4F6; border-radius: 12px; padding: 4px; gap: 4px">
+<button type="button" role="tab" aria-selected="true" style="min-height: 40px; border: 0; border-radius: 9px; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #0D1321; cursor: pointer; box-shadow: 0 1px 2px rgba(13,19,33,0.08)">نفس الميعاد كل يوم</button>
+<button type="button" role="tab" aria-selected="false" style="min-height: 40px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; color: #4B5563; cursor: pointer">كل يوم لوحده</button>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #4B5563">بيفتح
+<input type="time" value="09:00" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 12px; font-size: 15px; color: #0D1321">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #4B5563">بيقفل
+<input type="time" value="23:00" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 12px; font-size: 15px; color: #0D1321">
+</label>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">التسعير</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #4B5563">فتح الطلب (ج.م)
+<input type="number" inputmode="decimal" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 12px; font-size: 15px; color: #0D1321">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #4B5563">لكل كيلو (ج.م)
+<input type="number" inputmode="decimal" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 12px; font-size: 15px; color: #0D1321">
+</label>
+</div>
+<p style="margin: 0; padding: 12px 14px; border-radius: 12px; background: #F9FAFB; font-size: 13px; color: #374151; line-height: 1.6">مثال: مشوار 5 كم هيتعرض للعميل بـ [فتح الطلب + 5 × سعر الكيلو] ج.م</p>
+</section>
+</form>
+
+<footer style="position: sticky; bottom: 0; padding: 12px 20px 24px; background: #FFFFFF; border-top: 1px solid #E5E7EB">
+<button style="width: 100%; height: 54px; border-radius: 14px; border: 0; background: #FFC107; color: #0D1321; font-size: 16px; font-weight: 700; cursor: pointer">احفظ</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1380}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

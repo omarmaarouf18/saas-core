@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>خريطة الشاشات</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="box-sizing: border-box; min-height: 100vh; background: #FFFFFF; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; padding: 48px 24px 64px">
+<div style="max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px">
+
+<header style="display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-size: 34px; font-weight: 700">خريطة الشاشات: القديم ← الجديد</h1>
+<p style="margin: 0; font-size: 16px; color: #4B5563; max-width: 820px; line-height: 1.7">مراجعة لكل شاشة في frontend/lib/screens (39 شاشة، حوالي 29 ألف سطر) وإيه اللي هيحل محلها في الشكل الجديد. الشاشات المرسومة في الصفحات اللي جنب: العميل، المندوب، صاحب الشغل.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px">
+<span style="padding: 4px 12px; border-radius: 999px; background: #DCFCE7; color: #15803D; font-weight: 600">مرسومة</span>
+<span style="padding: 4px 12px; border-radius: 999px; background: #F3F4F6; color: #374151; font-weight: 600">نفس نمط شاشة مرسومة</span>
+<span style="padding: 4px 12px; border-radius: 999px; background: #FEF3C7; color: #B45309; font-weight: 600">محتاجة قرار</span>
+</div>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 22px; font-weight: 700">العميل</h2>
+<div style="border: 1px solid #E5E7EB; border-radius: 16px; overflow-x: auto">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; line-height: 1.6">
+<thead><tr style="background: #F9FAFB; text-align: right"><th style="padding: 12px 16px; font-weight: 600; width: 26%">الشاشة الحالية</th><th style="padding: 12px 16px; font-weight: 600; width: 22%">الجديدة</th><th style="padding: 12px 16px; font-weight: 600">اللي اتغير</th><th style="padding: 12px 16px; font-weight: 600; width: 14%">الحالة</th></tr></thead>
+<tbody>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">CustomerHomeScreen</td><td style="padding: 12px 16px">الرئيسية</td><td style="padding: 12px 16px">أكشن واحد (اختار نوع الخدمة) بدل 3 أزرار. الطلب الجاري يفتح تفاصيله على طول بدل تاب التاريخ.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">CustomerMarketplaceScreen</td><td style="padding: 12px 16px">الشركات المتاحة</td><td style="padding: 12px 16px">كارت لكل شركة: السعر المتوقع، المسافة، التقييم، مفتوح أو مقفول. الفلاتر في شيت.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">_BookingDialog</td><td style="padding: 12px 16px">تأكيد الطلب</td><td style="padding: 12px 16px">صفحة كاملة بدل dialog: الاستلام، التسليم، ملاحظة العنوان، السعر المتوقع، كاش.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">LocationPickerDialog</td><td style="padding: 12px 16px">اختيار المكان</td><td style="padding: 12px 16px">شاشة خريطة كاملة + ملاحظة العنوان + العناوين المحفوظة (موجودة في الحساب ومش مستخدمة النهارده).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">JobStatusScreen (1688 سطر)</td><td style="padding: 12px 16px">تفاصيل الطلب حسب الحالة</td><td style="padding: 12px 16px">شاشة واحدة بتتغير مع الحالة بدل كل الكروت مع بعض: بندور على مندوب، عرض سعر، الطلب شغال، خلص، اتلغى، مفيش مندوب متاح (إعادة المحاولة).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة (3 حالات)</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">CustomerJobMapScreen</td><td style="padding: 12px 16px">جوه "الطلب شغال"</td><td style="padding: 12px 16px">الخريطة بقت جزء من شاشة التتبع، مش شاشة لوحدها.</td><td style="padding: 12px 16px; color: #374151">مدموجة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">CustomerJobsScreen</td><td style="padding: 12px 16px">طلباتي</td><td style="padding: 12px 16px">جارية / سابقة. "جارية" لازم تشمل pending_dispatch و awaiting_price_response (النهارده مش بتشملهم).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">RatingScreen</td><td style="padding: 12px 16px">التقييم</td><td style="padding: 12px 16px">نجوم + تعليق خاص. التقييم مستخبي لحد الطرفين ما يقيّموا (زي النهارده).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">ChatScreen + TicketChatScreen</td><td style="padding: 12px 16px">محادثة (مكوّن واحد)</td><td style="padding: 12px 16px">نفس شكل المحادثة للطلب وللشكوى.</td><td style="padding: 12px 16px; color: #374151">نفس نمط الدعم</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">CustomerTicketsScreen</td><td style="padding: 12px 16px">الدعم</td><td style="padding: 12px 16px">قايمة الشكاوى + زرار شكوى جديدة.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">NotificationsScreen</td><td style="padding: 12px 16px">الإشعارات</td><td style="padding: 12px 16px">متجمعة حسب اليوم، زرار "قريت الكل" (موجود في الكود ومش متوصل).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">Login, Signup, Otp</td><td style="padding: 12px 16px">دخول، حساب جديد، كود التأكيد</td><td style="padding: 12px 16px">الحساب الجديد: عميل أو صاحب شغل بس (المندوب بيعمله صاحب الشغل).</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">ForgotPassword, ResetPasswordOtp, ResetPasswordNew</td><td style="padding: 12px 16px">نسيت كلمة السر (3 خطوات)</td><td style="padding: 12px 16px">نفس شكل الدخول وكود التأكيد.</td><td style="padding: 12px 16px; color: #374151">نفس النمط</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">SettingsScreen + MyAccountScreen</td><td style="padding: 12px 16px">حسابي + بياناتي</td><td style="padding: 12px 16px">قايمة واحدة: البيانات، العناوين، الأمان (التحقق بخطوتين)، اللغة، المظهر، الدعم، خروج.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">UpdateRequiredScreen</td><td style="padding: 12px 16px">لازم تحدّث</td><td style="padding: 12px 16px">زرار "حدّث دلوقتي" النهارده مش بيعمل حاجة؛ لازم يفتح المتجر.</td><td style="padding: 12px 16px; color: #374151">نفس النمط</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">KycDocumentUploadScreen</td><td style="padding: 12px 16px">التحقق من الهوية</td><td style="padding: 12px 16px">للمندوب وصاحب الشغل: 3 أو 4 خانات مستندات، كل خانة بحالتها.</td><td style="padding: 12px 16px; color: #374151">نفس النمط</td></tr>
+</tbody></table>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 22px; font-weight: 700">المندوب</h2>
+<div style="border: 1px solid #E5E7EB; border-radius: 16px; overflow-x: auto">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; line-height: 1.6">
+<thead><tr style="background: #F9FAFB; text-align: right"><th style="padding: 12px 16px; font-weight: 600; width: 26%">الشاشة الحالية</th><th style="padding: 12px 16px; font-weight: 600; width: 22%">الجديدة</th><th style="padding: 12px 16px; font-weight: 600">اللي اتغير</th><th style="padding: 12px 16px; font-weight: 600; width: 14%">الحالة</th></tr></thead>
+<tbody>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">EmployeeJobsScreen (2033 سطر)</td><td style="padding: 12px 16px">عرض مهمة جديد</td><td style="padding: 12px 16px">العرض بقى شاشة لوحده بعداد كبير، قبول أو رفض.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">(نفس الشاشة)</td><td style="padding: 12px 16px">المهمة الحالية</td><td style="padding: 12px 16px">الخريطة + محادثة العميل + "خلّصت واستلمت الكاش" + طلب إلغاء. التفاوض على السعر بنفس مكوّن العميل.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">EmployeeJobMapScreen</td><td style="padding: 12px 16px">جوه المهمة الحالية</td><td style="padding: 12px 16px">+ زرار "افتح في الخرائط" (مش موجود النهارده).</td><td style="padding: 12px 16px; color: #374151">مدموجة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">EmployeeHistoryScreen</td><td style="padding: 12px 16px">مهامي</td><td style="padding: 12px 16px">الحالي + اللي خلص، والكاش اللي اتحصّل.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px">كارت "Action simulator"</td><td style="padding: 12px 16px">يتشال</td><td style="padding: 12px 16px">بقايا ديمو بتبعت نص حر لـ /auth/employee/action.</td><td style="padding: 12px 16px; color: #B45309; font-weight: 600">يتشال</td></tr>
+</tbody></table>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 22px; font-weight: 700">صاحب الشغل</h2>
+<div style="border: 1px solid #E5E7EB; border-radius: 16px; overflow-x: auto">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; line-height: 1.6">
+<thead><tr style="background: #F9FAFB; text-align: right"><th style="padding: 12px 16px; font-weight: 600; width: 26%">الشاشة الحالية</th><th style="padding: 12px 16px; font-weight: 600; width: 22%">الجديدة</th><th style="padding: 12px 16px; font-weight: 600">اللي اتغير</th><th style="padding: 12px 16px; font-weight: 600; width: 14%">الحالة</th></tr></thead>
+<tbody>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">home_screen (owner, 1454 سطر)</td><td style="padding: 12px 16px">النهارده</td><td style="padding: 12px 16px">"محتاج منك" فوق: طلبات إلغاء من المندوبين، مراجعة حسابات، التحقق من الهوية. بعدها الملخص والفريق.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px">(مش موجودة)</td><td style="padding: 12px 16px">الطلبات + تفاصيل طلب</td><td style="padding: 12px 16px">النهارده الطلبات كروت في الداشبورد والإلغاء جوه الكارت. بقى فيه قايمة وصفحة لكل طلب.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">EmployeeScreen</td><td style="padding: 12px 16px">الفريق + صفحة مندوب</td><td style="padding: 12px 16px">التجميد بزرار في صفحة المندوب بدل فورم الإيميل والباسورد. إضافة مندوب في شيت.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">OwnerConfigurationScreen</td><td style="padding: 12px 16px">إعداد الخدمة</td><td style="padding: 12px 16px">أقسام واضحة + رفع صورة حقيقي. عند أول إنشاء النهارده العنوان والمواعيد والنطاق والصورة بيتشالوا.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">OwnerFleetMapScreen</td><td style="padding: 12px 16px">خريطة الفريق</td><td style="padding: 12px 16px">نفس الفكرة بالشكل الجديد.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">OwnerReconciliationQueueScreen</td><td style="padding: 12px 16px">مراجعة الحسابات</td><td style="padding: 12px 16px">بيخص الدفع الإلكتروني (escrow). مع الكاش بس غالباً هتبقى فاضية.</td><td style="padding: 12px 16px; color: #15803D; font-weight: 600">مرسومة</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">OwnerHistoryScreen + سجل النشاط في EmployeeScreen</td><td style="padding: 12px 16px">السجل</td><td style="padding: 12px 16px">سجل النشاط متكرر مرتين، والحركات المالية مرتين. يبقوا شاشة واحدة.</td><td style="padding: 12px 16px; color: #374151">نفس نمط القوايم</td></tr>
+<tr style="border-top: 1px solid #E5E7EB"><td style="padding: 12px 16px" dir="ltr">WalletScreen + SubscriptionScreen</td><td style="padding: 12px 16px">؟</td><td style="padding: 12px 16px">مع الكاش بس: الإيداع والسحب "قريب"، بس الترقية للباقة المدفوعة لسه شغالة ومفيش طريقة دفع.</td><td style="padding: 12px 16px; color: #B45309; font-weight: 600">محتاجة قرار</td></tr>
+</tbody></table>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px">
+<div style="border: 1px solid #E5E7EB; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">بيانات الشاشات محتاجاها والـ API مش بيرجّعها</h2>
+<p style="margin: 0; font-size: 14px; color: #4B5563">الشاشات مرسومة على اللي موجود النهارده بس. دول مستنيين JOB-MODEL-V2:</p>
+<ul style="margin: 0; padding-right: 20px; font-size: 14px; line-height: 1.9">
+<li>اسم وموبايل المستلم</li>
+<li>وقت الوصول المتوقع</li>
+<li>عنوان نصي حقيقي (عندنا إحداثيات + ملاحظة بس)</li>
+<li>خطوة "استلم الطلب" بين القبول والتسليم</li>
+<li>وقت كل حالة (للخط الزمني)</li>
+<li>موبايل المندوب ونوع المركبة</li>
+<li>حجم الطلب</li>
+</ul>
+</div>
+<div style="border: 1px solid #E5E7EB; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">أخطاء في الكود الحالي تتصلح مع إعادة البناء</h2>
+<ul style="margin: 0; padding-right: 20px; font-size: 14px; line-height: 1.9">
+<li>الطلبات في حالة عرض السعر مش بتظهر في "الجارية"</li>
+<li>زرار التحديث الإجباري مش بيعمل حاجة</li>
+<li>إنشاء خدمة جديدة بيضيّع العنوان والمواعيد والصورة</li>
+<li>صورة الخدمة بتتحفظ كمسار على الموبايل، مش بتترفع</li>
+<li>الإشعارات بتفتح شاشات المندوب من غير ما تشوف دورك</li>
+<li>المندوب مش بيشوف حالة التحقق ولا التجميد</li>
+</ul>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2200}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
