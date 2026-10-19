@@ -2987,4 +2987,293 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qdMainNavigation => 'Main navigation';
+
+  @override
+  String get custNavHome => 'Home';
+
+  @override
+  String get custNavOrders => 'My orders';
+
+  @override
+  String get custNavAccount => 'Account';
+
+  @override
+  String get custPickupFrom => 'Pick up from';
+
+  @override
+  String get custCurrentLocation => 'Your current location';
+
+  @override
+  String get custPinnedLocation => 'Pinned location';
+
+  @override
+  String get custChooseLocation => 'Choose a location';
+
+  @override
+  String get custHomeTitle => 'What are you sending today?';
+
+  @override
+  String get custCatDelivery => 'Deliver an order';
+
+  @override
+  String get custCatDeliverySub => 'From place to place in the city';
+
+  @override
+  String get custCatShipping => 'Ship a parcel';
+
+  @override
+  String get custCatShippingSub => 'Between governorates';
+
+  @override
+  String get custCatRide => 'Ride';
+
+  @override
+  String get custCatRideSub => 'A car that takes you where you\'re going';
+
+  @override
+  String get custAllServices => 'All services';
+
+  @override
+  String get custServicesSection => 'Services';
+
+  @override
+  String get custOngoingOrder => 'Ongoing order';
+
+  @override
+  String get custNoOngoing => 'No ongoing orders right now.';
+
+  @override
+  String get custOrderFallback => 'Order';
+
+  @override
+  String custOrderTitleRef(String title, String ref) {
+    return '$title · $ref';
+  }
+
+  @override
+  String get custTrack => 'Details';
+
+  @override
+  String custToPlace(String place) {
+    return 'To $place';
+  }
+
+  @override
+  String get custJobsLoadError => 'We couldn\'t load your orders.';
+
+  @override
+  String custCompaniesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count companies available',
+      one: '1 company available',
+      zero: 'No companies available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String custNearPlace(String place, String km) {
+    return 'Near $place · up to $km km';
+  }
+
+  @override
+  String get custSortLabel => 'Sort';
+
+  @override
+  String get custSortNearest => 'Nearest';
+
+  @override
+  String get custSortCheapest => 'Cheapest';
+
+  @override
+  String get custFilters => 'Filters';
+
+  @override
+  String get custOpen => 'Open';
+
+  @override
+  String get custClosed => 'Closed';
+
+  @override
+  String custOpensAt(String when) {
+    return 'Opens $when';
+  }
+
+  @override
+  String custKmAway(String km) {
+    return '$km km from you';
+  }
+
+  @override
+  String get custEstimatedPrice => 'Estimated price';
+
+  @override
+  String custAboutAmount(String amount) {
+    return 'About $amount';
+  }
+
+  @override
+  String get custLocating => 'Finding your location…';
+
+  @override
+  String get custLocationOffBanner =>
+      'We couldn\'t get your location, so these companies are near the default area. Pick your area to see what\'s near you.';
+
+  @override
+  String get custPickArea => 'Pick area on map';
+
+  @override
+  String get custNoCompaniesTitle => 'No companies nearby';
+
+  @override
+  String get custNoCompaniesBody => 'Try a longer distance or another area.';
+
+  @override
+  String get custChangeFilters => 'Change filters';
+
+  @override
+  String get custFilterDistance => 'Distance';
+
+  @override
+  String custRadiusKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get custSearchArea => 'Search area';
+
+  @override
+  String get custShowResults => 'Show results';
+
+  @override
+  String get custPickupPlace => 'Pickup place';
+
+  @override
+  String get custDropoffPlace => 'Drop-off place';
+
+  @override
+  String get custPickerHint =>
+      'Move the map until the pin is exactly on the place';
+
+  @override
+  String get custNoteLabel => 'A landmark for the courier · optional';
+
+  @override
+  String get custNoteHint =>
+      'e.g. the building next to the pharmacy, 3rd floor';
+
+  @override
+  String get custConfirmPlace => 'Confirm place';
+
+  @override
+  String get custMyLocation => 'My location';
+
+  @override
+  String get custLocationDenied =>
+      'Location is off, so we can\'t find you. Move the map and pick the place yourself.';
+
+  @override
+  String get custConfirmOrder => 'Confirm order';
+
+  @override
+  String get custChange => 'Change';
+
+  @override
+  String get custRouteTitle => 'From where to where?';
+
+  @override
+  String get custChooseDropoff => 'Choose the drop-off place';
+
+  @override
+  String get custPriceTitle => 'Price';
+
+  @override
+  String get custBaseFare => 'Order opening';
+
+  @override
+  String get custPerKm => 'Per km';
+
+  @override
+  String custDistanceLine(String km, String rate) {
+    return '$km km × $rate';
+  }
+
+  @override
+  String get custEstimate => 'Estimate';
+
+  @override
+  String get custPriceNeedsDropoff =>
+      'Choose the drop-off place to see the estimate.';
+
+  @override
+  String get custPriceDisclaimer =>
+      'This is an estimate by straight-line distance. The price can change if the courier offers another price and you accept it.';
+
+  @override
+  String get custPayCash => 'Cash to the courier';
+
+  @override
+  String get custPayOnlineSoon => 'Electronic payment is coming soon';
+
+  @override
+  String get custChooseDropoffFirst => 'Choose the drop-off place first';
+
+  @override
+  String get custOrderNow => 'Order now';
+
+  @override
+  String custBookingFailed(String reason) {
+    return 'We couldn\'t place your order. $reason';
+  }
+
+  @override
+  String get custServiceClosed =>
+      'This company is closed now, so it can\'t take orders.';
+
+  @override
+  String get custOrdersTitle => 'My orders';
+
+  @override
+  String get custOrdersKind => 'Order type';
+
+  @override
+  String custTabOngoing(int count) {
+    return 'Ongoing · $count';
+  }
+
+  @override
+  String get custTabPast => 'Past';
+
+  @override
+  String get custCashOnDelivery => 'Cash on delivery';
+
+  @override
+  String get custNoOngoingTitle => 'No ongoing orders';
+
+  @override
+  String get custNoPastTitle => 'No past orders yet';
+
+  @override
+  String get custOrdersEmptyBody =>
+      'Book a delivery, a parcel or a ride and it shows up here.';
+
+  @override
+  String get custBrowseServices => 'Browse services';
+
+  @override
+  String custTodayAt(String time) {
+    return 'Today · $time';
+  }
+
+  @override
+  String custDateAt(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String custNearYou(String km) {
+    return 'Near you · up to $km km';
+  }
 }

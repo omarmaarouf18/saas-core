@@ -5438,6 +5438,498 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Main navigation'**
   String get qdMainNavigation;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get custNavHome;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'My orders'**
+  String get custNavOrders;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get custNavAccount;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick up from'**
+  String get custPickupFrom;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current location'**
+  String get custCurrentLocation;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned location'**
+  String get custPinnedLocation;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a location'**
+  String get custChooseLocation;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you sending today?'**
+  String get custHomeTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver an order'**
+  String get custCatDelivery;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'From place to place in the city'**
+  String get custCatDeliverySub;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship a parcel'**
+  String get custCatShipping;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Between governorates'**
+  String get custCatShippingSub;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride'**
+  String get custCatRide;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'A car that takes you where you\'re going'**
+  String get custCatRideSub;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All services'**
+  String get custAllServices;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get custServicesSection;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing order'**
+  String get custOngoingOrder;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ongoing orders right now.'**
+  String get custNoOngoing;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get custOrderFallback;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {ref}'**
+  String custOrderTitleRef(String title, String ref);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get custTrack;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'To {place}'**
+  String custToPlace(String place);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your orders.'**
+  String get custJobsLoadError;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No companies available} =1{1 company available} other{{count} companies available}}'**
+  String custCompaniesCount(int count);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Near {place} · up to {km} km'**
+  String custNearPlace(String place, String km);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get custSortLabel;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest'**
+  String get custSortNearest;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheapest'**
+  String get custSortCheapest;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get custFilters;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get custOpen;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get custClosed;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens {when}'**
+  String custOpensAt(String when);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km from you'**
+  String custKmAway(String km);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated price'**
+  String get custEstimatedPrice;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'About {amount}'**
+  String custAboutAmount(String amount);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding your location…'**
+  String get custLocating;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t get your location, so these companies are near the default area. Pick your area to see what\'s near you.'**
+  String get custLocationOffBanner;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick area on map'**
+  String get custPickArea;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No companies nearby'**
+  String get custNoCompaniesTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a longer distance or another area.'**
+  String get custNoCompaniesBody;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Change filters'**
+  String get custChangeFilters;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get custFilterDistance;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String custRadiusKm(String km);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Search area'**
+  String get custSearchArea;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show results'**
+  String get custShowResults;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup place'**
+  String get custPickupPlace;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off place'**
+  String get custDropoffPlace;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map until the pin is exactly on the place'**
+  String get custPickerHint;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'A landmark for the courier · optional'**
+  String get custNoteLabel;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. the building next to the pharmacy, 3rd floor'**
+  String get custNoteHint;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm place'**
+  String get custConfirmPlace;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get custMyLocation;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is off, so we can\'t find you. Move the map and pick the place yourself.'**
+  String get custLocationDenied;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm order'**
+  String get custConfirmOrder;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get custChange;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'From where to where?'**
+  String get custRouteTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the drop-off place'**
+  String get custChooseDropoff;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get custPriceTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order opening'**
+  String get custBaseFare;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Per km'**
+  String get custPerKm;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km × {rate}'**
+  String custDistanceLine(String km, String rate);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get custEstimate;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the drop-off place to see the estimate.'**
+  String get custPriceNeedsDropoff;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an estimate by straight-line distance. The price can change if the courier offers another price and you accept it.'**
+  String get custPriceDisclaimer;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash to the courier'**
+  String get custPayCash;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Electronic payment is coming soon'**
+  String get custPayOnlineSoon;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the drop-off place first'**
+  String get custChooseDropoffFirst;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order now'**
+  String get custOrderNow;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t place your order. {reason}'**
+  String custBookingFailed(String reason);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This company is closed now, so it can\'t take orders.'**
+  String get custServiceClosed;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'My orders'**
+  String get custOrdersTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order type'**
+  String get custOrdersKind;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing · {count}'**
+  String custTabOngoing(int count);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get custTabPast;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on delivery'**
+  String get custCashOnDelivery;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ongoing orders'**
+  String get custNoOngoingTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No past orders yet'**
+  String get custNoPastTitle;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a delivery, a parcel or a ride and it shows up here.'**
+  String get custOrdersEmptyBody;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse services'**
+  String get custBrowseServices;
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {time}'**
+  String custTodayAt(String time);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · {time}'**
+  String custDateAt(String date, String time);
+
+  /// FE-CUST-1 redesigned customer screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Near you · up to {km} km'**
+  String custNearYou(String km);
 }
 
 class _AppLocalizationsDelegate
