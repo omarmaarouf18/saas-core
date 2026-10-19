@@ -56,8 +56,9 @@ days, or later under immutability).
 - **Still keep a copy of the whole `.env` in your password manager**, and
   update it whenever a secret changes. It is your fallback if the age key or
   the Blob account is lost.
-- `restore.sh` decrypts `env-*.age` to a temp file with mode 600, prints only
-  the variable **names**, and deletes the file unless you pass `-k` (step 7).
+- `restore.sh` decrypts `env-*.age` to a temp file with mode 600 and prints
+  only its path, size and line count, never anything from its contents. It
+  deletes the file unless you pass `-k` (step 7).
 - The systemd unit runs with `ProtectHome=read-only` (it was `yes`) so the
   script can read `/home/deploybot/.env`. On a VM installed before this
   change, re-run `sudo ./install.sh` (step 6) to install the new unit and
@@ -65,22 +66,8 @@ days, or later under immutability).
 - To back up a different file, set `ENV_FILE=` in
   `/etc/quickdelivery-backup/backup.env`.
 
-> [!WARNING]
-> **If the age private key is ever suspected leaked**, treat every secret in
-> `.env` as leaked too:
->
-> 1. Rotate every secret in `/home/deploybot/.env`: `JWT_SECRET`,
->    `OTP_AES_KEY`, `INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`, the Mongo root
->    password and the Redis password (plus any other credential in the file),
->    then redeploy.
-> 2. Re-encrypt the documents and attachments with a new
->    `DOCUMENT_ENCRYPTION_KEY`. There is no re-key tool in the repo yet
->    (`services/auth-service/cmd/encrypt-documents` only encrypts plaintext
->    files), so this needs one: decrypt every file with the old key and
->    encrypt it with the new one, with the services stopped.
-> 3. Generate a new age key pair and replace the public key ("Renewing the
->    SAS, rotating the key" below). Delete the old blobs if possible.
-> 4. Update the password-manager copy of `.env`.
+Because the backups hold every production secret, a leaked age private key
+means a leaked `.env`: follow "If the age private key may have leaked" below.
 
 ### What is NOT in the backup
 
@@ -274,9 +261,9 @@ the top of `backup.sh`.
    container (no published ports, removed at the end). It prints one
    `<db>.<collection> <count>` line per collection, then extracts each volume
    into a temp dir, prints file counts and sizes, and deletes the temp dir. For
-   `env-<stamp>.age` it decrypts to a mode-600 temp file, lists the variable
-   names (check that `DOCUMENT_ENCRYPTION_KEY` is among them), and deletes the
-   file. `-k` keeps the container, the dirs and the secrets file; they contain
+   `env-<stamp>.age` it decrypts to a mode-600 temp file, prints its path, size
+   and line count (compare them with `stat -c %s` and `wc -l` of
+   `/home/deploybot/.env` on the VM), and deletes the file. `-k` keeps the container, the dirs and the secrets file; they contain
    personal data and production secrets, so delete them when done.
 3. Compare with production. On the VM (read-only, prints the same format):
 
@@ -383,9 +370,35 @@ a small change to `backup.sh`.
 - **age key**: generate a new pair (step 1) and put the new public key in
   `backup-recipient.pub`, then re-run `install.sh`. Keep the OLD private key
   until the last backup encrypted to it has aged out (30 days). If the old key
-  leaked, also delete the old blobs (this is impossible during an immutability
-  period), and follow the leaked-key steps in "The secrets file in the backup":
-  the backups contain every production secret.
+  may have leaked, follow the section below instead.
+
+### If the age private key may have leaked
+
+The backups contain the whole `.env`, so treat every production secret as
+leaked, not just the data:
+
+1. **Rotate every secret in `/home/deploybot/.env`**: `JWT_SECRET`,
+   `OTP_AES_KEY`, `INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`, the Mongo root
+   password and the Redis password, plus any other credential in the file.
+   Then redeploy.
+2. **Re-encrypt the documents and attachments with a new
+   `DOCUMENT_ENCRYPTION_KEY`**, with the services stopped. The repo has no
+   one-step re-key tool. `services/auth-service/cmd/encrypt-documents`
+   (`-dir`, `-key`) takes a single key: it skips files that already decrypt
+   with that key and encrypts every other file. So:
+   - **Do not** run it with the new key over the current volumes. Files
+     encrypted with the old key do not decrypt with the new key, so the tool
+     would encrypt them a second time, and the app could not read them.
+   - First decrypt every file with the OLD key (this needs a small tool that
+     the repo does not have yet). Then run `encrypt-documents -dir <volume
+     path>` over the plaintext with the new key in its
+     `DOCUMENT_ENCRYPTION_KEY` environment variable (not `-key`, which would
+     put the key on the command line). Put the new key in `.env` and start the
+     services. Take a fresh backup before and after.
+3. **Make a new age key pair** (step 1), put the new public key in
+   `backup-recipient.pub`, and re-run `install.sh`. Delete the old blobs where
+   you can (this is impossible during an immutability period).
+4. Update the password-manager copy of `.env`.
 
 ## Restore into production (DANGEROUS)
 
