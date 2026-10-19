@@ -42,13 +42,7 @@ After completing any change, you must verify it before committing:
 4. Run `make check` before every commit; `make commit` enforces it (it refuses unless a passing `make check` stamped exactly the tree being committed). `make check` runs only the checks your change needs (it prints the scope and why; `make ci` is an alias, `make ci-full` runs everything) and holds a lock under the common `.git` dir only around tests that use the shared local Mongo/Redis — never run raw `go test` against shared services instead. GitHub CI is the full gate.
 5. One commit per logical change. Do not batch multiple unrelated changes into one commit, and do not wait until a whole task is finished if it has multiple independent sub-changes.
 
-Before performing `git add`, every commit sequence must explicitly execute:
-```bash
-git config core.hooksPath .githooks
-```
-as the literal first command in the sequence, unconditionally and idempotently. This line must NEVER be skipped or assumed to be already done, even mid-session, and even if it was run earlier in the same session. (Alternatively, use `make commit FILES="..." MSG="..."`, which executes `ensure-hooks` as an unavoidable prerequisite and never sweeps untracked files into the commit — `FILES` is required.)
-
-Once verified, commit with `make commit FILES="..." MSG="..."` (or the raw `git config core.hooksPath .githooks` + `git add -- <paths>` + `git commit` sequence). Agents do NOT push — the owner merges and pushes (see [docs/WORKFLOW.md](docs/WORKFLOW.md)).
+The only way to commit is `make check && make commit FILES="..." MSG="..."` (or `MSG_FILE=<path>`). Raw `git commit` is blocked by `.githooks/pre-commit` unless a passing stamp covers the exact tree being committed. `make commit` executes `ensure-hooks` as an unavoidable prerequisite and never sweeps untracked files into the commit (`FILES` is required). Agents do NOT push — the owner merges and pushes (see [docs/WORKFLOW.md](docs/WORKFLOW.md)).
 
 ### Shared Widget Changes
 Any change touching a shared/reusable widget (anything in `frontend/lib/widgets/`) as a side effect of an otherwise-scoped feature task must be called out as its own explicit item in the commit message and the task report — e.g., a separate section/paragraph titled "Unrelated shared-widget fix" — rather than folded silently into the feature diff. This makes it possible to review or revert it independently of the feature it was bundled with.

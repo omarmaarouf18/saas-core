@@ -96,9 +96,10 @@ cmd_new() {
 
 	# Push-block Layer A: make `git push origin` fail from THIS worktree only.
 	git -C "$wt_path" config --worktree remote.origin.pushurl "$DISABLED_PUSHURL"
-	# Same hooks as the main worktree (writes the shared local config; same
-	# effect as `make ensure-hooks`).
+	# Same hooks as the main worktree (writes the shared local config and
+	# per-worktree config; same effect as `make ensure-hooks`).
 	git -C "$wt_path" config core.hooksPath .githooks
+	git -C "$wt_path" config --worktree core.hooksPath .githooks
 
 	# Per-worktree setup the gate needs (WF-01 finding F4): without
 	# frontend/.dart_tool, `make ci` fails at the dart format step. A missing
@@ -119,6 +120,7 @@ cmd_new() {
 	printf 'worktree: %s\n' "$wt_path"
 	printf 'branch:   %s (from %s @ %s)\n' "$branch" "$base" "$(git -C "$wt_path" rev-parse --short HEAD)"
 	printf 'push:     DISABLED in this worktree (Layer A) — agents never push; the owner merges and pushes from the main worktree\n'
+	printf 'commit:   make check && make commit FILES="<paths>" MSG="<msg>" — raw git commit is blocked by .githooks/pre-commit\n'
 	printf "next:     cd '%s'\n" "$wt_path"
 }
 
