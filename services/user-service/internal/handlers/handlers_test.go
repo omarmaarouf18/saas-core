@@ -213,7 +213,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
-		if !strings.Contains(rec.Body.String(), "electronic payments are not currently enabled") {
+		if !strings.Contains(rec.Body.String(), "payment_method_unavailable") {
 			t.Errorf("Expected error about electronic payments disabled, got: %s", rec.Body.String())
 		}
 	})

@@ -262,6 +262,7 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
+      DIGITAL_PAYMENTS_ENABLED: ${DIGITAL_PAYMENTS_ENABLED:-false}
       TLS_CERT_PATH: /app/certs/user-service.crt
       TLS_KEY_PATH: /app/certs/user-service.key
       TLS_CA_PATH: /app/certs/ca.crt

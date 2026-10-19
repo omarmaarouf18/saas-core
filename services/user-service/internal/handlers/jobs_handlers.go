@@ -252,20 +252,18 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	req.PaymentMethod = strings.ToLower(strings.TrimSpace(req.PaymentMethod))
 	if req.PaymentMethod == "" {
 		req.PaymentMethod = "cod"
-	} else if req.PaymentMethod != "cod" && req.PaymentMethod != "wallet" {
+	}
+	// PAY-COD-ONLY: with digital payments off, anything but COD is refused
+	// before any job is created (no "unfunded" wallet job).
+	if req.PaymentMethod != "cod" && !u.digitalPaymentsAvailable() {
+		writePaymentMethodUnavailable(w, "only cash on delivery (cod) is available")
+		return
+	}
+	if req.PaymentMethod != "cod" && req.PaymentMethod != "wallet" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid payment_method: must be 'cod' or 'wallet'",
 		})
 		return
-	}
-
-	if req.PaymentMethod != "cod" {
-		if !u.electronicPaymentsEnabled && (!u.allowTestPaymentBypass || (u.appEnv != "test" && u.appEnv != "local")) {
-			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "electronic payments are not currently enabled; only COD (cash-on-delivery) is active",
-			})
-			return
-		}
 	}
 
 	// 5. Verify owner exists and has approved KYC

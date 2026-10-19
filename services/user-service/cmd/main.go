@@ -15,6 +15,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -44,6 +45,12 @@ func main() {
 		}
 		fmt.Println("PREFLIGHT OK: user-service config validated")
 		os.Exit(0)
+	}
+
+	// --count-unfunded-digital-jobs: read-only PAY-COD-ONLY check. Prints
+	// how many non-COD jobs never had escrow locked, by status, as JSON.
+	if len(os.Args) > 1 && os.Args[1] == "--count-unfunded-digital-jobs" {
+		os.Exit(runCountUnfundedDigitalJobs())
 	}
 
 	cfg, err := config.Load()
@@ -131,4 +138,23 @@ func main() {
 	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
+}
+
+// runCountUnfundedDigitalJobs implements --count-unfunded-digital-jobs.
+func runCountUnfundedDigitalJobs() int {
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	report, err := store.CountUnfundedDigitalJobsAt(ctx, cfg.MongoURI, cfg.MongoDatabase)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return 1
+	}
+	out, _ := json.Marshal(report)
+	fmt.Println(string(out))
+	return 0
 }

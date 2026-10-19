@@ -75,3 +75,47 @@ func TestLoad_MongoDatabaseDefaults(t *testing.T) {
 		t.Errorf("expected MongoDatabase to be 'custom_user_db', got %q", cfg.MongoDatabase)
 	}
 }
+
+func TestLoad_DigitalPaymentsEnabled(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-12345678901234567890")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "test-internal-token")
+	t.Setenv("TLS_CERT_PATH", "/tmp/cert.pem")
+	t.Setenv("TLS_KEY_PATH", "/tmp/key.pem")
+	t.Setenv("TLS_CA_PATH", "/tmp/ca.pem")
+	t.Setenv("REDIS_URI", "redis://localhost:6379")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("ALLOW_TEST_PAYMENT_BYPASS", "")
+
+	cases := []struct {
+		name, digital, legacy string
+		want, wantErr         bool
+	}{
+		{"default off", "", "", false, false},
+		{"explicit false", "false", "", false, false},
+		{"explicit true", "true", "", true, false},
+		{"one", "1", "", true, false},
+		{"legacy alias honoured", "", "true", true, false},
+		{"both agree", "true", "1", true, false},
+		{"both disagree", "false", "true", false, true},
+		{"invalid value", "yes", "", false, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DIGITAL_PAYMENTS_ENABLED", tc.digital)
+			t.Setenv("ELECTRONIC_PAYMENTS_ENABLED", tc.legacy)
+			cfg, err := Load()
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected an error, got cfg %+v", cfg)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.DigitalPaymentsEnabled != tc.want {
+				t.Errorf("DigitalPaymentsEnabled = %v, want %v", cfg.DigitalPaymentsEnabled, tc.want)
+			}
+		})
+	}
+}

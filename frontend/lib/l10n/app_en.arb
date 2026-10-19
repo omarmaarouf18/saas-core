@@ -1418,5 +1418,9 @@
   "twoFactorEnabledSuccess": "Two-factor authentication enabled",
   "ratingSubmittedSuccess": "Rating Submitted",
   "newDispatchAlertMessage": "New dispatch offer received. Refreshing available jobs...",
-  "freezeWorkerSubtitle": "Manage worker account status, login access, and dispatch availability"
+  "freezeWorkerSubtitle": "Manage worker account status, login access, and dispatch availability",
+  "digitalPaymentsComingSoon": "Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.",
+  "@digitalPaymentsComingSoon": {
+    "description": "PAY-COD-ONLY: shown when an owner taps wallet top-up or payout while the backend has digital payments off."
+  }
 }

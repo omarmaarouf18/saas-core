@@ -109,7 +109,7 @@ type UserService struct {
 	httpClient                 *http.Client
 	appEnv                     string
 	allowTestPaymentBypass     bool
-	electronicPaymentsEnabled  bool
+	digitalPaymentsEnabled     bool
 	rdb                        *redis.Client
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
@@ -254,7 +254,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		httpClient:                 client,
 		appEnv:                     cfg.AppEnv,
 		allowTestPaymentBypass:     cfg.AllowTestPaymentBypass,
-		electronicPaymentsEnabled:  cfg.ElectronicPaymentsEnabled,
+		digitalPaymentsEnabled:     cfg.DigitalPaymentsEnabled,
 	}
 	go u.startCascadeSweeper()
 	return u
@@ -448,6 +448,26 @@ func (u *UserService) releaseIdempotencyReservation(userID, key string) {
 //
 // Redis unavailability degrades to non-idempotent operation (logged),
 // matching TrackJob's availability behaviour.
+// errCodePaymentMethodUnavailable is the stable error code returned when a
+// request needs a non-COD payment method while digital payments are off.
+const errCodePaymentMethodUnavailable = "payment_method_unavailable"
+
+// digitalPaymentsAvailable reports whether non-COD payment methods (wallet
+// bookings, payouts) are accepted: DIGITAL_PAYMENTS_ENABLED=true, or the
+// local/test payment bypass (which config refuses in production).
+func (u *UserService) digitalPaymentsAvailable() bool {
+	return u.digitalPaymentsEnabled || (u.allowTestPaymentBypass && (u.appEnv == "test" || u.appEnv == "local"))
+}
+
+// writePaymentMethodUnavailable answers 400 payment_method_unavailable.
+func writePaymentMethodUnavailable(w http.ResponseWriter, message string) {
+	writeJSON(w, http.StatusBadRequest, map[string]string{
+		"error":   errCodePaymentMethodUnavailable,
+		"code":    errCodePaymentMethodUnavailable,
+		"message": message,
+	})
+}
+
 func (u *UserService) reservePayoutIdempotencyKey(tenantID, key string) (replayID string, conflict bool) {
 	if key == "" || u.rdb == nil {
 		return "", false

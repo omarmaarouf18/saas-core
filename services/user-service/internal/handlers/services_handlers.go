@@ -436,7 +436,12 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no platform config"})
 		return
 	}
-	writeJSON(w, http.StatusOK, cfg)
+	// PAY-COD-ONLY: the app reads digital_payments_enabled to decide whether
+	// to offer anything but cash on delivery.
+	writeJSON(w, http.StatusOK, struct {
+		*models.PlatformConfig
+		DigitalPaymentsEnabled bool `json:"digital_payments_enabled"`
+	}{cfg, u.digitalPaymentsAvailable()})
 }
 
 func isValidCoordinate(lat, lon float64) bool {

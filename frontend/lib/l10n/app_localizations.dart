@@ -5288,6 +5288,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage worker account status, login access, and dispatch availability'**
   String get freezeWorkerSubtitle;
+
+  /// PAY-COD-ONLY: shown when an owner taps wallet top-up or payout while the backend has digital payments off.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.'**
+  String get digitalPaymentsComingSoon;
 }
 
 class _AppLocalizationsDelegate

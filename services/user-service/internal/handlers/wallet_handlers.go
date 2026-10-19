@@ -247,6 +247,11 @@ func (u *UserService) RequestPayout(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
+	// PAY-COD-ONLY: payouts belong to the digital payment flow.
+	if !u.digitalPaymentsAvailable() {
+		writePaymentMethodUnavailable(w, "payouts are not available yet")
+		return
+	}
 
 	ctx := r.Context()
 	var req models.CreatePayoutRequestInput

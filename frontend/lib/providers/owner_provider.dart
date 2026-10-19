@@ -23,6 +23,12 @@ class OwnerProvider extends ChangeNotifier {
   /// loader, never defaults-as-fact) from "hydrated and refreshing".
   bool _dashboardHydrated = false;
 
+  /// PAY-COD-ONLY: whether the backend accepts non-COD payments (wallet
+  /// top-up, payouts). Read from `digital_payments_enabled` on
+  /// `GET /users/platform/config`; false until fetched and on any error, so
+  /// the app never offers a flow the server would refuse.
+  bool _digitalPaymentsEnabled = false;
+
   double get walletBalance => _walletBalance;
   double get escrowBalance => _escrowBalance;
   double get withdrawableBalance => _withdrawableBalance;
@@ -34,6 +40,7 @@ class OwnerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isDashboardHydrated => _dashboardHydrated;
+  bool get digitalPaymentsEnabled => _digitalPaymentsEnabled;
 
   OwnerProvider(this.apiClient);
 
@@ -66,6 +73,22 @@ class OwnerProvider extends ChangeNotifier {
       _error = friendlyErrorMessage(e);
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Refreshes [digitalPaymentsEnabled]. Never sets [error]: a failure just
+  /// keeps the COD-only default.
+  Future<void> fetchPaymentAvailability() async {
+    bool enabled = false;
+    try {
+      final res = await apiClient.get('/users/platform/config');
+      enabled = res is Map && res['digital_payments_enabled'] == true;
+    } catch (e) {
+      debugPrint('Error fetching payment availability: $e');
+    }
+    if (enabled != _digitalPaymentsEnabled) {
+      _digitalPaymentsEnabled = enabled;
       notifyListeners();
     }
   }
