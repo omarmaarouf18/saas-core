@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/l10n/l10n.dart';
 import '../core/audit_labels.dart';
+import '../core/api_client.dart';
 import '../core/error_messages.dart';
+import '../core/password_policy.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/owner_provider.dart';
@@ -440,6 +442,20 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         ));
   }
 
+  /// SEC-03: server-side policy rejections from POST /auth/signup carry the
+  /// machine error code in the JSON body; map weak_password to the
+  /// reason-specific localized copy, everything else to the status-based
+  /// friendly message.
+  String _employeeRegistrationErrorMessage(
+      BuildContext context, Object error) {
+    if (error is ApiClientException &&
+        error.statusCode == 400 &&
+        error.errorCode == 'weak_password') {
+      return weakPasswordServerMessage(context.l10n, error.message);
+    }
+    return friendlyErrorMessage(error);
+  }
+
   Widget _buildRegisterEmployeeForm(
     AppLocalizations l10n,
     AuthProvider auth,
@@ -529,10 +545,9 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                 if (value == null || value.isEmpty) {
                   return l10n.passwordRequired;
                 }
-                if (value.length < 6) {
-                  return l10n.passwordTooShort;
-                }
-                return null;
+                // SEC-03: mirror the shared backend policy (min 8 runes,
+                // max 72 UTF-8 bytes so Arabic counts correctly).
+                return validatePassword(l10n, value);
               },
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -569,7 +584,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                           if (mounted) {
                             ThemedSnackBar.showError(
                               context,
-                              friendlyErrorMessage(e),
+                              // SEC-03: a server weak_password rejection
+                              // carries a machine code; surface the
+                              // reason-specific localized copy instead of
+                              // the generic 400 message.
+                              _employeeRegistrationErrorMessage(context, e),
                             );
                           }
                         } finally {

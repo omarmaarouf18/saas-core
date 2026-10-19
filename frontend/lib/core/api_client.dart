@@ -9,10 +9,16 @@ class ApiClientException implements Exception {
   final int? statusCode;
   final String message;
 
-  ApiClientException(this.message, {this.statusCode});
+  /// Machine error code from the JSON body (`{"error": {"code": ..., ...}}`
+  /// or `{"code": ...}`) when the backend supplied one. Callers branch on
+  /// this for policy-specific messaging (e.g. SEC-03's `weak_password`).
+  final String? errorCode;
+
+  ApiClientException(this.message, {this.statusCode, this.errorCode});
 
   @override
-  String toString() => "ApiClientException: $message (status: $statusCode)";
+  String toString() =>
+      "ApiClientException: $message (status: $statusCode, code: $errorCode)";
 }
 
 bool bypassBadCertificate(X509Certificate cert, String host, int port) {
@@ -427,7 +433,24 @@ class ApiClient {
     throw ApiClientException(
       errorMsg ?? 'Request failed',
       statusCode: response.statusCode,
+      errorCode: _extractErrorCode(body),
     );
+  }
+
+  /// Normalizes the JSON body's machine error code. Backend shapes seen in
+  /// the wild: `{"error": {"code": "...", ...}}`, `{"code": "..."}`, and a
+  /// plain string `error` (which is a message, not a code).
+  static String? _extractErrorCode(dynamic body) {
+    if (body is Map) {
+      final errorField = body['error'];
+      if (errorField is Map<String, dynamic>) {
+        final code = errorField['code'];
+        if (code is String) return code;
+      }
+      final code = body['code'];
+      if (code is String) return code;
+    }
+    return null;
   }
 
   /// Thread-safe / concurrency-locked token refresh call to POST /auth/refresh.

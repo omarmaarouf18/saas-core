@@ -426,7 +426,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signupPasswordLabel => 'Password';
 
   @override
-  String get signupPasswordHint => 'At least 6 characters';
+  String get signupPasswordHint => 'At least 8 characters';
 
   @override
   String get signupConfirmPasswordLabel => 'Confirm Password';
@@ -1283,6 +1283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusUnavailable => 'Unavailable';
 
   @override
+  String get serviceTemporarilyUnavailable =>
+      'The service is temporarily unavailable — nothing was changed. Please try again shortly.';
+
+  @override
   String get incomingJobOffer => 'Incoming Job Offer';
 
   @override
@@ -1406,6 +1410,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noEmployeesRegistered => 'No Employees Registered';
 
   @override
+  String get employeesLoadFailed => 'Couldn\'t load your employees right now.';
+
+  @override
   String get registerNewEmployee => 'Register New Employee';
 
   @override
@@ -1424,7 +1431,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeePasswordLabel => 'Employee Password';
 
   @override
-  String get employeePasswordHint => 'At least 6 characters';
+  String get employeePasswordHint => 'At least 8 characters';
 
   @override
   String get freezeUnfreezeWorker => 'Freeze / Unfreeze Worker';
@@ -1743,7 +1750,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordRequired => 'Password is required';
 
   @override
-  String get passwordTooShort => 'Password must be at least 6 characters';
+  String get passwordTooShort => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordTooLong => 'Password must be at most 72 bytes';
+
+  @override
+  String get passwordTooCommon =>
+      'This password is too common — pick a less guessable one.';
+
+  @override
+  String get passwordTooWeak =>
+      'This password doesn\'t meet the security requirements.';
 
   @override
   String get employeeEmailRequired => 'Employee email is required';

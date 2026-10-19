@@ -424,7 +424,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get signupPasswordLabel => 'كلمة السر';
 
   @override
-  String get signupPasswordHint => 'على الأقل 6 حروف';
+  String get signupPasswordHint => 'على الأقل 8 حروف';
 
   @override
   String get signupConfirmPasswordLabel => 'تأكيد كلمة السر';
@@ -1268,6 +1268,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusUnavailable => 'غير متاح';
 
   @override
+  String get serviceTemporarilyUnavailable =>
+      'الخدمة مش متاحة دلوقتي مؤقتًا — مفيش حاجة اتحولت. حاول تاني بعد شوية.';
+
+  @override
   String get incomingJobOffer => 'عرض عمل وارد';
 
   @override
@@ -1390,6 +1394,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noEmployeesRegistered => 'لا يوجد موظفون مسجلون';
 
   @override
+  String get employeesLoadFailed => 'الموظفين ماحملوش دلوقتي.';
+
+  @override
   String get registerNewEmployee => 'تسجيل موظف جديد';
 
   @override
@@ -1408,7 +1415,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeePasswordLabel => 'كلمة سر الموظف';
 
   @override
-  String get employeePasswordHint => '6 أحرف على الأقل';
+  String get employeePasswordHint => '8 أحرف على الأقل';
 
   @override
   String get freezeUnfreezeWorker => 'تجميد / إلغاء تجميد العامل';
@@ -1723,7 +1730,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordRequired => 'الباسورد مطلوب';
 
   @override
-  String get passwordTooShort => 'الباسورد لازم يكون 6 حروف على الأقل';
+  String get passwordTooShort => 'الباسورد لازم يكون 8 حروف على الأقل';
+
+  @override
+  String get passwordTooLong => 'الباسورد لازم يكون 72 بايت كحد أقصى';
+
+  @override
+  String get passwordTooCommon =>
+      'الباسورد ده شائع أوي — اختار واحد صعب التخمين.';
+
+  @override
+  String get passwordTooWeak => 'الباسورد مبيحققش متطلبات الأمان.';
 
   @override
   String get employeeEmailRequired => 'إيميل الموظف مطلوب';

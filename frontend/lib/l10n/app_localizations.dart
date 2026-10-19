@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// No description provided for @signupPasswordHint.
   ///
   /// In en, this message translates to:
-  /// **'At least 6 characters'**
+  /// **'At least 8 characters'**
   String get signupPasswordHint;
 
   /// No description provided for @signupConfirmPasswordLabel.
@@ -2427,6 +2427,12 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get statusUnavailable;
 
+  /// No description provided for @serviceTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The service is temporarily unavailable — nothing was changed. Please try again shortly.'**
+  String get serviceTemporarilyUnavailable;
+
   /// No description provided for @incomingJobOffer.
   ///
   /// In en, this message translates to:
@@ -2661,6 +2667,12 @@ abstract class AppLocalizations {
   /// **'No Employees Registered'**
   String get noEmployeesRegistered;
 
+  /// No description provided for @employeesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your employees right now.'**
+  String get employeesLoadFailed;
+
   /// No description provided for @registerNewEmployee.
   ///
   /// In en, this message translates to:
@@ -2700,7 +2712,7 @@ abstract class AppLocalizations {
   /// No description provided for @employeePasswordHint.
   ///
   /// In en, this message translates to:
-  /// **'At least 6 characters'**
+  /// **'At least 8 characters'**
   String get employeePasswordHint;
 
   /// No description provided for @freezeUnfreezeWorker.
@@ -3258,8 +3270,26 @@ abstract class AppLocalizations {
   /// No description provided for @passwordTooShort.
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 6 characters'**
+  /// **'Password must be at least 8 characters'**
   String get passwordTooShort;
+
+  /// No description provided for @passwordTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at most 72 bytes'**
+  String get passwordTooLong;
+
+  /// No description provided for @passwordTooCommon.
+  ///
+  /// In en, this message translates to:
+  /// **'This password is too common — pick a less guessable one.'**
+  String get passwordTooCommon;
+
+  /// No description provided for @passwordTooWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'This password doesn\'t meet the security requirements.'**
+  String get passwordTooWeak;
 
   /// No description provided for @employeeEmailRequired.
   ///
