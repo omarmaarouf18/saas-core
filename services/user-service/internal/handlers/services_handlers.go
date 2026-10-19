@@ -11,6 +11,7 @@ import (
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
+	"github.com/project/user-service/internal/store"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -188,7 +189,14 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		PerDaySchedule: req.PerDaySchedule, Timezone: req.Timezone,
 	}
 
-	u.store.CreateService(r.Context(), svc)
+	if err := u.store.CreateService(r.Context(), svc); err != nil {
+		if errors.Is(err, store.ErrServiceExists) {
+			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "service already exists", err)
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create service", err)
+		return
+	}
 	log.Printf("[USER] Service created: id=%s name=%s", svc.ID, svc.Name)
 	writeJSON(w, http.StatusCreated, map[string]any{"message": "service created", "service": svc})
 }
@@ -428,7 +436,12 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no platform config"})
 		return
 	}
-	writeJSON(w, http.StatusOK, cfg)
+	// PAY-COD-ONLY: the app reads digital_payments_enabled to decide whether
+	// to offer anything but cash on delivery.
+	writeJSON(w, http.StatusOK, struct {
+		*models.PlatformConfig
+		DigitalPaymentsEnabled bool `json:"digital_payments_enabled"`
+	}{cfg, u.digitalPaymentsAvailable()})
 }
 
 func isValidCoordinate(lat, lon float64) bool {

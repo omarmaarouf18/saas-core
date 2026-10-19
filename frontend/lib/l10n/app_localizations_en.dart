@@ -2905,4 +2905,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get freezeWorkerSubtitle =>
       'Manage worker account status, login access, and dispatch availability';
+
+  @override
+  String get digitalPaymentsComingSoon =>
+      'Coming soon: wallet top-up and payouts are not available yet. Bookings are paid cash on delivery.';
 }

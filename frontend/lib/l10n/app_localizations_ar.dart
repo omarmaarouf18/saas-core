@@ -2857,4 +2857,8 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get freezeWorkerSubtitle =>
       'إدارة حالة حساب العامل، صلاحية تسجيل الدخول، وإتاحة استقبال المهام';
+
+  @override
+  String get digitalPaymentsComingSoon =>
+      'قريب: شحن المحفظة وسحب الأرباح مش متاحين لسه. الحجوزات بتتدفع كاش عند الاستلام.';
 }

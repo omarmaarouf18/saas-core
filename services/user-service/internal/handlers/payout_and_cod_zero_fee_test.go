@@ -345,13 +345,13 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	}))
 	defer mockAuthServer.Close()
 
-	// Config with ElectronicPaymentsEnabled = false and AllowTestPaymentBypass = false
+	// Config with DigitalPaymentsEnabled = false and AllowTestPaymentBypass = false
 	cfgDisabled := &config.Config{
-		AuthServiceURL:            mockAuthServer.URL,
-		InternalServiceToken:      "mock-token",
-		AllowTestPaymentBypass:    false,
-		ElectronicPaymentsEnabled: false,
-		AppEnv:                    "production",
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-token",
+		AllowTestPaymentBypass: false,
+		DigitalPaymentsEnabled: false,
+		AppEnv:                 "production",
 	}
 	svcDisabled := NewUserService(s, cfgDisabled, rdb)
 
@@ -385,13 +385,13 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 		t.Errorf("Expected HTTP 400 for electronic payment when flag disabled, got %d (body: %s)", w.Code, w.Body.String())
 	}
 
-	// Config with ElectronicPaymentsEnabled = true
+	// Config with DigitalPaymentsEnabled = true
 	cfgEnabled := &config.Config{
-		AuthServiceURL:            mockAuthServer.URL,
-		InternalServiceToken:      "mock-token",
-		AllowTestPaymentBypass:    false,
-		ElectronicPaymentsEnabled: true,
-		AppEnv:                    "production",
+		AuthServiceURL:         mockAuthServer.URL,
+		InternalServiceToken:   "mock-token",
+		AllowTestPaymentBypass: false,
+		DigitalPaymentsEnabled: true,
+		AppEnv:                 "production",
 	}
 	svcEnabled := NewUserService(s, cfgEnabled, rdb)
 
@@ -416,7 +416,7 @@ func TestElectronicPaymentsFeatureFlag(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	svcEnabled.TrackJob(w2, req2)
 
-	if w2.Code == http.StatusBadRequest && strings.Contains(w2.Body.String(), "electronic payments are not currently enabled") {
+	if w2.Code == http.StatusBadRequest && strings.Contains(w2.Body.String(), "payment_method_unavailable") {
 		t.Errorf("TrackJob failed due to payment flag when flag was enabled: %s", w2.Body.String())
 	}
 }

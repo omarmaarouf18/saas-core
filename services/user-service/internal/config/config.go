@@ -2,26 +2,31 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"os"
+	"strings"
 )
 
 type Config struct {
-	AppEnv                    string
-	AllowTestPaymentBypass    bool
-	ElectronicPaymentsEnabled bool
-	Port                      string
-	MongoURI                  string
-	MongoDatabase             string
-	JWTSecret                 string
-	InternalServiceToken      string
-	AuthServiceURL            string
-	ChatServiceURL            string
-	NotificationServiceURL    string
-	CloudWatchLogGroup        string
-	TLSCertPath               string
-	TLSKeyPath                string
-	TLSCAPath                 string
-	RedisURI                  string
+	AppEnv                 string
+	AllowTestPaymentBypass bool
+	// DigitalPaymentsEnabled turns on non-COD payment methods (wallet
+	// bookings, payouts). Default false: production is cash-on-delivery only.
+	DigitalPaymentsEnabled bool
+	Port                   string
+	MongoURI               string
+	MongoDatabase          string
+	JWTSecret              string
+	InternalServiceToken   string
+	AuthServiceURL         string
+	ChatServiceURL         string
+	NotificationServiceURL string
+	CloudWatchLogGroup     string
+	TLSCertPath            string
+	TLSKeyPath             string
+	TLSCAPath              string
+	RedisURI               string
 }
 
 func Load() (*Config, error) {
@@ -98,24 +103,67 @@ func Load() (*Config, error) {
 		return nil, errors.New("config: ALLOW_TEST_PAYMENT_BYPASS=true is strictly forbidden when APP_ENV is production")
 	}
 
-	electronicPaymentsEnabled := os.Getenv("ELECTRONIC_PAYMENTS_ENABLED") == "true" || os.Getenv("ELECTRONIC_PAYMENTS_ENABLED") == "1"
+	digitalPaymentsEnabled, err := loadDigitalPaymentsEnabled()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Config{
-		AppEnv:                    appEnv,
-		AllowTestPaymentBypass:    allowTestPaymentBypass,
-		ElectronicPaymentsEnabled: electronicPaymentsEnabled,
-		Port:                      port,
-		MongoURI:                  mongoURI,
-		MongoDatabase:             dbName,
-		JWTSecret:                 jwtSecret,
-		InternalServiceToken:      internalServiceToken,
-		AuthServiceURL:            authServiceURL,
-		ChatServiceURL:            chatServiceURL,
-		NotificationServiceURL:    notificationServiceURL,
-		CloudWatchLogGroup:        os.Getenv("CLOUDWATCH_LOG_GROUP"),
-		TLSCertPath:               tlsCertPath,
-		TLSKeyPath:                tlsKeyPath,
-		TLSCAPath:                 tlsCAPath,
-		RedisURI:                  redisURI,
+		AppEnv:                 appEnv,
+		AllowTestPaymentBypass: allowTestPaymentBypass,
+		DigitalPaymentsEnabled: digitalPaymentsEnabled,
+		Port:                   port,
+		MongoURI:               mongoURI,
+		MongoDatabase:          dbName,
+		JWTSecret:              jwtSecret,
+		InternalServiceToken:   internalServiceToken,
+		AuthServiceURL:         authServiceURL,
+		ChatServiceURL:         chatServiceURL,
+		NotificationServiceURL: notificationServiceURL,
+		CloudWatchLogGroup:     os.Getenv("CLOUDWATCH_LOG_GROUP"),
+		TLSCertPath:            tlsCertPath,
+		TLSKeyPath:             tlsKeyPath,
+		TLSCAPath:              tlsCAPath,
+		RedisURI:               redisURI,
 	}, nil
+}
+
+// parseBoolEnv parses an optional boolean env var. Empty means unset.
+func parseBoolEnv(name string) (value, set bool, err error) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "":
+		return false, false, nil
+	case "true", "1":
+		return true, true, nil
+	case "false", "0":
+		return false, true, nil
+	default:
+		return false, true, fmt.Errorf("config: %s must be true or false, got %q", name, os.Getenv(name))
+	}
+}
+
+// loadDigitalPaymentsEnabled reads DIGITAL_PAYMENTS_ENABLED (default false).
+// ELECTRONIC_PAYMENTS_ENABLED is the older, undocumented name of the same
+// switch; it is still honoured when the new name is unset so an existing
+// deployment does not silently change behaviour, and the two must agree
+// when both are set.
+func loadDigitalPaymentsEnabled() (bool, error) {
+	digital, digitalSet, err := parseBoolEnv("DIGITAL_PAYMENTS_ENABLED")
+	if err != nil {
+		return false, err
+	}
+	legacy, legacySet, err := parseBoolEnv("ELECTRONIC_PAYMENTS_ENABLED")
+	if err != nil {
+		return false, err
+	}
+	switch {
+	case digitalSet && legacySet && digital != legacy:
+		return false, errors.New("config: DIGITAL_PAYMENTS_ENABLED and the deprecated ELECTRONIC_PAYMENTS_ENABLED disagree; remove ELECTRONIC_PAYMENTS_ENABLED")
+	case digitalSet:
+		return digital, nil
+	case legacySet:
+		log.Printf("[CONFIG] ELECTRONIC_PAYMENTS_ENABLED is deprecated; use DIGITAL_PAYMENTS_ENABLED")
+		return legacy, nil
+	}
+	return false, nil
 }

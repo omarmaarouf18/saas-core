@@ -45,6 +45,11 @@ class FakeApiClientForPayout extends ApiClient {
     if (path == '/users/ledger') {
       return {'entries': []};
     }
+    if (path == '/users/platform/config') {
+      // PAY-COD-ONLY: these tests exercise the payout dialog, which only
+      // opens when digital payments are on.
+      return {'digital_payments_enabled': true};
+    }
     if (path == '/users/wallet/payout/requests') {
       if (failPayoutRequests) {
         throw ApiClientException('Payout service unavailable', statusCode: 500);
@@ -127,8 +132,8 @@ void main() {
     final ownerProvider = OwnerProvider(fakeApi);
     await ownerProvider.fetchDashboardData('mock-owner-token');
 
-    await tester.pumpWidget(
-        createWalletTestWidget(apiClient: fakeApi, ownerProvider: ownerProvider));
+    await tester.pumpWidget(createWalletTestWidget(
+        apiClient: fakeApi, ownerProvider: ownerProvider));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.trending_up), findsNothing);

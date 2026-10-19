@@ -213,7 +213,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("Expected 400 Bad Request, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
-		if !strings.Contains(rec.Body.String(), "electronic payments are not currently enabled") {
+		if !strings.Contains(rec.Body.String(), "payment_method_unavailable") {
 			t.Errorf("Expected error about electronic payments disabled, got: %s", rec.Body.String())
 		}
 	})
@@ -1504,7 +1504,7 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// Create a mock service to allow TrackJob to pass initial checks
 		testSvc := &models.Service{
-			ID:               "svc-deact-999",
+			ID:               "svc-deact-998",
 			TenantID:         "kyc-approved-owner",
 			Name:             "Deact Svc",
 			Category:         "transport",
@@ -1518,7 +1518,7 @@ func TestUserServiceHandlers(t *testing.T) {
 		// 1. TrackJob request with deactivated employee -> rejected
 		reqBody := map[string]any{
 			"owner_id":       tokenOwner,
-			"service_id":     "svc-deact-999",
+			"service_id":     "svc-deact-998",
 			"user_id":        tokenUser,
 			"employee_id":    tokenDeactEmp,
 			"payment_method": "cod",

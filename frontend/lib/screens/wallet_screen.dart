@@ -39,6 +39,26 @@ class _WalletScreenState extends State<WalletScreen> {
       await ownerProvider.fetchDashboardData(auth.token!);
     }
     await ownerProvider.fetchPayoutRequests();
+    await ownerProvider.fetchPaymentAvailability();
+  }
+
+  /// PAY-COD-ONLY: wallet top-up and payouts open their dialogs only when
+  /// the backend has digital payments on; otherwise the entry point says
+  /// "coming soon" instead of letting the server refuse the request.
+  void _openDigitalPaymentFlow(void Function() open) {
+    final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
+    if (ownerProvider.digitalPaymentsEnabled) {
+      open();
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          key: const Key('digital_payments_coming_soon'),
+          content: Text(context.l10n.digitalPaymentsComingSoon),
+        ),
+      );
   }
 
   @override
@@ -54,6 +74,7 @@ class _WalletScreenState extends State<WalletScreen> {
         ownerProvider.fetchDashboardData(auth.token!);
       }
       ownerProvider.fetchPayoutRequests();
+      ownerProvider.fetchPaymentAvailability();
     });
   }
 
@@ -114,7 +135,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         width: double.infinity,
                         child: PrimaryButton(
                           key: const Key('request_payout_button'),
-                          onPressed: () => PayoutRequestDialog.show(context),
+                          onPressed: () => _openDigitalPaymentFlow(
+                              () => PayoutRequestDialog.show(context)),
                           icon: Icons.outbox_rounded,
                           trailingIcon: Icons.arrow_forward,
                           text: l10n.payoutWithdrawButton,
@@ -155,7 +177,8 @@ class _WalletScreenState extends State<WalletScreen> {
         SizedBox(
           width: 160,
           child: PrimaryButton(
-            onPressed: () => DepositFundsDialog.show(context),
+            onPressed: () =>
+                _openDigitalPaymentFlow(() => DepositFundsDialog.show(context)),
             icon: Icons.add_card_rounded,
             text: l10n.depositFundsTitle,
           ),
@@ -317,7 +340,8 @@ class _WalletScreenState extends State<WalletScreen> {
               title: l10n.payoutHistoryEmpty,
               description: l10n.walletPayoutEmptyHint,
               actionText: l10n.payoutWithdrawButton,
-              onActionPressed: () => PayoutRequestDialog.show(context),
+              onActionPressed: () => _openDigitalPaymentFlow(
+                  () => PayoutRequestDialog.show(context)),
             ),
           )
         else

@@ -1091,4 +1091,53 @@ void main() {
     expect(find.text('30.0444, 31.2357'), findsOneWidget);
     await tester.pumpAndSettle();
   });
+
+  // PAY-COD-ONLY: production is cash on delivery only, so the booking dialog
+  // offers exactly one payment option (COD) and no wallet/card choice.
+  testWidgets('BookingDialog offers only cash on delivery',
+      (WidgetTester tester) async {
+    mockMarketplaceProvider.mockServices = [
+      MarketplaceService(
+        id: 'srv-cod',
+        tenantId: 'tenant-456',
+        name: 'Express Delivery',
+        category: 'delivery',
+        basePrice: 20.0,
+        tenantBasePrice: 20.0,
+        tenantPricePerKM: 3.5,
+        latitude: 30.0444,
+        longitude: 31.2357,
+        distanceKM: 4.2,
+        finalPrice: 35.0,
+      ),
+    ];
+    await tester.pumpWidget(buildMarketplaceApp(MockAuthProviderForTest(
+      apiClient,
+      UserProfile(
+          id: 'cust-1',
+          email: 'customer@example.com',
+          username: 'cust_user',
+          role: 'user'),
+    )));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Book'));
+    await tester.pumpAndSettle();
+
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text('Cash on delivery')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: dialog, matching: find.byIcon(Icons.radio_button_checked)),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: dialog, matching: find.byIcon(Icons.radio_button_unchecked)),
+        findsNothing);
+    for (final other in ['Wallet', 'wallet', 'Card', 'card', 'InstaPay']) {
+      expect(find.descendant(of: dialog, matching: find.text(other)),
+          findsNothing);
+    }
+  });
 }
