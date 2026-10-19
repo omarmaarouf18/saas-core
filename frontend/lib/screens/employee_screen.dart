@@ -450,8 +450,7 @@ class _EmployeeScreenState extends State<EmployeeScreen>
   /// machine error code in the JSON body; map weak_password to the
   /// reason-specific localized copy, everything else to the status-based
   /// friendly message.
-  String _employeeRegistrationErrorMessage(
-      BuildContext context, Object error) {
+  String _employeeRegistrationErrorMessage(BuildContext context, Object error) {
     if (error is ApiClientException &&
         error.statusCode == 400 &&
         error.errorCode == 'weak_password') {
