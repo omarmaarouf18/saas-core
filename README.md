@@ -132,7 +132,7 @@ To minimize the attack surface of the running services, onboarding a support age
    ```text
    Successfully onboarded support agent "agent_omar"!
    ----------------------------------------------------------------------
-   Generated Token: e82d7083abf3e9c402b8a0...
+   Generated Token: <64-hex-token-shown-once>
    ----------------------------------------------------------------------
    WARNING: This token is displayed ONLY ONCE. Copy it now.
    ```
@@ -166,7 +166,7 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
    ```text
    Successfully onboarded reviewer "reviewer_omar"!
    ----------------------------------------------------------------------
-   Generated Reviewer Token: d8a958e932b7bc0f82...
+   Generated Reviewer Token: <64-hex-token-shown-once>
    ----------------------------------------------------------------------
    WARNING: This token is displayed ONLY ONCE. Copy it now.
    ```
