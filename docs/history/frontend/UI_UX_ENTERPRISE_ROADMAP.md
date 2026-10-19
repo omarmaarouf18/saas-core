@@ -1,5 +1,7 @@
 # QuickDelivery Frontend UI/UX Enterprise Roadmap
 
+> Historical — superseded by [docs/frontend/STATUS.md](../../frontend/STATUS.md).
+
 > [!NOTE]
 > **Roadmap Context**: This document defines the phased implementation methodology for achieving enterprise-grade visual polish and interaction speed across QuickDelivery's Flutter application. Phase 0 (Foundation) is complete. Phases 1–6 define strictly scoped, independently verifiable implementation milestones.
 
@@ -26,7 +28,7 @@
 > A direct code audit performed on 2026-08-21 (baseline for the Frontend Architecture Unification plan, `FRONTEND_ARCHITECTURE_PLAN.md`) disproved part of the "100% COMPLETE & VERIFIED" claims below. Per the new evidence rule, the original entries are kept as a record and re-labeled with what the audit actually found. Re-runnable evidence: `bash scripts/frontend_audit.sh`.
 
 * **Phase 1 (Design Token System Migration)**: The 55 catalogued raw values in the 16 listed files *were* remediated — that part was true and remains verified. However, the phase's implied claim of "total token usage" was false at audit time: `quickDeliveryDarkTheme` still contained **60+ standalone `Color(0xFF...)` literals** fully parallel to `AppColors`, meaning any brand color change required edits in two places. This has since been genuinely fixed (dark theme rebuilt from `AppColors.*Dark` variants; post-fix audit: **0** `Color(0xFF` occurrences outside `core/theme.dart`, guarded by `frontend/test/dark_theme_hex_verification_test.dart`).
-* **Phase 6 (Google Stitch Visual Redesign — "All 28 screens")**: The *visual* redesign (colors, components, layouts) did land across all 28 screens. But the roadmap presented this as architectural unification, which the audit disproved: at audit time **28/28 screens still constructed `Scaffold(` directly**, 23/28 built `AppBar(` from scratch, there were **123 direct `BoxDecoration(` usages** inside `screens/` (a parallel card system bypassing `ThemedCard`), **41 scattered `.toUpperCase()` calls**, and **zero** shared composition root (`AppShell`) in the codebase. Visual similarity across 28 hand-built screens is not an architecture. Remediation is tracked as the Frontend Architecture Unification effort (P0–P6) in [STATUS.md](STATUS.md) Phase 29 with per-phase audit numbers.
+* **Phase 6 (Google Stitch Visual Redesign — "All 28 screens")**: The *visual* redesign (colors, components, layouts) did land across all 28 screens. But the roadmap presented this as architectural unification, which the audit disproved: at audit time **28/28 screens still constructed `Scaffold(` directly**, 23/28 built `AppBar(` from scratch, there were **123 direct `BoxDecoration(` usages** inside `screens/` (a parallel card system bypassing `ThemedCard`), **41 scattered `.toUpperCase()` calls**, and **zero** shared composition root (`AppShell`) in the codebase. Visual similarity across 28 hand-built screens is not an architecture. Remediation is tracked as the Frontend Architecture Unification effort (P0–P6) in [STATUS.md](../../frontend/STATUS.md) Phase 29 with per-phase audit numbers.
 
 ---
 

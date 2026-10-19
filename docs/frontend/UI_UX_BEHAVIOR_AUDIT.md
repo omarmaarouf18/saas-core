@@ -3,7 +3,7 @@
 > **Date**: September 19, 2026  
 > **Status**: PART A, BATCH 1 & BATCH 2 REMEDIATED & VERIFIED (Batches 3–5 Pending)  
 > **Scope**: All 30 screens (29 production screens + 1 debug catalog) in [`frontend/lib/screens/`](../../frontend/lib/screens/) across all 3 user roles (Customer, Owner, Employee).  
-> **Preceding Audits**: [`FRONTEND_CONSISTENCY_AUDIT.md`](../FRONTEND_CONSISTENCY_AUDIT.md) (Design Token Consistency — 100% Landed) and [`STITCH_VISUAL_AUDIT_V2.md`](STITCH_VISUAL_AUDIT_V2.md) (Design Brief Fidelity).  
+> **Preceding Audits**: [`FRONTEND_CONSISTENCY_AUDIT.md`](../history/FRONTEND_CONSISTENCY_AUDIT.md) (Design Token Consistency — 100% Landed) and [`STITCH_VISUAL_AUDIT_V2.md`](../history/frontend/STITCH_VISUAL_AUDIT_V2.md) (Design Brief Fidelity).  
 
 ---
 
@@ -168,7 +168,7 @@ The 30 screens evaluated in this audit span authentication, role-specific operat
 | **E-09** | Open | `EmployeeJobsScreen` / `History` | Employee | **High** | Unreachable Feature | `RatingScreen` supports employee role rating customer, but no button exists in any employee screen to open it. | [`rating_screen.dart:63-67`](../../frontend/lib/screens/rating_screen.dart#L63) |
 | **X-01** | Open | `Chat` / `JobStatus` / `TicketChat` | Cross | **Low** | Design Token | Raw `CircularProgressIndicator` used instead of canonical `ThemedLoadingIndicator`. | [`chat_screen.dart:154`](../../frontend/lib/screens/chat_screen.dart#L154) |
 | **X-02** | Open | `PrimaryButton` | Cross | **Medium** | RTL Directionality | Forward arrow trailing icon (`Icons.arrow_forward`) does not mirror in RTL mode, pointing backward in Arabic. | [`primary_button.dart:110`](../../frontend/lib/widgets/primary_button.dart#L110) |
-| **X-03** | Open | Map Controls & Modals | Cross | **Low** | Touch Target | Compact 24-32dp visual touch frames in map overlay buttons fall below standard 48dp guidelines. | [`customer_job_map.dart:180-220`](../../frontend/lib/widgets/customer_job_map.dart#L180-L220) |
+| **X-03** | Open | Map Controls & Modals | Cross | **Low** | Touch Target | Compact 24-32dp visual touch frames in map overlay buttons fall below standard 48dp guidelines. | [`customer_job_map_screen.dart:180-220`](../../frontend/lib/screens/customer_job_map_screen.dart#L180-L220) |
 
 ---
 
@@ -397,7 +397,7 @@ The 30 screens evaluated in this audit span authentication, role-specific operat
 #### Finding X-03: Sub-48dp Touch Target Frames on Map Overlays
 * **Severity**: Low
 * **Category**: Mobile Accessibility & Touch Target Standard
-* **File & Lines**: [`customer_job_map.dart:180-220`](../../frontend/lib/widgets/customer_job_map.dart#L180-L220)
+* **File & Lines**: [`customer_job_map_screen.dart:180-220`](../../frontend/lib/screens/customer_job_map_screen.dart#L180-L220)
 * **User Symptom**: Zoom and re-center controls on mobile devices require high tap precision while in motion.
 * **Root Cause**: Visual container dimensions of 32x32dp lack standard minimum 48x48dp tap target padding.
 * **Remediation**: Set `constraints: const BoxConstraints(minWidth: 48, minHeight: 48)` on all interactive map overlays.
@@ -461,7 +461,7 @@ To ensure zero downtime, regressions, or documentation drift, remediation is str
 
 ### Batch 4: Employee Workflow, Dispatch & Telemetry Integrity
 * **Target Findings**: `E-02`, `E-03`, `E-04`, `E-05`, `E-06`, `E-07`, `E-08`, `E-09`
-* **Reference Document**: Comprehensive functional analysis in [docs/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md](EMPLOYEE_FUNCTIONALITY_AUDIT.md).
+* **Reference Document**: Comprehensive functional analysis in [docs/history/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md](../history/frontend/EMPLOYEE_FUNCTIONALITY_AUDIT.md).
 * **Focus Area**: Courier ergonomics, feedback clarity, rating access, and telemetry lifecycle safety.
 * **Key Tasks**:
   1. Fix notifications empty state duplicate copy (`E-02`).

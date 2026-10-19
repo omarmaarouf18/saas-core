@@ -1,5 +1,7 @@
 # Frontend Endpoint Integration Scope & Technical Audit
 
+> Historical — superseded by [docs/frontend/MESSAGING_BACKLOG.md](../frontend/MESSAGING_BACKLOG.md).
+
 This document outlines the scoping, backend contracts, UI requirements, and implementation sequence required to wire unintegrated backend endpoints into the Flutter mobile application (`frontend/`).
 
 ---

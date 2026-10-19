@@ -30,7 +30,7 @@ This review was concentrated on the highest-financial-risk surface (job lifecycl
   * Handler Implementation: [`services/user-service/internal/handlers/jobs_handlers.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/handlers/jobs_handlers.go) (`CancelJob` — *originally `handlers.go` lines 2379–2415 before handlers decomposition*)
 
 > [!NOTE]
-> **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
+> **Business Model Update**: Root cause identified — see [ADR-0017](../adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
 
 ### Detail & Verification Findings
 In `services/user-service/internal/store/mongodb.go`, job status state transitions for non-COD lifecycle operations (`ReleaseEscrowWithSplit`, legacy COD fee deduction, `RefundEscrow`) are all guarded using an atomic compare-and-swap (CAS) pattern. Specifically:
@@ -73,7 +73,7 @@ The query filters strictly on `{"_id": id}` with **no status precondition**.
   * Store Refund (`RefundEscrow`): [`services/user-service/internal/store/mongodb.go`](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/services/user-service/internal/store/mongodb.go#L932-L950) (lines 932–950)
 
 > [!NOTE]
-> **Business Model Update**: Root cause identified — see [ADR-0017](adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
+> **Business Model Update**: Root cause identified — see [ADR-0017](../adr/0017-zero-commission-subscription-only-revenue-model.md) for the corrected business model; code remediation tracked separately.
 
 ### Detail & Verification Findings
 In `handlers.go`, `CompleteJob` recalculates the amount to release using the base service pricing formula, but explicitly checks for a negotiated price:

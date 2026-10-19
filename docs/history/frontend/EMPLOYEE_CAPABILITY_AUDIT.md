@@ -1,5 +1,7 @@
 # Employee Capability Audit & Screen Redesign Plan
 
+> Historical — superseded by [EMPLOYEE_FUNCTIONALITY_AUDIT.md](EMPLOYEE_FUNCTIONALITY_AUDIT.md).
+
 ## Overview
 
 This audit cross-references all backend endpoints across `services/user-service`, `services/auth-service`, `services/notification-service`, and `services/chat-service` that accept employee-role (`RoleEmployee`) JWT authentication or employee token authorization. It identifies current frontend provider wiring and surfaces any UI reachability gaps prior to the Employee screen redesign.

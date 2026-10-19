@@ -83,7 +83,7 @@ Status words: **Done** (in code, tested), **Partial**, **Deferred** (by decision
 | Client app version gate | Done | ADR-0018 |
 | Localization EN and Egyptian Arabic, RTL | Done | `frontend/lib/l10n/`, changelog localization-infrastructure |
 | Frontend UX behaviour audit 2026-09 (62 findings) | Done | [docs/frontend/UI_UX_AUDIT_2026-09.md](docs/frontend/UI_UX_AUDIT_2026-09.md) |
-| Frontend visual audit 2026-09 | Done (step V3 reverted) | [docs/frontend/UI_VISUAL_AUDIT_2026-09.md](docs/frontend/UI_VISUAL_AUDIT_2026-09.md) |
+| Frontend visual audit 2026-09 | Done (step V3 reverted) | [docs/history/frontend/UI_VISUAL_AUDIT_2026-09.md](docs/history/frontend/UI_VISUAL_AUDIT_2026-09.md) |
 | Security hygiene A1–A6, frontend B1–B3 | Done | changelog security-fixes and bug-fixes |
 | Server-side hardening P0 (SEC-01a/02/03/07, SEC-07b, OBS-01, BE-20) | Done | changelog security-fixes and bug-fixes |
 | Workflow tooling WF-02 (push gate lock/delete-skip, commit/worktree helpers) | Done | changelog infrastructure, `docs/WORKFLOW.md` |

@@ -1,5 +1,7 @@
 # Stitch Visual Design Brief Comparison & Gap Audit (V1 — Superseded)
 
+> Historical — superseded by [STITCH_VISUAL_AUDIT_V2.md](STITCH_VISUAL_AUDIT_V2.md).
+
 > [!WARNING]
 > **SUPERSEDED DOCUMENT**: This V1 audit evaluated `quick_delivery_ui_brief` (18 screens, `velocity_logistics/DESIGN.md`), which was an incomplete prototype export.  
 > It has been superseded by [`STITCH_VISUAL_AUDIT_V2.md`](STITCH_VISUAL_AUDIT_V2.md), audited against the authoritative `logistics_core_unified` export containing all 40 screen folders and `logistics_core/DESIGN.md`.
@@ -7,13 +9,13 @@
 > **Date**: August 17, 2026  
 > **Status**: SUPERSEDED BY [STITCH_VISUAL_AUDIT_V2.md](STITCH_VISUAL_AUDIT_V2.md)  
 > **Reference Brief**: `design/stitch-export/quick_delivery_ui_brief/` (Google Stitch Visual Design Export — 18 Screen Folders & `velocity_logistics/DESIGN.md`)  
-> **Target Scope**: All 28 screens in [`frontend/lib/screens/`](../../frontend/lib/screens/)  
+> **Target Scope**: All 28 screens in [`frontend/lib/screens/`](../../../frontend/lib/screens/)  
 
 ---
 
 ## 1. Executive Summary
 
-A comprehensive visual gap audit was performed comparing the Google Stitch design brief (`design/stitch-export/quick_delivery_ui_brief/`) against the 28 active Flutter screens in [`frontend/lib/screens/`](../../frontend/lib/screens/). 
+A comprehensive visual gap audit was performed comparing the Google Stitch design brief (`design/stitch-export/quick_delivery_ui_brief/`) against the 28 active Flutter screens in [`frontend/lib/screens/`](../../../frontend/lib/screens/). 
 
 Following the successful completion of Phase 26 (Design Token & Component Consistency Audit across Batches 1–5), all screens now strictly adhere to canonical design tokens (`AppColors`, `AppSpacing`, `AppRadius`, `AppTypography`, `AppElevation`, `AppMotion`). However, the new Stitch visual brief introduces refined component compositions, enhanced visual hierarchy (Bento-style grids, metric hero cards, and 2-point route connectors), a high-visibility **Amber Gold primary CTA button** design language, dedicated category filter chips, and modernized mobile interaction patterns.
 
@@ -48,8 +50,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ## 3. Screen-by-Screen Visual Comparison (17 Mapped Pairs)
 
 ### Pair 1: `login` vs `login_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/login/`](../../design/stitch-export/quick_delivery_ui_brief/login/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/login_screen.dart`](../../frontend/lib/screens/login_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/login/`](../../../design/stitch-export/quick_delivery_ui_brief/login/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/login_screen.dart`](../../../frontend/lib/screens/login_screen.dart)
 
 * **Finding 1.1** [`layout-composition`]: Current screen places all branding inside the card. Stitch introduces an external centered headline "Welcome Back" (`AppTypography.headlineLgMobile` 28px/semibold) and subtitle "Log in to manage your deliveries efficiently." (`AppTypography.bodyMd`) positioned above the card container.
 * **Finding 1.2** [`layout-composition`]: "Forgot Password?" link is currently rendered below the password field as a full-width row alignment; Stitch places it compactly in the header row adjacent to the "Password" label.
@@ -59,8 +61,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 2: `signup` vs `signup_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/signup/`](../../design/stitch-export/quick_delivery_ui_brief/signup/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/signup_screen.dart`](../../frontend/lib/screens/signup_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/signup/`](../../../design/stitch-export/quick_delivery_ui_brief/signup/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/signup_screen.dart`](../../../frontend/lib/screens/signup_screen.dart)
 
 * **Finding 2.1** [`component-styling` / `ux-improvement`]: Role selection currently uses a standard `DropdownButtonFormField`; Stitch uses prominent visual selectable tile cards (Customer with `person` icon, Business with `storefront` icon), providing superior affordance and single-tap selection.
 * **Finding 2.2** [`color-usage` / `button-styling`]: "Create Account" submit button uses Deep Navy fill; Stitch specifies Amber Gold primary fill (`AppColors.secondary`) with Deep Navy text.
@@ -70,8 +72,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 3: `verify_otp` vs `otp_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/verify_otp/`](../../design/stitch-export/quick_delivery_ui_brief/verify_otp/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/otp_screen.dart`](../../frontend/lib/screens/otp_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/verify_otp/`](../../../design/stitch-export/quick_delivery_ui_brief/verify_otp/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/otp_screen.dart`](../../../frontend/lib/screens/otp_screen.dart)
 
 * **Finding 3.1** [`component-styling` / `ux-improvement`]: OTP input uses a single text input with artificial letter spacing; Stitch specifies 6 individual discrete square digit input boxes (`w-12 h-14`) with auto-focus, auto-advance, and error highlighting.
 * **Finding 3.2** [`layout-composition`]: Resend OTP action in the current screen is a large outlined button below the submit button; Stitch places it as an inline text prompt with active countdown timer ("Didn't receive code? Resend in 0:42") above the primary CTA.
@@ -81,8 +83,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 4: `forgot_password` vs `forgot_password_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/forgot_password/`](../../design/stitch-export/quick_delivery_ui_brief/forgot_password/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/forgot_password_screen.dart`](../../frontend/lib/screens/forgot_password_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/forgot_password/`](../../../design/stitch-export/quick_delivery_ui_brief/forgot_password/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/forgot_password_screen.dart`](../../../frontend/lib/screens/forgot_password_screen.dart)
 
 * **Finding 4.1** [`component-styling` / `ux-improvement`]: OTP input field within the single-step reset form uses a single text input; Stitch specifies a 6-digit box grid with an inline "Resend OTP" link directly in the section label header row.
 * **Finding 4.2** [`layout-composition` / `iconography`]: Submit button features a trailing forward arrow icon ("Update Password ->") in Amber Gold fill; "Back to Login" is styled as an inline text navigation link with leading arrow icon (`arrow_back`).
@@ -91,8 +93,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 5: `customer_home` vs `customer_home_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/customer_home/`](../../design/stitch-export/quick_delivery_ui_brief/customer_home/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/customer_home_screen.dart`](../../frontend/lib/screens/customer_home_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/customer_home/`](../../../design/stitch-export/quick_delivery_ui_brief/customer_home/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/customer_home_screen.dart`](../../../frontend/lib/screens/customer_home_screen.dart)
 
 * **Finding 5.1** [`layout-composition` / `ux-improvement`]: Stitch provides a prominent "Quick Booking" location input module (Pickup Location -> Drop-off Location -> "Find Couriers" button) at the top of the Home tab, providing immediate booking utility.
 * **Finding 5.2** [`component-styling`]: Quick access category tiles in Stitch use circular icon buttons with subtle shadow and label below, providing a lighter visual density than full-height rectangular cards.
@@ -102,8 +104,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 6: `orders_history` vs `customer_jobs_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/orders_history/`](../../design/stitch-export/quick_delivery_ui_brief/orders_history/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/customer_jobs_screen.dart`](../../frontend/lib/screens/customer_jobs_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/orders_history/`](../../../design/stitch-export/quick_delivery_ui_brief/orders_history/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/customer_jobs_screen.dart`](../../../frontend/lib/screens/customer_jobs_screen.dart)
 
 * **Finding 6.1** [`layout-composition` / `ux-improvement`]: Missing horizontal category/status pill filter chips ("All", "In Transit", "Completed", "Cancelled") to quickly filter orders.
 * **Finding 6.2** [`component-styling` / `ux-improvement`]: Stitch provides contextual action buttons inside order cards based on status: Amber "Track" button with `my_location` icon for active/in-transit jobs, outlined "Reorder" button with `replay` icon for completed jobs, and "Details" for cancelled jobs.
@@ -113,8 +115,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 7: `job_details` vs `job_status_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/job_details/`](../../design/stitch-export/quick_delivery_ui_brief/job_details/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/job_status_screen.dart`](../../frontend/lib/screens/job_status_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/job_details/`](../../../design/stitch-export/quick_delivery_ui_brief/job_details/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/job_status_screen.dart`](../../../frontend/lib/screens/job_status_screen.dart)
 
 * **Finding 7.1** [`layout-composition` / `ux-improvement`]: Stitch features an integrated map preview header (30-40vh) with floating status pill at the top of the job details view, creating immediate spatial awareness.
 * **Finding 7.2** [`layout-composition` / `ux-improvement`]: Route Details section uses an address timeline with detailed pickup and drop-off instructions callout boxes and direct "Call" action.
@@ -124,8 +126,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 8: `owner_dashboard` vs `home_screen.dart` (Owner Home Tab)
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_dashboard/`](../../design/stitch-export/quick_delivery_ui_brief/owner_dashboard/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/home_screen.dart`](../../frontend/lib/screens/home_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_dashboard/`](../../../design/stitch-export/quick_delivery_ui_brief/owner_dashboard/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/home_screen.dart`](../../../frontend/lib/screens/home_screen.dart)
 
 * **Finding 8.1** [`layout-composition` / `ux-improvement`]: Stitch organizes key metrics into an asymmetric Bento grid (large Wallet balance card with weekly trend + stacked dark Subscription tier card & Active Jobs count), providing clearer visual hierarchy than equal-sized stat cards.
 * **Finding 8.2** [`component-styling`]: Subscription metric tile uses a dark navy container (`AppColors.primary`) with gold star icon and "Active" status pill, making the owner's plan tier immediately prominent.
@@ -135,8 +137,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 9: `manage_employees` vs `employee_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/manage_employees/`](../../design/stitch-export/quick_delivery_ui_brief/manage_employees/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/employee_screen.dart`](../../frontend/lib/screens/employee_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/manage_employees/`](../../../design/stitch-export/quick_delivery_ui_brief/manage_employees/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/employee_screen.dart`](../../../frontend/lib/screens/employee_screen.dart)
 
 * **Finding 9.1** [`layout-composition` / `ux-improvement`]: Stitch provides a search bar ("Search employees by name or ID") and status filter chips ("All", "Active", "Frozen") for quickly filtering the employee roster.
 * **Finding 9.2** [`component-styling` / `ux-improvement`]: Employee cards include direct status toggle switches (`Switch`), streamlining the activation/freeze action compared to the current multi-field dropdown form.
@@ -146,8 +148,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 10: `employee_jobs` vs `employee_jobs_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/employee_jobs/`](../../design/stitch-export/quick_delivery_ui_brief/employee_jobs/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/employee_jobs_screen.dart`](../../frontend/lib/screens/employee_jobs_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/employee_jobs/`](../../../design/stitch-export/quick_delivery_ui_brief/employee_jobs/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/employee_jobs_screen.dart`](../../../frontend/lib/screens/employee_jobs_screen.dart)
 
 * **Finding 10.1** [`layout-composition` / `ux-improvement`]: Job cards in Stitch feature a 2-point vertical route timeline showing pickup and drop-off points with specific bay/dock details and a metrics row (Distance, Time, Cargo pallets/boxes) with vertical dividers.
 * **Finding 10.2** [`typography-treatment` / `color-usage`]: Estimated earnings / fare is rendered in bold Amber Gold (`AppColors.secondary` / `text-secondary-fixed-dim`) in the top right of each job card.
@@ -157,8 +159,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 11: `owner_configuration` vs `owner_configuration_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_configuration/`](../../design/stitch-export/quick_delivery_ui_brief/owner_configuration/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/owner_configuration_screen.dart`](../../frontend/lib/screens/owner_configuration_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_configuration/`](../../../design/stitch-export/quick_delivery_ui_brief/owner_configuration/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/owner_configuration_screen.dart`](../../../frontend/lib/screens/owner_configuration_screen.dart)
 
 * **Finding 11.1** [`component-styling` / `ux-improvement`]: Image upload area in Stitch uses a styled 2:1 aspect ratio dashed preview card with subtle overlay and centered `add_a_photo` icon, providing clearer visual guidance than a standalone button.
 * **Finding 11.2** [`layout-composition`]: Pricing fields (Base Price and Price-per-km) are placed side-by-side in a balanced 2-column grid with explicit currency prefix symbol.
@@ -168,8 +170,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 12: `wallet_owner` vs `wallet_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/wallet_owner/`](../../design/stitch-export/quick_delivery_ui_brief/wallet_owner/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/wallet_screen.dart`](../../frontend/lib/screens/wallet_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/wallet_owner/`](../../../design/stitch-export/quick_delivery_ui_brief/wallet_owner/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/wallet_screen.dart`](../../../frontend/lib/screens/wallet_screen.dart)
 
 * **Finding 12.1** [`layout-composition` / `ux-improvement`]: Balance Hero Card in Stitch uses a dark navy container with high-contrast Amber Gold total balance and embedded 2-column withdrawable/escrow split separated by a subtle divider.
 * **Finding 12.2** [`component-styling` / `button-styling`]: Action buttons are styled side-by-side with high-contrast Amber Gold "Withdraw" (`download` icon) and outlined "Deposit" (`upload` icon).
@@ -179,8 +181,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 13: `owner_subscription` vs `subscription_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_subscription/`](../../design/stitch-export/quick_delivery_ui_brief/owner_subscription/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/subscription_screen.dart`](../../frontend/lib/screens/subscription_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/owner_subscription/`](../../../design/stitch-export/quick_delivery_ui_brief/owner_subscription/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/subscription_screen.dart`](../../../frontend/lib/screens/subscription_screen.dart)
 
 * **Finding 13.1** [`component-styling` / `ux-improvement`]: Professional tier card in Stitch is visually emphasized using a dark navy container (`bg-primary-container`), top Amber Gold "Best Value" ribbon, and gold checkmarks, creating strong tier distinction.
 * **Finding 13.2** [`layout-composition`]: Feature lists in each subscription card use bulleted checkmark rows (`check` / `check_circle` icons) with clear plan limits.
@@ -190,8 +192,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 14: `settings_owner` vs `settings_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/settings_owner/`](../../design/stitch-export/quick_delivery_ui_brief/settings_owner/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/settings_screen.dart`](../../frontend/lib/screens/settings_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/settings_owner/`](../../../design/stitch-export/quick_delivery_ui_brief/settings_owner/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/settings_screen.dart`](../../../frontend/lib/screens/settings_screen.dart)
 
 * **Finding 14.1** [`layout-composition` / `ux-improvement`]: Stitch adds a top Profile Summary card (user avatar, full name, role badge "Owner" / "Employee" / "Customer") giving personal identity to the settings screen.
 * **Finding 14.2** [`component-styling`]: Grouped settings items in Stitch are encapsulated in rounded container cards (`bg-surface-container-low`) with subtle dividers, trailing value labels, and navigation chevrons (`chevron_right`).
@@ -201,8 +203,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 15: `kyc_kyb_upload` vs `kyc_document_upload_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/kyc_kyb_upload/`](../../design/stitch-export/quick_delivery_ui_brief/kyc_kyb_upload/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/kyc_document_upload_screen.dart`](../../frontend/lib/screens/kyc_document_upload_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/kyc_kyb_upload/`](../../../design/stitch-export/quick_delivery_ui_brief/kyc_kyb_upload/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/kyc_document_upload_screen.dart`](../../../frontend/lib/screens/kyc_document_upload_screen.dart)
 
 * **Finding 15.1** [`layout-composition` / `ux-improvement`]: Stitch organizes document slots into a compact 2x2 responsive card grid, reducing vertical scrolling on desktop/tablet while maintaining clear slot visibility.
 * **Finding 15.2** [`component-styling` / `ux-improvement`]: Empty/actionable document slots use a dashed 2px border with a centered circular camera icon (`add_a_photo`) and clear "Tap to capture or upload" call to action.
@@ -212,8 +214,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 16: `fleet_map` vs `owner_fleet_map_screen.dart`
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/fleet_map/`](../../design/stitch-export/quick_delivery_ui_brief/fleet_map/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/owner_fleet_map_screen.dart`](../../frontend/lib/screens/owner_fleet_map_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/fleet_map/`](../../../design/stitch-export/quick_delivery_ui_brief/fleet_map/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/owner_fleet_map_screen.dart`](../../../frontend/lib/screens/owner_fleet_map_screen.dart)
 
 * **Finding 16.1** [`component-styling` / `iconography`]: Map pins in Stitch are differentiated by vehicle type (`local_shipping` vs `two_wheeler`) with pulsating live rings and floating name tooltips.
 * **Finding 16.2** [`component-styling` / `ux-improvement`]: Floating map control cluster (Zoom In, Zoom Out, Recenter) in top right corner provides clear map navigation controls.
@@ -223,8 +225,8 @@ The Stitch visual export (`velocity_logistics/DESIGN.md`) builds on the Quick De
 ---
 
 ### Pair 17: `fleet_history` vs `owner_history_screen.dart` (Completed Jobs Section)
-* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/fleet_history/`](../../design/stitch-export/quick_delivery_ui_brief/fleet_history/) (`code.html`, `screen.png`)
-* **Target**: [`frontend/lib/screens/owner_history_screen.dart`](../../frontend/lib/screens/owner_history_screen.dart)
+* **Reference**: [`design/stitch-export/quick_delivery_ui_brief/fleet_history/`](../../../design/stitch-export/quick_delivery_ui_brief/fleet_history/) (`code.html`, `screen.png`)
+* **Target**: [`frontend/lib/screens/owner_history_screen.dart`](../../../frontend/lib/screens/owner_history_screen.dart)
 
 * **Finding 17.1** [`layout-composition` / `ux-improvement`]: Stitch adds a top search input and horizontal filter chips ("All", "Today", "Completed", "Cancelled") for rapid fleet history lookup.
 * **Finding 17.2** [`component-styling`]: Job history cards include category icons (`package_2`, `directions_car`), a 2-column info grid for schedule and driver assignment, and prominent right-aligned fare typography.
