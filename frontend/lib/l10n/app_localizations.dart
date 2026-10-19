@@ -4143,6 +4143,12 @@ abstract class AppLocalizations {
   /// **'Local ride booking, moving transport, and courier transport.'**
   String get customerHomeTileRideDesc;
 
+  /// No description provided for @customerHomeTileShippingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Book shipping for parcels and goods with GPS-tracked settlement.'**
+  String get customerHomeTileShippingDesc;
+
   /// No description provided for @customerHomeTileCleaningDesc.
   ///
   /// In en, this message translates to:

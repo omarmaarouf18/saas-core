@@ -890,6 +890,7 @@
   "subProFeatureTrackingUnlock": "يفتح تتبع مباشر لموقع العامل",
   "customerHomeTileDeliveryDesc": "توصيل سريع حسب الطلب للطلبات والطرود والمستلزمات.",
   "customerHomeTileRideDesc": "حجز رحلات محلية، ونقل أثاث، وخدمات نقل طلبات.",
+  "customerHomeTileShippingDesc": "احجز شحن طرود وبضائع مع تحديد بالـGPS وتسوية مقفولة.",
   "customerHomeTileCleaningDesc": "تنظيف منازل وصيانة وخدمات فنيين عند الطلب.",
   "customerHomeTileBrowseAllDesc": "استعرض كل خدمات المنزل وخيارات التوصيل المتاحة.",
   "browseServicesBtn": "استعرض الخدمات",

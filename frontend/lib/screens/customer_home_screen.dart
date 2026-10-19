@@ -523,7 +523,7 @@ class _CustomerHomeDashboardTabState extends State<_CustomerHomeDashboardTab> {
                   context,
                   key: const Key('category_tile_shipping'),
                   title: l10n.customerHomeCatShipping,
-                  description: l10n.customerHomeTileCleaningDesc,
+                  description: l10n.customerHomeTileShippingDesc,
                   icon: Icons.home_repair_service_outlined,
                   iconBgColor:
                       context.semanticColors.success.withValues(alpha: 0.15),

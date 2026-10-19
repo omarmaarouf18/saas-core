@@ -1100,6 +1100,7 @@
   "subProFeatureTrackingUnlock": "Unlocks live worker location tracking",
   "customerHomeTileDeliveryDesc": "Fast on-demand delivery for orders, packages, and essentials.",
   "customerHomeTileRideDesc": "Local ride booking, moving transport, and courier transport.",
+  "customerHomeTileShippingDesc": "Book shipping for parcels and goods with GPS-tracked settlement.",
   "customerHomeTileCleaningDesc": "On-demand home cleaning, maintenance, and handyman services.",
   "customerHomeTileBrowseAllDesc": "Browse all available home services and delivery options.",
   "browseServicesBtn": "Browse Services",

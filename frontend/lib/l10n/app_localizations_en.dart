@@ -2249,6 +2249,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Local ride booking, moving transport, and courier transport.';
 
   @override
+  String get customerHomeTileShippingDesc =>
+      'Book shipping for parcels and goods with GPS-tracked settlement.';
+
+  @override
   String get customerHomeTileCleaningDesc =>
       'On-demand home cleaning, maintenance, and handyman services.';
 

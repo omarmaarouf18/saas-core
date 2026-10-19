@@ -2215,6 +2215,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'حجز رحلات محلية، ونقل أثاث، وخدمات نقل طلبات.';
 
   @override
+  String get customerHomeTileShippingDesc =>
+      'احجز شحن طرود وبضائع مع تحديد بالـGPS وتسوية مقفولة.';
+
+  @override
   String get customerHomeTileCleaningDesc =>
       'تنظيف منازل وصيانة وخدمات فنيين عند الطلب.';
 
