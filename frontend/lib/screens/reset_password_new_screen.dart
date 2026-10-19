@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:provider/provider.dart';
+import '../core/password_policy.dart';
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/themed_panel.dart';
@@ -179,10 +180,9 @@ class _ResetPasswordNewScreenState extends State<ResetPasswordNewScreen> {
               if (val == null || val.isEmpty) {
                 return l10n.loginPasswordReq;
               }
-              if (val.length < 6) {
-                return l10n.signupPasswordHint;
-              }
-              return null;
+              // SEC-03: mirror the shared backend policy (min 8 runes,
+              // max 72 UTF-8 bytes so Arabic counts correctly).
+              return validatePassword(l10n, val);
             },
           ),
           const SizedBox(height: AppSpacing.md),

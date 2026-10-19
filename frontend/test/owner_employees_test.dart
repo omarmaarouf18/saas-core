@@ -289,7 +289,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('employees_error_banner')), findsOneWidget);
-    expect(find.text('Failed to fetch employee roster'), findsOneWidget);
+    // SEC-07b: the banner shows a dedicated localized load-failure copy
+    // (never the empty-state copy, which an outage must not impersonate).
+    expect(find.textContaining('employees right now'), findsOneWidget);
+    expect(find.text('No Employees Registered'), findsNothing);
   });
 
   testWidgets(

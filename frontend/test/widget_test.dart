@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
@@ -51,6 +52,15 @@ class MockChatProvider extends ChatProvider {
 }
 
 void main() {
+  // UX-17: with the restore splash live on the first frame, the AuthProvider
+  // secure-storage read must actually complete in tests or the gate stays on
+  // the splash forever. Register the plugin mock so the read returns null
+  // (no stored session) quickly, as app starts do.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() {
+    FlutterSecureStorage.setMockInitialValues({});
+  });
+
   testWidgets('App renders login screen', (WidgetTester tester) async {
     final apiClient = ApiClient();
     await tester.pumpWidget(
@@ -69,7 +79,9 @@ void main() {
       ),
     );
 
-    await tester.pump(const Duration(milliseconds: 100));
+    // UX-17: the gate shows the neutral splash while AuthProvider is
+    // restoring the stored session; settle it before asserting login chrome.
+    await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
     // Verify that the login screen elements render correctly with compact QD logotype & pre-login toggles.
     expect(find.byKey(const Key('login_qd_logo')), findsOneWidget);
@@ -98,6 +110,9 @@ void main() {
         child: const MyApp(),
       ),
     );
+
+    // UX-17: settle the restore splash before asserting pre-login chrome.
+    await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
     // Initial theme mode is system
     expect(themeProvider.themeMode, ThemeMode.system);

@@ -138,6 +138,16 @@ Widget createOwnerHomeScreenApp({
 }
 
 void main() {
+  // UX-05: no fake trend data — the mock jobs trend chip must stay gone.
+  testWidgets('Owner jobs metric card renders no mock trend chip',
+      (tester) async {
+    await tester.pumpWidget(createOwnerHomeScreenApp());
+    await tester.pumpAndSettle();
+
+    expect(tester.widgetList(find.byIcon(Icons.trending_up)), isEmpty);
+    expect(find.text('+12% vs last week'), findsNothing);
+    expect(find.textContaining('vs last'), findsNothing);
+  });
   testWidgets('HomeScreen renders 4-tab NavigationBar for owner role',
       (WidgetTester tester) async {
     await tester.pumpWidget(createOwnerHomeScreenApp(initialTabIndex: 0));

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
 import '../core/error_messages.dart';
+import '../core/password_policy.dart';
+import '../l10n/app_localizations_en.dart';
 import '../models/user_profile.dart';
 import '../services/push_notification_service.dart';
 
@@ -24,6 +26,13 @@ String _authBannerMessage(Object? e) {
   if (e is ApiClientException) {
     if (e.statusCode == 429) return e.message;
     if (_verbatimServerCopy.contains(e.message)) return e.message;
+    // SEC-03: a policy rejection carries the machine error code from the
+    // JSON body. Map it to the dedicated ARB copy via the contextless EN
+    // variant — the provider has no BuildContext, matching the verbatim
+    // server-copy convention for auth banners above.
+    if (e.statusCode == 400 && e.errorCode == 'weak_password') {
+      return weakPasswordServerMessage(AppLocalizationsEn(), e.message);
+    }
   }
   return friendlyErrorMessage(e);
 }
