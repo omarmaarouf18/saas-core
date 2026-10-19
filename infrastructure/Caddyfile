@@ -1,0 +1,15 @@
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	@admin path /api/v1/admin /api/v1/admin/*
+	respond @admin 404
+
+	reverse_proxy https://api-gateway:8080 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
