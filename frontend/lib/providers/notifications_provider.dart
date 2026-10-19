@@ -28,6 +28,12 @@ class NotificationsProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasMore = false;
 
+  /// A6 follow-up: fetchHistory/loadMore must never call notifyListeners
+  /// after dispose (this crashed once in the a6 SSE test run when a widget
+  /// tree torn the provider down mid-fetch). Set in dispose() and checked
+  /// after every await so the completion path stays silent post-teardown.
+  bool _disposed = false;
+
   /// Broadcast stream of KYC/KYE rejection outcome notifications (ADR-0021).
   /// The app root listens to this to present an immediate in-app dialog with
   /// the rejection reason; the notification also lands in the normal list.
@@ -61,6 +67,10 @@ class NotificationsProvider extends ChangeNotifier {
   }) : _sseStreamSource = sseStreamSource ?? SSEClient.subscribeToSSE;
 
   void initSse(String token) {
+    // Teardown already happened (post-dispose re-init from a stale
+    // post-frame callback): stay inert.
+    if (_disposed) return;
+
     // Cold-start fetch alongside SSE connection
     fetchHistory();
 
@@ -134,6 +144,8 @@ class NotificationsProvider extends ChangeNotifier {
   }
 
   void unsubscribe() {
+    if (_disposed) return; // already torn down; nothing to cancel
+
     // A6: unconditional teardown. The previous early-return
     // (`if (!_isConnected) return`) skipped cleanup whenever the socket had
     // errored before its first event — exactly the state in which a stale
@@ -152,11 +164,18 @@ class NotificationsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _sseSubscription?.cancel();
     _sseSubscription = null;
     _kycRejectionController.close();
     super.dispose();
   }
+
+  /// True once [dispose] ran; the async completion paths bail before any
+  /// notifyListeners that would hit Flutter's disposed-ChangeNotifier
+  /// assertion.
+  @visibleForTesting
+  bool get isDisposed => _disposed;
 
   Future<void> fetchHistory({bool refresh = false, int limit = 30}) async {
     if (_isLoadingHistory) return;
@@ -169,6 +188,7 @@ class NotificationsProvider extends ChangeNotifier {
         '/notifications/history',
         queryParams: {'limit': limit.toString()},
       );
+      if (_disposed) return; // done mid-fetch
 
       List<dynamic> rawList = [];
       if (response is Map && response['notifications'] is List) {
@@ -199,11 +219,12 @@ class NotificationsProvider extends ChangeNotifier {
       }
       _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
+      if (_disposed) return; // done mid-fetch: don't even record the error
       debugPrint('Error fetching notification history: $e');
       _error = friendlyErrorMessage(e);
     } finally {
       _isLoadingHistory = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -221,6 +242,7 @@ class NotificationsProvider extends ChangeNotifier {
           'before': oldest,
         },
       );
+      if (_disposed) return; // done mid-fetch
 
       List<dynamic> rawList = [];
       if (response is Map && response['notifications'] is List) {
@@ -243,11 +265,12 @@ class NotificationsProvider extends ChangeNotifier {
       }
       _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
+      if (_disposed) return; // done mid-fetch
       debugPrint('Error loading more notifications: $e');
       _error = friendlyErrorMessage(e);
     } finally {
       _isLoadingMore = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -261,6 +284,7 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.post('/notifications/$id/read', {});
     } catch (e) {
+      if (_disposed) return; // done mid-write
       if (e is ApiClientException && e.statusCode == 404) {
         // Stale or already marked/removed on server; retain optimistic read state
         // and do not surface an intrusive error banner.
@@ -285,6 +309,7 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.post('/notifications/read-all', {});
     } catch (e) {
+      if (_disposed) return; // done mid-write
       for (final n in _notifications) {
         if (previousStates.containsKey(n.id)) {
           n.isRead = previousStates[n.id]!;
@@ -304,6 +329,7 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.delete('/notifications/$id');
     } catch (e) {
+      if (_disposed) return; // done mid-write
       if (e is ApiClientException && e.statusCode == 404) {
         // Stale or already removed on server; keep removed locally
         // and do not surface an intrusive error banner.
@@ -323,6 +349,7 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       await apiClient.delete('/notifications');
     } catch (e) {
+      if (_disposed) return; // done mid-write
       _notifications.addAll(backup);
       _error = friendlyErrorMessage(e);
       notifyListeners();
