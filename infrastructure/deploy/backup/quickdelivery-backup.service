@@ -20,7 +20,7 @@ Type=oneshot
 # root: talks to the Docker socket and reads the root-only SAS file.
 User=root
 EnvironmentFile=-/etc/quickdelivery-backup/backup.env
-# The docker CLI must not need /root (ProtectHome=yes below).
+# The docker CLI must not write to /root (ProtectHome=read-only below).
 Environment=DOCKER_CONFIG=/var/lib/quickdelivery-backup/docker-cli
 ExecStart=/usr/local/lib/quickdelivery-backup/backup.sh
 # Runs after success, failure or a kill (SIGKILL, MemoryMax, timeout); on a
@@ -40,6 +40,7 @@ MemoryMax=128M
 TimeoutStartSec=2h
 UMask=0077
 PrivateTmp=yes
-ProtectHome=yes
+# read-only, not yes: backup.sh reads /home/deploybot/.env (env-<stamp>.age).
+ProtectHome=read-only
 ProtectSystem=full
 NoNewPrivileges=yes

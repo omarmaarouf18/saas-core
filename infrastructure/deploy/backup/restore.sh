@@ -16,8 +16,9 @@
 #
 #   -i FILE  the age private key (AGE-SECRET-KEY-1..., or a passphrase-protected
 #            identity file: age then asks for the passphrase)
-#   -k       keep the throwaway mongo container and the extracted volume dirs
-#            (default: remove them; the volumes hold personal data)
+#   -k       keep the throwaway mongo container, the extracted volume dirs and
+#            the decrypted secrets file (default: remove them; they hold
+#            personal data and production secrets)
 #
 # Per file, by name:
 #   mongo-*.archive.gz.age   decrypt | mongorestore into a fresh mongo container
@@ -25,11 +26,14 @@
 #                            collection: "<db>.<collection> <count>"
 #   *-*.tar.gz.age           decrypt | tar -x into a temp dir, then print file
 #                            and directory counts and sizes
+#   env-*.age                decrypt into a temp file with mode 600, then print
+#                            the variable NAMES it defines (never the values)
 # If a SHA256SUMS file sits next to a file, its checksum is verified first.
 #
 # Settings (environment): RESTORE_IMAGE (mongo:7), RESTORE_TMP (${TMPDIR:-/tmp}).
 set -euo pipefail
 export LC_ALL=C
+umask 077
 
 RESTORE_IMAGE="${RESTORE_IMAGE:-mongo:7}"
 RESTORE_TMP="${RESTORE_TMP:-${TMPDIR:-/tmp}}"
@@ -101,15 +105,17 @@ done
 
 CONTAINERS=()
 DIRS=()
+SECRETS=()
 cleanup() {
 	local rc=$?
 	if [ "$KEEP" -eq 0 ]; then
 		local c d
 		for c in "${CONTAINERS[@]}"; do docker rm -f "$c" >/dev/null 2>&1 || true; done
-		for d in "${DIRS[@]}"; do rm -rf -- "$d"; done
+		for d in "${DIRS[@]}" "${SECRETS[@]}"; do rm -rf -- "$d"; done
 	else
 		[ "${#CONTAINERS[@]}" -eq 0 ] || say "kept containers (remove with docker rm -f): ${CONTAINERS[*]}"
 		[ "${#DIRS[@]}" -eq 0 ] || say "kept dirs (personal data, delete when done): ${DIRS[*]}"
+		[ "${#SECRETS[@]}" -eq 0 ] || say "kept secrets files (mode 600, production secrets, delete when done): ${SECRETS[*]}"
 	fi
 	exit "$rc"
 }
@@ -168,12 +174,25 @@ restore_volume() { # restore_volume <file>
 	done < <(find "$dir" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
 }
 
+restore_env() { # restore_env <file>
+	local f="$1" out
+	out="$(mktemp "$RESTORE_TMP/qd-restore-env-XXXXXX")"
+	SECRETS+=("$out")
+	chmod 600 "$out"
+	say "env: decrypt $(basename "$f") -> $out (mode $(stat -c %a "$out"))"
+	age -d -i "$IDENTITY" "$f" >"$out"
+	# Names only: the sed prints what precedes the first '=', never a value.
+	say "env: $(grep -cE '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' "$out" || true) variables defined (names only):"
+	sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=.*/  \2/p' "$out"
+}
+
 for f in "${FILES[@]}"; do
 	verify_checksum "$f"
 	case "$(basename "$f")" in
 	mongo-*.archive.gz.age) restore_mongo "$f" ;;
 	*.tar.gz.age) restore_volume "$f" ;;
-	*) die "unknown artifact type (expected mongo-*.archive.gz.age or *.tar.gz.age): $f" ;;
+	env-*.age) restore_env "$f" ;;
+	*) die "unknown artifact type (expected mongo-*.archive.gz.age, env-*.age or *.tar.gz.age): $f" ;;
 	esac
 done
 say "restore test finished: ${#FILES[@]} file(s)"

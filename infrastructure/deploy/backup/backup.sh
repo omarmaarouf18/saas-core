@@ -7,6 +7,9 @@
 #   mongo-<stamp>.archive.gz.age        mongodump --archive --gzip of every database
 #   <volume>-<stamp>.tar.gz.age         tar.gz of each named volume (documents,
 #                                       attachments; caddy_data when present)
+#   env-<stamp>.age                     the production secrets file ENV_FILE
+#                                       (holds DOCUMENT_ENCRYPTION_KEY: without
+#                                       it the volume backups cannot be read)
 #   SHA256SUMS                          checksums of the .age files (no secrets)
 # Each artifact is streamed straight into `age` (encrypted to the public key in
 # backup-recipient.pub; the private key never touches this machine), uploaded
@@ -26,6 +29,7 @@
 #   VOLUMES           named volumes that must exist  (saas_platform_documents_data
 #                                                     saas_platform_attachments_data)
 #   OPTIONAL_VOLUMES  named volumes backed up when present        (caddy_data)
+#   ENV_FILE          production secrets file, required   (/home/deploybot/.env)
 #   BACKUP_DIR        local encrypted copies          (/var/backups/quickdelivery)
 #   KEEP_LOCAL        local runs to keep                          (3)
 #   STATE_DIR         failure marker and last-success  (/var/lib/quickdelivery-backup)
@@ -62,6 +66,7 @@ DUMP_IMAGE="${DUMP_IMAGE:-}"
 DUMP_MEMORY="${DUMP_MEMORY:-192m}"
 VOLUMES="${VOLUMES:-saas_platform_documents_data saas_platform_attachments_data}"
 OPTIONAL_VOLUMES="${OPTIONAL_VOLUMES-caddy_data}"
+ENV_FILE="${ENV_FILE:-/home/deploybot/.env}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/quickdelivery}"
 KEEP_LOCAL="${KEEP_LOCAL:-3}"
 STATE_DIR="${STATE_DIR:-/var/lib/quickdelivery-backup}"
@@ -230,6 +235,12 @@ for v in $VOLUMES; do
 	docker volume inspect "$v" >/dev/null 2>&1 || die "required volume $v does not exist (docker volume ls)"
 done
 
+# Only the path is ever logged, never the contents.
+if [ ! -f "$ENV_FILE" ] || [ ! -r "$ENV_FILE" ]; then
+	die "secrets file not readable: $ENV_FILE (set ENV_FILE)"
+fi
+[ -s "$ENV_FILE" ] || die "secrets file is empty: $ENV_FILE"
+
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_DIR="$BACKUP_DIR/$STAMP"
 TMP_DIR="$(mktemp -d)"
@@ -311,11 +322,27 @@ for v in $OPTIONAL_VOLUMES; do
 	fi
 done
 
+# --- 3. Secrets file ------------------------------------------------------------
+# Encrypted to the same offline recipient as the data. The plaintext only
+# flows from the file into age; nothing here reads or prints it.
+STEP="env"
+t0="$(now_ms)"
+env_out="$RUN_DIR/env-$STAMP.age"
+set +e
+# shellcheck disable=SC2002 # same streaming pattern as the other artifacts
+cat -- "$ENV_FILE" | age -R "$RECIPIENT_FILE" -o "$env_out.partial"
+rcs=("${PIPESTATUS[@]}")
+set -e
+[ "${rcs[0]}" -eq 0 ] || die "cannot read $ENV_FILE (cat exited ${rcs[0]})"
+[ "${rcs[1]}" -eq 0 ] || die "age exited ${rcs[1]}"
+mv "$env_out.partial" "$env_out"
+log "ok: $(basename "$env_out") $(human "$(stat -c %s "$env_out")") in $(secs $(($(now_ms) - t0)))"
+
 STEP="checksums"
 (cd "$RUN_DIR" && sha256sum -- *.age >SHA256SUMS)
 log "ok: SHA256SUMS ($(wc -l <"$RUN_DIR/SHA256SUMS") files)"
 
-# --- 3. Upload ----------------------------------------------------------------
+# --- 4. Upload ----------------------------------------------------------------
 # The URL (with the SAS signature) goes to curl through a config on stdin
 # (-K -), never as an argument, so it is not visible in ps. Only the HTTP
 # status and Azure's error code are logged, never the URL or the response body.
@@ -345,7 +372,7 @@ done
 # SHA256SUMS last: its presence off-host means the run's set is complete.
 upload "$RUN_DIR/SHA256SUMS"
 
-# --- 4. Local retention ---------------------------------------------------------
+# --- 5. Local retention ---------------------------------------------------------
 STEP="retention"
 mapfile -t runs < <(find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -regextype posix-extended \
 	-regex '.*/[0-9]{8}T[0-9]{6}Z' -printf '%f\n' | sort)
