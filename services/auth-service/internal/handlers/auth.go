@@ -64,6 +64,23 @@ func reRevokeAfterPersist(ctx context.Context, eventType, actorID, tenantID, cli
 	}
 }
 
+// waitForNextSecond blocks until the wall clock is in a later whole second
+// than after, so a JWT minted afterwards has iat > after.Unix() (SEC-07c).
+func waitForNextSecond(ctx context.Context, after time.Time) error {
+	d := time.Until(time.Unix(after.Unix()+1, 0))
+	if d <= 0 {
+		return nil
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func isValidEmail(email string) bool {
 	if len(email) < 3 || len(email) > 254 {
 		return false
@@ -3594,7 +3611,8 @@ func (a *Auth) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 
 // ConfirmEmailChange verifies the OTP sent to the new email address, updates the user's
 // email address in MongoDB, deletes the pending change record, and returns an updated user
-// object and fresh JWT token.
+// object and fresh JWT token. Every session that existed before the change is revoked
+// (SEC-07c); only the returned token is valid afterwards.
 func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
@@ -3670,8 +3688,37 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	a.limiter.Reset(clientIP)
 	a.limiter.Reset(user.ID)
 
+	// SEC-07c: an email change is an account-recovery action (e.g. the owner
+	// taking an account back), so every existing session is revoked BEFORE
+	// the new email is persisted, same pattern as SEC-07b. If revocation
+	// fails the change fails closed: the email is NOT changed and the pending
+	// change (already consumed above) is put back best effort, so the holder
+	// can retry the same code once Redis is back.
+	if err := jwtutil.RevokeAllUserTokens(user.ID); err != nil {
+		detail := "email change aborted: session revocation failed, email unchanged"
+		if restoreErr := a.store.SetPendingEmailChange(ctx, user.ID, pending, req.OTP); restoreErr != nil {
+			detail += "; pending change could not be restored, user must request a new code"
+		}
+		shipSecurityEvent(ctx, "EMAIL_CHANGE_REVOKE_FAILED", "auth-service", user.ID, user.TenantID, detail, clientIP)
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "email change temporarily unavailable, please retry", err)
+		return
+	}
+
 	if err := a.store.UpdateEmail(ctx, user.ID, pending.NewEmail); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update email address", err)
+		return
+	}
+
+	reRevokeAfterPersist(ctx, "EMAIL_CHANGE_REREVOKE_FAILED", user.ID, user.TenantID, clientIP, user.ID)
+
+	// The fresh token below must outlive the revocations above. ValidateToken
+	// rejects iat <= the stored revocation second (SEC-07 `<=` rule), and
+	// both revocations stamped a second no later than now, so mint the token
+	// only once the wall clock has moved past that second. This costs at
+	// most one second of latency on an infrequent action; minting with an
+	// explicit later iat would need a jwtutil change (shared/infra).
+	if err := waitForNextSecond(ctx, time.Now()); err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "email updated, please sign in again", err)
 		return
 	}
 

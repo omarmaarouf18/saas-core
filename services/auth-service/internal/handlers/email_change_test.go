@@ -55,6 +55,9 @@ func TestEmailChange_FullLifecycleAndSecurity(t *testing.T) {
 	defer mr.Close()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
+	// Confirm revokes sessions through jwtutil (SEC-07c), which needs Redis.
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
 	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
@@ -210,7 +213,8 @@ func TestEmailChange_FullLifecycleAndSecurity(t *testing.T) {
 	}
 	reqRateLimited := httptest.NewRequest(http.MethodPost, "/auth/email-change/request", bytes.NewBufferString(`{"new_email":"another@example.com"}`))
 	reqRateLimited.Header.Set("Content-Type", "application/json")
-	reqRateLimited.Header.Set("Authorization", "Bearer "+tokenA)
+	// tokenA was revoked by the confirm above (SEC-07c); use the fresh token.
+	reqRateLimited.Header.Set("Authorization", "Bearer "+newToken)
 	recRateLimited := httptest.NewRecorder()
 	a.RequestEmailChange(recRateLimited, reqRateLimited)
 	if recRateLimited.Code != http.StatusTooManyRequests {
@@ -251,6 +255,9 @@ func TestEmailChange_ExpiredOTP(t *testing.T) {
 	defer mr.Close()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
+	// Confirm revokes sessions through jwtutil (SEC-07c), which needs Redis.
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
 	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
@@ -327,6 +334,9 @@ func TestEmailChange_ConcurrentConfirmRace(t *testing.T) {
 	defer mr.Close()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer rdb.Close()
+	// Confirm revokes sessions through jwtutil (SEC-07c), which needs Redis.
+	jwtutil.SetRedisClient(rdb)
+	defer jwtutil.SetRedisClient(nil)
 
 	cfg := &config.Config{AppEnv: "local", GatewaySecret: "test-gateway-secret", InternalServiceToken: "test-internal-token-123"}
 	mockStorage, _ := storage.NewLocalStorage(t.TempDir(), "/api/v1", os.Getenv("JWT_SECRET"), "", "test")
