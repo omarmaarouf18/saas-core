@@ -1,0 +1,9 @@
+# age recipient (public key) for the production backups (OPS-BACKUP).
+#
+# PLACEHOLDER: no key yet. backup.sh and install.sh refuse to run until a real
+# age public key line (age1... , 62 characters) replaces this comment block.
+# Generate the key pair OFFLINE on the owner's machine (runbook step 1:
+# docs/runbooks/BACKUP-RESTORE.md), paste ONLY the public key line here and
+# commit it. The private key (AGE-SECRET-KEY-1...) never goes into the repo or
+# onto the VM. Several recipient lines are allowed (e.g. a second, offline
+# backup key); any one of the matching private keys can decrypt.
