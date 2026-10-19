@@ -551,5 +551,134 @@ List<QdGallerySection> qdGallerySections({
         ),
       );
     }),
+    // FE-CUST-1 additions.
+    QdGallerySection('tiles', 'QdIconTile · QdIconButton · QdChoiceChips',
+        (context) {
+      return _col([
+        const Row(children: [
+          QdIconTile(
+              icon: Icons.inventory_2_outlined,
+              size: QdSize.iconTileLg,
+              tone: QdIconTileTone.gold),
+          SizedBox(width: QdSpace.x3),
+          QdIconTile(
+              icon: Icons.local_shipping_outlined, size: QdSize.iconTileLg),
+          SizedBox(width: QdSpace.x3),
+          QdIconTile(icon: Icons.location_on_outlined),
+        ]),
+        Row(children: [
+          QdIconTile.initialOf(_t(context, 'Speedy', 'شحن سريع'), size: 52),
+          const SizedBox(width: QdSpace.x3),
+          QdIconTile.initialOf(_t(context, 'Nile', 'نيل'),
+              size: 52, tone: QdIconTileTone.disabled),
+          const SizedBox(width: QdSpace.x3),
+          QdIconTile.initialOf('', size: 44),
+        ]),
+        Row(children: [
+          QdIconButton(
+              icon: Icons.notifications_none,
+              label: _t(context, 'Notifications', 'الإشعارات'),
+              onPressed: _noop),
+          QdIconButton(
+              icon: Icons.notifications_none,
+              label: _t(context, 'Notifications', 'الإشعارات'),
+              badgeCount: 3,
+              onPressed: _noop),
+          QdIconButton(
+              icon: Icons.tune,
+              label: _t(context, 'Filters', 'الفلاتر'),
+              onPressed: null),
+          QdIconButton(
+              icon: Icons.my_location,
+              label: _t(context, 'My location', 'مكاني الحالي'),
+              round: true,
+              onPressed: _noop),
+          QdIconButton(
+              icon: Icons.my_location,
+              label: _t(context, 'My location', 'مكاني الحالي'),
+              round: true,
+              loading: true,
+              onPressed: _noop),
+        ]),
+        QdChoiceChips<int>(
+          selected: 0,
+          onChanged: (_) {},
+          choices: [
+            QdChoice(value: 0, label: _t(context, 'Nearest', 'الأقرب')),
+            QdChoice(value: 1, label: _t(context, 'Cheapest', 'الأرخص')),
+          ],
+        ),
+        QdChoiceChips<int>(
+          selected: 25,
+          onChanged: (_) {},
+          choices: [
+            for (final km in [5, 10, 25, 50, 100])
+              QdChoice(value: km, label: _t(context, '$km km', '$km كم')),
+          ],
+        ),
+      ]);
+    }),
+    QdGallerySection(
+        'booking', 'QdRouteStops · QdPriceBreakdown · QdMapPin · QdFooterBar',
+        (context) {
+      final c = QdColors.of(context);
+      return _col([
+        QdRouteStops(
+          pickup: QdRouteStop(
+            caption: _t(context, 'Pickup', 'الاستلام'),
+            value: _t(context, 'Your current location', 'مكانك الحالي'),
+            note: _t(context, 'Next to the kiosk', 'جنب الكشك'),
+            placeholder: '',
+            onTap: _noop,
+          ),
+          dropoff: QdRouteStop(
+            caption: _t(context, 'Drop-off', 'التسليم'),
+            placeholder:
+                _t(context, 'Choose the drop-off place', 'اختار مكان التسليم'),
+            onTap: _noop,
+          ),
+        ),
+        QdPriceBreakdown(
+          lines: [
+            QdPriceLine(
+                label: _t(context, 'Order opening', 'فتح الطلب'),
+                value: QdMoney.of(context, 20)),
+            QdPriceLine(
+                label: _t(context, '4.2 km × EGP 5', '4.2 كم × 5 ج.م'),
+                value: QdMoney.of(context, 21)),
+          ],
+          totalLabel: _t(context, 'Estimate', 'المتوقع'),
+          totalValue: _t(context, 'About EGP 41', 'حوالي 41 ج.م'),
+          note: _t(context, 'Straight-line estimate.',
+              'ده تقدير بالمسافة المباشرة.'),
+        ),
+        Container(
+          height: 120,
+          color: c.fillMuted,
+          child: Stack(children: [
+            PositionedDirectional(
+              top: QdSpace.x3,
+              start: QdSpace.x3,
+              child: QdMapLabel(
+                  label: _t(context, 'Drop-off place', 'مكان التسليم')),
+            ),
+            const Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(end: QdSpace.x6),
+                child: QdMapPin(),
+              ),
+            ),
+          ]),
+        ),
+        QdFooterBar(
+          child: QdButton(
+            label: _t(context, 'Order now', 'اطلب دلوقتي'),
+            onPressed: _noop,
+            fullWidth: true,
+          ),
+        ),
+      ]);
+    }),
   ];
 }
