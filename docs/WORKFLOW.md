@@ -27,10 +27,11 @@ make check  ->  make commit  ->  owner merges  ->  make push (scoped)
 | `make check` | the **scoped** gate: `scripts/changed-scope.sh` maps the changed paths (committed since the merge-base with `logic-exploitation` + staged + unstaged + untracked) to stages, prints the scope and why, runs them, and on a pass writes the stamp `make commit` requires |
 | `make ci` | alias of `make check` (muscle memory) |
 | `make ci-full` | everything, exactly the pre-WF-03 gate (`CI_SCOPE=full`); also writes a stamp |
-| `make commit` | refuses unless a passing stamp covers the exact tree being committed ("run make check first") |
+| `make commit` | refuses unless a passing stamp covers the exact tree being committed ("run make check first"); raw `git commit` is blocked by `.githooks/pre-commit` |
 | `git push` / `make push` | the pre-push hook, scoped by the **pushed commit range** |
 | GitHub CI (`ci.yml`) | everything, on every push and pull request |
 
+The only way to commit is `make check && make commit`; raw `git commit` is blocked by `.githooks/pre-commit`.
 `CI_SCOPE=full` forces the full gate anywhere (e.g. `CI_SCOPE=full git push`).
 A briefly red `logic-exploitation` on GitHub is acceptable: fix forward.
 `main` is protected (see "Protect main" below).
@@ -78,8 +79,9 @@ path. Every task prompt must state:
    `go.work`, any `go.mod`/`go.sum`, `infrastructure/**`, `.github/**`,
    `Makefile`, `.githooks/**`, `pubspec.yaml`/`pubspec.lock`) — at most one
    running task may own each hot path,
-4. the expectation to run `make check` before every commit (`make commit`
-   enforces it), to record work in
+4. the expectation to run `make check` before every commit (the only
+   way to commit is `make check && make commit`; raw `git commit` is
+   blocked by `.githooks/pre-commit`), to record work in
    `docs/worklog/<TASK-ID>.md` (template: `docs/worklog/README.md`), and to
    stop and ask on the defined stop conditions (a needed decision, an
    out-of-lane change, a failing gate it cannot fix in lane, or a conflict
@@ -146,7 +148,8 @@ make commit FILES="AI_CONTEXT.md docs/changelog/<category>.md" MSG="docs: fold W
   `git update-index --chmod=+x` survives `core.fileMode=false`). Other
   staged paths stay staged and uncommitted; a `WARNING` lists them.
 - Paths containing spaces are not supported in `FILES`.
-- **Pass stamp (WF-03)**: it refuses with
+- **Pass stamp (WF-03, WF-04)**: both `scripts/commit.sh` and the
+  `.githooks/pre-commit` hook refuse with
   `ERROR: no passing gate stamp for the tree being committed: run make check first`
   unless a passing `make check` / `make ci` / `make ci-full` stamped exactly
   the tree being committed, with a scope that covers the commit's own paths
@@ -157,7 +160,14 @@ make commit FILES="AI_CONTEXT.md docs/changelog/<category>.md" MSG="docs: fold W
   Editing a file after the check means checking again. Nothing is staged on a
   refusal. Stamps: `<git-common-dir>/gate-stamps/<tree>`, shared by all
   worktrees, pruned after 14 days / beyond the newest 200
-  (`scripts/gate-stamp.sh`). A raw `git commit` does not check stamps.
+  (`scripts/gate-stamp.sh`).
+- **Hook enforcement (WF-04)**: `.githooks/pre-commit` blocks any raw
+  `git commit` without a passing stamp for the exact tree being committed. The
+  only way to commit is `make check && make commit`.
+  Exceptions: merge commits created by the owner with `git merge --no-ff`
+  (when `MERGE_HEAD` exists) and revert commits (`REVERT_HEAD` exists) are
+  allowed without a prior stamp because the owner's pre-push gate and GitHub
+  CI cover them. No environment variable escape hatch exists.
 
 Then push and clean up:
 

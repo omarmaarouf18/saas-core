@@ -87,9 +87,24 @@ After a pass, a run without arguments writes the **pass stamp** (below), unless 
 
 Only `go test -count=1` of integration packages runs under `flock` on `$(git rev-parse --git-common-dir)/ci.lock` (`scripts/ci-lock.sh`), printing `waiting for CI lock: <file> is held by another gate run (make check or git push)` and `[timing] lock-wait <s>s` when it had to wait. `CI_LOCK_HELD=1` means the caller already holds it. Why the lock is kept: [docs/WORKFLOW.md](WORKFLOW.md) → "CI lock".
 
-#### Pass stamps (WF-03)
+#### Pass stamps (WF-03, WF-04)
 
-`scripts/gate-stamp.sh`. A passing run without arguments writes `<git-common-dir>/gate-stamps/<tree>` (`scope=<SCOPE_KEY>`, HEAD, date), where `<tree>` is the tree hash of a copy of the index with every tracked change and every untracked, not ignored file added from disk (so modes staged with `git update-index --chmod` count). `make commit` (`scripts/commit.sh`) builds the exact tree it will commit in a scratch index — before touching the real index — adds the untracked files it leaves out, and refuses unless a stamp exists for that tree whose scope covers the scope of the commit's own paths (`scripts/changed-scope.sh --paths`; a `full` stamp covers everything). Stamps older than 14 days, and beyond the newest 200, are pruned on each write.
+`scripts/gate-stamp.sh`. A passing run without arguments writes `<git-common-dir>/gate-stamps/<tree>` (`scope=<SCOPE_KEY>`, HEAD, date), where `<tree>` is the tree hash of a copy of the index with every tracked change and every untracked, not ignored file added from disk (so modes staged with `git update-index --chmod` count). `make commit` (`scripts/commit.sh`) builds the exact tree it will commit in a scratch index — before touching the real index — adds the untracked files it leaves out, and refuses unless a stamp exists for that tree whose scope covers the scope of the commit's own paths (`scripts/changed-scope.sh --paths`; a `full` stamp covers everything). When untracked files are present during the check, `scripts/commit.sh` records the pass stamp for the commit tree so that `.githooks/pre-commit` allows it. Stamps older than 14 days, and beyond the newest 200, are pruned on each write.
+
+#### Pre-commit hook (`.githooks/pre-commit`, WF-04)
+
+`.githooks/pre-commit` runs automatically before every commit (both `make commit` and raw `git commit`), making unverified commits impossible:
+- **Tree computation**: runs `tree="$(git write-tree)"` on the index being committed. It respects `GIT_INDEX_FILE` so that `scripts/commit.sh`'s temporary index is inspected directly.
+- **Scope resolution**: compares `HEAD` with `$tree` via `git diff --no-renames --name-only HEAD "$tree"` and maps changed paths through `scripts/changed-scope.sh --paths` to derive `need_key` (defaults to `full` if no HEAD or on errors).
+- **Stamp verification**: calls `scripts/gate-stamp.sh covers "$tree" "$need_key"`. If missing or if the recorded scope does not cover `need_key`, it refuses:
+  ```text
+  ERROR: no passing gate stamp for the tree being committed: run make check first
+    this commit needs scope: <need_key>
+  ```
+- **Allowed exceptions**:
+  - Merge commits created by the owner (`git merge --no-ff`, detected via `git rev-parse -q --verify MERGE_HEAD`): the merge tree is not stamped locally prior to merge; the owner's pre-push gate and GitHub CI provide verification.
+  - Revert commits by the owner (detected via `git rev-parse -q --verify REVERT_HEAD`): allowed without a prior stamp for the same reason.
+- **No escape hatch**: no environment variable bypass exists.
 
 #### Secret scanning (gitleaks, WF-03)
 
