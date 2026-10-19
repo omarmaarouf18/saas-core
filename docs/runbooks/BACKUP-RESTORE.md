@@ -17,6 +17,7 @@ Owner-only procedures for the production backup. The scripts and units live in
 | Schedule | daily at 03:30 Africa/Cairo, plus up to 20 min random delay (`quickdelivery-backup.timer`); a run missed while the VM was off happens at next boot |
 | Mongo | `mongodump --archive --gzip` of every database, run in a short-lived `mongo:7` sidecar container that shares `saas-mongo`'s network (own 192 MiB memory cap; `--numParallelCollections=1`) |
 | Volumes | `tar.gz` of `saas_platform_documents_data` (KYC/KYB/KYE documents: **personal data**) and `saas_platform_attachments_data` (ticket attachments), plus `caddy_data` (TLS certs, nice-to-have) when present, read through a read-only mount |
+| Secrets | `/home/deploybot/.env` (holds `DOCUMENT_ENCRYPTION_KEY`, without which the volume backups are unreadable), copied byte for byte into `env-<stamp>.age`; its contents are never logged. A required artifact: a run without it fails (see "The secrets file in the backup" below) |
 | Encryption | every artifact streamed into [`age`](https://age-encryption.org) to the public key in `backup-recipient.pub`. The private key is only on the owner's machine/offline media, **never on the VM** |
 | Off-host | Azure Blob Storage, container in `quickdelivery-rg`, blob names `<vm hostname>/<UTC stamp>/<file>`, uploaded with plain `curl` (Put Blob) and a SAS that can only **create/write**: a compromised VM cannot read, list or delete old backups |
 | Local | last 3 runs under `/var/backups/quickdelivery/<stamp>/` (encrypted files only) |
@@ -32,16 +33,45 @@ mongo-<stamp>.archive.gz.age
 saas_platform_documents_data-<stamp>.tar.gz.age
 saas_platform_attachments_data-<stamp>.tar.gz.age
 caddy_data-<stamp>.tar.gz.age
+env-<stamp>.age
 SHA256SUMS
 ```
 
-### What is NOT in the backup: keep these offline yourself
+### The secrets file in the backup (`env-<stamp>.age`)
 
-- **`/home/deploybot/.env`**. Documents and attachments are stored AES-256-GCM
-  encrypted with `DOCUMENT_ENCRYPTION_KEY` (`shared/infra/storage`). **Without
-  that key the volume backups cannot be read.** Keep a copy of the whole `.env`
-  (also `OTP_AES_KEY`, `JWT_SECRET`, the Mongo root credentials, …) in your
-  password manager, and update the copy whenever a secret changes.
+Documents and attachments are stored AES-256-GCM encrypted with
+`DOCUMENT_ENCRYPTION_KEY` (`shared/infra/storage`), which lives only in
+`/home/deploybot/.env`. **Without that key the volume backups cannot be
+read.** Since OPS-BACKUP-ENV every run therefore also stores the whole `.env`
+(`DOCUMENT_ENCRYPTION_KEY`, `OTP_AES_KEY`, `JWT_SECRET`,
+`INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`, the Mongo and Redis passwords, …),
+encrypted to the same age recipient as the data. After losing the VM you then
+need only the age private key to get everything back.
+
+The trade-off, accepted by the owner: whoever holds the age private key can
+now read **every production secret** as well as the data, and old versions of
+the secrets stay in Blob Storage until the lifecycle rule deletes them (30
+days, or later under immutability).
+
+- **Still keep a copy of the whole `.env` in your password manager**, and
+  update it whenever a secret changes. It is your fallback if the age key or
+  the Blob account is lost.
+- `restore.sh` decrypts `env-*.age` to a temp file with mode 600 and prints
+  only its path, size and line count, never anything from its contents. It
+  deletes the file unless you pass `-k` (step 7).
+- The systemd unit runs with `ProtectHome=read-only` (it was `yes`) so the
+  script can read `/home/deploybot/.env`. On a VM installed before this
+  change, re-run `sudo ./install.sh` (step 6) to install the new unit and
+  script; until then every run fails with `secrets file not readable`.
+- To back up a different file, set `ENV_FILE=` in
+  `/etc/quickdelivery-backup/backup.env`.
+
+Because the backups hold every production secret, a leaked age private key
+means a leaked `.env`: follow "If the age private key may have leaked" below.
+
+### What is NOT in the backup
+
+- The age private key itself (by design: keep it offline, step 1).
 - Redis (cache-like data with TTLs, by decision).
 - The mTLS certs in the deploy dir's `certs/` (regenerable) and `caddy_config`.
 - Point-in-time consistency: a standalone mongod has no oplog, so writes made
@@ -230,9 +260,11 @@ the top of `backup.sh`.
    It verifies `SHA256SUMS` and restores Mongo into a throwaway `mongo:7`
    container (no published ports, removed at the end). It prints one
    `<db>.<collection> <count>` line per collection, then extracts each volume
-   into a temp dir, prints file counts and sizes, and deletes the temp dir. `-k`
-   keeps the container and the dirs; they contain personal data, so delete them
-   when done.
+   into a temp dir, prints file counts and sizes, and deletes the temp dir. For
+   `env-<stamp>.age` it decrypts to a mode-600 temp file, prints its path, size
+   and line count (compare them with `stat -c %s` and `wc -l` of
+   `/home/deploybot/.env` on the VM), and deletes the file. `-k` keeps the container, the dirs and the secrets file; they contain
+   personal data and production secrets, so delete them when done.
 3. Compare with production. On the VM (read-only, prints the same format):
 
    ```bash
@@ -338,8 +370,35 @@ a small change to `backup.sh`.
 - **age key**: generate a new pair (step 1) and put the new public key in
   `backup-recipient.pub`, then re-run `install.sh`. Keep the OLD private key
   until the last backup encrypted to it has aged out (30 days). If the old key
-  leaked, also delete the old blobs (this is impossible during an immutability
-  period).
+  may have leaked, follow the section below instead.
+
+### If the age private key may have leaked
+
+The backups contain the whole `.env`, so treat every production secret as
+leaked, not just the data:
+
+1. **Rotate every secret in `/home/deploybot/.env`**: `JWT_SECRET`,
+   `OTP_AES_KEY`, `INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`, the Mongo root
+   password and the Redis password, plus any other credential in the file.
+   Then redeploy.
+2. **Re-encrypt the documents and attachments with a new
+   `DOCUMENT_ENCRYPTION_KEY`**, with the services stopped. The repo has no
+   one-step re-key tool. `services/auth-service/cmd/encrypt-documents`
+   (`-dir`, `-key`) takes a single key: it skips files that already decrypt
+   with that key and encrypts every other file. So:
+   - **Do not** run it with the new key over the current volumes. Files
+     encrypted with the old key do not decrypt with the new key, so the tool
+     would encrypt them a second time, and the app could not read them.
+   - First decrypt every file with the OLD key (this needs a small tool that
+     the repo does not have yet). Then run `encrypt-documents -dir <volume
+     path>` over the plaintext with the new key in its
+     `DOCUMENT_ENCRYPTION_KEY` environment variable (not `-key`, which would
+     put the key on the command line). Put the new key in `.env` and start the
+     services. Take a fresh backup before and after.
+3. **Make a new age key pair** (step 1), put the new public key in
+   `backup-recipient.pub`, and re-run `install.sh`. Delete the old blobs where
+   you can (this is impossible during an immutability period).
+4. Update the password-manager copy of `.env`.
 
 ## Restore into production (DANGEROUS)
 
@@ -375,7 +434,11 @@ commands in a root shell (`sudo -i`).
    scp mongo.archive.gz <you>@<vm>:/tmp/
    ```
 
-   (Same for a volume: `…-<stamp>.tar.gz.age` → `<volume>.tar.gz`.)
+   (Same for a volume: `…-<stamp>.tar.gz.age` → `<volume>.tar.gz`. If the
+   VM was rebuilt and `.env` is lost: `age -d -i quickdelivery-backup-key.txt
+   -o env ~/qd-restore/<stamp>/env-<stamp>.age`, copy it to
+   `/home/deploybot/.env` with owner `deploybot` and mode 600, and delete the
+   local plaintext.)
 
 3. **Stop the app containers** (Mongo keeps running; Caddy stays up and returns
    errors meanwhile):
