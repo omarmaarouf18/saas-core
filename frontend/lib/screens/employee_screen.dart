@@ -308,7 +308,11 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                       ownerProvider.employees.isEmpty)
                     ThemedErrorBanner(
                       key: const Key('employees_error_banner'),
-                      message: ownerProvider.error!,
+                      // Staff-list outage (GET /auth/employees now returns
+                      // 500 on a database error instead of an empty 200 []):
+                      // a dedicated localized failure state with retry, so
+                      // an outage can never read as "no employees yet".
+                      message: context.l10n.employeesLoadFailed,
                       onRetry: _refreshData,
                     )
                   else if (ownerProvider.employees.isEmpty)
@@ -452,6 +456,19 @@ class _EmployeeScreenState extends State<EmployeeScreen>
         error.statusCode == 400 &&
         error.errorCode == 'weak_password') {
       return weakPasswordServerMessage(context.l10n, error.message);
+    }
+    return friendlyErrorMessage(error);
+  }
+
+  /// SEC-07b: 503 service_unavailable on freeze/unfreeze means session
+  /// revocation failed and nothing changed — localized retry copy instead
+  /// of the generic 5xx line.
+  String _employeeToggleErrorMessage(BuildContext context, Object error) {
+    if (error is ApiClientException &&
+        (error.statusCode == 503 ||
+            (error.statusCode == null &&
+                error.errorCode == 'service_unavailable'))) {
+      return context.l10n.serviceTemporarilyUnavailable;
     }
     return friendlyErrorMessage(error);
   }
@@ -798,7 +815,13 @@ class _EmployeeScreenState extends State<EmployeeScreen>
                                 if (mounted) {
                                   ThemedSnackBar.showError(
                                     context,
-                                    friendlyErrorMessage(e),
+                                    // SEC-07b: a freeze/unfreeze whose
+                                    // session revocation fails returns 503
+                                    // and the account is NOT frozen — say
+                                    // "temporarily unavailable, try again"
+                                    // so the owner retries instead of
+                                    // trusting a stale roster state.
+                                    _employeeToggleErrorMessage(context, e),
                                   );
                                 }
                               } finally {
