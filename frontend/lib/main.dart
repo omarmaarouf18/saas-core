@@ -24,6 +24,7 @@ import 'providers/locale_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/component_library_screen.dart';
+import 'ui/gallery/qd_gallery_screen.dart';
 import 'widgets/kyc_rejection_dialog_host.dart';
 import 'widgets/themed_panel.dart';
 
@@ -132,6 +133,13 @@ class MyApp extends StatelessWidget {
           return MaterialPageRoute(
             settings: settings,
             builder: (_) => const ComponentLibraryScreen(),
+          );
+        }
+        // Debug-only redesign A gallery (FE-DS); never in release builds.
+        if (kDebugMode && settings.name == QdGalleryScreen.routeName) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => const QdGalleryScreen(),
           );
         }
         return null;
