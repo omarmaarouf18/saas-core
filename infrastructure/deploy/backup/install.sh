@@ -8,6 +8,9 @@
 #                                 the SAS file is filled in, run one backup now
 #   sudo ./install.sh --set-sas   paste the container SAS URL (not echoed, not
 #                                 in shell history) into the SAS file, then exit
+#   sudo ./install.sh --set-ping  paste the healthchecks.io ping URL (not
+#                                 echoed) into the ping file, then exit; see
+#                                 docs/runbooks/MONITORING.md (OBS-MIN)
 #
 # Idempotent: re-running it updates the script, the key and the units and
 # keeps the SAS file, the local backups and the state.
@@ -17,6 +20,7 @@
 #   /usr/local/lib/quickdelivery-backup/backup-recipient.pub  0644 (public key)
 #   /etc/quickdelivery-backup/                                0700
 #   /etc/quickdelivery-backup/sas                             0600 (container SAS URL)
+#   /etc/quickdelivery-backup/ping                            0600, optional (dead-man ping URL)
 #   /etc/quickdelivery-backup/backup.env                      optional overrides
 #   /var/backups/quickdelivery/                               0700 (last 3 runs)
 #   /var/lib/quickdelivery-backup/                            0700 (FAILED, last-success)
@@ -28,6 +32,7 @@ SRC="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 LIB=/usr/local/lib/quickdelivery-backup
 CONF=/etc/quickdelivery-backup
 SAS_FILE="$CONF/sas"
+PING_FILE="$CONF/ping"
 BACKUP_DIR=/var/backups/quickdelivery
 STATE_DIR=/var/lib/quickdelivery-backup
 UNIT_DIR=/etc/systemd/system
@@ -57,7 +62,24 @@ if [ "${1:-}" = "--set-sas" ]; then
 	say "SAS URL written to $SAS_FILE (mode 600). Now run: sudo $0"
 	exit 0
 fi
-[ $# -eq 0 ] || die "usage: $0 [--set-sas]"
+
+if [ "${1:-}" = "--set-ping" ]; then
+	printf 'Paste the healthchecks.io ping URL for the BACKUP check (https://hc-ping.com/<uuid>), then Enter.\nInput is not shown.\n> '
+	IFS= read -r -s ping
+	printf '\n'
+	ping="$(printf '%s' "$ping" | tr -d '\r\n\t ')"
+	ping="${ping%/}"
+	[[ "$ping" =~ ^https://[a-z0-9.-]+/[0-9a-zA-Z-]{16,}$ ]] ||
+		die "that does not look like a healthchecks.io ping URL (https://hc-ping.com/<uuid>, no trailing slash); nothing written"
+	printf '%s\n' "$ping" >"$PING_FILE.new"
+	chown root:root "$PING_FILE.new"
+	chmod 600 "$PING_FILE.new"
+	mv "$PING_FILE.new" "$PING_FILE"
+	unset ping
+	say "ping URL written to $PING_FILE (mode 600). Now run: sudo $0"
+	exit 0
+fi
+[ $# -eq 0 ] || die "usage: $0 [--set-sas | --set-ping]"
 
 say "1/6 checks"
 grep -Eq '^age1[0-9a-z]{58}$' "$SRC/backup-recipient.pub" ||

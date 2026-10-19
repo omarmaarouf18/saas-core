@@ -34,6 +34,8 @@
 #   KEEP_LOCAL        local runs to keep                          (3)
 #   STATE_DIR         failure marker and last-success  (/var/lib/quickdelivery-backup)
 #   SAS_FILE          one line: container SAS URL   (/etc/quickdelivery-backup/sas)
+#   PING_FILE         one line: healthchecks.io ping URL (dead-man ping,
+#                     OBS-MIN)                     (/etc/quickdelivery-backup/ping)
 #   RECIPIENT_FILE    age recipients file        (backup-recipient.pub next to this script)
 #   BLOB_PREFIX       blob name prefix                            ($(hostname -s))
 #   MIN_FREE_MB       refuse to start below this much free space  (2048)
@@ -71,6 +73,7 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/quickdelivery}"
 KEEP_LOCAL="${KEEP_LOCAL:-3}"
 STATE_DIR="${STATE_DIR:-/var/lib/quickdelivery-backup}"
 SAS_FILE="${SAS_FILE:-/etc/quickdelivery-backup/sas}"
+PING_FILE="${PING_FILE:-/etc/quickdelivery-backup/ping}"
 RECIPIENT_FILE="${RECIPIENT_FILE:-$SELF_DIR/backup-recipient.pub}"
 BLOB_PREFIX="${BLOB_PREFIX:-$(hostname -s)}"
 MIN_FREE_MB="${MIN_FREE_MB:-2048}"
@@ -100,6 +103,78 @@ now_ms() { date +%s%3N; }
 human() { numfmt --to=iec --suffix=B "$1"; }
 secs() { awk -v ms="$1" 'BEGIN { printf "%.1fs", ms / 1000 }'; }
 
+# --- dead-man ping (OBS-MIN) -------------------------------------------------
+# healthchecks.io-style dead-man ping to the URL in PING_FILE (its first
+# line): "<url>/start" when a run gets going, "<url>" when it succeeds and
+# "<url>/fail" when it fails. The URL is a secret: read from a root-only file
+# at run time and handed to curl on stdin (-K -, like the SAS), so it is never
+# on a command line (ps) and never in a log — only the ping suffix is logged.
+# Best effort everywhere: the file being absent or empty disables the feature
+# with one log line, and a failed ping is a WARN, never a failure; the ping
+# itself is capped at a few seconds (--connect-timeout 5 --max-time 10).
+PING_URL=""
+ping_url_scheme_ok() { # ping_url_scheme_ok <url>: true when the ping URL may be used
+	case "$1" in
+	https://*) return 0 ;;
+	http://127.0.0.1:[0-9]*) [ "$BACKUP_ALLOW_HTTP" = "1" ] ;;
+	*) return 1 ;;
+	esac
+}
+read_ping_url() {
+	if [ ! -f "$PING_FILE" ]; then
+		log "ping: dead-man ping disabled ($PING_FILE does not exist; OBS-MIN runbook)"
+		return 0
+	fi
+	PING_URL="$(head -n 1 "$PING_FILE" | tr -d '\r\n\t ')"
+	if [ -z "$PING_URL" ]; then
+		log "ping: dead-man ping disabled ($PING_FILE is empty; OBS-MIN runbook)"
+		return 0
+	fi
+	read -r ping_mode < <(stat -c '%a' "$PING_FILE")
+	if [ $((8#$ping_mode & 8#007)) -ne 0 ]; then
+		log "WARN: ping: $PING_FILE has mode $ping_mode; it holds a secret URL, make it 600"
+	fi
+	case "$PING_URL" in */) PING_URL="${PING_URL%/}" ;; esac
+	PING_URL="${PING_URL%%[[:space:]]*}"
+	if ! ping_url_scheme_ok "$PING_URL"; then
+		log "WARN: ping: $PING_FILE holds a URL backup.sh will not use (https only); ping disabled"
+		PING_URL=""
+	fi
+	return 0
+}
+ping_hc() { # ping_hc <suffix> <body> — one best-effort healthchecks.io ping
+	local suffix="$1" body="$2" t0 code
+	[ -n "$PING_URL" ] || return 0
+	t0="$(now_ms)"
+	set +e
+	code="$(printf 'url = "%s%s"\ndata-binary = "%s"\n' \
+		"$PING_URL" "$suffix" "${body//\"/}" |
+		curl -K - --silent --max-time 10 --connect-timeout 5 \
+			--request POST --output /dev/null --write-out '%{http_code}' 2>/dev/null)"
+	local rc=$?
+	set -e
+	if [ "$rc" -eq 0 ] && [ "$code" = "200" ]; then
+		log "ok: ping$suffix in $(secs $(( $(now_ms) - t0 )))"
+	else
+		log "WARN: ping$suffix failed (curl exit $rc, HTTP ${code:-?}); the backup itself is unaffected"
+	fi
+	return 0
+}
+ping_fail() { # ping_fail <body> — best-effort /fail ping; reads the file itself
+	# because cleanup() and --post-stop can run before read_ping_url was called.
+	local url body
+	[ -f "$PING_FILE" ] || return 0
+	url="$(head -n 1 "$PING_FILE" | tr -d '\r\n\t ')"
+	[ -n "$url" ] || return 0
+	case "$url" in */) url="${url%/}" ;; esac
+	if ! ping_url_scheme_ok "$url"; then
+		return 0
+	fi
+	body="$(printf '%s' "$1" | tr '\r\n' ' ' | head -c 300 | tr -s ' ')"
+	PING_URL="$url" ping_hc /fail "$body"
+	return 0
+}
+
 # --- systemd ExecStopPost hook ----------------------------------------------
 if [ "${1:-}" = "--post-stop" ]; then
 	STEP="post-stop"
@@ -111,6 +186,10 @@ if [ "${1:-}" = "--post-stop" ]; then
 			printf '%s run killed or failed outside the script: result=%s code=%s status=%s\n' \
 				"$(date -u +%FT%TZ)" "${SERVICE_RESULT:-?}" "${EXIT_CODE:-?}" "${EXIT_STATUS:-?}" >"$FAIL_MARKER"
 			rm -f "$RUNNING_MARKER"
+			# A fresh marker means the script's own cleanup did not run for this
+			# failure, so this hook also sends the /fail dead-man ping (one per
+			# failed run; the script's cleanup owns it otherwise).
+			ping_fail "$(cat "$FAIL_MARKER")"
 		fi
 		log "BACKUP FAILED: $(cat "$FAIL_MARKER")"
 		log "marker: $FAIL_MARKER (removed by the next successful run)"
@@ -143,6 +222,7 @@ cleanup() {
 			"$(date -u +%FT%TZ)" "$STEP" "$rc" >"$FAIL_MARKER"
 		rm -f "$RUNNING_MARKER"
 		log "BACKUP FAILED (exit $rc); marker written: $FAIL_MARKER"
+		ping_fail "$(cat "$FAIL_MARKER")"
 	fi
 	exit "$rc"
 }
@@ -162,6 +242,7 @@ fi
 STEP="preflight"
 RUN_START_MS="$(now_ms)"
 date -u +%FT%TZ >"$RUNNING_MARKER"
+read_ping_url
 
 for tool in docker age curl flock sha256sum numfmt; do
 	command -v "$tool" >/dev/null 2>&1 || die "required tool not found: $tool"
@@ -246,6 +327,7 @@ RUN_DIR="$BACKUP_DIR/$STAMP"
 TMP_DIR="$(mktemp -d)"
 mkdir -m 700 "$RUN_DIR"
 log "start run $STAMP: dir=$RUN_DIR target=$SAS_BASE/$BLOB_PREFIX/$STAMP/ image=$DUMP_IMAGE free=${avail_mb}MB"
+ping_hc /start "start $STAMP on $(hostname -s)"
 
 # --- 1. Mongo -----------------------------------------------------------------
 STEP="mongodump"
@@ -390,3 +472,4 @@ total="$(du -sb "$RUN_DIR" | cut -f1)"
 rm -f "$FAIL_MARKER" "$RUNNING_MARKER"
 date -u +%FT%TZ >"$LAST_SUCCESS"
 log "BACKUP OK: run $STAMP, $(human "$total") encrypted, uploaded to $SAS_BASE/$BLOB_PREFIX/$STAMP/ in $(secs $(($(now_ms) - RUN_START_MS)))"
+ping_hc "" "ok: run $STAMP, $(human "$total"), $(secs $(( $(now_ms) - RUN_START_MS )))"
