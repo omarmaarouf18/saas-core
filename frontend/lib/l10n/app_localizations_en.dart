@@ -1772,9 +1772,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterpriseTrustNote => 'Secured by Enterprise Trust Protocol';
 
   @override
-  String get jobsTrendChipMock => '+12% vs last week';
-
-  @override
   String get activeFleetMetricLabel => 'ACTIVE FLEET';
 
   @override
@@ -2083,9 +2080,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get availableBalanceBadge => 'BALANCE';
-
-  @override
-  String get balanceTrendChipMock => '+8.4%';
 
   @override
   String totalPortfolioLine(String amount) {

@@ -121,6 +121,21 @@ Widget createWalletTestWidget({
 }
 
 void main() {
+  // UX-05: no fake trend data — the mock balance trend chip must stay gone.
+  testWidgets('WalletScreen renders no mock trend chip', (tester) async {
+    final fakeApi = FakeApiClientForPayout();
+    final ownerProvider = OwnerProvider(fakeApi);
+    await ownerProvider.fetchDashboardData('mock-owner-token');
+
+    await tester.pumpWidget(
+        createWalletTestWidget(apiClient: fakeApi, ownerProvider: ownerProvider));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.trending_up), findsNothing);
+    expect(find.text('+8.4%'), findsNothing);
+    expect(find.textContaining('vs last'), findsNothing);
+  });
+
   testWidgets(
       'Payout request form validation - amount exceeds balance and empty details',
       (WidgetTester tester) async {

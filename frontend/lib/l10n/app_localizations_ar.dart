@@ -1751,9 +1751,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterpriseTrustNote => 'محمي ببروتوكول الحماية المؤسسي';
 
   @override
-  String get jobsTrendChipMock => '+12% عن الأسبوع اللي فات';
-
-  @override
   String get activeFleetMetricLabel => 'الأسطول النشط';
 
   @override
@@ -2051,9 +2048,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get availableBalanceBadge => 'الرصيد';
-
-  @override
-  String get balanceTrendChipMock => '+8.4%';
 
   @override
   String totalPortfolioLine(String amount) {

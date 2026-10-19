@@ -3303,12 +3303,6 @@ abstract class AppLocalizations {
   /// **'Secured by Enterprise Trust Protocol'**
   String get enterpriseTrustNote;
 
-  /// No description provided for @jobsTrendChipMock.
-  ///
-  /// In en, this message translates to:
-  /// **'+12% vs last week'**
-  String get jobsTrendChipMock;
-
   /// No description provided for @activeFleetMetricLabel.
   ///
   /// In en, this message translates to:
@@ -3860,12 +3854,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'BALANCE'**
   String get availableBalanceBadge;
-
-  /// No description provided for @balanceTrendChipMock.
-  ///
-  /// In en, this message translates to:
-  /// **'+8.4%'**
-  String get balanceTrendChipMock;
 
   /// No description provided for @totalPortfolioLine.
   ///

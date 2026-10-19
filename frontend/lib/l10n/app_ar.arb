@@ -642,7 +642,6 @@
     }
   },
   "enterpriseTrustNote": "محمي ببروتوكول الحماية المؤسسي",
-  "jobsTrendChipMock": "+12% عن الأسبوع اللي فات",
   "activeFleetMetricLabel": "الأسطول النشط",
   "quickConfigSubtitle": "ظبّط بيانات نشاطك وأسعارك وتغطيتك",
   "urgentActionsHeader": "إجراءات عاجلة",
@@ -780,7 +779,6 @@
   "walletMyWalletTitle": "محفظتي",
   "walletCorporateSubtitle": "أدر فلوس الشركة والمصروفات.",
   "availableBalanceBadge": "الرصيد",
-  "balanceTrendChipMock": "+8.4%",
   "totalPortfolioLine": "إجمالي المحفظة: {amount} كريدت",
   "@totalPortfolioLine": {
     "placeholders": {

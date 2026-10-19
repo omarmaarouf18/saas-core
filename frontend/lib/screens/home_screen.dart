@@ -662,26 +662,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.trending_up,
-                      color: context.semanticColors.success,
-                      size: AppIconSize.xs,
-                    ),
-                    const SizedBox(width: AppSpacing.xxs),
-                    Flexible(
-                      child: Text(
-                        l10n.jobsTrendChipMock,
-                        style: AppTypography.caption.copyWith(
-                          color: context.semanticColors.success,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  l10n.ownerHomeOwnerJobs,
+                  style: AppTypography.caption.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

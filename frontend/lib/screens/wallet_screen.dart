@@ -178,7 +178,6 @@ class _WalletScreenState extends State<WalletScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 l10n.availableBalanceBadge,
@@ -188,31 +187,6 @@ class _WalletScreenState extends State<WalletScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              ThemedPanel(
-                  color: context.semanticColors.success.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.baseSm,
-                    vertical: AppSpacing.xxs,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.trending_up,
-                        color: context.semanticColors.success,
-                        size: AppIconSize.xs,
-                      ),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        l10n.balanceTrendChipMock,
-                        style: AppTypography.caption.copyWith(
-                          color: context.semanticColors.success,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  )),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),

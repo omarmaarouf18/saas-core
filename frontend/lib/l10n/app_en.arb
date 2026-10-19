@@ -852,7 +852,6 @@
     }
   },
   "enterpriseTrustNote": "Secured by Enterprise Trust Protocol",
-  "jobsTrendChipMock": "+12% vs last week",
   "activeFleetMetricLabel": "ACTIVE FLEET",
   "quickConfigSubtitle": "Configure business profile, rates & coverage",
   "urgentActionsHeader": "Urgent Actions",
@@ -990,7 +989,6 @@
   "walletMyWalletTitle": "My Wallet",
   "walletCorporateSubtitle": "Manage corporate finances and payouts.",
   "availableBalanceBadge": "BALANCE",
-  "balanceTrendChipMock": "+8.4%",
   "totalPortfolioLine": "Total Portfolio: {amount} Credits",
   "@totalPortfolioLine": {
     "placeholders": {
