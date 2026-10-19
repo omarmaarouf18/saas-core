@@ -132,7 +132,7 @@ To minimize the attack surface of the running services, onboarding a support age
    ```text
    Successfully onboarded support agent "agent_omar"!
    ----------------------------------------------------------------------
-   Generated Token: e82d7083abf3e9c402b8a0...
+   Generated Token: <64-hex-token-shown-once>
    ----------------------------------------------------------------------
    WARNING: This token is displayed ONLY ONCE. Copy it now.
    ```
@@ -166,7 +166,7 @@ To minimize the attack surface of the running services, onboarding a KYB/KYE rev
    ```text
    Successfully onboarded reviewer "reviewer_omar"!
    ----------------------------------------------------------------------
-   Generated Reviewer Token: d8a958e932b7bc0f82...
+   Generated Reviewer Token: <64-hex-token-shown-once>
    ----------------------------------------------------------------------
    WARNING: This token is displayed ONLY ONCE. Copy it now.
    ```
@@ -196,14 +196,14 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[AI_CONTEXT.md](AI_CONTEXT.md)** — The primary source of truth detailing the current project state, implementation roadmap, and immediate next steps.
 *   **[CLAUDE.md](CLAUDE.md)** — Core development policies and guides, including this project's auto-commit policy.
 *   **[DESIGN.md](DESIGN.md)** — High-level system design, data schema models, and microservice communication patterns.
-*   **[IMPLEMENTATION.md](IMPLEMENTATION.md)** — Tech stack specifications, checklists, and manual verification procedures.
+*   **[docs/history/IMPLEMENTATION.md](docs/history/IMPLEMENTATION.md)** — Tech stack specifications, checklists, and manual verification procedures.
 *   [docs/APPLICATION_MAP.md](docs/APPLICATION_MAP.md) — Detailed API endpoints, inter-service HTTP routes, and user/system interaction flowcharts.
 *   [docs/REPOSITORY_MAP.md](docs/REPOSITORY_MAP.md) — Dedicated onboarding map of the 4-repository ecosystem, pipeline triggers, PAT secret scopes, and operational runbooks.
 *   [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Production deployment guide, VPS requirements, reverse proxy setup, and two-repo architecture.
 *   **[docs/CI_CD_AND_HOOKS.md](docs/CI_CD_AND_HOOKS.md)** — Comprehensive breakdown of local Git hooks, GitHub Actions CI, and GHCR build/publish workflows.
 *   **[docs/RUNBOOK.md](docs/RUNBOOK.md)** — Release and server deployment runbook for merging, CI/CD triggering, VPS setup, and rollback procedures.
 *   **[docs/adr/README.md](docs/adr/README.md)** — Architectural Decision Records (ADRs) index capturing system decisions, escrow boundaries, mTLS, and multi-repo architectures.
-*   **[docs/BUSINESS_LOGIC_AUDIT.md](docs/BUSINESS_LOGIC_AUDIT.md)** — Formal audit report documenting confirmed business-logic findings (COD race condition & escrow calculations), verified-sound mechanisms, and audit scope limits.
+*   **[docs/history/BUSINESS_LOGIC_AUDIT.md](docs/history/BUSINESS_LOGIC_AUDIT.md)** — Formal audit report documenting confirmed business-logic findings (COD race condition & escrow calculations), verified-sound mechanisms, and audit scope limits.
 *   **[docs/changelog/README.md](docs/changelog/README.md)** — Index of categorized changelogs (Security Fixes, New Features, Infrastructure, Bug Fixes, and Documentation updates).
 
 ### Frontend (Flutter Client)
@@ -212,7 +212,7 @@ The following documentation resources map the Quick Delivery platform architectu
 *   **[docs/frontend/STATUS.md](docs/frontend/STATUS.md)** — Current frontend phase completion progress and verified client capabilities.
 *   **[docs/frontend/BRAND_IDENTITY.md](docs/frontend/BRAND_IDENTITY.md)** — Brand identity guidelines, color personality rationale, QD logo specs, voice & tone, and competitor benchmarks.
 *   **[docs/frontend/DESIGN_SYSTEM.md](docs/frontend/DESIGN_SYSTEM.md)** — Comprehensive frontend design system specification, design token reference, component catalog, composition patterns, and tracked design debt backlog.
-*   **[docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md](docs/frontend/UI_UX_ENTERPRISE_ROADMAP.md)** — Phased roadmap for enterprise UI/UX polish, motion standardization, state polish, and multi-device QA.
+*   **[docs/history/frontend/UI_UX_ENTERPRISE_ROADMAP.md](docs/history/frontend/UI_UX_ENTERPRISE_ROADMAP.md)** — Phased roadmap for enterprise UI/UX polish, motion standardization, state polish, and multi-device QA.
 *   **[docs/frontend/ARCHITECTURE.md](docs/frontend/ARCHITECTURE.md)** — Technical design specifications of the client, state managers, directory layouts, and socket subscribers.
 *   **[frontend/docs/CI_CD.md](frontend/docs/CI_CD.md)** — Hot-swap sync pipeline mirroring `frontend/` to the standalone `quick-delivery-mobile` repo and its automated APK build/artifact workflow, including troubleshooting for common sync/build failures.
 

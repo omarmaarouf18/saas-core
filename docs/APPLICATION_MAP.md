@@ -179,8 +179,8 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | Method + Path | Owning Service | Caller Permissions | Core Functionality | Read / Write Target & Downstream Actions |
 | :--- | :--- | :--- | :--- | :--- |
 | **`GET /`** | `api-gateway` | Public | Root index. | None. |
-| **`GET /api/v1/admin/version-config`** | `api-gateway` | `X-Admin-Token` | Fetches current mobile client minimum and latest version enforcement configuration. | Reads `platform_versions` collection. |
-| **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Admin-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates `platform_versions` collection. |
+| **`GET /api/v1/admin/version-config`** | `api-gateway` | `X-Admin-Token` | Fetches current mobile client minimum and latest version enforcement configuration. | Reads in-memory version store. |
+| **`PUT /api/v1/admin/version-config`** | `api-gateway` | `X-Admin-Token` | Updates mobile client minimum and latest version enforcement configuration. | Updates in-memory version store. |
 | **`GET /health`** | `api-gateway` | Public | Public gateway health status. | None. |
 | **`GET /health/internal`** | `api-gateway` | `X-Internal-Token` | Returns circuit breaker metrics. | Reads breaker memory. |
 | **`GET /auth/accounts`** | `auth-service` | Reviewer Token & `X-Internal-Token` | Searches and lists registered accounts with pagination, role and status filters (ADR-0022). | Reads `users` collection. |

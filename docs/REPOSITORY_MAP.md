@@ -76,7 +76,7 @@ flowchart TD
 
 ## 2. GitHub Actions Secret & Security Matrix
 
-The cross-repository push pipelines rely on GitHub App `quick-delivery-automation` installation tokens generated via `actions/create-github-app-token@v1`. Each secret (`APP_ID` and `APP_PRIVATE_KEY`) is stored in the initiating repository's **Settings -> Secrets and variables -> Actions** panel and operates under least-privilege scoping rules (refer to [ADR-0010](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/adr/0010-separate-repos-for-deployment-artifacts.md)):
+The cross-repository push pipelines rely on GitHub App `quick-delivery-automation` installation tokens generated via `actions/create-github-app-token@v1`. Each secret (`APP_ID` and `APP_PRIVATE_KEY`) is stored in the initiating repository's **Settings -> Secrets and variables -> Actions** panel and operates under least-privilege scoping rules (refer to [ADR-0010](adr/0010-separate-repos-for-deployment-artifacts.md)):
 
 | Secret Name | Stored In | Consuming Workflows | Target Repository | Scopes / Permissions | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -117,7 +117,11 @@ git checkout logic-exploitation
 ```
 
 ### 4.2 Production VM Stack Deployment (`quickdelivery-vm`)
-Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM. Per [ADR-0015](adr/0015-strict-cd-preflight-validation.md), the pipeline executes strict pre-flight environment checks (`--check-env`), full structural file synchronization (`rsync -a`), `docker compose pull`, `docker compose up -d --remove-orphans`, health checks across all services, and automated health-gated rollback on failure.
+Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM. Per [ADR-0015](adr/0015-strict-cd-preflight-validation.md) and OPS-HARDEN:
+- Caddy runs as a compose-managed service (`saas-caddy`), using `infrastructure/deploy/Caddyfile` and persisting TLS certificates across deployments via the external `caddy_data` volume. Caddy is never started by hand.
+- The API Gateway (`api-gateway`) has no published host port. All external traffic terminates at Caddy (ports 80/443). Internal health checks from the VM host execute inside the container: `docker exec saas-api-gateway curl -sk https://localhost:8080/health`.
+- The admin API (`/api/v1/admin/*`, version configuration) returns `404` at Caddy edge and is strictly accessible from the VM host via `docker exec saas-api-gateway` with `X-Admin-Token`.
+- The pipeline executes strict pre-flight environment checks (`--check-env`), full structural file synchronization (`rsync -a`), `docker compose pull`, `docker compose up -d --remove-orphans`, health checks across all services, and automated health-gated rollback on failure.
 
 #### Manual Fallback (if runner is offline or undergoing maintenance)
 ```bash
@@ -126,9 +130,10 @@ cd /home/deploybot/actions-runner/_work/saas-core-deploy/saas-core-deploy
 git pull origin main
 docker compose pull
 docker compose up -d --remove-orphans
+docker exec saas-api-gateway curl -sk https://localhost:8080/health
 ```
 
-*Note: For internal mTLS certificate regeneration, ensure `openssl x509 -req` includes `-copy_extensions copy` to preserve Subject Alternative Name (SAN) extensions (see [DEPLOYMENT.md §5.3](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/DEPLOYMENT.md#53-generate-internal-mtls-certificates)).*
+*Note: For internal mTLS certificate regeneration, ensure `openssl x509 -req` includes `-copy_extensions copy` to preserve Subject Alternative Name (SAN) extensions (see [DEPLOYMENT.md §5.3](DEPLOYMENT.md#step-53-generate-internal-mtls-certificates)).*
 
 ### 4.3 Verifying Currently Deployed Image & Commit SHA
 To inspect the exact container image tag active on the server:
@@ -142,7 +147,7 @@ Expected output: `ghcr.io/omarmaarouf18/saas-core-api-gateway:<40-char-sha>`
 | Failure Symptom | Primary Inspection Surface | Diagnostic Step / Command | Resolution Path |
 | :--- | :--- | :--- | :--- |
 | **OTP Emails / SMS Not Arriving** | `auth-service` Container Logs | `docker compose logs -f auth-service` | Verify `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured in `.env`. Confirm Resend API domain status is verified. |
-| **Public Domain Not Resolving / HTTP 502 / Connection Refused** | `saas-caddy` Container Status & Logs | `docker compose ps caddy` <br> `docker compose logs -f caddy` | Ensure `saas-caddy` container is running (see [DEPLOYMENT.md §10.5](file:///mnt/windows_data/CS%20tools/Antigravity/SaaS%20prototype/docs/DEPLOYMENT.md#105-missing-or-orphaned-saas-caddy-container-causing-public-domain-outage)). Confirm `Caddyfile` reverse_proxy target is `api-gateway:8080` over `saas-net`. |
+| **Public Domain Not Resolving / HTTP 502 / Connection Refused** | `saas-caddy` Container Status & Logs | `docker compose ps caddy` <br> `docker compose logs -f caddy` | Ensure `saas-caddy` container is running (see [DEPLOYMENT.md §10.5](DEPLOYMENT.md#105-missing-or-orphaned-saas-caddy-container-causing-public-domain-outage)). Confirm `Caddyfile` reverse_proxy target is `api-gateway:8080` over `saas-net`. |
 | **Production Containers Not Updating After Push** | GitHub Actions `build-and-publish.yml` Log & `saas-core-deploy` Commits | Check [GitHub Actions Runs](https://github.com/omarmaarouf18/saas-core/actions) and [saas-core-deploy Commits](https://github.com/omarmaarouf18/saas-core-deploy/commits/main) | Verify push occurred to `main` (not `logic-exploitation` alone). Ensure GitHub App credentials (`APP_ID` and `APP_PRIVATE_KEY`) are valid. Run `docker compose pull` on the host. |
 
 ---

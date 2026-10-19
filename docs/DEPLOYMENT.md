@@ -58,10 +58,9 @@ Configure inbound security rules on the VM's Network Security Group (NSG) to per
 | 1000 | `Allow-SSH` | `22 / TCP` | Administrator IP | Remote SSH server administration |
 | 1010 | `Allow-HTTP` | `80 / TCP` | Any (`*`) | HTTP web traffic & Let's Encrypt ACME challenges |
 | 1020 | `Allow-HTTPS` | `443 / TCP` | Any (`*`) | Secure production web and API traffic |
-| 1030 | `Allow-API-Gateway-Direct` | `8080 / TCP` | Any (`*`) | *(Optional)* Direct API Gateway access when bypassing Caddy during initial testing |
 
 > [!WARNING]
-> Internal microservice ports (`3001`–`3004`), database ports (`27017` for MongoDB, `6379` for Redis), and internal mTLS communication are bound to internal network interfaces (`127.0.0.1` / `saas-net`) and MUST NOT be exposed in Azure NSG inbound rules.
+> The API Gateway (port 8080) has no published host port binding. All public ingress routes through Caddy (ports 80/443). Internal microservice ports (`3001`–`3004`), database ports (`27017` for MongoDB, `6379` for Redis), and internal mTLS communication are strictly bound to internal container network interfaces (`127.0.0.1` / `saas-net`) and MUST NOT be exposed in Azure NSG inbound rules.
 
 ### 3.3 Azure Subscription Region Policy Restrictions
 Constrained Azure subscriptions (such as Azure for Students or restricted enterprise subscriptions) enforce policy definitions restricting resource deployment to specific geographic regions.
@@ -256,9 +255,9 @@ Check container status (confirm MongoDB and Redis report `healthy`):
 docker compose ps
 ```
 
-Test internal gateway health endpoint:
+Test internal gateway health endpoint (gateway has no host port; query inside container):
 ```bash
-curl -k https://localhost:8080/health
+docker exec saas-api-gateway curl -sk https://localhost:8080/health
 ```
 Output: `{"status":"ok"}`
 
@@ -303,7 +302,7 @@ git pull origin main
 docker compose pull
 docker compose up -d --remove-orphans
 docker compose ps
-curl -k https://localhost:8080/health
+docker exec saas-api-gateway curl -sk https://localhost:8080/health
 ```
 
 ### 7.4 Rollback Procedures (Automated & Manual)
@@ -328,7 +327,7 @@ If automated deployment is interrupted, or if an issue requires manual operator 
    git checkout HEAD~1 -- docker-compose.yml
    docker compose up -d --force-recreate --remove-orphans
    docker compose ps
-   curl -k https://localhost:8080/health
+   docker exec saas-api-gateway curl -sk https://localhost:8080/health
    ```
 
 ### 7.5 Graceful Shutdown & Signal Handling Across All 5 Microservices
@@ -345,74 +344,55 @@ Production HTTPS traffic should be terminated via Caddy, which automatically obt
 
 ### Step 8.1: Reverse Proxy (Caddy) Architecture
 
-Caddy is integrated directly into `docker-compose.yml` as a first-class service (`saas-caddy`). It runs on the internal `saas-net` Docker network alongside `api-gateway`, exposing public ports 80 and 443 (and 443/udp for HTTP/3).
+Caddy is integrated directly into `docker-compose.yml` as a first-class service (`saas-caddy`, `caddy:2.11.4-alpine`). It runs on the internal `saas-net` Docker network alongside `api-gateway` and `kyc-reviewer-console`, exposing public ports 80 and 443 (and 443/udp for HTTP/3).
 
 #### 1. Deployment `Caddyfile` Configuration
-Place the production `Caddyfile` in the root of the deployment directory (`/opt/saas-platform/Caddyfile`):
+The source of truth for the production reverse proxy is `infrastructure/deploy/Caddyfile` (mirrored to `saas-core-deploy/Caddyfile`), mounted read-only into `saas-caddy` at `/etc/caddy/Caddyfile`:
 
 ```caddy
 api.logiclinkeg.tech {
+    # The admin API (/api/v1/admin/*, today only version-config) is used from
+    # the VM only, by exec-ing into the gateway container (see
+    # docs/runbooks/OPS-HARDEN-cutover.md). It is not served publicly: the
+    # token check stays in the gateway, this is defence in depth.
+    @admin path /api/v1/admin /api/v1/admin/*
+    respond @admin 404
+
     reverse_proxy https://api-gateway:8080 {
         transport http {
             tls_insecure_skip_verify
         }
     }
 }
-```
 
-> [!IMPORTANT]
-> **Internal Service Name Resolution**:
-> The `reverse_proxy` target must be set to `https://api-gateway:8080` (not `127.0.0.1:8080`). Over the `saas-net` bridge network, `127.0.0.1` resolves to the `saas-caddy` container itself rather than the `api-gateway` container, leading to routing failures.
-
-> [!NOTE]
-> **Trusted Proxy IP Configuration (`TRUSTED_PROXY_IPS`)**:
-> The `api-gateway` service uses `TRUSTED_PROXY_IPS` (comma-separated IP addresses or CIDR subnets, defaulting to `127.0.0.1,::1`) to determine which upstream connections are authorized reverse proxies. `api-gateway` only trusts incoming `X-Forwarded-For` headers when the immediate connection IP (`r.RemoteAddr`) matches an entry in `TRUSTED_PROXY_IPS`. For trusted proxies, the original client IP in the `X-Forwarded-For` chain is preserved and forwarded downstream to `auth-service` and other services. Direct untrusted connections have their `X-Forwarded-For` header overwritten with `r.RemoteAddr` to prevent IP spoofing attacks. Ensure `TRUSTED_PROXY_IPS` includes whatever IP or CIDR range the reverse proxy connects from in your deployment topology (e.g. `127.0.0.1,::1,172.16.0.0/12` for Docker bridge or host mode).
-
-#### 2. Automatic Lifecycle Management
-Because Caddy is defined as a service in `docker-compose.yml`, running `docker compose up -d` handles container creation, networking, port binding, and automatic restart (`restart: unless-stopped`). ACME certificates issued by Let's Encrypt are persisted across container restarts using the named volume `caddy_data:/data`.
-
-#### 3. Reviewer Console Route (saas-core ADR-0021)
-The KYC/KYB/KYE reviewer console (`kyc-reviewer-console` service) must stay off the public API surface: it holds `INTERNAL_SERVICE_TOKEN` and exists precisely because reviewer endpoints cannot be reached through the public gateway. Expose it on its own subdomain so remote reviewers can reach it over HTTPS:
-
-```caddy
 kyc.logiclinkeg.tech {
     reverse_proxy kyc-reviewer-console:8090
 }
 ```
 
 > [!IMPORTANT]
-> **Proxy target depends on Caddy's network mode**:
-> - If `saas-caddy` runs on the `saas-net` bridge network (default per this doc): use the service name `kyc-reviewer-console:8090` as shown above.
-> - If Caddy runs as a host-network sibling stack (`docker-compose.caddy.yml`, `network_mode: host`): use `http://127.0.0.1:8090` instead — the console binds loopback-only (`127.0.0.1:8090:8090`) so it is never directly reachable from the internet either way.
->
-> All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
+> **Internal Service Name Resolution & Port Isolation**:
+> - The `reverse_proxy` target is `https://api-gateway:8080` over the internal `saas-net` bridge network. `api-gateway` does NOT publish port 8080 on the host interface.
+> - The admin API path (`/api/v1/admin/*`) returns `404` at Caddy for `api.logiclinkeg.tech`. It can only be called locally from the VM via `docker exec saas-api-gateway` using the `X-Admin-Token` header.
 
 > [!NOTE]
-> **Inter-Service Listening Ports & Proxy Topology**:
-> Downstream internal services listen on specific ports defined by their respective `*_SERVICE_PORT` environment variables (`auth-service: 3002`, `user-service: 3003`, `chat-service: 3001`, `notification-service: 3004`). When configuring proxies or inter-service clients (such as `kyc-reviewer-console`), verify the target service's actual listening port (`3001` for `chat-service`) rather than assuming unverified port assignments.
+> **Trusted Proxy IP Configuration (`TRUSTED_PROXY_IPS`)**:
+> The `api-gateway` service uses `TRUSTED_PROXY_IPS` (comma-separated IP addresses or CIDR subnets, defaulting to `127.0.0.1,::1`) to determine which upstream connections are authorized reverse proxies. `api-gateway` only trusts incoming `X-Forwarded-For` headers when the immediate connection IP (`r.RemoteAddr`) matches an entry in `TRUSTED_PROXY_IPS`. For trusted proxies, the original client IP in the `X-Forwarded-For` chain is preserved and forwarded downstream to `auth-service` and other services. Direct untrusted connections have their `X-Forwarded-For` header overwritten with `r.RemoteAddr` to prevent IP spoofing attacks. Ensure `TRUSTED_PROXY_IPS` includes whatever IP or CIDR range the reverse proxy connects from in your deployment topology (e.g. `127.0.0.1,::1,172.16.0.0/12` for Docker bridge or host mode).
 
-DNS: create an additional `A` record for the chosen subdomain (e.g., `kyc`) pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
+#### 2. Automatic Lifecycle Management & Certificate Persistence
+Caddy is fully managed by Docker Compose under the `saas-core-deploy` project. Running `docker compose up -d` handles container creation, networking, port binding, and automatic restart (`restart: unless-stopped`). Caddy must not be started manually outside compose.
 
-> [!WARNING]
-> **Live `Caddyfile` location on `quickdelivery-vm` differs from the repo checkout copies**
-> The running `saas-caddy` container mounts its config from
-> `/home/azureuser/saas-core-deploy/Caddyfile` — NOT from `/opt/saas-platform/Caddyfile` nor the CD runner
-> workspace copy (`/home/deploybot/actions-runner/_work/saas-core-deploy/saas-core-deploy/Caddyfile`),
-> both of which hold stale placeholder content (`api.yourdomain.com`). Editing either of those has no
-> effect on live routing. The container also carries no compose project labels (started outside the
-> current stack's project), so CD runs do not manage or recreate it.
->
-> Route changes must therefore be made in `/home/azureuser/saas-core-deploy/Caddyfile` and applied with a
-> zero-downtime reload:
-> ```bash
-> sudo cp /home/azureuser/saas-core-deploy/Caddyfile /home/azureuser/saas-core-deploy/Caddyfile.bak-$(date +%Y%m%d)
-> # edit: append the kyc.<domain> site block from above
-> docker exec saas-caddy caddy validate --config /etc/caddy/Caddyfile
-> docker exec saas-caddy caddy reload --config /etc/caddy/Caddyfile
-> ```
-> Verify DNS resolves to this VM **before** adding a new site block: while a hostname still points
-> elsewhere (e.g. Vercel), Caddy cannot complete the ACME HTTP-01 challenge and will retry with backoff,
-> burning Let's Encrypt rate-limit attempts without affecting already-issued certificates.
+ACME TLS certificates issued by Let's Encrypt are persisted across container recreations and deployments using the pre-existing external volume:
+```yaml
+volumes:
+  caddy_data:
+    external: true
+```
+
+#### 3. Reviewer Console Route (saas-core ADR-0021)
+The KYC/KYB/KYE reviewer console (`kyc-reviewer-console` service) is kept off the public API surface: it holds `INTERNAL_SERVICE_TOKEN` and exists precisely because reviewer endpoints cannot be reached through the public gateway. It is exposed on its own subdomain (`kyc.logiclinkeg.tech`) so remote reviewers can reach it over HTTPS. All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
+
+DNS: create an additional `A` record for the `kyc` subdomain pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
 
 ---
 
@@ -541,7 +521,7 @@ docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
        ```
 
 ### 10.5 Missing or Orphaned `saas-caddy` Container Causing Public Domain Outage
-* **Symptom**: Requests to the public domain (e.g. `curl https://api.logiclinkeg.tech/`) fail with `Could not connect to server` or `Connection refused`, even though direct requests to the API Gateway (`curl -k https://<VM_IP>:8080/health`) succeed. `docker compose ps` shows no `saas-caddy` container running or running without published port bindings (`80`/`443`).
+* **Symptom**: Requests to the public domain (e.g. `curl https://api.logiclinkeg.tech/`) fail with `Could not connect to server` or `Connection refused`, even though internal health checks within the API Gateway (`docker exec saas-api-gateway curl -sk https://localhost:8080/health`) succeed. `docker compose ps` shows no `saas-caddy` container running or running without published port bindings (`80`/`443`).
 * **Cause**: Caddy was historically executed outside Docker Compose via an un-orchestrated `docker run` command (see ADR-0011). Manual containers are orphaned by `docker compose down` and are not automatically managed or recreated by Docker Compose commands if removed or stopped.
 * **Resolution**: Caddy is now fully integrated as a first-class service (`caddy`) in `docker-compose.yml` (per ADR-0011). Re-align the stack by executing:
   ```bash
@@ -622,23 +602,27 @@ DOCUMENT_ENCRYPTION_KEY="$DOCUMENT_ENCRYPTION_KEY" go run ./services/auth-servic
 
 The migration command checks each file's AEAD tag header prior to encryption; files that are already encrypted are skipped, making the migration safe and idempotent.
 
-### 11.3 App Version Management & Minimum Version Enforcement (`platform_versions`)
+### 11.3 App Version Management & Minimum Version Enforcement (In-Memory Version Store)
 
-To manage supported mobile client versions and enforce minimum required version gating at the API Gateway (ADR-0018), query or update the `platform_versions` configuration via the admin endpoint or MongoDB:
+To manage supported mobile client versions and enforce minimum required version gating at the API Gateway (ADR-0018), query or update version enforcement configuration via the admin endpoint.
+
+> [!NOTE]
+> Per OPS-13 / cutover configuration, the version configuration store in `api-gateway` is currently in-memory (`version.NewStore(nil, "")`).
+> Public edge requests to `/api/v1/admin/*` return HTTP 404 at Caddy. The admin API is accessible only from the VM by exec-ing into `saas-api-gateway` using the dedicated `ADMIN_API_TOKEN` (`X-Admin-Token`).
 
 ```bash
-# Fetch current app version registry configuration
-curl -s -H "X-Internal-Token: $INTERNAL_SERVICE_TOKEN" https://localhost:8080/api/v1/admin/version-config
+# Fetch current app version configuration (from the VM host)
+docker exec saas-api-gateway sh -c 'curl -sk -H "X-Admin-Token: $ADMIN_API_TOKEN" https://localhost:8080/api/v1/admin/version-config'
 
 # Update minimum supported version and enable enforcement
-curl -s -X PUT -H "Content-Type: application/json" -H "X-Internal-Token: $INTERNAL_SERVICE_TOKEN" \
-  -d '{
-    "latest_version": "1.2.0",
-    "minimum_supported_version": "1.1.0",
-    "enforce_minimum_version": true,
-    "download_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"
-  }' \
-  https://localhost:8080/api/v1/admin/version-config
+docker exec -i saas-api-gateway sh -c 'curl -sk -X PUT -H "Content-Type: application/json" -H "X-Admin-Token: $ADMIN_API_TOKEN" --data-binary @- https://localhost:8080/api/v1/admin/version-config' <<'EOF'
+{
+  "latest_version": "1.2.0",
+  "minimum_supported_version": "1.1.0",
+  "enforce_minimum_version": true,
+  "download_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/latest/download/app-release.apk"
+}
+EOF
 ```
 
 
