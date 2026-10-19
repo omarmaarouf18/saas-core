@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>العميل · عرض سعر</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+button{font-family:inherit}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="padding: 20px 12px 8px; display: flex; align-items: center; gap: 8px">
+<button aria-label="رجوع" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<h1 style="margin: 0; font-size: 18px; font-weight: 700">طلبك</h1>
+</header>
+
+<main style="flex: 1; padding: 8px 20px 16px; display: flex; flex-direction: column; gap: 20px; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 50%; background: #0D1321; color: #FFC107; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px">م</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">[اسم المندوب] عرض سعر تاني</h2>
+<span style="font-size: 13px; color: #4B5563">لازم توافق عشان يبدأ</span>
+</span>
+</div>
+
+<section aria-label="مقارنة السعر" style="border: 1px solid #E5E7EB; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4B5563">السعر الأصلي</span>
+<span style="font-size: 20px; font-weight: 600; color: #4B5563; text-decoration: line-through">[السعر] ج.م</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4B5563">السعر المعروض</span>
+<span style="font-size: 28px; font-weight: 700">[العرض] ج.م</span>
+</div>
+</div>
+<span style="align-self: flex-start; font-size: 13px; font-weight: 600; color: #B45309; background: #FEF3C7; padding: 4px 12px; border-radius: 999px">أكتر بـ [الفرق] ج.م</span>
+</section>
+
+<section aria-label="الوقت الباقي" style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; font-size: 14px">
+<span style="color: #4B5563">العرض بيخلص بعد</span>
+<span style="font-weight: 700" dir="ltr">[02:41]</span>
+</div>
+<div aria-hidden="true" style="height: 6px; border-radius: 3px; background: #E5E7EB; overflow: hidden"><span style="display: block; width: 55%; height: 100%; background: #0D1321; border-radius: 3px"></span></div>
+<p style="margin: 0; font-size: 13px; color: #4B5563; line-height: 1.6">لو الوقت خلص من غير رد، الطلب بيتلغي وتقدر تطلب تاني.</p>
+</section>
+</main>
+
+<footer style="padding: 12px 20px 24px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px">
+<button style="height: 54px; border-radius: 14px; border: 1px solid #D1D5DB; background: #FFFFFF; color: #0D1321; font-size: 15px; font-weight: 600; cursor: pointer">مش موافق</button>
+<button style="height: 54px; border-radius: 14px; border: 0; background: #FFC107; color: #0D1321; font-size: 16px; font-weight: 700; cursor: pointer">موافق على [العرض] ج.م</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

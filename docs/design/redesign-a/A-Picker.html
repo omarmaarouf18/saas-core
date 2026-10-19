@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>العميل · اختيار المكان</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0D1321}a:hover{color:#0D1321}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div lang="ar" dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; background: #E5E7EB; color: #0D1321; font-family: 'IBM Plex Sans Arabic', sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+<div role="img" aria-label="خريطة لاختيار المكان" style="flex: 1; position: relative; min-height: 0">
+<svg aria-hidden="true" width="390" height="460" viewBox="0 0 390 460" style="position: absolute; inset: 0">
+<path d="M0 90 H390 M0 210 H390 M0 330 H390 M70 0 V460 M190 0 V460 M310 0 V460" stroke="#F9FAFB" stroke-width="12"></path>
+<path d="M0 150 L390 270" stroke="#F9FAFB" stroke-width="6"></path>
+</svg>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: 210px; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center">
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #FFC107; border: 3px solid #0D1321; box-sizing: border-box"></span>
+<span style="width: 3px; height: 18px; background: #0D1321"></span>
+<span style="width: 10px; height: 4px; border-radius: 50%; background: rgba(13,19,33,0.3)"></span>
+</div>
+<header style="position: absolute; top: 20px; right: 16px; left: 16px; display: flex; align-items: center; gap: 10px">
+<button aria-label="رجوع" style="width: 44px; height: 44px; border-radius: 50%; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(13,19,33,0.15)">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<span style="background: #FFFFFF; border-radius: 999px; padding: 10px 16px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 8px rgba(13,19,33,0.15)">مكان التسليم</span>
+</header>
+<button aria-label="مكاني الحالي" style="position: absolute; left: 16px; bottom: 36px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(13,19,33,0.15)">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+</button>
+</div>
+
+<section style="background: #FFFFFF; border-radius: 24px 24px 0 0; margin-top: -20px; position: relative; padding: 16px 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; font-size: 14px; color: #4B5563">حرّك الخريطة لحد ما العلامة تبقى على المكان بالظبط</p>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 600; color: #4B5563">عناوينك المحفوظة</span>
+<div style="display: flex; gap: 8px">
+<button style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #D1D5DB; background: #FFFFFF; font-size: 14px; color: #0D1321; cursor: pointer; display: flex; align-items: center; gap: 6px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"></path></svg>البيت</button>
+<button style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #D1D5DB; background: #FFFFFF; font-size: 14px; color: #0D1321; cursor: pointer; display: flex; align-items: center; gap: 6px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D1321" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>الشغل</button>
+</div>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500">علامة تساعد المندوب (اختياري)
+<input type="text" placeholder="مثلاً: العمارة اللي جنب الصيدلية، الدور التالت" style="height: 50px; border: 1px solid #D1D5DB; border-radius: 12px; padding: 0 14px; font-size: 14px; color: #0D1321">
+</label>
+
+<button style="height: 54px; border-radius: 14px; border: 0; background: #FFC107; color: #0D1321; font-size: 16px; font-weight: 700; cursor: pointer">أكّد المكان</button>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
