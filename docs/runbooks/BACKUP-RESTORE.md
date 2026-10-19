@@ -356,10 +356,27 @@ webhook URL into the repo. Example for a Discord webhook:
    `sudo systemctl daemon-reload`. Test it with
    `sudo systemctl start quickdelivery-backup-alert.service`.
 
-For email, use the same pattern with an SMTP relay CLI (e.g. `msmtp`). Also
-consider a dead-man check: an external uptime service that alerts when it
-stops receiving a ping. backup.sh could send that ping on success, which needs
-a small change to `backup.sh`.
+For email, use the same pattern with an SMTP relay CLI (e.g. `msmtp`).
+
+### Dead-man ping (OBS-MIN)
+
+backup.sh pings a [healthchecks.io](https://healthchecks.io) check: `…/start`
+when a run gets going, the bare URL when it finishes and `…/fail` when it
+fails. If the pings stop (VM dead, timer dead, backup hanging), the check goes
+red and healthchecks.io alerts you at the daily expiry (period 1 day, grace
+2 h) — including for failures *outside* backup.sh: an install that never runs,
+an OOM-killed run, MongoDB down before `mongodump`. A successful backup is
+your proof-of-life; a silent backup is a lost backup.
+
+- The ping URL is a secret. paste it with `sudo install.sh --set-ping` into
+  `/etc/quickdelivery-backup/ping` (root, mode 600; never into the repo or a
+  chat). Every ping is best effort: a missing or empty file only logs
+  `ping: dead-man ping disabled …`, and an unreachable ping endpoint is a
+  WARN that never fails or meaningfully delays the backup.
+- To disable the feature again, delete the ping file: `sudo rm
+  /etc/quickdelivery-backup/ping`.
+- Account and check creation, and how to test the alert, are in
+  [MONITORING.md](MONITORING.md).
 
 ## Renewing the SAS, rotating the key
 

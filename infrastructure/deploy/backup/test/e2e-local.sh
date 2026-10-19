@@ -32,7 +32,7 @@ export LC_ALL=C
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_SH="$HERE/../backup.sh"
 RESTORE_SH="$HERE/../restore.sh"
-PLACEHOLDER_PUB="$HERE/../backup-recipient.pub"
+PING_SERVER_PY="$HERE/../../monitor/test/fake_ping_server.py"
 IMAGE="${E2E_IMAGE:-mongo:7}"
 
 for t in docker age age-keygen curl python3 flock; do
@@ -48,10 +48,13 @@ MONGO="$ID-mongo"
 VOL_DOCS="$ID-documents"
 VOL_ATT="$ID-attachments"
 FAKE_PID=""
+PING_PID=""
+PING_SECRET=""
 
 cleanup() {
 	local rc=$?
 	[ -z "$FAKE_PID" ] || kill "$FAKE_PID" 2>/dev/null || true
+	[ -z "$PING_PID" ] || kill "$PING_PID" 2>/dev/null || true
 	docker rm -f "$MONGO" >/dev/null 2>&1 || true
 	docker volume rm "$VOL_DOCS" "$VOL_ATT" >/dev/null 2>&1 || true
 	rm -rf "$WORK"
@@ -152,12 +155,27 @@ write_sas() { # write_sas <sp> <sig>
 write_sas cw "$SIG"
 echo "fake blob endpoint on 127.0.0.1:$PORT"
 
+# Fake healthchecks.io endpoint and the ping file (OBS-MIN): the ping URL is
+# a secret like the SAS; only the port is echoed, never the path.
+: >"$WORK/pinglog"
+PING_PORT_FILE="$WORK/pingport"
+python3 -I "$PING_SERVER_PY" "$WORK/pinglog" "$PING_PORT_FILE" >"$WORK/ping-fake.log" 2>&1 &
+PING_PID=$!
+for _ in $(seq 1 50); do [ -s "$PING_PORT_FILE" ] && break; sleep 0.1; done
+[ -s "$PING_PORT_FILE" ] || fail "fake ping server did not start"
+PPORT="$(cat "$PING_PORT_FILE")"
+PING_SECRET="qdping-$(rand 8)"
+printf '%s\n' "http://127.0.0.1:$PPORT/$PING_SECRET" >"$WORK/ping"
+chmod 600 "$WORK/ping"
+echo "fake ping endpoint on 127.0.0.1:$PPORT (path kept in $WORK/ping)"
+
 export MONGO_CONTAINER="$MONGO" VOLUMES="$VOL_DOCS $VOL_ATT" OPTIONAL_VOLUMES="$ID-caddy-missing" \
 	BACKUP_DIR="$WORK/backups" STATE_DIR="$WORK/state" SAS_FILE="$WORK/sas" ENV_FILE="$WORK/env" \
-	RECIPIENT_FILE="$WORK/recipient.pub" BLOB_PREFIX="e2e-host" MIN_FREE_MB=100 BACKUP_ALLOW_HTTP=1
+	RECIPIENT_FILE="$WORK/recipient.pub" BLOB_PREFIX="e2e-host" MIN_FREE_MB=100 BACKUP_ALLOW_HTTP=1 \
+	PING_FILE="$WORK/ping"
 
-secret_hits() { # secret_hits <file>: lines containing the SAS sig, the Mongo password or an .env value
-	grep -cF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" "$1" || true
+secret_hits() { # secret_hits <file>: lines containing the SAS sig, the ping secret path, the Mongo password or an .env value
+	grep -cF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" -e "$PING_SECRET" "$1" || true
 }
 env_name_hits() { # env_name_hits <file>: lines containing a variable name from the fake .env
 	grep -cF -e DOCUMENT_ENCRYPTION_KEY -e JWT_SECRET -e MONGO_ROOT_PASSWORD "$1" || true
@@ -203,14 +221,27 @@ pass "every artifact starts with the age header (encrypted)"
 pass "backup log contains neither the SAS sig, the Mongo password nor an .env value"
 ps_lines="$(wc -l <"$WORK/ps.log")"
 if [ "$(secret_hits "$WORK/ps.log")" -ne 0 ]; then
-	grep -F -e "$SIG" -e "$MONGO_PW" "$WORK/ps.log" | sort -u | sed -e "s/$SIG/<SIG>/g" | awk -v pw="$MONGO_PW" '{ gsub(pw, "<MONGO_PW>"); print "  ps: " $0 }' | head -n 5
+	grep -F -e "$SIG" -e "$MONGO_PW" -e "$PING_SECRET" "$WORK/ps.log" | sort -u | sed -e "s/$SIG/<SIG>/g" | sed -e "s/$PING_SECRET/<PING>/g" | awk -v pw="$MONGO_PW" '{ gsub(pw, "<MONGO_PW>"); print "  ps: " $0 }' | head -n 5
 	fail "secret visible in ps output during the run"
 fi
-pass "ps sampled every 50 ms during the run ($ps_lines lines): no SAS sig, no Mongo password on any command line"
+pass "ps sampled every 50 ms during the run ($ps_lines lines): no SAS sig, no Mongo password, no ping URL on any command line"
 grep -q "qd-backup-dump" "$WORK/ps.log" && pass "ps sampling caught the mongodump sidecar running (the sampler saw the run)" ||
 	echo "NOTE: ps sampling did not catch the sidecar's docker run line (run too fast)"
 [ ! -e "$WORK/state/FAILED" ] && [ -s "$WORK/state/last-success" ] || fail "state files wrong after success"
 pass "no FAILED marker, last-success written"
+
+ping_pings() { # ping_pings <file>: the PING lines, just their numbers
+	grep -nE "^PING /$PING_SECRET" "$1" 2>/dev/null | cut -d: -f2- || true
+}
+echo "ping log after run 1:"
+ping_pings "$WORK/pinglog"
+start_line="$(ping_pings "$WORK/pinglog")"
+[ "$(ping_pings "$WORK/pinglog" | wc -l)" -eq 2 ] || fail "run 1 should ping start then success"
+echo "$start_line" | sed -n '1p' | grep -q "^PING /$PING_SECRET/start" || fail "first ping is not /start"
+echo "$start_line" | sed -n '2p' | grep -q "^PING /$PING_SECRET " || fail "second ping is not a plain success ping"
+[ "$(grep -c "^PING /$PING_SECRET/fail" "$WORK/pinglog")" -eq 0 ] || fail "successful run pinged /fail"
+grep -qF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" "$WORK/pinglog" && fail "ping body contains a backup secret"
+pass "run 1 pinged /start then success to the fake endpoint in order, no /fail, and every ping body is secret-free"
 
 # --- 2. restore ------------------------------------------------------------------
 section "2. restore.sh from the uploaded copies"
@@ -288,7 +319,8 @@ wait "$LOCK_PID"
 cat "$WORK/lock.log"
 [ "$rc" -ne 0 ] && grep -q 'another backup run holds' "$WORK/lock.log" || fail "overlapping run was not refused"
 [ ! -e "$WORK/state/FAILED" ] || fail "lock refusal must not write the FAILED marker"
-pass "overlapping run refused by flock (exit $rc), no FAILED marker"
+[ "$(grep -c "^PING /$PING_SECRET/fail" "$WORK/pinglog")" -eq 0 ] || fail "lock refusal must not ping /fail (the holder's run owns the ping)"
+pass "overlapping run refused by flock (exit $rc), no FAILED marker, no /fail ping"
 
 # --- 4. failures -----------------------------------------------------------------
 section "4. failure marker, rejected upload"
@@ -303,6 +335,12 @@ pass "failed run: exit $rc, FAILED marker written"
 SERVICE_RESULT=exit-code EXIT_CODE=exited EXIT_STATUS=1 "$BACKUP_SH" --post-stop | tee "$WORK/poststop.log"
 grep -q 'BACKUP FAILED' "$WORK/poststop.log" || fail "--post-stop did not print the marker"
 pass "--post-stop (systemd ExecStopPost) prints the marker into the unit's log / systemctl status"
+n_fail_pings="$(grep -c "^PING /$PING_SECRET/fail" "$WORK/pinglog")"
+[ "$n_fail_pings" -eq 1 ] || fail "expected exactly one /fail ping for the failed run (got $n_fail_pings)"
+grep "^PING /$PING_SECRET/fail" "$WORK/pinglog" | grep -q 'failed at step' || fail "/fail ping body does not carry the failure reason"
+fail_ping="$(grep "^PING /$PING_SECRET/fail" "$WORK/pinglog")"
+grep -qF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" <<<"$fail_ping" && fail "/fail ping body contains a backup secret"
+pass "failed run pinged /fail once, body mentions the failed step, no secret in the body"
 
 write_sas cw "wrong$(rand 8)"
 WRONG_SIG="$(sed -n 's/.*sig=//p' "$WORK/sas")"
@@ -322,6 +360,28 @@ sleep 1.1
 tail -n 1 "$WORK/recover.log"
 [ ! -e "$WORK/state/FAILED" ] || fail "successful run did not clear the marker"
 pass "next successful run cleared the FAILED marker"
+tail -n 1 "$WORK/pinglog" | grep -q "^PING /$PING_SECRET ok: " || fail "recovery run's last ping is not a success ping"
+pings_known="$(ping_pings "$WORK/pinglog" | wc -l)"
+pass "recovery run pinged success again (last of $pings_known pings so far)"
+
+# Ping feature off: a missing ping file disables it with one log line and is
+# never a failure; the run still succeeds and no ping is sent.
+sleep 1.1
+PING_FILE="$WORK/no-such-ping" "$BACKUP_SH" >"$WORK/noping.log" 2>&1 || fail "backup without a ping file failed"
+grep -q 'ping: dead-man ping disabled' "$WORK/noping.log" || fail "missing ping file not reported as disabled"
+[ "$(ping_pings "$WORK/pinglog" | wc -l)" -eq "$pings_known" ] || fail "a ping was sent although the ping file is missing"
+pass "missing ping file: run succeeds, one 'ping disabled' log line, no ping sent"
+
+# A dead ping endpoint: the backup must still succeed (best-effort pings,
+# capped at a few seconds) and log the ping WARN, never the URL or the secret.
+printf '%s\n' "http://127.0.0.1:1/qdping-dead-supposedly-unreachable" >"$WORK/ping-dead"
+chmod 600 "$WORK/ping-dead"
+sleep 1.1
+PING_FILE="$WORK/ping-dead" "$BACKUP_SH" >"$WORK/deadping.log" 2>&1 || fail "backup with an unreachable ping endpoint failed ($?)"
+grep -q 'WARN: ping' "$WORK/deadping.log" || fail "unreachable ping endpoint not logged as WARN"
+grep -qF -e 'ping-dead' -e "$PING_SECRET" "$WORK/deadping.log" && fail "ping WARN logged the secret URL/path"
+[ "$(ping_pings "$WORK/pinglog" | wc -l)" -eq "$pings_known" ] || fail "a ping reached the fake endpoint during the dead-ping run"
+pass "unreachable ping endpoint: backup still succeeds, WARN logged, URL and path not in the log, no ping logged"
 
 # --- 5. refusals -----------------------------------------------------------------
 section "5. refusals"
@@ -334,11 +394,14 @@ expect_refusal() { # expect_refusal <label> <pattern> <command...>
 	set -e
 	printf '%s\n' "$out" | grep -v '^\s*$' | tail -n 2
 	[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q "$pat" || fail "$label: not refused as expected"
-	printf '%s' "$out" | grep -qF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" && fail "$label: output contains a secret"
+	printf '%s' "$out" | grep -qF -e "$SIG" -e "$MONGO_PW" -e "$ENV_V1" -e "$ENV_V2" -e "$ENV_V3" -e "$PING_SECRET" && fail "$label: output contains a secret"
 	pass "$label: refused (exit $rc), no secret in the output"
 }
+# backup-recipient.pub holds the owner's real key now (OPS-BACKUP step 1 was
+# done), so the "placeholder" state must be simulated with a throwaway file:
+printf 'placeholder, no age public key in here\n' >"$WORK/placeholder.pub"
 expect_refusal "bash -x" "refusing to run with xtrace" bash -x "$BACKUP_SH"
-expect_refusal "placeholder recipient" "no age public key" env RECIPIENT_FILE="$PLACEHOLDER_PUB" "$BACKUP_SH"
+expect_refusal "placeholder recipient" "no age public key" env RECIPIENT_FILE="$WORK/placeholder.pub" "$BACKUP_SH"
 write_sas rcwl "$SIG"
 expect_refusal "SAS with read/list" "only c (create) and w (write)" "$BACKUP_SH"
 write_sas cw "$SIG"

@@ -1,0 +1,40 @@
+# quickdelivery-monitor.service — 5-minute host health check (OBS-MIN).
+# Installed by infrastructure/deploy/monitor/install.sh into
+# /etc/systemd/system, started by quickdelivery-monitor.timer. Runbook:
+# docs/runbooks/MONITORING.md.
+#
+#   systemctl status quickdelivery-monitor.service       last run and its line
+#   journalctl -u quickdelivery-monitor.service          one line per run
+#   systemctl start quickdelivery-monitor.service        run one now
+
+[Unit]
+Description=QuickDelivery host health check (disk, memory, containers, backup dead-man)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# root: talks to the Docker socket, keeps its restart-count state under
+# /var/lib/quickdelivery-monitor and reads the root-only ping file.
+User=root
+EnvironmentFile=-/etc/quickdelivery-monitor/hostcheck.env
+# The docker CLI must not write into /root (ProtectHome=yes below).
+Environment=DOCKER_CONFIG=/var/lib/quickdelivery-monitor/docker-cli
+ExecStart=/usr/local/lib/quickdelivery-monitor/hostcheck.sh
+SyslogIdentifier=quickdelivery-monitor
+# Host health must not become host load: idle nice level and I/O class.
+Nice=15
+IOSchedulingClass=idle
+CPUSchedulingPolicy=idle
+# One docker inspect over ~9 containers and a couple of awk calls measured
+# well under 20 MB; the cap makes a pathology loud (journal: oom-kill).
+MemoryHigh=48M
+MemoryMax=64M
+TimeoutStartSec=2min
+UMask=0077
+PrivateTmp=yes
+# The script reads the ping+env files from /etc and writes its state under
+# /var/lib/quickdelivery-monitor; /usr, /boot and /etc are read-only for it.
+ProtectSystem=full
+ProtectHome=yes
+NoNewPrivileges=yes
