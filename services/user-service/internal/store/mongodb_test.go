@@ -69,8 +69,10 @@ func TestMongoDB_ServiceOperations(t *testing.T) {
 		Location:         models.NewGeoJSONPoint(37.7749, -122.4194),
 	}
 
-	// 1. CreateService (void return)
-	s.CreateService(ctx, svc)
+	// 1. CreateService
+	if err := s.CreateService(ctx, svc); err != nil {
+		t.Fatalf("CreateService: %v", err)
+	}
 
 	// 2. GetServiceByID (returns *models.Service)
 	got := s.GetServiceByID(ctx, "svc-1")

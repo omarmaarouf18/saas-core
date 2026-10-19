@@ -68,8 +68,17 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
 	}
-	s.ensurePlatformConfig(ctx)
-	s.ensureSeedData(ctx)
+	// BE-ERR: seeding failures fail startup in every environment. A missing
+	// platform config or central wallet otherwise surfaces much later as
+	// money-path errors, and a half-seeded demo dataset as flaky behaviour.
+	if err := s.ensurePlatformConfig(ctx); err != nil {
+		_ = client.Disconnect(context.Background())
+		return nil, err
+	}
+	if err := s.ensureSeedData(ctx); err != nil {
+		_ = client.Disconnect(context.Background())
+		return nil, err
+	}
 	log.Printf("[USER-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return s, nil
 }
@@ -176,31 +185,43 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	return nil
 }
 
-func (s *MongoDB) ensurePlatformConfig(ctx context.Context) {
-	// Seed platform config (0% fee — SaaS subscription revenue model per ADR-0017).
+// ensurePlatformConfig seeds the global platform config (0% fee — SaaS
+// subscription revenue model per ADR-0017) and the platform central wallet.
+// A duplicate key means another instance seeded it concurrently and is not
+// an error; any other failure is returned (BE-ERR).
+func (s *MongoDB) ensurePlatformConfig(ctx context.Context) error {
 	var cfg models.PlatformConfig
 	err := s.platConfig.FindOne(ctx, bson.M{"_id": "global"}).Decode(&cfg)
-	if err != nil {
-		if _, err := s.platConfig.InsertOne(ctx, models.PlatformConfig{
-			ID: "global", PlatformFeePercentage: 0.0, PlatformWalletID: "platform-central",
-		}); err != nil {
-			log.Printf("[ERROR] failed to seed platform config: %v", err)
-		}
-		// Create platform central wallet.
-		if _, err := s.wallets.InsertOne(ctx, models.Wallet{
-			ID: "platform-central", TenantID: "platform", UpdatedAt: time.Now().UTC(),
-		}); err != nil {
-			log.Printf("[ERROR] failed to seed platform wallet: %v", err)
-		}
-		log.Println("[USER-STORE] Platform config seeded (0% fee)")
+	if err == nil {
+		return nil
 	}
+	if !errors.Is(err, mongo.ErrNoDocuments) {
+		return fmt.Errorf("store: read platform config: %w", err)
+	}
+	if _, err := s.platConfig.InsertOne(ctx, models.PlatformConfig{
+		ID: "global", PlatformFeePercentage: 0.0, PlatformWalletID: "platform-central",
+	}); err != nil && !mongo.IsDuplicateKeyError(err) {
+		return fmt.Errorf("store: seed platform config: %w", err)
+	}
+	if _, err := s.wallets.InsertOne(ctx, models.Wallet{
+		ID: "platform-central", TenantID: "platform", UpdatedAt: time.Now().UTC(),
+	}); err != nil && !mongo.IsDuplicateKeyError(err) {
+		return fmt.Errorf("store: seed platform wallet: %w", err)
+	}
+	log.Println("[USER-STORE] Platform config seeded (0% fee)")
+	return nil
 }
 
-func (s *MongoDB) ensureSeedData(ctx context.Context) {
+// ensureSeedData inserts demo services and courier locations when
+// SEED_DEMO_DATA=true. Any failure is returned (BE-ERR).
+func (s *MongoDB) ensureSeedData(ctx context.Context) error {
 	if os.Getenv("SEED_DEMO_DATA") != "true" {
-		return
+		return nil
 	}
-	count, _ := s.services.CountDocuments(ctx, bson.M{})
+	count, err := s.services.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return fmt.Errorf("store: seed count services: %w", err)
+	}
 	if count == 0 {
 		seeds := seedServices()
 		docs := make([]interface{}, len(seeds))
@@ -208,10 +229,9 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 			docs[i] = seeds[i]
 		}
 		if _, err := s.services.InsertMany(ctx, docs); err != nil {
-			log.Printf("[USER-STORE] Seed insert error: %v", err)
-		} else {
-			log.Printf("[USER-STORE] Seeded %d services", len(seeds))
+			return fmt.Errorf("store: seed services: %w", err)
 		}
+		log.Printf("[USER-STORE] Seeded %d services", len(seeds))
 	}
 
 	// Seed initial active courier locations for seeded and mock tenants
@@ -232,25 +252,38 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) {
 		{"idem-owner-1", "emp-under-idem-owner-1", 30.0, 30.0},
 	}
 	for _, sc := range seedCouriers {
-		_ = s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
+		if err := s.UpsertEmployeeLocation(ctx, &models.EmployeeLocation{
 			TenantID:   sc.tenantID,
 			EmployeeID: sc.employeeID,
 			Latitude:   sc.lat,
 			Longitude:  sc.lon,
 			UpdatedAt:  now,
-		})
+		}); err != nil {
+			return fmt.Errorf("store: seed courier location %s/%s: %w", sc.tenantID, sc.employeeID, err)
+		}
 	}
+	return nil
 }
 
 // ---------------------------------------------------------------------------
 // Service operations — with 2dsphere spatial queries
 // ---------------------------------------------------------------------------
 
-func (s *MongoDB) CreateService(ctx context.Context, svc *models.Service) {
+// ErrServiceExists is returned by CreateService when a service with the same
+// ID already exists.
+var ErrServiceExists = errors.New("store: service already exists")
+
+// CreateService inserts a new service. A duplicate ID returns
+// ErrServiceExists; any other insert failure is returned wrapped (BE-ERR).
+func (s *MongoDB) CreateService(ctx context.Context, svc *models.Service) error {
 	svc.Location = models.NewGeoJSONPoint(svc.Latitude, svc.Longitude)
 	if _, err := s.services.InsertOne(ctx, svc); err != nil {
-		log.Printf("[USER-STORE] CreateService error: %v", err)
+		if mongo.IsDuplicateKeyError(err) {
+			return ErrServiceExists
+		}
+		return fmt.Errorf("store: create service: %w", err)
 	}
+	return nil
 }
 
 // UpdateService updates an existing service record in MongoDB.
@@ -1546,6 +1579,8 @@ func (s *MongoDB) AdminActivateSubscription(ctx context.Context, tenantID, subsc
 					return &newSub, nil
 				} else if mongo.IsDuplicateKeyError(insErr) {
 					return nil, fmt.Errorf("subscription for tenant %s is already active or concurrently modified", tenantID)
+				} else {
+					return nil, fmt.Errorf("failed to create subscription: %w", insErr)
 				}
 			}
 			return nil, fmt.Errorf("subscription not found or was concurrently modified")
@@ -2097,10 +2132,16 @@ func (s *MongoDB) TryAcquireCourierLock(ctx context.Context, tenantID, employeeI
 	if err == nil && empLoc != nil && empLoc.ActiveJobID != "" && empLoc.ActiveJobID != jobID {
 		oldJob := s.GetJob(ctx, empLoc.ActiveJobID)
 		if oldJob == nil || oldJob.Status == models.JobStatusCompleted || oldJob.Status == models.JobStatusCancelled || oldJob.Status == models.JobStatusUnavailable {
-			// Clear stale lock and retry once
-			_ = s.ReleaseCourierLock(ctx, tenantID, employeeID, empLoc.ActiveJobID)
+			// Clear stale lock and retry once. A store error here is returned
+			// rather than reported as "courier busy" (BE-ERR).
+			if err := s.ReleaseCourierLock(ctx, tenantID, employeeID, empLoc.ActiveJobID); err != nil {
+				return false, fmt.Errorf("store: release stale courier lock: %w", err)
+			}
 			resRetry, errRetry := s.employeeLocations.UpdateOne(ctx, filter, update)
-			if errRetry == nil && resRetry.MatchedCount > 0 {
+			if errRetry != nil {
+				return false, fmt.Errorf("store: acquire courier lock (retry): %w", errRetry)
+			}
+			if resRetry.MatchedCount > 0 {
 				return true, nil
 			}
 		}
