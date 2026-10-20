@@ -71,7 +71,9 @@ PreferredSizeWidget accountAppBar(BuildContext context, String title,
     backgroundColor: c.surface,
     surfaceTintColor: c.surface,
     elevation: 0,
-    titleSpacing: 0,
+    // Next to the back button; at the gutter when there is none.
+    titleSpacing:
+        (ModalRoute.of(context)?.canPop ?? false) ? 0 : QdSpace.gutter,
     title: Text(title, style: QdText.header.copyWith(color: c.textPrimary)),
     actions: actions,
   );

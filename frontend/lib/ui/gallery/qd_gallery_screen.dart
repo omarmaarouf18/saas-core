@@ -680,6 +680,45 @@ List<QdGallerySection> qdGallerySections({
         ),
       ]);
     }),
+    QdGallerySection('auth', 'QdOtpInput · QdOptionCard', (context) {
+      return _col([
+        QdOtpInput(
+          semanticLabel: _t(context, 'Verification code', 'كود التأكيد'),
+          controller: TextEditingController(text: '48'),
+        ),
+        QdOtpInput(
+          semanticLabel: _t(context, 'Verification code', 'كود التأكيد'),
+          controller: TextEditingController(text: '000000'),
+          hasError: true,
+        ),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: QdOptionCard(
+                  title: _t(context, 'Customer', 'عميل'),
+                  subtitle:
+                      _t(context, 'I want to send orders', 'عايز أبعت طلبات'),
+                  selected: true,
+                  onTap: _noop,
+                ),
+              ),
+              const SizedBox(width: QdSpace.x2),
+              Expanded(
+                child: QdOptionCard(
+                  title: _t(context, 'Business owner', 'صاحب شغل'),
+                  subtitle: _t(context, 'I have a company and couriers',
+                      'عندي شركة ومندوبين'),
+                  selected: false,
+                  onTap: _noop,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ]);
+    }),
     QdGallerySection('rings', 'QdRings', (context) {
       final c = QdColors.of(context);
       return _col([
