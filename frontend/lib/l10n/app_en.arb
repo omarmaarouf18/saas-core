@@ -2258,5 +2258,78 @@
   "ordStateChanged": "The order changed: the other side already answered or its status moved on.",
   "@ordStateChanged": {
     "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordActiveTitle": "The courier is working on your order",
+  "@ordActiveTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordActiveSub": "Their location updates on the map as they move.",
+  "@ordActiveSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepOrdered": "You ordered",
+  "@ordStepOrdered": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepAccepted": "{name} accepted the order",
+  "@ordStepAccepted": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordStepAcceptedNoName": "The courier accepted the order",
+  "@ordStepAcceptedNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepOnTheWay": "On the way",
+  "@ordStepOnTheWay": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepNow": "Now",
+  "@ordStepNow": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepDelivered": "Delivered",
+  "@ordStepDelivered": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSteps": "Order steps",
+  "@ordSteps": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordComplaint": "Problem? Open a complaint",
+  "@ordComplaint": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapWaiting": "Waiting for the courier's location",
+  "@ordMapWaiting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapReconnecting": "Reconnecting to live tracking…",
+  "@ordMapReconnecting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapDenied": "You can't follow this order on the map.",
+  "@ordMapDenied": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapLabel": "Map with the courier's position",
+  "@ordMapLabel": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordZoomIn": "Zoom in",
+  "@ordZoomIn": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordZoomOut": "Zoom out",
+  "@ordZoomOut": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRecenter": "Center the map",
+  "@ordRecenter": {
+    "description": "FE-CUST-2 redesigned order detail."
   }
 }

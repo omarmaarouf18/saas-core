@@ -3541,4 +3541,57 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ordStateChanged =>
       'The order changed: the other side already answered or its status moved on.';
+
+  @override
+  String get ordActiveTitle => 'The courier is working on your order';
+
+  @override
+  String get ordActiveSub => 'Their location updates on the map as they move.';
+
+  @override
+  String get ordStepOrdered => 'You ordered';
+
+  @override
+  String ordStepAccepted(String name) {
+    return '$name accepted the order';
+  }
+
+  @override
+  String get ordStepAcceptedNoName => 'The courier accepted the order';
+
+  @override
+  String get ordStepOnTheWay => 'On the way';
+
+  @override
+  String get ordStepNow => 'Now';
+
+  @override
+  String get ordStepDelivered => 'Delivered';
+
+  @override
+  String get ordSteps => 'Order steps';
+
+  @override
+  String get ordComplaint => 'Problem? Open a complaint';
+
+  @override
+  String get ordMapWaiting => 'Waiting for the courier\'s location';
+
+  @override
+  String get ordMapReconnecting => 'Reconnecting to live tracking…';
+
+  @override
+  String get ordMapDenied => 'You can\'t follow this order on the map.';
+
+  @override
+  String get ordMapLabel => 'Map with the courier\'s position';
+
+  @override
+  String get ordZoomIn => 'Zoom in';
+
+  @override
+  String get ordZoomOut => 'Zoom out';
+
+  @override
+  String get ordRecenter => 'Center the map';
 }

@@ -5,6 +5,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../ui/qd_ui.dart';
+import '../chat/chat_page.dart';
 import '../customer_format.dart';
 import 'order_controller.dart';
 
@@ -21,17 +22,21 @@ class OrderLayout extends StatelessWidget {
     required this.children,
     this.top,
     this.footer,
+    this.onRefresh,
   });
 
   final List<Widget> children;
   final Widget? top;
   final Widget? footer;
 
+  /// Pull to refresh; defaults to refetching the job.
+  final Future<void> Function()? onRefresh;
+
   @override
   Widget build(BuildContext context) {
     final ctl = context.watch<OrderController>();
     final list = RefreshIndicator(
-      onRefresh: ctl.refresh,
+      onRefresh: onRefresh ?? ctl.refresh,
       child: ListView(
         key: const Key('ord_list'),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -344,4 +349,11 @@ void showOrderNotice(BuildContext context, String message,
           ? null
           : SnackBarAction(label: context.l10n.retry, onPressed: onRetry),
     ));
+}
+
+/// Opens the job chat with the courier (the only courier contact).
+void openCourierChat(BuildContext context, Job job) {
+  final l10n = context.l10n;
+  CustomerChatPage.openJob(context,
+      jobId: job.id, title: l10n.ordChatCourier, subtitle: jobRef(job));
 }

@@ -5,19 +5,10 @@ import '../../../core/error_messages.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../ui/qd_ui.dart';
-import '../chat/chat_page.dart';
-import '../customer_format.dart';
 import 'cancel_sheet.dart';
 import 'order_controller.dart';
 import 'order_sections.dart';
 import 'order_view.dart';
-
-/// Opens the job chat with the courier (the only courier contact).
-void openCourierChat(BuildContext context, Job job) {
-  final l10n = context.l10n;
-  CustomerChatPage.openJob(context,
-      jobId: job.id, title: l10n.ordChatCourier, subtitle: jobRef(job));
-}
 
 /// pending / pending_dispatch (A-Searching): the offer goes to couriers one
 /// by one. While a courier is looking at it (`current_offered_employee_id`

@@ -13,12 +13,14 @@ import 'package:frontend/features/customer/customer_theme.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/chat_message.dart';
+import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
+import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
@@ -324,6 +326,64 @@ class FakeChat extends ChangeNotifier implements ChatProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Live map fake: tests set markers / connection state; calls recorded.
+class FakeMapTracking extends ChangeNotifier implements MapTrackingProvider {
+  @override
+  List<EmployeeMarkerData> markersList = [];
+
+  @override
+  JobLocation? customerJobLocation;
+
+  @override
+  JobLocation? customerJobDestination;
+
+  @override
+  bool isLoading = false;
+
+  @override
+  bool isConnected = true;
+
+  @override
+  String? subscriptionError;
+
+  final List<String> hydrateCalls = [];
+  final List<String> subscribeCalls = [];
+  int disconnects = 0;
+
+  @override
+  Future<void> hydrateCustomerJob(String jobId, String userToken) async {
+    hydrateCalls.add(jobId);
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribe(String channel, String token,
+      {Object? customChannel}) {
+    subscribeCalls.add(channel);
+    notifyListeners();
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+  }
+
+  void setCourier(double lat, double lon, {String id = 'emp-1'}) {
+    markersList = [
+      EmployeeMarkerData(
+          employeeId: id,
+          jobId: null,
+          latitude: lat,
+          longitude: lon,
+          updatedAt: fixedNow),
+    ];
+    notifyListeners();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeLocator extends CustomerLocator {
   FakeLocator([this.result = const LocateResult.found(30.05, 31.24)]);
 
@@ -365,7 +425,9 @@ class CustomerTestDeps {
     FakeLocator? locator,
     RecordingNav? nav,
     FakeChat? chat,
+    FakeMapTracking? map,
   })  : chat = chat ?? FakeChat(),
+        map = map ?? FakeMapTracking(),
         auth = auth ?? FakeAuth(),
         marketplace = marketplace ?? FakeMarketplace(),
         notifications = notifications ?? FakeNotifications(),
@@ -378,6 +440,7 @@ class CustomerTestDeps {
   final FakeLocator locator;
   final RecordingNav nav;
   final FakeChat chat;
+  final FakeMapTracking map;
 }
 
 /// The app around a customer page: real app theme (so [CustomerTheme] is
@@ -400,6 +463,7 @@ Widget customerApp(
       ChangeNotifierProvider<ThemeProvider>(create: (_) => FakeThemeProvider()),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       ChangeNotifierProvider<ChatProvider>.value(value: deps.chat),
+      ChangeNotifierProvider<MapTrackingProvider>.value(value: deps.map),
     ],
     child: CustomerMapTilesScope(
       tileProvider: BlankTileProvider(),

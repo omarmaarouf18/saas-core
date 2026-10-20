@@ -3482,4 +3482,57 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordStateChanged => 'الطلب اتغير: الطرف التاني رد أو حالته اتغيرت.';
+
+  @override
+  String get ordActiveTitle => 'المندوب شغال على طلبك';
+
+  @override
+  String get ordActiveSub => 'مكانه بيتحدث على الخريطة أول بأول';
+
+  @override
+  String get ordStepOrdered => 'طلبت';
+
+  @override
+  String ordStepAccepted(String name) {
+    return '$name قبل الطلب';
+  }
+
+  @override
+  String get ordStepAcceptedNoName => 'المندوب قبل الطلب';
+
+  @override
+  String get ordStepOnTheWay => 'شغال عليه';
+
+  @override
+  String get ordStepNow => 'دلوقتي';
+
+  @override
+  String get ordStepDelivered => 'اتسلم';
+
+  @override
+  String get ordSteps => 'مراحل الطلب';
+
+  @override
+  String get ordComplaint => 'فيه مشكلة؟ قدّم شكوى';
+
+  @override
+  String get ordMapWaiting => 'مستنيين مكان المندوب';
+
+  @override
+  String get ordMapReconnecting => 'بنرجّع التتبع المباشر…';
+
+  @override
+  String get ordMapDenied => 'مش مسموحلك تتابع الطلب ده على الخريطة.';
+
+  @override
+  String get ordMapLabel => 'خريطة بمكان المندوب';
+
+  @override
+  String get ordZoomIn => 'تكبير';
+
+  @override
+  String get ordZoomOut => 'تصغير';
+
+  @override
+  String get ordRecenter => 'رجّع الخريطة للنص';
 }

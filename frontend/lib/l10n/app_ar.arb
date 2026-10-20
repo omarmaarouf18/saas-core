@@ -1293,5 +1293,22 @@
   "ordOfferSent": "عرضك اتبعت.",
   "ordAccepted": "وافقت على السعر.",
   "ordDeclined": "رفضت السعر.",
-  "ordStateChanged": "الطلب اتغير: الطرف التاني رد أو حالته اتغيرت."
+  "ordStateChanged": "الطلب اتغير: الطرف التاني رد أو حالته اتغيرت.",
+  "ordActiveTitle": "المندوب شغال على طلبك",
+  "ordActiveSub": "مكانه بيتحدث على الخريطة أول بأول",
+  "ordStepOrdered": "طلبت",
+  "ordStepAccepted": "{name} قبل الطلب",
+  "ordStepAcceptedNoName": "المندوب قبل الطلب",
+  "ordStepOnTheWay": "شغال عليه",
+  "ordStepNow": "دلوقتي",
+  "ordStepDelivered": "اتسلم",
+  "ordSteps": "مراحل الطلب",
+  "ordComplaint": "فيه مشكلة؟ قدّم شكوى",
+  "ordMapWaiting": "مستنيين مكان المندوب",
+  "ordMapReconnecting": "بنرجّع التتبع المباشر…",
+  "ordMapDenied": "مش مسموحلك تتابع الطلب ده على الخريطة.",
+  "ordMapLabel": "خريطة بمكان المندوب",
+  "ordZoomIn": "تكبير",
+  "ordZoomOut": "تصغير",
+  "ordRecenter": "رجّع الخريطة للنص"
 }

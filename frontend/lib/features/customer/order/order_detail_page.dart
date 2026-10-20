@@ -7,6 +7,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../ui/qd_ui.dart';
 import '../customer_theme.dart';
+import 'active_view.dart';
 import 'closed_views.dart';
 import 'order_controller.dart';
 import 'order_deps.dart';
@@ -120,6 +121,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       OrderViewKind.searching => OrderSearchingView(job: job),
       OrderViewKind.unavailable => OrderUnavailableView(job: job),
       OrderViewKind.priceProposal => OrderProposalView(job: job),
+      OrderViewKind.active => OrderActiveView(job: job),
       OrderViewKind.cancelled => OrderCancelledView(job: job),
       OrderViewKind.underReview => OrderUnderReviewView(job: job),
       OrderViewKind.unknown => OrderUnknownView(job: job),

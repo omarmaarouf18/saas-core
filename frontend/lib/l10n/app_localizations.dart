@@ -6380,6 +6380,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The order changed: the other side already answered or its status moved on.'**
   String get ordStateChanged;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier is working on your order'**
+  String get ordActiveTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Their location updates on the map as they move.'**
+  String get ordActiveSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You ordered'**
+  String get ordStepOrdered;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted the order'**
+  String ordStepAccepted(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier accepted the order'**
+  String get ordStepAcceptedNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get ordStepOnTheWay;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get ordStepNow;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get ordStepDelivered;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order steps'**
+  String get ordSteps;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem? Open a complaint'**
+  String get ordComplaint;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the courier\'s location'**
+  String get ordMapWaiting;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to live tracking…'**
+  String get ordMapReconnecting;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t follow this order on the map.'**
+  String get ordMapDenied;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Map with the courier\'s position'**
+  String get ordMapLabel;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get ordZoomIn;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get ordZoomOut;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Center the map'**
+  String get ordRecenter;
 }
 
 class _AppLocalizationsDelegate
