@@ -201,8 +201,7 @@ class _OrderCard extends StatelessWidget {
         ? null
         : Text(
             formatMoney(l10n, price),
-            style: QdText.bodyStrong.copyWith(
-              fontSize: ongoing ? 15 : 14,
+            style: (ongoing ? QdText.rowTitleSm : QdText.bodyStrong).copyWith(
               fontWeight: FontWeight.w700,
               // Strike-through old price: the one allowed use of textMuted.
               color: cancelled ? c.textMuted : c.textPrimary,

@@ -1884,5 +1884,566 @@
         "type": "String"
       }
     }
+  },
+  "custFromPrice": "From {base} + {rate}/km",
+  "@custFromPrice": {
+    "description": "FE-CUST-2 marketplace card price.",
+    "placeholders": {
+      "base": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "ordTitle": "Your order",
+  "@ordTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordLoadError": "We couldn't load your order",
+  "@ordLoadError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRefreshError": "We couldn't update your order. This is the last update we have.",
+  "@ordRefreshError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnknownTitle": "We can't show this order's status",
+  "@ordUnknownTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnknownBody": "Pull down to refresh. If it stays like this, contact support.",
+  "@ordUnknownBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPickupFrom": "Pickup from",
+  "@ordPickupFrom": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliverTo": "Delivery at",
+  "@ordDeliverTo": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCashEstimate": "Cash · estimated",
+  "@ordCashEstimate": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPayCash": "You'll pay cash",
+  "@ordPayCash": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPaidCash": "Paid cash",
+  "@ordPaidCash": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceNotSet": "Not set yet",
+  "@ordPriceNotSet": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCourierFallback": "Your courier",
+  "@ordCourierFallback": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordChatCourier": "Chat with the courier",
+  "@ordChatCourier": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelledTitle": "Order cancelled",
+  "@ordCancelledTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelledBody": "This order won't go ahead. You can order again any time.",
+  "@ordCancelledBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelReason": "Reason: {reason}",
+  "@ordCancelReason": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalExpiredTitle": "The price offer ran out of time",
+  "@ordProposalExpiredTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalExpiredBody": "Nobody answered the price offer in time, so the order was cancelled. You can order again.",
+  "@ordProposalExpiredBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordReviewTitle": "Your order is under review",
+  "@ordReviewTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordReviewBody": "The company is checking the trip before closing the order. Nothing is needed from you.",
+  "@ordReviewBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOnHold": "Amount on hold",
+  "@ordOnHold": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatYou": "You",
+  "@chatYou": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatUserFallback": "User {id}",
+  "@chatUserFallback": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "chatLive": "Connected",
+  "@chatLive": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatConnecting": "Connecting…",
+  "@chatConnecting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatOffline": "Not connected, retrying",
+  "@chatOffline": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatDenied": "You can't open this chat.",
+  "@chatDenied": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatEmptyTitle": "No messages yet",
+  "@chatEmptyTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatEmptyBody": "Send the courier any extra details about your order.",
+  "@chatEmptyBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatHint": "Write a message",
+  "@chatHint": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatSend": "Send",
+  "@chatSend": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatSendFailed": "We couldn't send the message. {error}",
+  "@chatSendFailed": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ordSearchingTitle": "Looking for a courier",
+  "@ordSearchingTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSearchingBody": "We offer your order to couriers one by one until one accepts.",
+  "@ordSearchingBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSearchingBodyCompany": "We offer your order to {company} couriers one by one until one accepts.",
+  "@ordSearchingBodyCompany": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "company": {
+        "type": "String"
+      }
+    }
+  },
+  "ordOfferedTitle": "{name} is looking at your order",
+  "@ordOfferedTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordOfferedTitleNoName": "A courier is looking at your order",
+  "@ordOfferedTitleNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferedSub": "Got more details? Send them in the chat.",
+  "@ordOfferedSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelOrder": "Cancel order",
+  "@ordCancelOrder": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelSheetTitle": "Cancel this order?",
+  "@ordCancelSheetTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelSheetBody": "Tell the company why. A reason is required.",
+  "@ordCancelSheetBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelReasonLabel": "Reason",
+  "@ordCancelReasonLabel": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelKeep": "Keep the order",
+  "@ordCancelKeep": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelDone": "Your order was cancelled.",
+  "@ordCancelDone": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelDoneRefunded": "Your order was cancelled and the amount was refunded.",
+  "@ordCancelDoneRefunded": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnavailableTitle": "No courier available right now",
+  "@ordUnavailableTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnavailableBody": "All couriers are busy. You can send the same order again.",
+  "@ordUnavailableBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRetryBooking": "Order again",
+  "@ordRetryBooking": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRetryBooked": "We sent your order again.",
+  "@ordRetryBooked": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalCourierTitle": "{name} offered a different price",
+  "@ordProposalCourierTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalCourierTitleNoName": "The courier offered a different price",
+  "@ordProposalCourierTitleNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalCourierSub": "You need to accept before the order starts.",
+  "@ordProposalCourierSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalMineTitle": "You offered {price}",
+  "@ordProposalMineTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalMineSub": "Waiting for the courier to answer.",
+  "@ordProposalMineSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalOpenTitle": "Agree on the price",
+  "@ordProposalOpenTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalOpenSub": "Send a price within the allowed range.",
+  "@ordProposalOpenSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOriginalPrice": "Original price",
+  "@ordOriginalPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferedPrice": "Offered price",
+  "@ordOfferedPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceMore": "{amount} more",
+  "@ordPriceMore": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceLess": "{amount} less",
+  "@ordPriceLess": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceSame": "Same price",
+  "@ordPriceSame": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferExpiresIn": "Offer expires in",
+  "@ordOfferExpiresIn": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferExpiryNote": "If time runs out without an answer, the order is cancelled and you can order again.",
+  "@ordOfferExpiryNote": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDecline": "Decline",
+  "@ordDecline": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordAcceptPrice": "Accept {price}",
+  "@ordAcceptPrice": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordYourPrice": "Your price",
+  "@ordYourPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceRange": "Between {min} and {max}",
+  "@ordPriceRange": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceInvalid": "Enter a number, like 42.",
+  "@ordPriceInvalid": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceOutOfRange": "Enter a price between {min} and {max}.",
+  "@ordPriceOutOfRange": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "ordSendOffer": "Send offer",
+  "@ordSendOffer": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferSent": "Your offer was sent.",
+  "@ordOfferSent": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordAccepted": "You accepted the price.",
+  "@ordAccepted": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeclined": "You declined the price.",
+  "@ordDeclined": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStateChanged": "The order changed: the other side already answered or its status moved on.",
+  "@ordStateChanged": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordActiveTitle": "The courier is working on your order",
+  "@ordActiveTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordActiveSub": "Their location updates on the map as they move.",
+  "@ordActiveSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepOrdered": "You ordered",
+  "@ordStepOrdered": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepAccepted": "{name} accepted the order",
+  "@ordStepAccepted": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordStepAcceptedNoName": "The courier accepted the order",
+  "@ordStepAcceptedNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepOnTheWay": "On the way",
+  "@ordStepOnTheWay": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepNow": "Now",
+  "@ordStepNow": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStepDelivered": "Delivered",
+  "@ordStepDelivered": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSteps": "Order steps",
+  "@ordSteps": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordComplaint": "Problem? Open a complaint",
+  "@ordComplaint": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapWaiting": "Waiting for the courier's location",
+  "@ordMapWaiting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapReconnecting": "Reconnecting to live tracking…",
+  "@ordMapReconnecting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapDenied": "You can't follow this order on the map.",
+  "@ordMapDenied": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordMapLabel": "Map with the courier's position",
+  "@ordMapLabel": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordZoomIn": "Zoom in",
+  "@ordZoomIn": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordZoomOut": "Zoom out",
+  "@ordZoomOut": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRecenter": "Center the map",
+  "@ordRecenter": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliveredTitle": "Your order was delivered",
+  "@ordDeliveredTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliveredPaidCash": "You paid {price} cash",
+  "@ordDeliveredPaidCash": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordDeliveredPaid": "You paid {price}",
+  "@ordDeliveredPaid": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordRateCourier": "Rate {name}",
+  "@ordRateCourier": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordRateCourierNoName": "Rate the courier",
+  "@ordRateCourierNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRateCompany": "Rate the company",
+  "@ordRateCompany": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRatedThanks": "Thanks, your rating was sent.",
+  "@ordRatedThanks": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateQuestion": "How was {name}?",
+  "@rateQuestion": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "rateQuestionCourier": "How was the courier?",
+  "@rateQuestionCourier": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateQuestionCompany": "How was the company?",
+  "@rateQuestionCompany": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateStars": "Rating",
+  "@rateStars": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateBlindNote": "Your rating shows to the other side only after they rate you too. The comment goes to the company only.",
+  "@rateBlindNote": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateComment": "Comment · optional",
+  "@rateComment": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateSend": "Send rating",
+  "@rateSend": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateNotNow": "Not now",
+  "@rateNotNow": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateFailed": "We couldn't send your rating. {error}",
+  "@rateFailed": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "rateIdentityError": "We can't tell who to rate for this order.",
+  "@rateIdentityError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateOtherRated": "The other side already rated you. Both ratings are visible now.",
+  "@rateOtherRated": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateOtherCheckFailed": "We couldn't check whether the other side rated you.",
+  "@rateOtherCheckFailed": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateClose": "Close",
+  "@rateClose": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateStar": "{count, plural, =1{1 star} other{{count} stars}}",
+  "@rateStar": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

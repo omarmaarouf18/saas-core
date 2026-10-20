@@ -12,12 +12,15 @@ import 'package:frontend/features/customer/customer_nav.dart';
 import 'package:frontend/features/customer/customer_theme.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/models/chat_message.dart';
+import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
+import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
@@ -163,6 +166,101 @@ class FakeMarketplace extends ChangeNotifier implements MarketplaceProvider {
     return nextBookedJob;
   }
 
+  // --- Order detail (FE-CUST-2) ---
+
+  /// What fetchJobStatus returns next; null = failure with [nextStatusError].
+  Job? nextStatus;
+  String? nextStatusError = 'Service unavailable';
+  Completer<void>? statusGate;
+  final List<String> statusCalls = [];
+
+  @override
+  Future<Job?> fetchJobStatus(String jobId, String userToken) async {
+    statusCalls.add(jobId);
+    error = null;
+    if (statusGate != null) await statusGate!.future;
+    if (nextStatus == null) {
+      error = nextStatusError;
+      return null;
+    }
+    return nextStatus;
+  }
+
+  final List<Map<String, Object?>> rateCalls = [];
+  Object? nextRateError;
+  Completer<void>? rateGate;
+  List<Map<String, Object?>> ratingsReceived = [];
+  Object? nextRatingsError;
+  int ratingsCalls = 0;
+
+  @override
+  Future<Map<String, dynamic>> rateJob({
+    required String jobId,
+    required String ratedByToken,
+    required String ratedUserId,
+    required int stars,
+    required String comment,
+  }) async {
+    rateCalls.add({
+      'jobId': jobId,
+      'ratedBy': ratedByToken,
+      'ratedUser': ratedUserId,
+      'stars': stars,
+      'comment': comment,
+    });
+    if (rateGate != null) await rateGate!.future;
+    if (nextRateError != null) throw nextRateError!;
+    return {'status': 'ok'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchRatings(String userTokenOrId) async {
+    ratingsCalls++;
+    if (nextRatingsError != null) throw nextRatingsError!;
+    return {'ratings': ratingsReceived};
+  }
+
+  final List<Map<String, Object?>> cancelCalls = [];
+  Object? nextCancelError;
+
+  @override
+  Future<Map<String, dynamic>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String userToken,
+  }) async {
+    cancelCalls.add({'jobId': jobId, 'reason': reason, 'token': userToken});
+    if (nextCancelError != null) throw nextCancelError!;
+    return {'status': 'cancelled'};
+  }
+
+  final List<Map<String, Object?>> proposeCalls = [];
+  final List<Map<String, Object?>> respondCalls = [];
+  Object? nextPriceError;
+  Job? nextPriceJob;
+
+  @override
+  Future<Job?> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    required String userToken,
+  }) async {
+    proposeCalls.add({'jobId': jobId, 'price': proposedPrice});
+    if (nextPriceError != null) throw nextPriceError!;
+    return nextPriceJob;
+  }
+
+  @override
+  Future<Job?> respondPrice({
+    required String jobId,
+    required String decision,
+    required String userToken,
+  }) async {
+    respondCalls.add({'jobId': jobId, 'decision': decision});
+    if (nextPriceError != null) throw nextPriceError!;
+    return nextPriceJob;
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -187,6 +285,134 @@ class FakeThemeProvider extends ChangeNotifier implements ThemeProvider {
 class FakeChat extends ChangeNotifier implements ChatProvider {
   @override
   bool isLoadingHistory = false;
+
+  @override
+  List<ChatMessage> messages = [];
+
+  @override
+  bool isConnected = false;
+
+  @override
+  bool isConnecting = false;
+
+  @override
+  String? error;
+
+  @override
+  String? subscriptionError;
+
+  /// What the next history fetch does: messages, an error, a refusal.
+  List<ChatMessage> nextHistory = [];
+  String? nextHistoryError;
+  bool nextHistoryDenied = false;
+  Completer<void>? historyGate;
+  Object? nextSendError;
+  Completer<void>? sendGate;
+
+  final List<String> historyCalls = [];
+  final List<String> connectCalls = [];
+  final List<String> sent = [];
+  int disconnects = 0;
+
+  @override
+  Future<void> fetchChannelHistory(String channel, String token) async {
+    historyCalls.add(channel);
+    error = null;
+    subscriptionError = null;
+    messages = [];
+    isLoadingHistory = true;
+    notifyListeners();
+    if (historyGate != null) await historyGate!.future;
+    isLoadingHistory = false;
+    if (nextHistoryDenied) {
+      error = 'denied';
+      subscriptionError = 'not authorized for this channel';
+    } else if (nextHistoryError != null) {
+      error = nextHistoryError;
+    } else {
+      messages = List.of(nextHistory);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribeChannel(String channel, String token) {
+    connectCalls.add(channel);
+    isConnected = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> sendMessage(String content) async {
+    sent.add(content);
+    if (sendGate != null) await sendGate!.future;
+    if (nextSendError != null) throw nextSendError!;
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+    isConnected = false;
+    notifyListeners();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Live map fake: tests set markers / connection state; calls recorded.
+class FakeMapTracking extends ChangeNotifier implements MapTrackingProvider {
+  @override
+  List<EmployeeMarkerData> markersList = [];
+
+  @override
+  JobLocation? customerJobLocation;
+
+  @override
+  JobLocation? customerJobDestination;
+
+  @override
+  bool isLoading = false;
+
+  @override
+  bool isConnected = true;
+
+  @override
+  String? subscriptionError;
+
+  final List<String> hydrateCalls = [];
+  final List<String> subscribeCalls = [];
+  int disconnects = 0;
+
+  @override
+  Future<void> hydrateCustomerJob(String jobId, String userToken) async {
+    hydrateCalls.add(jobId);
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribe(String channel, String token,
+      {Object? customChannel}) {
+    subscribeCalls.add(channel);
+    notifyListeners();
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+  }
+
+  void setCourier(double lat, double lon, {String id = 'emp-1'}) {
+    markersList = [
+      EmployeeMarkerData(
+          employeeId: id,
+          jobId: null,
+          latitude: lat,
+          longitude: lon,
+          updatedAt: fixedNow),
+    ];
+    notifyListeners();
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -232,7 +458,11 @@ class CustomerTestDeps {
     FakeNotifications? notifications,
     FakeLocator? locator,
     RecordingNav? nav,
-  })  : auth = auth ?? FakeAuth(),
+    FakeChat? chat,
+    FakeMapTracking? map,
+  })  : chat = chat ?? FakeChat(),
+        map = map ?? FakeMapTracking(),
+        auth = auth ?? FakeAuth(),
         marketplace = marketplace ?? FakeMarketplace(),
         notifications = notifications ?? FakeNotifications(),
         locator = locator ?? FakeLocator(),
@@ -243,6 +473,8 @@ class CustomerTestDeps {
   final FakeNotifications notifications;
   final FakeLocator locator;
   final RecordingNav nav;
+  final FakeChat chat;
+  final FakeMapTracking map;
 }
 
 /// The app around a customer page: real app theme (so [CustomerTheme] is
@@ -264,7 +496,8 @@ Widget customerApp(
           value: deps.notifications),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => FakeThemeProvider()),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
-      ChangeNotifierProvider<ChatProvider>(create: (_) => FakeChat()),
+      ChangeNotifierProvider<ChatProvider>.value(value: deps.chat),
+      ChangeNotifierProvider<MapTrackingProvider>.value(value: deps.map),
     ],
     child: CustomerMapTilesScope(
       tileProvider: BlankTileProvider(),

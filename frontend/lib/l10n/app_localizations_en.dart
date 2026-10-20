@@ -3276,4 +3276,406 @@ class AppLocalizationsEn extends AppLocalizations {
   String custNearYou(String km) {
     return 'Near you · up to $km km';
   }
+
+  @override
+  String custFromPrice(String base, String rate) {
+    return 'From $base + $rate/km';
+  }
+
+  @override
+  String get ordTitle => 'Your order';
+
+  @override
+  String get ordLoadError => 'We couldn\'t load your order';
+
+  @override
+  String get ordRefreshError =>
+      'We couldn\'t update your order. This is the last update we have.';
+
+  @override
+  String get ordUnknownTitle => 'We can\'t show this order\'s status';
+
+  @override
+  String get ordUnknownBody =>
+      'Pull down to refresh. If it stays like this, contact support.';
+
+  @override
+  String get ordPickupFrom => 'Pickup from';
+
+  @override
+  String get ordDeliverTo => 'Delivery at';
+
+  @override
+  String get ordCashEstimate => 'Cash · estimated';
+
+  @override
+  String get ordPayCash => 'You\'ll pay cash';
+
+  @override
+  String get ordPaidCash => 'Paid cash';
+
+  @override
+  String get ordPriceNotSet => 'Not set yet';
+
+  @override
+  String get ordCourierFallback => 'Your courier';
+
+  @override
+  String get ordChatCourier => 'Chat with the courier';
+
+  @override
+  String get ordCancelledTitle => 'Order cancelled';
+
+  @override
+  String get ordCancelledBody =>
+      'This order won\'t go ahead. You can order again any time.';
+
+  @override
+  String ordCancelReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ordProposalExpiredTitle => 'The price offer ran out of time';
+
+  @override
+  String get ordProposalExpiredBody =>
+      'Nobody answered the price offer in time, so the order was cancelled. You can order again.';
+
+  @override
+  String get ordReviewTitle => 'Your order is under review';
+
+  @override
+  String get ordReviewBody =>
+      'The company is checking the trip before closing the order. Nothing is needed from you.';
+
+  @override
+  String get ordOnHold => 'Amount on hold';
+
+  @override
+  String get chatYou => 'You';
+
+  @override
+  String chatUserFallback(String id) {
+    return 'User $id';
+  }
+
+  @override
+  String get chatLive => 'Connected';
+
+  @override
+  String get chatConnecting => 'Connecting…';
+
+  @override
+  String get chatOffline => 'Not connected, retrying';
+
+  @override
+  String get chatDenied => 'You can\'t open this chat.';
+
+  @override
+  String get chatEmptyTitle => 'No messages yet';
+
+  @override
+  String get chatEmptyBody =>
+      'Send the courier any extra details about your order.';
+
+  @override
+  String get chatHint => 'Write a message';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String chatSendFailed(String error) {
+    return 'We couldn\'t send the message. $error';
+  }
+
+  @override
+  String get ordSearchingTitle => 'Looking for a courier';
+
+  @override
+  String get ordSearchingBody =>
+      'We offer your order to couriers one by one until one accepts.';
+
+  @override
+  String ordSearchingBodyCompany(String company) {
+    return 'We offer your order to $company couriers one by one until one accepts.';
+  }
+
+  @override
+  String ordOfferedTitle(String name) {
+    return '$name is looking at your order';
+  }
+
+  @override
+  String get ordOfferedTitleNoName => 'A courier is looking at your order';
+
+  @override
+  String get ordOfferedSub => 'Got more details? Send them in the chat.';
+
+  @override
+  String get ordCancelOrder => 'Cancel order';
+
+  @override
+  String get ordCancelSheetTitle => 'Cancel this order?';
+
+  @override
+  String get ordCancelSheetBody =>
+      'Tell the company why. A reason is required.';
+
+  @override
+  String get ordCancelReasonLabel => 'Reason';
+
+  @override
+  String get ordCancelKeep => 'Keep the order';
+
+  @override
+  String get ordCancelDone => 'Your order was cancelled.';
+
+  @override
+  String get ordCancelDoneRefunded =>
+      'Your order was cancelled and the amount was refunded.';
+
+  @override
+  String get ordUnavailableTitle => 'No courier available right now';
+
+  @override
+  String get ordUnavailableBody =>
+      'All couriers are busy. You can send the same order again.';
+
+  @override
+  String get ordRetryBooking => 'Order again';
+
+  @override
+  String get ordRetryBooked => 'We sent your order again.';
+
+  @override
+  String ordProposalCourierTitle(String name) {
+    return '$name offered a different price';
+  }
+
+  @override
+  String get ordProposalCourierTitleNoName =>
+      'The courier offered a different price';
+
+  @override
+  String get ordProposalCourierSub =>
+      'You need to accept before the order starts.';
+
+  @override
+  String ordProposalMineTitle(String price) {
+    return 'You offered $price';
+  }
+
+  @override
+  String get ordProposalMineSub => 'Waiting for the courier to answer.';
+
+  @override
+  String get ordProposalOpenTitle => 'Agree on the price';
+
+  @override
+  String get ordProposalOpenSub => 'Send a price within the allowed range.';
+
+  @override
+  String get ordOriginalPrice => 'Original price';
+
+  @override
+  String get ordOfferedPrice => 'Offered price';
+
+  @override
+  String ordPriceMore(String amount) {
+    return '$amount more';
+  }
+
+  @override
+  String ordPriceLess(String amount) {
+    return '$amount less';
+  }
+
+  @override
+  String get ordPriceSame => 'Same price';
+
+  @override
+  String get ordOfferExpiresIn => 'Offer expires in';
+
+  @override
+  String get ordOfferExpiryNote =>
+      'If time runs out without an answer, the order is cancelled and you can order again.';
+
+  @override
+  String get ordDecline => 'Decline';
+
+  @override
+  String ordAcceptPrice(String price) {
+    return 'Accept $price';
+  }
+
+  @override
+  String get ordYourPrice => 'Your price';
+
+  @override
+  String ordPriceRange(String min, String max) {
+    return 'Between $min and $max';
+  }
+
+  @override
+  String get ordPriceInvalid => 'Enter a number, like 42.';
+
+  @override
+  String ordPriceOutOfRange(String min, String max) {
+    return 'Enter a price between $min and $max.';
+  }
+
+  @override
+  String get ordSendOffer => 'Send offer';
+
+  @override
+  String get ordOfferSent => 'Your offer was sent.';
+
+  @override
+  String get ordAccepted => 'You accepted the price.';
+
+  @override
+  String get ordDeclined => 'You declined the price.';
+
+  @override
+  String get ordStateChanged =>
+      'The order changed: the other side already answered or its status moved on.';
+
+  @override
+  String get ordActiveTitle => 'The courier is working on your order';
+
+  @override
+  String get ordActiveSub => 'Their location updates on the map as they move.';
+
+  @override
+  String get ordStepOrdered => 'You ordered';
+
+  @override
+  String ordStepAccepted(String name) {
+    return '$name accepted the order';
+  }
+
+  @override
+  String get ordStepAcceptedNoName => 'The courier accepted the order';
+
+  @override
+  String get ordStepOnTheWay => 'On the way';
+
+  @override
+  String get ordStepNow => 'Now';
+
+  @override
+  String get ordStepDelivered => 'Delivered';
+
+  @override
+  String get ordSteps => 'Order steps';
+
+  @override
+  String get ordComplaint => 'Problem? Open a complaint';
+
+  @override
+  String get ordMapWaiting => 'Waiting for the courier\'s location';
+
+  @override
+  String get ordMapReconnecting => 'Reconnecting to live tracking…';
+
+  @override
+  String get ordMapDenied => 'You can\'t follow this order on the map.';
+
+  @override
+  String get ordMapLabel => 'Map with the courier\'s position';
+
+  @override
+  String get ordZoomIn => 'Zoom in';
+
+  @override
+  String get ordZoomOut => 'Zoom out';
+
+  @override
+  String get ordRecenter => 'Center the map';
+
+  @override
+  String get ordDeliveredTitle => 'Your order was delivered';
+
+  @override
+  String ordDeliveredPaidCash(String price) {
+    return 'You paid $price cash';
+  }
+
+  @override
+  String ordDeliveredPaid(String price) {
+    return 'You paid $price';
+  }
+
+  @override
+  String ordRateCourier(String name) {
+    return 'Rate $name';
+  }
+
+  @override
+  String get ordRateCourierNoName => 'Rate the courier';
+
+  @override
+  String get ordRateCompany => 'Rate the company';
+
+  @override
+  String get ordRatedThanks => 'Thanks, your rating was sent.';
+
+  @override
+  String rateQuestion(String name) {
+    return 'How was $name?';
+  }
+
+  @override
+  String get rateQuestionCourier => 'How was the courier?';
+
+  @override
+  String get rateQuestionCompany => 'How was the company?';
+
+  @override
+  String get rateStars => 'Rating';
+
+  @override
+  String get rateBlindNote =>
+      'Your rating shows to the other side only after they rate you too. The comment goes to the company only.';
+
+  @override
+  String get rateComment => 'Comment · optional';
+
+  @override
+  String get rateSend => 'Send rating';
+
+  @override
+  String get rateNotNow => 'Not now';
+
+  @override
+  String rateFailed(String error) {
+    return 'We couldn\'t send your rating. $error';
+  }
+
+  @override
+  String get rateIdentityError => 'We can\'t tell who to rate for this order.';
+
+  @override
+  String get rateOtherRated =>
+      'The other side already rated you. Both ratings are visible now.';
+
+  @override
+  String get rateOtherCheckFailed =>
+      'We couldn\'t check whether the other side rated you.';
+
+  @override
+  String get rateClose => 'Close';
+
+  @override
+  String rateStar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stars',
+      one: '1 star',
+    );
+    return '$_temp0';
+  }
 }

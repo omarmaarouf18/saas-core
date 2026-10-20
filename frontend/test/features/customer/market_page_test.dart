@@ -47,13 +47,17 @@ void main() {
     expect(call['lat'], 30.07);
     expect(call['lon'], 31.28);
     expect(call['radius'], kDefaultMarketRadiusKm);
-    expect(call['sortBy'], 'distance');
+    // The backend ignores sort_by=distance; "none" + client distance sort.
+    expect(call['sortBy'], 'none');
 
     expect(find.text('Deliver an order'), findsOneWidget); // title
     expect(find.text('Near Office · up to 50 km'), findsOneWidget);
     expect(find.text('3 companies available'), findsOneWidget);
     expect(find.text('Cairo Rides'), findsNothing);
-    expect(find.text('About EGP 37'), findsOneWidget);
+    // Tariff (opening fee + per km), never the server final_price.
+    expect(find.text('From EGP 25 + EGP 5/km'), findsNWidgets(2));
+    expect(find.textContaining('37'), findsNothing);
+    expect(find.textContaining('About'), findsNothing);
     expect(find.text('2.4 km from you'), findsOneWidget);
     expect(find.text('Open'), findsNWidgets(2));
     expect(find.text('Closed'), findsOneWidget);

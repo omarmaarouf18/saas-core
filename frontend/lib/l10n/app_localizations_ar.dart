@@ -3225,4 +3225,397 @@ class AppLocalizationsAr extends AppLocalizations {
   String custNearYou(String km) {
     return 'قريب منك · لحد $km كم';
   }
+
+  @override
+  String custFromPrice(String base, String rate) {
+    return 'من $base + $rate للكيلو';
+  }
+
+  @override
+  String get ordTitle => 'طلبك';
+
+  @override
+  String get ordLoadError => 'مقدرناش نحمّل طلبك';
+
+  @override
+  String get ordRefreshError => 'مقدرناش نحدّث طلبك. ده آخر تحديث عندنا.';
+
+  @override
+  String get ordUnknownTitle => 'مش قادرين نعرض حالة الطلب ده';
+
+  @override
+  String get ordUnknownBody => 'اسحب لتحت عشان تحدّث. لو فضل كده كلّم الدعم.';
+
+  @override
+  String get ordPickupFrom => 'الاستلام من';
+
+  @override
+  String get ordDeliverTo => 'التسليم في';
+
+  @override
+  String get ordCashEstimate => 'كاش · متوقع';
+
+  @override
+  String get ordPayCash => 'هتدفع كاش';
+
+  @override
+  String get ordPaidCash => 'دفعت كاش';
+
+  @override
+  String get ordPriceNotSet => 'لسه متحددش';
+
+  @override
+  String get ordCourierFallback => 'المندوب بتاعك';
+
+  @override
+  String get ordChatCourier => 'محادثة المندوب';
+
+  @override
+  String get ordCancelledTitle => 'الطلب اتلغى';
+
+  @override
+  String get ordCancelledBody =>
+      'الطلب ده مش هيكمّل. تقدر تطلب تاني في أي وقت.';
+
+  @override
+  String ordCancelReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ordProposalExpiredTitle => 'عرض السعر وقته خلص';
+
+  @override
+  String get ordProposalExpiredBody =>
+      'محدش رد على عرض السعر في الوقت، فالطلب اتلغى. تقدر تطلب تاني.';
+
+  @override
+  String get ordReviewTitle => 'طلبك بيتراجع';
+
+  @override
+  String get ordReviewBody =>
+      'الشركة بتراجع المشوار قبل ما تقفل الطلب. مش مطلوب منك حاجة.';
+
+  @override
+  String get ordOnHold => 'المبلغ المحجوز';
+
+  @override
+  String get chatYou => 'إنت';
+
+  @override
+  String chatUserFallback(String id) {
+    return 'مستخدم $id';
+  }
+
+  @override
+  String get chatLive => 'متصل';
+
+  @override
+  String get chatConnecting => 'بيتوصل…';
+
+  @override
+  String get chatOffline => 'مش متصل، بنحاول تاني';
+
+  @override
+  String get chatDenied => 'مش مسموحلك تفتح المحادثة دي.';
+
+  @override
+  String get chatEmptyTitle => 'مفيش رسايل لسه';
+
+  @override
+  String get chatEmptyBody => 'ابعت للمندوب أي تفاصيل زيادة عن طلبك.';
+
+  @override
+  String get chatHint => 'اكتب رسالة';
+
+  @override
+  String get chatSend => 'ابعت';
+
+  @override
+  String chatSendFailed(String error) {
+    return 'مقدرناش نبعت الرسالة. $error';
+  }
+
+  @override
+  String get ordSearchingTitle => 'بندور على مندوب';
+
+  @override
+  String get ordSearchingBody =>
+      'بنعرض طلبك على المندوبين واحد ورا التاني لحد ما حد يقبل.';
+
+  @override
+  String ordSearchingBodyCompany(String company) {
+    return 'بنعرض طلبك على مندوبين $company واحد ورا التاني لحد ما حد يقبل.';
+  }
+
+  @override
+  String ordOfferedTitle(String name) {
+    return '$name بيبص على طلبك';
+  }
+
+  @override
+  String get ordOfferedTitleNoName => 'فيه مندوب بيبص على طلبك';
+
+  @override
+  String get ordOfferedSub => 'لو عندك تفاصيل زيادة ابعتهاله';
+
+  @override
+  String get ordCancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get ordCancelSheetTitle => 'تلغي الطلب ده؟';
+
+  @override
+  String get ordCancelSheetBody => 'قول للشركة السبب. لازم تكتب سبب.';
+
+  @override
+  String get ordCancelReasonLabel => 'السبب';
+
+  @override
+  String get ordCancelKeep => 'خلّي الطلب';
+
+  @override
+  String get ordCancelDone => 'طلبك اتلغى.';
+
+  @override
+  String get ordCancelDoneRefunded => 'طلبك اتلغى والمبلغ رجعلك.';
+
+  @override
+  String get ordUnavailableTitle => 'مفيش مندوب متاح دلوقتي';
+
+  @override
+  String get ordUnavailableBody =>
+      'كل المندوبين مشغولين. تقدر تبعت نفس الطلب تاني.';
+
+  @override
+  String get ordRetryBooking => 'اطلب تاني';
+
+  @override
+  String get ordRetryBooked => 'بعتنا طلبك تاني.';
+
+  @override
+  String ordProposalCourierTitle(String name) {
+    return '$name عرض سعر تاني';
+  }
+
+  @override
+  String get ordProposalCourierTitleNoName => 'المندوب عرض سعر تاني';
+
+  @override
+  String get ordProposalCourierSub => 'لازم توافق عشان يبدأ';
+
+  @override
+  String ordProposalMineTitle(String price) {
+    return 'إنت عرضت $price';
+  }
+
+  @override
+  String get ordProposalMineSub => 'مستنيين رد المندوب.';
+
+  @override
+  String get ordProposalOpenTitle => 'اتفق على السعر';
+
+  @override
+  String get ordProposalOpenSub => 'ابعت سعر في الحدود المسموحة.';
+
+  @override
+  String get ordOriginalPrice => 'السعر الأصلي';
+
+  @override
+  String get ordOfferedPrice => 'السعر المعروض';
+
+  @override
+  String ordPriceMore(String amount) {
+    return 'أكتر بـ $amount';
+  }
+
+  @override
+  String ordPriceLess(String amount) {
+    return 'أقل بـ $amount';
+  }
+
+  @override
+  String get ordPriceSame => 'نفس السعر';
+
+  @override
+  String get ordOfferExpiresIn => 'العرض بيخلص بعد';
+
+  @override
+  String get ordOfferExpiryNote =>
+      'لو الوقت خلص من غير رد، الطلب بيتلغي وتقدر تطلب تاني.';
+
+  @override
+  String get ordDecline => 'مش موافق';
+
+  @override
+  String ordAcceptPrice(String price) {
+    return 'موافق على $price';
+  }
+
+  @override
+  String get ordYourPrice => 'السعر اللي تقترحه';
+
+  @override
+  String ordPriceRange(String min, String max) {
+    return 'من $min لـ $max';
+  }
+
+  @override
+  String get ordPriceInvalid => 'اكتب رقم، زي 42.';
+
+  @override
+  String ordPriceOutOfRange(String min, String max) {
+    return 'اكتب سعر من $min لـ $max.';
+  }
+
+  @override
+  String get ordSendOffer => 'ابعت العرض';
+
+  @override
+  String get ordOfferSent => 'عرضك اتبعت.';
+
+  @override
+  String get ordAccepted => 'وافقت على السعر.';
+
+  @override
+  String get ordDeclined => 'رفضت السعر.';
+
+  @override
+  String get ordStateChanged => 'الطلب اتغير: الطرف التاني رد أو حالته اتغيرت.';
+
+  @override
+  String get ordActiveTitle => 'المندوب شغال على طلبك';
+
+  @override
+  String get ordActiveSub => 'مكانه بيتحدث على الخريطة أول بأول';
+
+  @override
+  String get ordStepOrdered => 'طلبت';
+
+  @override
+  String ordStepAccepted(String name) {
+    return '$name قبل الطلب';
+  }
+
+  @override
+  String get ordStepAcceptedNoName => 'المندوب قبل الطلب';
+
+  @override
+  String get ordStepOnTheWay => 'شغال عليه';
+
+  @override
+  String get ordStepNow => 'دلوقتي';
+
+  @override
+  String get ordStepDelivered => 'اتسلم';
+
+  @override
+  String get ordSteps => 'مراحل الطلب';
+
+  @override
+  String get ordComplaint => 'فيه مشكلة؟ قدّم شكوى';
+
+  @override
+  String get ordMapWaiting => 'مستنيين مكان المندوب';
+
+  @override
+  String get ordMapReconnecting => 'بنرجّع التتبع المباشر…';
+
+  @override
+  String get ordMapDenied => 'مش مسموحلك تتابع الطلب ده على الخريطة.';
+
+  @override
+  String get ordMapLabel => 'خريطة بمكان المندوب';
+
+  @override
+  String get ordZoomIn => 'تكبير';
+
+  @override
+  String get ordZoomOut => 'تصغير';
+
+  @override
+  String get ordRecenter => 'رجّع الخريطة للنص';
+
+  @override
+  String get ordDeliveredTitle => 'طلبك اتسلم';
+
+  @override
+  String ordDeliveredPaidCash(String price) {
+    return 'دفعت $price كاش';
+  }
+
+  @override
+  String ordDeliveredPaid(String price) {
+    return 'دفعت $price';
+  }
+
+  @override
+  String ordRateCourier(String name) {
+    return 'قيّم $name';
+  }
+
+  @override
+  String get ordRateCourierNoName => 'قيّم المندوب';
+
+  @override
+  String get ordRateCompany => 'قيّم الشركة';
+
+  @override
+  String get ordRatedThanks => 'شكرًا، تقييمك اتبعت.';
+
+  @override
+  String rateQuestion(String name) {
+    return 'إيه رأيك في $name؟';
+  }
+
+  @override
+  String get rateQuestionCourier => 'إيه رأيك في المندوب؟';
+
+  @override
+  String get rateQuestionCompany => 'إيه رأيك في الشركة؟';
+
+  @override
+  String get rateStars => 'التقييم';
+
+  @override
+  String get rateBlindNote =>
+      'تقييمك مش هيظهر للطرف التاني غير لما هو كمان يقيّمك، والتعليق بيروح للشركة بس.';
+
+  @override
+  String get rateComment => 'تعليق · اختياري';
+
+  @override
+  String get rateSend => 'ابعت التقييم';
+
+  @override
+  String get rateNotNow => 'مش دلوقتي';
+
+  @override
+  String rateFailed(String error) {
+    return 'مقدرناش نبعت تقييمك. $error';
+  }
+
+  @override
+  String get rateIdentityError => 'مش عارفين نقيّم مين في الطلب ده.';
+
+  @override
+  String get rateOtherRated => 'الطرف التاني قيّمك. التقييمين ظاهرين دلوقتي.';
+
+  @override
+  String get rateOtherCheckFailed => 'مقدرناش نعرف إذا كان الطرف التاني قيّمك.';
+
+  @override
+  String get rateClose => 'إغلاق';
+
+  @override
+  String rateStar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نجوم',
+      two: 'نجمتين',
+      one: 'نجمة',
+    );
+    return '$_temp0';
+  }
 }

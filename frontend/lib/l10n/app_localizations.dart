@@ -5930,6 +5930,684 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Near you · up to {km} km'**
   String custNearYou(String km);
+
+  /// FE-CUST-2 marketplace card price.
+  ///
+  /// In en, this message translates to:
+  /// **'From {base} + {rate}/km'**
+  String custFromPrice(String base, String rate);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order'**
+  String get ordTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your order'**
+  String get ordLoadError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t update your order. This is the last update we have.'**
+  String get ordRefreshError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t show this order\'s status'**
+  String get ordUnknownTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down to refresh. If it stays like this, contact support.'**
+  String get ordUnknownBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup from'**
+  String get ordPickupFrom;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery at'**
+  String get ordDeliverTo;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · estimated'**
+  String get ordCashEstimate;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll pay cash'**
+  String get ordPayCash;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid cash'**
+  String get ordPaidCash;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set yet'**
+  String get ordPriceNotSet;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your courier'**
+  String get ordCourierFallback;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with the courier'**
+  String get ordChatCourier;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled'**
+  String get ordCancelledTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'This order won\'t go ahead. You can order again any time.'**
+  String get ordCancelledBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ordCancelReason(String reason);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The price offer ran out of time'**
+  String get ordProposalExpiredTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody answered the price offer in time, so the order was cancelled. You can order again.'**
+  String get ordProposalExpiredBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is under review'**
+  String get ordReviewTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The company is checking the trip before closing the order. Nothing is needed from you.'**
+  String get ordReviewBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount on hold'**
+  String get ordOnHold;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatYou;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'User {id}'**
+  String chatUserFallback(String id);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get chatLive;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get chatConnecting;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected, retrying'**
+  String get chatOffline;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t open this chat.'**
+  String get chatDenied;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get chatEmptyTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the courier any extra details about your order.'**
+  String get chatEmptyBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get chatHint;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSend;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the message. {error}'**
+  String chatSendFailed(String error);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for a courier'**
+  String get ordSearchingTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We offer your order to couriers one by one until one accepts.'**
+  String get ordSearchingBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We offer your order to {company} couriers one by one until one accepts.'**
+  String ordSearchingBodyCompany(String company);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is looking at your order'**
+  String ordOfferedTitle(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'A courier is looking at your order'**
+  String get ordOfferedTitleNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Got more details? Send them in the chat.'**
+  String get ordOfferedSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get ordCancelOrder;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this order?'**
+  String get ordCancelSheetTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the company why. A reason is required.'**
+  String get ordCancelSheetBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get ordCancelReasonLabel;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order'**
+  String get ordCancelKeep;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled.'**
+  String get ordCancelDone;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled and the amount was refunded.'**
+  String get ordCancelDoneRefunded;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier available right now'**
+  String get ordUnavailableTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'All couriers are busy. You can send the same order again.'**
+  String get ordUnavailableBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order again'**
+  String get ordRetryBooking;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent your order again.'**
+  String get ordRetryBooked;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} offered a different price'**
+  String ordProposalCourierTitle(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier offered a different price'**
+  String get ordProposalCourierTitleNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to accept before the order starts.'**
+  String get ordProposalCourierSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You offered {price}'**
+  String ordProposalMineTitle(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the courier to answer.'**
+  String get ordProposalMineSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Agree on the price'**
+  String get ordProposalOpenTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a price within the allowed range.'**
+  String get ordProposalOpenSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Original price'**
+  String get ordOriginalPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered price'**
+  String get ordOfferedPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} more'**
+  String ordPriceMore(String amount);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} less'**
+  String ordPriceLess(String amount);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Same price'**
+  String get ordPriceSame;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer expires in'**
+  String get ordOfferExpiresIn;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'If time runs out without an answer, the order is cancelled and you can order again.'**
+  String get ordOfferExpiryNote;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get ordDecline;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept {price}'**
+  String ordAcceptPrice(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price'**
+  String get ordYourPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Between {min} and {max}'**
+  String ordPriceRange(String min, String max);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number, like 42.'**
+  String get ordPriceInvalid;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a price between {min} and {max}.'**
+  String ordPriceOutOfRange(String min, String max);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send offer'**
+  String get ordSendOffer;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your offer was sent.'**
+  String get ordOfferSent;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You accepted the price.'**
+  String get ordAccepted;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You declined the price.'**
+  String get ordDeclined;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The order changed: the other side already answered or its status moved on.'**
+  String get ordStateChanged;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier is working on your order'**
+  String get ordActiveTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Their location updates on the map as they move.'**
+  String get ordActiveSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You ordered'**
+  String get ordStepOrdered;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted the order'**
+  String ordStepAccepted(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier accepted the order'**
+  String get ordStepAcceptedNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get ordStepOnTheWay;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get ordStepNow;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get ordStepDelivered;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order steps'**
+  String get ordSteps;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem? Open a complaint'**
+  String get ordComplaint;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the courier\'s location'**
+  String get ordMapWaiting;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to live tracking…'**
+  String get ordMapReconnecting;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t follow this order on the map.'**
+  String get ordMapDenied;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Map with the courier\'s position'**
+  String get ordMapLabel;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get ordZoomIn;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get ordZoomOut;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Center the map'**
+  String get ordRecenter;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ordDeliveredTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid {price} cash'**
+  String ordDeliveredPaidCash(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid {price}'**
+  String ordDeliveredPaid(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {name}'**
+  String ordRateCourier(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the courier'**
+  String get ordRateCourierNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the company'**
+  String get ordRateCompany;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, your rating was sent.'**
+  String get ordRatedThanks;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was {name}?'**
+  String rateQuestion(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was the courier?'**
+  String get rateQuestionCourier;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was the company?'**
+  String get rateQuestionCompany;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get rateStars;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating shows to the other side only after they rate you too. The comment goes to the company only.'**
+  String get rateBlindNote;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment · optional'**
+  String get rateComment;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send rating'**
+  String get rateSend;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get rateNotNow;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send your rating. {error}'**
+  String rateFailed(String error);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t tell who to rate for this order.'**
+  String get rateIdentityError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The other side already rated you. Both ratings are visible now.'**
+  String get rateOtherRated;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check whether the other side rated you.'**
+  String get rateOtherCheckFailed;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get rateClose;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 star} other{{count} stars}}'**
+  String rateStar(int count);
 }
 
 class _AppLocalizationsDelegate
