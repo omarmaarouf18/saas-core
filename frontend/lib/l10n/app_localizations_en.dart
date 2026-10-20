@@ -3678,4 +3678,134 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get authSwitchLanguage => 'العربية';
+
+  @override
+  String get authSwitchLanguageLabel => 'Switch to Arabic';
+
+  @override
+  String get authThemeLabel => 'Change the look';
+
+  @override
+  String get authBack => 'Back';
+
+  @override
+  String get authLoginTitle => 'Welcome';
+
+  @override
+  String get authLoginSubtitle => 'Sign in to order and follow your orders';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authEmailHint => 'name@example.com';
+
+  @override
+  String get authEmailRequired => 'Enter your email';
+
+  @override
+  String get authEmailInvalid => 'Enter an email like name@example.com';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authPasswordRequired => 'Enter your password';
+
+  @override
+  String get authForgotPassword => 'Forgot your password?';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authNoAccount => 'No account?';
+
+  @override
+  String get authCreateAccountLink => 'Create one';
+
+  @override
+  String get authSignupTitle => 'New account';
+
+  @override
+  String get authRoleQuestion => 'Who are you?';
+
+  @override
+  String get authRoleCustomer => 'Customer';
+
+  @override
+  String get authRoleCustomerHint => 'I want to send orders';
+
+  @override
+  String get authRoleOwner => 'Business owner';
+
+  @override
+  String get authRoleOwnerHint => 'I have a company and couriers';
+
+  @override
+  String get authCourierNote =>
+      'Couriers get their accounts from their business owner.';
+
+  @override
+  String get authNameLabel => 'Name';
+
+  @override
+  String get authNameRequired => 'Enter your name';
+
+  @override
+  String get authNameTooShort => 'The name needs at least 3 letters';
+
+  @override
+  String get authNameTooLong => 'The name can have at most 30 letters';
+
+  @override
+  String get authNameInvalid => 'Use letters, numbers, spaces or _ only';
+
+  @override
+  String get authPasswordHelp =>
+      'At least 8 characters, and not an easy one like 12345678';
+
+  @override
+  String get authCreateAccount => 'Create account';
+
+  @override
+  String get authHaveAccount => 'Have an account?';
+
+  @override
+  String get authSignInLink => 'Sign in';
+
+  @override
+  String get authOtpTitle => 'Enter the code';
+
+  @override
+  String get authOtpSentTo => 'We sent a 6-digit code to';
+
+  @override
+  String get authOtpLabel => 'Verification code';
+
+  @override
+  String get authOtpIncomplete => 'Enter all 6 digits';
+
+  @override
+  String get authOtpConfirm => 'Confirm';
+
+  @override
+  String get authResendWait => 'Didn\'t get it? You can send it again in';
+
+  @override
+  String get authResendPrompt => 'Didn\'t get it?';
+
+  @override
+  String get authResendNow => 'Send the code again';
+
+  @override
+  String get authCodeResent => 'We sent you a new code.';
+
+  @override
+  String authDevOtp(String otp) {
+    return 'Test mode: we filled in the code $otp for you.';
+  }
 }

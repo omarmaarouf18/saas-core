@@ -3618,4 +3618,132 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get authSwitchLanguage => 'English';
+
+  @override
+  String get authSwitchLanguageLabel => 'غيّر اللغة للإنجليزي';
+
+  @override
+  String get authThemeLabel => 'غيّر المظهر';
+
+  @override
+  String get authBack => 'رجوع';
+
+  @override
+  String get authLoginTitle => 'أهلاً بيك';
+
+  @override
+  String get authLoginSubtitle => 'ادخل على حسابك عشان تطلب وتتابع طلباتك';
+
+  @override
+  String get authEmailLabel => 'الإيميل';
+
+  @override
+  String get authEmailHint => 'name@example.com';
+
+  @override
+  String get authEmailRequired => 'اكتب الإيميل';
+
+  @override
+  String get authEmailInvalid => 'اكتب إيميل صحيح زي name@example.com';
+
+  @override
+  String get authPasswordLabel => 'كلمة السر';
+
+  @override
+  String get authPasswordRequired => 'اكتب كلمة السر';
+
+  @override
+  String get authForgotPassword => 'نسيت كلمة السر؟';
+
+  @override
+  String get authSignIn => 'دخول';
+
+  @override
+  String get authNoAccount => 'معندكش حساب؟';
+
+  @override
+  String get authCreateAccountLink => 'اعمل حساب جديد';
+
+  @override
+  String get authSignupTitle => 'حساب جديد';
+
+  @override
+  String get authRoleQuestion => 'أنت مين؟';
+
+  @override
+  String get authRoleCustomer => 'عميل';
+
+  @override
+  String get authRoleCustomerHint => 'عايز أبعت طلبات';
+
+  @override
+  String get authRoleOwner => 'صاحب شغل';
+
+  @override
+  String get authRoleOwnerHint => 'عندي شركة ومندوبين';
+
+  @override
+  String get authCourierNote => 'المندوبين بياخدوا حساباتهم من صاحب الشغل.';
+
+  @override
+  String get authNameLabel => 'الاسم';
+
+  @override
+  String get authNameRequired => 'اكتب اسمك';
+
+  @override
+  String get authNameTooShort => 'الاسم لازم يكون 3 حروف على الأقل';
+
+  @override
+  String get authNameTooLong => 'الاسم ميزيدش عن 30 حرف';
+
+  @override
+  String get authNameInvalid => 'استخدم حروف وأرقام ومسافات أو _ بس';
+
+  @override
+  String get authPasswordHelp => '8 حروف على الأقل، ومتكونش سهلة زي 12345678';
+
+  @override
+  String get authCreateAccount => 'اعمل الحساب';
+
+  @override
+  String get authHaveAccount => 'عندك حساب؟';
+
+  @override
+  String get authSignInLink => 'ادخل';
+
+  @override
+  String get authOtpTitle => 'اكتب الكود';
+
+  @override
+  String get authOtpSentTo => 'بعتنا كود من 6 أرقام على';
+
+  @override
+  String get authOtpLabel => 'كود التأكيد';
+
+  @override
+  String get authOtpIncomplete => 'اكتب الـ 6 أرقام كلهم';
+
+  @override
+  String get authOtpConfirm => 'تأكيد';
+
+  @override
+  String get authResendWait => 'موصلكش؟ تقدر تبعته تاني بعد';
+
+  @override
+  String get authResendPrompt => 'موصلكش؟';
+
+  @override
+  String get authResendNow => 'ابعت الكود تاني';
+
+  @override
+  String get authCodeResent => 'بعتنالك كود جديد.';
+
+  @override
+  String authDevOtp(String otp) {
+    return 'وضع التجربة: كتبنالك الكود $otp.';
+  }
 }

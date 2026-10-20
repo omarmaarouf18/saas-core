@@ -6608,6 +6608,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 star} other{{count} stars}}'**
   String rateStar(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get authSwitchLanguage;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Arabic'**
+  String get authSwitchLanguageLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the look'**
+  String get authThemeLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get authBack;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get authLoginTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to order and follow your orders'**
+  String get authLoginSubtitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'name@example.com'**
+  String get authEmailHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get authEmailRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email like name@example.com'**
+  String get authEmailInvalid;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPasswordLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get authPasswordRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get authForgotPassword;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignIn;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No account?'**
+  String get authNoAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Create one'**
+  String get authCreateAccountLink;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'New account'**
+  String get authSignupTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Who are you?'**
+  String get authRoleQuestion;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get authRoleCustomer;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I want to send orders'**
+  String get authRoleCustomerHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Business owner'**
+  String get authRoleOwner;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I have a company and couriers'**
+  String get authRoleOwnerHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couriers get their accounts from their business owner.'**
+  String get authCourierNote;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get authNameLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name'**
+  String get authNameRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The name needs at least 3 letters'**
+  String get authNameTooShort;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The name can have at most 30 letters'**
+  String get authNameTooLong;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters, numbers, spaces or _ only'**
+  String get authNameInvalid;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters, and not an easy one like 12345678'**
+  String get authPasswordHelp;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get authCreateAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Have an account?'**
+  String get authHaveAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignInLink;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get authOtpTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to'**
+  String get authOtpSentTo;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authOtpLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter all 6 digits'**
+  String get authOtpIncomplete;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get authOtpConfirm;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t get it? You can send it again in'**
+  String get authResendWait;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t get it?'**
+  String get authResendPrompt;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the code again'**
+  String get authResendNow;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent you a new code.'**
+  String get authCodeResent;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Test mode: we filled in the code {otp} for you.'**
+  String authDevOtp(String otp);
 }
 
 class _AppLocalizationsDelegate

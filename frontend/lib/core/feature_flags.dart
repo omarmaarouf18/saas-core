@@ -7,3 +7,12 @@ library;
 /// rebuilt (FE-CUST-2, FE-CLEANUP).
 const bool kRedesignCustomer =
     bool.fromEnvironment('QD_REDESIGN_CUSTOMER', defaultValue: false);
+
+/// FE-AUTH-ACCOUNT: the redesigned signed-out screens (sign in, sign up,
+/// code entry, password reset) and the update-required screen. They are
+/// shared by every role, so they have their own flag; turn it on with
+/// `--dart-define=QD_REDESIGN_AUTH=true`. The customer account, notification
+/// and support pages open from the customer shell and stay behind
+/// [kRedesignCustomer].
+const bool kRedesignAuth =
+    bool.fromEnvironment('QD_REDESIGN_AUTH', defaultValue: false);

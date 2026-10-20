@@ -2445,5 +2445,178 @@
         "type": "int"
       }
     }
+  },
+  "authSwitchLanguage": "العربية",
+  "@authSwitchLanguage": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSwitchLanguageLabel": "Switch to Arabic",
+  "@authSwitchLanguageLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authThemeLabel": "Change the look",
+  "@authThemeLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authBack": "Back",
+  "@authBack": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authLoginTitle": "Welcome",
+  "@authLoginTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authLoginSubtitle": "Sign in to order and follow your orders",
+  "@authLoginSubtitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailLabel": "Email",
+  "@authEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailHint": "name@example.com",
+  "@authEmailHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailRequired": "Enter your email",
+  "@authEmailRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailInvalid": "Enter an email like name@example.com",
+  "@authEmailInvalid": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordLabel": "Password",
+  "@authPasswordLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordRequired": "Enter your password",
+  "@authPasswordRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authForgotPassword": "Forgot your password?",
+  "@authForgotPassword": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignIn": "Sign in",
+  "@authSignIn": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNoAccount": "No account?",
+  "@authNoAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCreateAccountLink": "Create one",
+  "@authCreateAccountLink": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignupTitle": "New account",
+  "@authSignupTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleQuestion": "Who are you?",
+  "@authRoleQuestion": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleCustomer": "Customer",
+  "@authRoleCustomer": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleCustomerHint": "I want to send orders",
+  "@authRoleCustomerHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleOwner": "Business owner",
+  "@authRoleOwner": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleOwnerHint": "I have a company and couriers",
+  "@authRoleOwnerHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCourierNote": "Couriers get their accounts from their business owner.",
+  "@authCourierNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameLabel": "Name",
+  "@authNameLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameRequired": "Enter your name",
+  "@authNameRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameTooShort": "The name needs at least 3 letters",
+  "@authNameTooShort": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameTooLong": "The name can have at most 30 letters",
+  "@authNameTooLong": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameInvalid": "Use letters, numbers, spaces or _ only",
+  "@authNameInvalid": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordHelp": "At least 8 characters, and not an easy one like 12345678",
+  "@authPasswordHelp": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCreateAccount": "Create account",
+  "@authCreateAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authHaveAccount": "Have an account?",
+  "@authHaveAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignInLink": "Sign in",
+  "@authSignInLink": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpTitle": "Enter the code",
+  "@authOtpTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpSentTo": "We sent a 6-digit code to",
+  "@authOtpSentTo": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpLabel": "Verification code",
+  "@authOtpLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpIncomplete": "Enter all 6 digits",
+  "@authOtpIncomplete": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpConfirm": "Confirm",
+  "@authOtpConfirm": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendWait": "Didn't get it? You can send it again in",
+  "@authResendWait": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendPrompt": "Didn't get it?",
+  "@authResendPrompt": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendNow": "Send the code again",
+  "@authResendNow": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCodeResent": "We sent you a new code.",
+  "@authCodeResent": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authDevOtp": "Test mode: we filled in the code {otp} for you.",
+  "@authDevOtp": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.",
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
   }
 }

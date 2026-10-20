@@ -25,7 +25,6 @@ import '../widgets/primary_button.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/skeleton_loader.dart';
-import 'login_screen.dart';
 import 'wallet_screen.dart';
 import 'employee_screen.dart';
 import 'kyc_document_upload_screen.dart';
@@ -35,6 +34,7 @@ import 'subscription_screen.dart';
 import 'owner_configuration_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
+import '../features/auth/auth_nav.dart';
 import '../features/customer/customer_shell.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import 'owner_fleet_map_screen.dart';
@@ -209,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = auth.user;
 
     if (user == null) {
-      return const LoginScreen();
+      // FE-AUTH-ACCOUNT: redesigned sign-in behind QD_REDESIGN_AUTH.
+      return signedOutRootScreen();
     }
 
     if (user.role == 'employee') {

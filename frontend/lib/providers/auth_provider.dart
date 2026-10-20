@@ -51,12 +51,20 @@ class AuthProvider extends ChangeNotifier {
   // status-specific messaging; cleared alongside _error.
   int? _lastErrorStatusCode;
   String? _resetToken;
+  // FE-AUTH-ACCOUNT: machine code (e.g. `weak_password`) and raw server
+  // reason of the most recent failed auth call. [error] stays the banner
+  // text (English for weak_password, mapped without a BuildContext); the
+  // redesigned screens localize from these instead. Cleared with [error].
+  String? _lastErrorCode;
+  String? _lastErrorReason;
 
   UserProfile? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
   int? get lastErrorStatusCode => _lastErrorStatusCode;
+  String? get lastErrorCode => _lastErrorCode;
+  String? get lastErrorReason => _lastErrorReason;
   // Phase-1 reset token (ADR-0026 amendment): the single-use possession
   // token minted by verifyResetCode, held here (never in a static) for the
   // phase-2 call. Null until a verify succeeds; cleared on reset success.
@@ -121,6 +129,8 @@ class AuthProvider extends ChangeNotifier {
     // data with zero signal. Store it like every sibling method so the
     // calling screen can surface a retryable inline banner.
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     notifyListeners();
     try {
@@ -179,14 +189,26 @@ class AuthProvider extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     notifyListeners();
+  }
+
+  /// Banner text for a failed auth call, recording the machine code and
+  /// server reason alongside it.
+  String _fail(Object e) {
+    _lastErrorCode = e is ApiClientException ? e.errorCode : null;
+    _lastErrorReason = e is ApiClientException ? e.message : null;
+    return _authBannerMessage(e);
   }
 
   Future<String?> signup(
       String email, String username, String password, String role) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -199,7 +221,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Signup error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       return null;
     } finally {
       _isLoading = false;
@@ -210,6 +232,8 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> login(String email, String password) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -234,7 +258,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Login error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       return null;
     } finally {
       _isLoading = false;
@@ -245,6 +269,8 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> verifyOtp(String email, String otp) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -274,7 +300,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Verify OTP error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       return false;
     } finally {
       _isLoading = false;
@@ -285,6 +311,8 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> resendOtp(String email) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -294,7 +322,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Resend OTP error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       return null;
     } finally {
       _isLoading = false;
@@ -306,6 +334,8 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> forgotPassword(String email) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -315,7 +345,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Forgot password error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       return null;
     } finally {
       _isLoading = false;
@@ -333,6 +363,8 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> verifyResetCode(String email, String otp) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     _resetToken = null;
     notifyListeners();
@@ -346,7 +378,7 @@ class AuthProvider extends ChangeNotifier {
       return _resetToken;
     } catch (e) {
       debugPrint('Verify reset code error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return null;
     } finally {
@@ -363,6 +395,8 @@ class AuthProvider extends ChangeNotifier {
       String email, String resetToken, String newPassword) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     notifyListeners();
 
@@ -376,7 +410,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Reset password error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return false;
     } finally {
@@ -389,6 +423,8 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> requestEmailChange(String newEmail) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -398,7 +434,7 @@ class AuthProvider extends ChangeNotifier {
       return res['dev_otp'] as String?;
     } catch (e) {
       debugPrint('Request email change error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -410,6 +446,8 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> confirmEmailChange(String otp) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -433,7 +471,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Confirm email change error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -503,6 +541,8 @@ class AuthProvider extends ChangeNotifier {
     // 4. Clear any stale provider error so logged-out screens (e.g. the
     // login inline error banner) never render a previous session's failure.
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
@@ -518,6 +558,8 @@ class AuthProvider extends ChangeNotifier {
     // Same stale-error clearing as logout(): logged-out screens must not
     // render a previous session's provider failure.
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     _lastErrorStatusCode = null;
     apiClient.setToken(null);
     await _secureStorage.deleteAll();
@@ -535,6 +577,8 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _error = null;
+    _lastErrorCode = null;
+    _lastErrorReason = null;
     notifyListeners();
 
     try {
@@ -567,7 +611,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Update profile error: $e');
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       rethrow;
     } finally {
       _isLoading = false;
@@ -604,7 +648,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Toggle 2FA error: $e');
       _user = previousProfile;
       notifyListeners();
-      _error = _authBannerMessage(e);
+      _error = _fail(e);
       // Audit S5: store the status alongside the message (mirroring
       // fetchUserProfile/verifyResetCode) so the disable dialog can tell a
       // 429 lockout from a true 401 instead of blaming the password.

@@ -8,8 +8,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/l10n.dart';
 
 import 'core/api_client.dart';
+import 'core/feature_flags.dart';
 import 'core/update_gate.dart';
 import 'core/theme.dart';
+import 'features/auth/auth_gate.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
@@ -163,6 +165,10 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // FE-AUTH-ACCOUNT: redesigned signed-out flow behind QD_REDESIGN_AUTH.
+    if (kRedesignAuth) {
+      return const RedesignAuthGate(splash: AuthSplashScreen());
+    }
     final auth = Provider.of<AuthProvider>(context);
     if (auth.isLoading) {
       return const AuthSplashScreen();
