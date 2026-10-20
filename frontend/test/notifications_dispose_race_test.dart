@@ -54,7 +54,8 @@ void main() {
     // finally would surface as an unhandled exception and fail the test.
   });
 
-  test('subscribe during in-flight fetch, then dispose: no late notifications',
+  test(
+      'subscribe during in-flight fetch, then dispose: no late notifications',
       () async {
     final api = _HangApiClient();
     final provider = NotificationsProvider(api);

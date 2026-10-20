@@ -29,13 +29,14 @@ void main() {
         ownerPassword: 'owner-pass-9',
         setActive: false,
       ),
-      throwsA(isA<ApiClientException>()
-          .having((e) => e.statusCode, 'statusCode', 503)),
+      throwsA(isA<ApiClientException>().having(
+          (e) => e.statusCode, 'statusCode', 503)),
     );
     expect(provider.error, isNotNull);
   });
 
-  testWidgets('Staff list 500 renders the error banner, not the empty state',
+  testWidgets(
+      'Staff list 500 renders the error banner, not the empty state',
       (tester) async {
     final api = _FailingListApi();
 
@@ -86,12 +87,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // Open the toggle tile and submit.
-    await tester
-        .ensureVisible(find.byKey(const Key('freeze_worker_expansion_tile')));
+    await tester.ensureVisible(
+        find.byKey(const Key('freeze_worker_expansion_tile')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('freeze_worker_expansion_tile')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('toggle_employee_email_input')),
+    await tester.enterText(
+        find.byKey(const Key('toggle_employee_email_input')),
         'courier@company.com');
     await tester.enterText(
         find.byKey(const Key('toggle_owner_password_input')), 'owner-pass-9');
@@ -110,8 +112,8 @@ void main() {
     // Localized "temporarily unavailable — nothing changed" copy, not the
     // generic 5xx server line.
     expect(find.textContaining('temporarily unavailable'), findsOneWidget);
-    expect(
-        find.textContaining('Something went wrong on our end'), findsNothing);
+    expect(find.textContaining('Something went wrong on our end'),
+        findsNothing);
   });
 }
 

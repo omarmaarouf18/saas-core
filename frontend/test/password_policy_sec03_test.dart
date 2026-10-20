@@ -48,7 +48,8 @@ void main() {
     test('AR validator copy renders Egyptian-Arabic text', () {
       final ar = AppLocalizationsAr('ar');
       expect(validatePassword(ar, '1234567'), isNot(equals('')));
-      expect(validatePassword(ar, '1234567'), equals(ar.passwordTooShort));
+      expect(
+          validatePassword(ar, '1234567'), equals(ar.passwordTooShort));
       expect(validatePassword(ar, 'a' * 73), equals(ar.passwordTooLong));
     });
   });
@@ -56,15 +57,10 @@ void main() {
   group('weakPasswordServerMessage reason mapping', () {
     final en = AppLocalizationsEn();
     test('server policy reasons map to dedicated copy', () {
-      expect(
-          weakPasswordServerMessage(
-                  en, 'password must be at least 8 characters')
-              .contains('8'),
-          isTrue);
-      expect(
-          weakPasswordServerMessage(en, 'password must be at most 72 bytes')
-              .contains('72'),
-          isTrue);
+      expect(weakPasswordServerMessage(en, 'password must be at least 8 characters')
+          .contains('8'), isTrue);
+      expect(weakPasswordServerMessage(en, 'password must be at most 72 bytes')
+          .contains('72'), isTrue);
       expect(
         weakPasswordServerMessage(en, 'password is too common'),
         equals(en.passwordTooCommon),
@@ -151,7 +147,8 @@ void resetScreenWeakPasswordTests() {
     await tester.enterText(
         find.byKey(const Key('reset_new_password_field')), 'password123');
     await tester.enterText(
-        find.byKey(const Key('reset_confirm_password_field')), 'password123');
+        find.byKey(const Key('reset_confirm_password_field')),
+        'password123');
     await tester.tap(find.byKey(const Key('submit_new_password_button')));
     await tester.pumpAndSettle();
 
