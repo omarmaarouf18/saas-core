@@ -90,13 +90,20 @@ void main() {
     expect(find.text('Office'), findsOneWidget); // pickup carried over
   });
 
-  testWidgets('cheapest sort asks the server to sort by price', (tester) async {
+  testWidgets('cheapest sort is client-side by tariff (sort_by=none)',
+      (tester) async {
     final deps = CustomerTestDeps();
-    deps.marketplace.nextServices = [open, far];
+    deps.marketplace.nextServices = [
+      service(id: 'dear', name: 'Dear Co', tenantBase: 40, finalPrice: 1),
+      service(id: 'cheap', name: 'Cheap Co', tenantBase: 10, finalPrice: 99),
+    ];
     await _pumpMarket(tester, deps);
     await tester.tap(find.text('Cheapest'));
     await tester.pumpAndSettle();
-    expect(deps.marketplace.serviceCalls.last['sortBy'], 'price');
+    expect(deps.marketplace.serviceCalls.last['sortBy'], 'none');
+    final cheapTop = tester.getTopLeft(find.text('Cheap Co')).dy;
+    final dearTop = tester.getTopLeft(find.text('Dear Co')).dy;
+    expect(cheapTop, lessThan(dearTop));
   });
 
   testWidgets('loading, then error with retry', (tester) async {

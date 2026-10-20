@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/job.dart';
-import '../../screens/notifications_screen.dart';
+import '../account/notifications/notifications_page.dart';
 import 'order/order_detail_page.dart';
 
 /// Navigation out of the redesigned customer pages: the order detail
-/// (FE-CUST-2 [OrderDetailPage]) and the notifications screen, which is not
-/// rebuilt yet. Swappable through [CustomerNavScope] for tests.
+/// (FE-CUST-2 [OrderDetailPage]) and the notifications page
+/// (FE-AUTH-ACCOUNT [NotificationsPage]). Swappable through
+/// [CustomerNavScope] for tests.
 class CustomerNav {
   const CustomerNav();
 
@@ -17,9 +18,7 @@ class CustomerNav {
       OrderDetailPage.open(context, job, replaceStack: replaceStack);
 
   Future<void> openNotifications(BuildContext context) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => const NotificationsScreen(),
-      ));
+      NotificationsPage.open(context);
 }
 
 class CustomerNavScope extends InheritedWidget {

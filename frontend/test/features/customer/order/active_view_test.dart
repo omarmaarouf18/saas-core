@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/customer/chat/chat_page.dart';
 import 'package:frontend/ui/qd_ui.dart';
-import 'package:frontend/widgets/create_ticket_dialog.dart';
+import 'package:frontend/features/account/support/new_complaint_sheet.dart';
 
 import '../customer_harness.dart';
 import 'order_fixtures.dart';
@@ -70,9 +70,9 @@ void main() {
 
     await tester.tap(find.byKey(const Key('ord_complaint')));
     await tester.pumpAndSettle();
-    final dialog =
-        tester.widget<CreateTicketDialog>(find.byType(CreateTicketDialog));
-    expect(dialog.contextId, 'a1b2c3d4e5f6');
+    final sheet =
+        tester.widget<NewComplaintSheet>(find.byType(NewComplaintSheet));
+    expect(sheet.preselectedJobId, 'a1b2c3d4e5f6');
     await unmountOrder(tester, deps);
   });
 

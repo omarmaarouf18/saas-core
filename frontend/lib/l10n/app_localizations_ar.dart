@@ -3618,4 +3618,607 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get authSwitchLanguage => 'English';
+
+  @override
+  String get authSwitchLanguageLabel => 'غيّر اللغة للإنجليزي';
+
+  @override
+  String get authThemeLabel => 'غيّر المظهر';
+
+  @override
+  String get authBack => 'رجوع';
+
+  @override
+  String get authLoginTitle => 'أهلاً بيك';
+
+  @override
+  String get authLoginSubtitle => 'ادخل على حسابك عشان تطلب وتتابع طلباتك';
+
+  @override
+  String get authEmailLabel => 'الإيميل';
+
+  @override
+  String get authEmailHint => 'name@example.com';
+
+  @override
+  String get authEmailRequired => 'اكتب الإيميل';
+
+  @override
+  String get authEmailInvalid => 'اكتب إيميل صحيح زي name@example.com';
+
+  @override
+  String get authPasswordLabel => 'كلمة السر';
+
+  @override
+  String get authPasswordRequired => 'اكتب كلمة السر';
+
+  @override
+  String get authForgotPassword => 'نسيت كلمة السر؟';
+
+  @override
+  String get authSignIn => 'دخول';
+
+  @override
+  String get authNoAccount => 'معندكش حساب؟';
+
+  @override
+  String get authCreateAccountLink => 'اعمل حساب جديد';
+
+  @override
+  String get authSignupTitle => 'حساب جديد';
+
+  @override
+  String get authRoleQuestion => 'أنت مين؟';
+
+  @override
+  String get authRoleCustomer => 'عميل';
+
+  @override
+  String get authRoleCustomerHint => 'عايز أبعت طلبات';
+
+  @override
+  String get authRoleOwner => 'صاحب شغل';
+
+  @override
+  String get authRoleOwnerHint => 'عندي شركة ومندوبين';
+
+  @override
+  String get authCourierNote => 'المندوبين بياخدوا حساباتهم من صاحب الشغل.';
+
+  @override
+  String get authNameLabel => 'الاسم';
+
+  @override
+  String get authNameRequired => 'اكتب اسمك';
+
+  @override
+  String get authNameTooShort => 'الاسم لازم يكون 3 حروف على الأقل';
+
+  @override
+  String get authNameTooLong => 'الاسم ميزيدش عن 30 حرف';
+
+  @override
+  String get authNameInvalid => 'استخدم حروف وأرقام ومسافات أو _ بس';
+
+  @override
+  String get authPasswordHelp => '8 حروف على الأقل، ومتكونش سهلة زي 12345678';
+
+  @override
+  String get authCreateAccount => 'اعمل الحساب';
+
+  @override
+  String get authHaveAccount => 'عندك حساب؟';
+
+  @override
+  String get authSignInLink => 'ادخل';
+
+  @override
+  String get authOtpTitle => 'اكتب الكود';
+
+  @override
+  String get authOtpSentTo => 'بعتنا كود من 6 أرقام على';
+
+  @override
+  String get authOtpLabel => 'كود التأكيد';
+
+  @override
+  String get authOtpIncomplete => 'اكتب الـ 6 أرقام كلهم';
+
+  @override
+  String get authOtpConfirm => 'تأكيد';
+
+  @override
+  String get authResendWait => 'موصلكش؟ تقدر تبعته تاني بعد';
+
+  @override
+  String get authResendPrompt => 'موصلكش؟';
+
+  @override
+  String get authResendNow => 'ابعت الكود تاني';
+
+  @override
+  String get authCodeResent => 'بعتنالك كود جديد.';
+
+  @override
+  String authDevOtp(String otp) {
+    return 'وضع التجربة: كتبنالك الكود $otp.';
+  }
+
+  @override
+  String get resetTitle => 'نسيت كلمة السر؟';
+
+  @override
+  String get resetEmailBody => 'اكتب إيميل حسابك وهنبعتلك كود.';
+
+  @override
+  String get resetSendCode => 'ابعت الكود';
+
+  @override
+  String get resetCodeSent => 'بعتنا كود على إيميلك.';
+
+  @override
+  String get resetNewTitle => 'كلمة سر جديدة';
+
+  @override
+  String get resetNewBody => 'اختار كلمة سر مش مستخدمها في أي حتة تانية.';
+
+  @override
+  String get resetNewLabel => 'كلمة السر الجديدة';
+
+  @override
+  String get resetConfirmLabel => 'اكتبها تاني';
+
+  @override
+  String get resetMismatch => 'كلمتين السر مش زي بعض';
+
+  @override
+  String get resetSave => 'احفظ كلمة السر';
+
+  @override
+  String get resetDone => 'كلمة السر اتغيرت. ادخل بالجديدة.';
+
+  @override
+  String get resetExpired =>
+      'وقت تغيير كلمة السر خلص. ابدأ من الأول عشان ياخد كود جديد.';
+
+  @override
+  String get resetStartAgain => 'ابدأ من الأول';
+
+  @override
+  String resetStep(int current, int total) {
+    return 'خطوة $current من $total';
+  }
+
+  @override
+  String get acctEdit => 'تعديل';
+
+  @override
+  String get acctSectionAccount => 'الحساب';
+
+  @override
+  String get acctSectionApp => 'التطبيق';
+
+  @override
+  String get acctSectionSupport => 'الدعم';
+
+  @override
+  String get acctMyDetails => 'بياناتي';
+
+  @override
+  String get acctSavedAddresses => 'العناوين المحفوظة';
+
+  @override
+  String get acctSecurity => 'الأمان';
+
+  @override
+  String get acctTwoFactorOn => 'التحقق بخطوتين شغال';
+
+  @override
+  String get acctTwoFactorOff => 'التحقق بخطوتين مقفول';
+
+  @override
+  String get acctWallet => 'المحفظة';
+
+  @override
+  String get acctSoon => 'قريب';
+
+  @override
+  String get acctLanguage => 'اللغة';
+
+  @override
+  String get acctLangArabic => 'العربية';
+
+  @override
+  String get acctLangEnglish => 'English';
+
+  @override
+  String get acctPhoneSetting => 'زي الموبايل';
+
+  @override
+  String get acctTheme => 'المظهر';
+
+  @override
+  String get acctThemeLight => 'فاتح';
+
+  @override
+  String get acctThemeDark => 'غامق';
+
+  @override
+  String get acctNotifications => 'الإشعارات';
+
+  @override
+  String get acctSupport => 'الدعم والشكاوى';
+
+  @override
+  String get acctLogout => 'تسجيل خروج';
+
+  @override
+  String get acctSuspendedTitle => 'حسابك متوقف';
+
+  @override
+  String get acctSuspendedDefault =>
+      'مش هتقدر تغيّر بياناتك دلوقتي. كلم الدعم عشان تعرف أكتر.';
+
+  @override
+  String get acctLoadError => 'معرفناش نحدّث بيانات حسابك.';
+
+  @override
+  String get acctPhoneLabel => 'الموبايل';
+
+  @override
+  String get acctPhoneHint => '01xxxxxxxxx';
+
+  @override
+  String get acctChangeEmail => 'غيّر';
+
+  @override
+  String get acctChangeEmailLabel => 'غيّر الإيميل';
+
+  @override
+  String get acctEmailNote => 'عشان تغيّره هنبعت كود على الإيميل الجديد.';
+
+  @override
+  String get acctSave => 'احفظ';
+
+  @override
+  String get acctSaved => 'بياناتك اتحفظت.';
+
+  @override
+  String get acctAddAddress => 'ضيف عنوان';
+
+  @override
+  String get acctEditAddress => 'عدّل العنوان';
+
+  @override
+  String get acctAddressLabel => 'العنوان';
+
+  @override
+  String get acctAddressHint => 'العمارة، الشارع، المنطقة';
+
+  @override
+  String get acctAddressRequired => 'اكتب العنوان';
+
+  @override
+  String get acctAddressMax => 'تقدر تحفظ لحد 10 عناوين';
+
+  @override
+  String acctAddressCount(int count) {
+    return '$count من 10';
+  }
+
+  @override
+  String get acctAddressesNote =>
+      'العناوين بتتحفظ كنص، من غير مكان على الخريطة.';
+
+  @override
+  String get acctAddressesEmpty => 'مفيش عناوين محفوظة لسه';
+
+  @override
+  String get acctAddressesEmptyBody => 'احفظ الأماكن اللي بتطلب منها كتير.';
+
+  @override
+  String get acctSaveAddress => 'احفظ العنوان';
+
+  @override
+  String acctDeleteAddress(String address) {
+    return 'امسح $address';
+  }
+
+  @override
+  String get acctAddressDeleted => 'العنوان اتمسح.';
+
+  @override
+  String get acctUndo => 'رجّعه';
+
+  @override
+  String get acctTwoFactor => 'التحقق بخطوتين';
+
+  @override
+  String get acctTwoFactorBody => 'هنبعتلك كود على الإيميل كل مرة تدخل.';
+
+  @override
+  String get acctTwoFactorOffTitle => 'تقفل التحقق بخطوتين؟';
+
+  @override
+  String get acctTwoFactorOffBody =>
+      'ساعتها أي حد معاه كلمة السر هيقدر يدخل من غير كود.';
+
+  @override
+  String get acctTwoFactorTurnOff => 'اقفله';
+
+  @override
+  String get acctCancel => 'إلغاء';
+
+  @override
+  String get acctPasswordTitle => 'أكد إنه أنت';
+
+  @override
+  String get acctPasswordBody => 'اكتب كلمة السر عشان تقفل التحقق بخطوتين.';
+
+  @override
+  String get acctWrongPassword => 'كلمة السر دي مش صح.';
+
+  @override
+  String get acctTwoFactorOnDone => 'التحقق بخطوتين اشتغل.';
+
+  @override
+  String get acctTwoFactorOffDone => 'التحقق بخطوتين اتقفل.';
+
+  @override
+  String get acctNewEmailLabel => 'الإيميل الجديد';
+
+  @override
+  String get acctEmailChanged => 'الإيميل اتغير.';
+
+  @override
+  String get acctSameEmail => 'ده الإيميل بتاعك أصلاً';
+
+  @override
+  String get acctClose => 'اقفل';
+
+  @override
+  String get ntfTitle => 'الإشعارات';
+
+  @override
+  String get ntfMarkAllRead => 'قريت الكل';
+
+  @override
+  String get ntfClearAll => 'امسح الكل';
+
+  @override
+  String get ntfClearTitle => 'تمسح كل الإشعارات؟';
+
+  @override
+  String get ntfClearBody => 'مش هتقدر ترجّعهم تاني.';
+
+  @override
+  String get ntfClear => 'امسح';
+
+  @override
+  String get ntfToday => 'النهارده';
+
+  @override
+  String get ntfYesterday => 'امبارح';
+
+  @override
+  String get ntfJustNow => 'دلوقتي';
+
+  @override
+  String ntfMinutesAgo(int count) {
+    return 'من $count دقيقة';
+  }
+
+  @override
+  String ntfHoursAgo(int count) {
+    return 'من $count ساعة';
+  }
+
+  @override
+  String get ntfUnread => 'مش مقروء';
+
+  @override
+  String get ntfDismiss => 'امسح الإشعار';
+
+  @override
+  String get ntfLive => 'متصل: الإشعارات الجديدة بتظهر هنا';
+
+  @override
+  String get ntfOffline => 'مش متصل: الإشعارات الجديدة ممكن تتأخر';
+
+  @override
+  String get ntfConnectError => 'الاتصال المباشر وقع.';
+
+  @override
+  String get ntfReconnect => 'اتصل تاني';
+
+  @override
+  String get ntfEmptyTitle => 'مفيش إشعارات لسه';
+
+  @override
+  String get ntfEmptyBody => 'هنقولك هنا لما يحصل حاجة في طلباتك.';
+
+  @override
+  String get ntfLoadError => 'معرفناش نجيب الإشعارات.';
+
+  @override
+  String get ntfShowOlder => 'اعرض الأقدم';
+
+  @override
+  String get ntfAcceptedTitle => 'مندوب قبل طلبك';
+
+  @override
+  String get ntfAcceptedBody => 'تابعه من صفحة الطلب.';
+
+  @override
+  String get ntfUnavailableTitle => 'مفيش مندوب فاضي دلوقتي';
+
+  @override
+  String get ntfUnavailableBody => 'تقدر تطلب تاني من طلباتي.';
+
+  @override
+  String get ntfCancelledTitle => 'طلبك اتلغى';
+
+  @override
+  String get ntfOrdersBody => 'افتح طلباتي عشان تشوف التفاصيل.';
+
+  @override
+  String get ntfCompletedTitle => 'طلبك اتسلم';
+
+  @override
+  String get ntfTicketResolvedTitle => 'شكوتك اتحلت';
+
+  @override
+  String get ntfTicketAssignedTitle => 'الدعم دخل على شكوتك';
+
+  @override
+  String get ntfTicketAssignedBody => 'رد عليهم في محادثة الشكوى.';
+
+  @override
+  String get ntfDisputeTitle => 'مراجعة طلبك خلصت';
+
+  @override
+  String get supTitle => 'الدعم';
+
+  @override
+  String supOpenTab(int count) {
+    return 'مفتوحة · $count';
+  }
+
+  @override
+  String get supResolvedTab => 'اتحلت';
+
+  @override
+  String get supStatusPending => 'مستنية رد';
+
+  @override
+  String get supStatusAssigned => 'مع الدعم';
+
+  @override
+  String get supStatusResolved => 'اتحلت';
+
+  @override
+  String get supStatusOpen => 'مفتوحة';
+
+  @override
+  String supAboutOrder(String ref, String when) {
+    return 'عن طلب $ref · $when';
+  }
+
+  @override
+  String supGeneral(String when) {
+    return 'عامة · $when';
+  }
+
+  @override
+  String supResolution(String note) {
+    return 'الحل: $note';
+  }
+
+  @override
+  String get supHintTitle => 'عندك مشكلة في طلب؟';
+
+  @override
+  String get supHintBody =>
+      'اختار الطلب واكتب اللي حصل، وفريق الدعم هيرد عليك هنا.';
+
+  @override
+  String get supNewComplaint => 'شكوى جديدة';
+
+  @override
+  String get supResolvedEmpty => 'مفيش شكاوى اتحلت لسه';
+
+  @override
+  String get supLoadError => 'معرفناش نجيب شكاويك.';
+
+  @override
+  String get supOrderLabel => 'أنهي طلب؟';
+
+  @override
+  String get supNoOrderOption => 'مش عن طلب';
+
+  @override
+  String get supOrdersLoading => 'بنجيب طلباتك…';
+
+  @override
+  String get supOrdersError => 'معرفناش نجيب طلباتك. تقدر تبعتها من غير طلب.';
+
+  @override
+  String get supSubjectLabel => 'الموضوع';
+
+  @override
+  String get supSubjectHint => 'باختصار';
+
+  @override
+  String get supSubjectRequired => 'اكتب الموضوع';
+
+  @override
+  String get supDescriptionLabel => 'إيه اللي حصل؟';
+
+  @override
+  String get supDescriptionHint => 'احكيلنا التفاصيل';
+
+  @override
+  String get supDescriptionRequired => 'اكتب اللي حصل';
+
+  @override
+  String get supSend => 'ابعت الشكوى';
+
+  @override
+  String get supSent => 'شكوتك وصلت. الدعم هيرد عليك في المحادثة بتاعتها.';
+
+  @override
+  String supComplaintRef(String ref) {
+    return 'شكوى $ref';
+  }
+
+  @override
+  String get supChatEmpty => 'اكتب للدعم هنا. تقدر ترفق صورة أو PDF.';
+
+  @override
+  String get supResolvedBanner => 'الشكوى دي اتحلت.';
+
+  @override
+  String get supReadOnly =>
+      'الشكوى اللي اتحلت مينفعش يتبعت فيها رسايل. افتح شكوى جديدة لو محتاج.';
+
+  @override
+  String get supAttach => 'ارفق صورة أو PDF';
+
+  @override
+  String get supFileEmpty => 'الملف فاضي.';
+
+  @override
+  String get supFileTooBig => 'الملف ميزيدش عن 10 ميجا.';
+
+  @override
+  String get supAttachFailed => 'معرفناش نبعت الملف.';
+
+  @override
+  String get updTitle => 'لازم تحدّث التطبيق';
+
+  @override
+  String get updBody =>
+      'النسخة دي مبقتش شغالة. نزّل النسخة الجديدة عشان تكمل على كويك ديليفري.';
+
+  @override
+  String get updInstalled => 'النسخة اللي عندك';
+
+  @override
+  String get updMinimum => 'أقدم نسخة شغالة';
+
+  @override
+  String get updLatest => 'أحدث نسخة';
+
+  @override
+  String get updLinkLabel => 'لينك التحميل';
+
+  @override
+  String get updCopy => 'انسخ لينك التحميل';
+
+  @override
+  String get updCopied =>
+      'اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة.';
 }

@@ -6608,6 +6608,1152 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 star} other{{count} stars}}'**
   String rateStar(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get authSwitchLanguage;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Arabic'**
+  String get authSwitchLanguageLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the look'**
+  String get authThemeLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get authBack;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get authLoginTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to order and follow your orders'**
+  String get authLoginSubtitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'name@example.com'**
+  String get authEmailHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get authEmailRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an email like name@example.com'**
+  String get authEmailInvalid;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPasswordLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get authPasswordRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get authForgotPassword;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignIn;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No account?'**
+  String get authNoAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Create one'**
+  String get authCreateAccountLink;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'New account'**
+  String get authSignupTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Who are you?'**
+  String get authRoleQuestion;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get authRoleCustomer;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I want to send orders'**
+  String get authRoleCustomerHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Business owner'**
+  String get authRoleOwner;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I have a company and couriers'**
+  String get authRoleOwnerHint;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couriers get their accounts from their business owner.'**
+  String get authCourierNote;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get authNameLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name'**
+  String get authNameRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The name needs at least 3 letters'**
+  String get authNameTooShort;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The name can have at most 30 letters'**
+  String get authNameTooLong;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters, numbers, spaces or _ only'**
+  String get authNameInvalid;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters, and not an easy one like 12345678'**
+  String get authPasswordHelp;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get authCreateAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Have an account?'**
+  String get authHaveAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignInLink;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get authOtpTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to'**
+  String get authOtpSentTo;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authOtpLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter all 6 digits'**
+  String get authOtpIncomplete;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get authOtpConfirm;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t get it? You can send it again in'**
+  String get authResendWait;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t get it?'**
+  String get authResendPrompt;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the code again'**
+  String get authResendNow;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent you a new code.'**
+  String get authCodeResent;
+
+  /// FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Test mode: we filled in the code {otp} for you.'**
+  String authDevOtp(String otp);
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get resetTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email and we\'ll send you a code.'**
+  String get resetEmailBody;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the code'**
+  String get resetSendCode;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a code to your email.'**
+  String get resetCodeSent;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get resetNewTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password you don\'t use anywhere else.'**
+  String get resetNewBody;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get resetNewLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it again'**
+  String get resetConfirmLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords don\'t match'**
+  String get resetMismatch;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get resetSave;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password was changed. Sign in with the new one.'**
+  String get resetDone;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset ran out of time. Start again to get a new code.'**
+  String get resetExpired;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get resetStartAgain;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String resetStep(int current, int total);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get acctEdit;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get acctSectionAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get acctSectionApp;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get acctSectionSupport;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'My details'**
+  String get acctMyDetails;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Saved addresses'**
+  String get acctSavedAddresses;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get acctSecurity;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification on'**
+  String get acctTwoFactorOn;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification off'**
+  String get acctTwoFactorOff;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get acctWallet;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get acctSoon;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get acctLanguage;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get acctLangArabic;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get acctLangEnglish;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Same as the phone'**
+  String get acctPhoneSetting;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get acctTheme;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get acctThemeLight;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get acctThemeDark;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get acctNotifications;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Support and complaints'**
+  String get acctSupport;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get acctLogout;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended'**
+  String get acctSuspendedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change your details for now. Contact support to know more.'**
+  String get acctSuspendedDefault;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t refresh your account details.'**
+  String get acctLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get acctPhoneLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'01xxxxxxxxx'**
+  String get acctPhoneHint;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get acctChangeEmail;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Change email'**
+  String get acctChangeEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'To change it we send a code to the new email.'**
+  String get acctEmailNote;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get acctSave;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your details were saved.'**
+  String get acctSaved;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Add an address'**
+  String get acctAddAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit address'**
+  String get acctEditAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get acctAddressLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Building, street, area'**
+  String get acctAddressHint;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Write the address'**
+  String get acctAddressRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'You can save up to 10 addresses'**
+  String get acctAddressMax;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of 10'**
+  String acctAddressCount(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses are saved as text, without a map pin.'**
+  String get acctAddressesNote;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'No saved addresses yet'**
+  String get acctAddressesEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save the places you order from often.'**
+  String get acctAddressesEmptyBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save address'**
+  String get acctSaveAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {address}'**
+  String acctDeleteAddress(String address);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Address deleted.'**
+  String get acctAddressDeleted;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get acctUndo;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification'**
+  String get acctTwoFactor;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'We send a code to your email every time you sign in.'**
+  String get acctTwoFactorBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off 2-step verification?'**
+  String get acctTwoFactorOffTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with your password could then sign in without a code.'**
+  String get acctTwoFactorOffBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get acctTwoFactorTurnOff;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get acctCancel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you'**
+  String get acctPasswordTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password to turn off 2-step verification.'**
+  String get acctPasswordBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'That password isn\'t right.'**
+  String get acctWrongPassword;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification is on.'**
+  String get acctTwoFactorOnDone;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification is off.'**
+  String get acctTwoFactorOffDone;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'New email'**
+  String get acctNewEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your email was changed.'**
+  String get acctEmailChanged;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'This is already your email'**
+  String get acctSameEmail;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get acctClose;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ntfTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get ntfMarkAllRead;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get ntfClearAll;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all notifications?'**
+  String get ntfClearTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t get them back.'**
+  String get ntfClearBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get ntfClear;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ntfToday;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get ntfYesterday;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get ntfJustNow;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String ntfMinutesAgo(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h ago'**
+  String ntfHoursAgo(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get ntfUnread;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Remove notification'**
+  String get ntfDismiss;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Live: new notifications show up here'**
+  String get ntfLive;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected: new notifications may be late'**
+  String get ntfOffline;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We lost the live connection.'**
+  String get ntfConnectError;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get ntfReconnect;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get ntfEmptyTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell you here when something happens with your orders.'**
+  String get ntfEmptyBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your notifications.'**
+  String get ntfLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Show older'**
+  String get ntfShowOlder;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'A courier accepted your order'**
+  String get ntfAcceptedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Follow it from the order page.'**
+  String get ntfAcceptedBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is free right now'**
+  String get ntfUnavailableTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'You can order again from My orders.'**
+  String get ntfUnavailableBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled'**
+  String get ntfCancelledTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Open My orders for the details.'**
+  String get ntfOrdersBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ntfCompletedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your complaint was resolved'**
+  String get ntfTicketResolvedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Support joined your complaint'**
+  String get ntfTicketAssignedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to them in the complaint chat.'**
+  String get ntfTicketAssignedBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'The review of your order is done'**
+  String get ntfDisputeTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open · {count}'**
+  String supOpenTab(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supResolvedTab;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a reply'**
+  String get supStatusPending;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'With support'**
+  String get supStatusAssigned;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supStatusResolved;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get supStatusOpen;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'About order {ref} · {when}'**
+  String supAboutOrder(String ref, String when);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'General · {when}'**
+  String supGeneral(String when);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution: {note}'**
+  String supResolution(String note);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem with an order?'**
+  String get supHintTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the order and tell us what happened. The support team will answer you here.'**
+  String get supHintBody;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'New complaint'**
+  String get supNewComplaint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'No resolved complaints yet'**
+  String get supResolvedEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your complaints.'**
+  String get supLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Which order?'**
+  String get supOrderLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Not about an order'**
+  String get supNoOrderOption;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your orders…'**
+  String get supOrdersLoading;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your orders. You can still send it without one.'**
+  String get supOrdersError;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get supSubjectLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'In a few words'**
+  String get supSubjectHint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a subject'**
+  String get supSubjectRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened?'**
+  String get supDescriptionLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us the details'**
+  String get supDescriptionHint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened'**
+  String get supDescriptionRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Send complaint'**
+  String get supSend;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We got your complaint. Support will answer you in its chat.'**
+  String get supSent;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint {ref}'**
+  String supComplaintRef(String ref);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Write to support here. You can attach a photo or a PDF.'**
+  String get supChatEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'This complaint is resolved.'**
+  String get supResolvedBanner;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'A resolved complaint can\'t get new messages. Open a new one if you need to.'**
+  String get supReadOnly;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a photo or PDF'**
+  String get supAttach;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is empty.'**
+  String get supFileEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Files can be up to 10 MB.'**
+  String get supFileTooBig;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the file.'**
+  String get supAttachFailed;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app'**
+  String get updTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.'**
+  String get updBody;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed version'**
+  String get updInstalled;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest version that works'**
+  String get updMinimum;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest version'**
+  String get updLatest;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Download link'**
+  String get updLinkLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the download link'**
+  String get updCopy;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied. Open it in your browser to install the new version.'**
+  String get updCopied;
 }
 
 class _AppLocalizationsDelegate

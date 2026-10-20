@@ -2445,5 +2445,830 @@
         "type": "int"
       }
     }
+  },
+  "authSwitchLanguage": "العربية",
+  "@authSwitchLanguage": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSwitchLanguageLabel": "Switch to Arabic",
+  "@authSwitchLanguageLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authThemeLabel": "Change the look",
+  "@authThemeLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authBack": "Back",
+  "@authBack": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authLoginTitle": "Welcome",
+  "@authLoginTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authLoginSubtitle": "Sign in to order and follow your orders",
+  "@authLoginSubtitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailLabel": "Email",
+  "@authEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailHint": "name@example.com",
+  "@authEmailHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailRequired": "Enter your email",
+  "@authEmailRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authEmailInvalid": "Enter an email like name@example.com",
+  "@authEmailInvalid": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordLabel": "Password",
+  "@authPasswordLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordRequired": "Enter your password",
+  "@authPasswordRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authForgotPassword": "Forgot your password?",
+  "@authForgotPassword": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignIn": "Sign in",
+  "@authSignIn": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNoAccount": "No account?",
+  "@authNoAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCreateAccountLink": "Create one",
+  "@authCreateAccountLink": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignupTitle": "New account",
+  "@authSignupTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleQuestion": "Who are you?",
+  "@authRoleQuestion": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleCustomer": "Customer",
+  "@authRoleCustomer": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleCustomerHint": "I want to send orders",
+  "@authRoleCustomerHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleOwner": "Business owner",
+  "@authRoleOwner": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authRoleOwnerHint": "I have a company and couriers",
+  "@authRoleOwnerHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCourierNote": "Couriers get their accounts from their business owner.",
+  "@authCourierNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameLabel": "Name",
+  "@authNameLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameRequired": "Enter your name",
+  "@authNameRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameTooShort": "The name needs at least 3 letters",
+  "@authNameTooShort": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameTooLong": "The name can have at most 30 letters",
+  "@authNameTooLong": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authNameInvalid": "Use letters, numbers, spaces or _ only",
+  "@authNameInvalid": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authPasswordHelp": "At least 8 characters, and not an easy one like 12345678",
+  "@authPasswordHelp": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCreateAccount": "Create account",
+  "@authCreateAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authHaveAccount": "Have an account?",
+  "@authHaveAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authSignInLink": "Sign in",
+  "@authSignInLink": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpTitle": "Enter the code",
+  "@authOtpTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpSentTo": "We sent a 6-digit code to",
+  "@authOtpSentTo": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpLabel": "Verification code",
+  "@authOtpLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpIncomplete": "Enter all 6 digits",
+  "@authOtpIncomplete": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authOtpConfirm": "Confirm",
+  "@authOtpConfirm": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendWait": "Didn't get it? You can send it again in",
+  "@authResendWait": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendPrompt": "Didn't get it?",
+  "@authResendPrompt": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authResendNow": "Send the code again",
+  "@authResendNow": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authCodeResent": "We sent you a new code.",
+  "@authCodeResent": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens."
+  },
+  "authDevOtp": "Test mode: we filled in the code {otp} for you.",
+  "@authDevOtp": {
+    "description": "FE-AUTH-ACCOUNT redesigned sign-in, sign-up and code screens.",
+    "placeholders": {
+      "otp": {
+        "type": "String"
+      }
+    }
+  },
+  "resetTitle": "Forgot your password?",
+  "@resetTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetEmailBody": "Enter your account email and we'll send you a code.",
+  "@resetEmailBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetSendCode": "Send the code",
+  "@resetSendCode": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetCodeSent": "We sent a code to your email.",
+  "@resetCodeSent": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewTitle": "New password",
+  "@resetNewTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewBody": "Choose a password you don't use anywhere else.",
+  "@resetNewBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewLabel": "New password",
+  "@resetNewLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetConfirmLabel": "Type it again",
+  "@resetConfirmLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetMismatch": "The two passwords don't match",
+  "@resetMismatch": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetSave": "Save password",
+  "@resetSave": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetDone": "Your password was changed. Sign in with the new one.",
+  "@resetDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetExpired": "This reset ran out of time. Start again to get a new code.",
+  "@resetExpired": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetStartAgain": "Start again",
+  "@resetStartAgain": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetStep": "Step {current} of {total}",
+  "@resetStep": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "acctEdit": "Edit",
+  "@acctEdit": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionAccount": "Account",
+  "@acctSectionAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionApp": "App",
+  "@acctSectionApp": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionSupport": "Support",
+  "@acctSectionSupport": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctMyDetails": "My details",
+  "@acctMyDetails": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSavedAddresses": "Saved addresses",
+  "@acctSavedAddresses": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSecurity": "Security",
+  "@acctSecurity": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOn": "2-step verification on",
+  "@acctTwoFactorOn": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOff": "2-step verification off",
+  "@acctTwoFactorOff": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctWallet": "Wallet",
+  "@acctWallet": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSoon": "Soon",
+  "@acctSoon": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLanguage": "Language",
+  "@acctLanguage": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLangArabic": "العربية",
+  "@acctLangArabic": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLangEnglish": "English",
+  "@acctLangEnglish": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneSetting": "Same as the phone",
+  "@acctPhoneSetting": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTheme": "Appearance",
+  "@acctTheme": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctThemeLight": "Light",
+  "@acctThemeLight": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctThemeDark": "Dark",
+  "@acctThemeDark": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctNotifications": "Notifications",
+  "@acctNotifications": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSupport": "Support and complaints",
+  "@acctSupport": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLogout": "Sign out",
+  "@acctLogout": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSuspendedTitle": "Your account is suspended",
+  "@acctSuspendedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSuspendedDefault": "You can't change your details for now. Contact support to know more.",
+  "@acctSuspendedDefault": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLoadError": "We couldn't refresh your account details.",
+  "@acctLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneLabel": "Phone",
+  "@acctPhoneLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneHint": "01xxxxxxxxx",
+  "@acctPhoneHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctChangeEmail": "Change",
+  "@acctChangeEmail": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctChangeEmailLabel": "Change email",
+  "@acctChangeEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEmailNote": "To change it we send a code to the new email.",
+  "@acctEmailNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSave": "Save",
+  "@acctSave": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSaved": "Your details were saved.",
+  "@acctSaved": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddAddress": "Add an address",
+  "@acctAddAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEditAddress": "Edit address",
+  "@acctEditAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressLabel": "Address",
+  "@acctAddressLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressHint": "Building, street, area",
+  "@acctAddressHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressRequired": "Write the address",
+  "@acctAddressRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressMax": "You can save up to 10 addresses",
+  "@acctAddressMax": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressCount": "{count} of 10",
+  "@acctAddressCount": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "acctAddressesNote": "Addresses are saved as text, without a map pin.",
+  "@acctAddressesNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressesEmpty": "No saved addresses yet",
+  "@acctAddressesEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressesEmptyBody": "Save the places you order from often.",
+  "@acctAddressesEmptyBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSaveAddress": "Save address",
+  "@acctSaveAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctDeleteAddress": "Delete {address}",
+  "@acctDeleteAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings).",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "acctAddressDeleted": "Address deleted.",
+  "@acctAddressDeleted": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctUndo": "Undo",
+  "@acctUndo": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactor": "2-step verification",
+  "@acctTwoFactor": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorBody": "We send a code to your email every time you sign in.",
+  "@acctTwoFactorBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffTitle": "Turn off 2-step verification?",
+  "@acctTwoFactorOffTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffBody": "Anyone with your password could then sign in without a code.",
+  "@acctTwoFactorOffBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorTurnOff": "Turn off",
+  "@acctTwoFactorTurnOff": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctCancel": "Cancel",
+  "@acctCancel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPasswordTitle": "Confirm it's you",
+  "@acctPasswordTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPasswordBody": "Enter your password to turn off 2-step verification.",
+  "@acctPasswordBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctWrongPassword": "That password isn't right.",
+  "@acctWrongPassword": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOnDone": "2-step verification is on.",
+  "@acctTwoFactorOnDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffDone": "2-step verification is off.",
+  "@acctTwoFactorOffDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctNewEmailLabel": "New email",
+  "@acctNewEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEmailChanged": "Your email was changed.",
+  "@acctEmailChanged": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSameEmail": "This is already your email",
+  "@acctSameEmail": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctClose": "Close",
+  "@acctClose": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "ntfTitle": "Notifications",
+  "@ntfTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfMarkAllRead": "Mark all read",
+  "@ntfMarkAllRead": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearAll": "Clear all",
+  "@ntfClearAll": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearTitle": "Clear all notifications?",
+  "@ntfClearTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearBody": "You can't get them back.",
+  "@ntfClearBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClear": "Clear",
+  "@ntfClear": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfToday": "Today",
+  "@ntfToday": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfYesterday": "Yesterday",
+  "@ntfYesterday": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfJustNow": "Just now",
+  "@ntfJustNow": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfMinutesAgo": "{count} min ago",
+  "@ntfMinutesAgo": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ntfHoursAgo": "{count} h ago",
+  "@ntfHoursAgo": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ntfUnread": "Unread",
+  "@ntfUnread": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfDismiss": "Remove notification",
+  "@ntfDismiss": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfLive": "Live: new notifications show up here",
+  "@ntfLive": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfOffline": "Not connected: new notifications may be late",
+  "@ntfOffline": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfConnectError": "We lost the live connection.",
+  "@ntfConnectError": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfReconnect": "Reconnect",
+  "@ntfReconnect": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfEmptyTitle": "No notifications yet",
+  "@ntfEmptyTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfEmptyBody": "We'll tell you here when something happens with your orders.",
+  "@ntfEmptyBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfLoadError": "We couldn't load your notifications.",
+  "@ntfLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfShowOlder": "Show older",
+  "@ntfShowOlder": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfAcceptedTitle": "A courier accepted your order",
+  "@ntfAcceptedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfAcceptedBody": "Follow it from the order page.",
+  "@ntfAcceptedBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfUnavailableTitle": "No courier is free right now",
+  "@ntfUnavailableTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfUnavailableBody": "You can order again from My orders.",
+  "@ntfUnavailableBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfCancelledTitle": "Your order was cancelled",
+  "@ntfCancelledTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfOrdersBody": "Open My orders for the details.",
+  "@ntfOrdersBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfCompletedTitle": "Your order was delivered",
+  "@ntfCompletedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketResolvedTitle": "Your complaint was resolved",
+  "@ntfTicketResolvedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketAssignedTitle": "Support joined your complaint",
+  "@ntfTicketAssignedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketAssignedBody": "Reply to them in the complaint chat.",
+  "@ntfTicketAssignedBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfDisputeTitle": "The review of your order is done",
+  "@ntfDisputeTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "supTitle": "Support",
+  "@supTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOpenTab": "Open · {count}",
+  "@supOpenTab": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "supResolvedTab": "Resolved",
+  "@supResolvedTab": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusPending": "Waiting for a reply",
+  "@supStatusPending": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusAssigned": "With support",
+  "@supStatusAssigned": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusResolved": "Resolved",
+  "@supStatusResolved": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusOpen": "Open",
+  "@supStatusOpen": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAboutOrder": "About order {ref} · {when}",
+  "@supAboutOrder": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "supGeneral": "General · {when}",
+  "@supGeneral": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "supResolution": "Resolution: {note}",
+  "@supResolution": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "supHintTitle": "Problem with an order?",
+  "@supHintTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supHintBody": "Pick the order and tell us what happened. The support team will answer you here.",
+  "@supHintBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supNewComplaint": "New complaint",
+  "@supNewComplaint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supResolvedEmpty": "No resolved complaints yet",
+  "@supResolvedEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supLoadError": "We couldn't load your complaints.",
+  "@supLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrderLabel": "Which order?",
+  "@supOrderLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supNoOrderOption": "Not about an order",
+  "@supNoOrderOption": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrdersLoading": "Loading your orders…",
+  "@supOrdersLoading": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrdersError": "We couldn't load your orders. You can still send it without one.",
+  "@supOrdersError": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectLabel": "Subject",
+  "@supSubjectLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectHint": "In a few words",
+  "@supSubjectHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectRequired": "Write a subject",
+  "@supSubjectRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionLabel": "What happened?",
+  "@supDescriptionLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionHint": "Tell us the details",
+  "@supDescriptionHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionRequired": "Tell us what happened",
+  "@supDescriptionRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSend": "Send complaint",
+  "@supSend": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSent": "We got your complaint. Support will answer you in its chat.",
+  "@supSent": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supComplaintRef": "Complaint {ref}",
+  "@supComplaintRef": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "supChatEmpty": "Write to support here. You can attach a photo or a PDF.",
+  "@supChatEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supResolvedBanner": "This complaint is resolved.",
+  "@supResolvedBanner": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supReadOnly": "A resolved complaint can't get new messages. Open a new one if you need to.",
+  "@supReadOnly": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAttach": "Attach a photo or PDF",
+  "@supAttach": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supFileEmpty": "The file is empty.",
+  "@supFileEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supFileTooBig": "Files can be up to 10 MB.",
+  "@supFileTooBig": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAttachFailed": "We couldn't send the file.",
+  "@supAttachFailed": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "updTitle": "Update the app",
+  "@updTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updBody": "This version doesn't work anymore. Install the new one to keep using Quick Delivery.",
+  "@updBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updInstalled": "Installed version",
+  "@updInstalled": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updMinimum": "Oldest version that works",
+  "@updMinimum": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updLatest": "Latest version",
+  "@updLatest": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updLinkLabel": "Download link",
+  "@updLinkLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updCopy": "Copy the download link",
+  "@updCopy": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updCopied": "Link copied. Open it in your browser to install the new version.",
+  "@updCopied": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
   }
 }

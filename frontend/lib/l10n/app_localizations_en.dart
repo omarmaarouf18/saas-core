@@ -3678,4 +3678,617 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get authSwitchLanguage => 'العربية';
+
+  @override
+  String get authSwitchLanguageLabel => 'Switch to Arabic';
+
+  @override
+  String get authThemeLabel => 'Change the look';
+
+  @override
+  String get authBack => 'Back';
+
+  @override
+  String get authLoginTitle => 'Welcome';
+
+  @override
+  String get authLoginSubtitle => 'Sign in to order and follow your orders';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authEmailHint => 'name@example.com';
+
+  @override
+  String get authEmailRequired => 'Enter your email';
+
+  @override
+  String get authEmailInvalid => 'Enter an email like name@example.com';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authPasswordRequired => 'Enter your password';
+
+  @override
+  String get authForgotPassword => 'Forgot your password?';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authNoAccount => 'No account?';
+
+  @override
+  String get authCreateAccountLink => 'Create one';
+
+  @override
+  String get authSignupTitle => 'New account';
+
+  @override
+  String get authRoleQuestion => 'Who are you?';
+
+  @override
+  String get authRoleCustomer => 'Customer';
+
+  @override
+  String get authRoleCustomerHint => 'I want to send orders';
+
+  @override
+  String get authRoleOwner => 'Business owner';
+
+  @override
+  String get authRoleOwnerHint => 'I have a company and couriers';
+
+  @override
+  String get authCourierNote =>
+      'Couriers get their accounts from their business owner.';
+
+  @override
+  String get authNameLabel => 'Name';
+
+  @override
+  String get authNameRequired => 'Enter your name';
+
+  @override
+  String get authNameTooShort => 'The name needs at least 3 letters';
+
+  @override
+  String get authNameTooLong => 'The name can have at most 30 letters';
+
+  @override
+  String get authNameInvalid => 'Use letters, numbers, spaces or _ only';
+
+  @override
+  String get authPasswordHelp =>
+      'At least 8 characters, and not an easy one like 12345678';
+
+  @override
+  String get authCreateAccount => 'Create account';
+
+  @override
+  String get authHaveAccount => 'Have an account?';
+
+  @override
+  String get authSignInLink => 'Sign in';
+
+  @override
+  String get authOtpTitle => 'Enter the code';
+
+  @override
+  String get authOtpSentTo => 'We sent a 6-digit code to';
+
+  @override
+  String get authOtpLabel => 'Verification code';
+
+  @override
+  String get authOtpIncomplete => 'Enter all 6 digits';
+
+  @override
+  String get authOtpConfirm => 'Confirm';
+
+  @override
+  String get authResendWait => 'Didn\'t get it? You can send it again in';
+
+  @override
+  String get authResendPrompt => 'Didn\'t get it?';
+
+  @override
+  String get authResendNow => 'Send the code again';
+
+  @override
+  String get authCodeResent => 'We sent you a new code.';
+
+  @override
+  String authDevOtp(String otp) {
+    return 'Test mode: we filled in the code $otp for you.';
+  }
+
+  @override
+  String get resetTitle => 'Forgot your password?';
+
+  @override
+  String get resetEmailBody =>
+      'Enter your account email and we\'ll send you a code.';
+
+  @override
+  String get resetSendCode => 'Send the code';
+
+  @override
+  String get resetCodeSent => 'We sent a code to your email.';
+
+  @override
+  String get resetNewTitle => 'New password';
+
+  @override
+  String get resetNewBody => 'Choose a password you don\'t use anywhere else.';
+
+  @override
+  String get resetNewLabel => 'New password';
+
+  @override
+  String get resetConfirmLabel => 'Type it again';
+
+  @override
+  String get resetMismatch => 'The two passwords don\'t match';
+
+  @override
+  String get resetSave => 'Save password';
+
+  @override
+  String get resetDone =>
+      'Your password was changed. Sign in with the new one.';
+
+  @override
+  String get resetExpired =>
+      'This reset ran out of time. Start again to get a new code.';
+
+  @override
+  String get resetStartAgain => 'Start again';
+
+  @override
+  String resetStep(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get acctEdit => 'Edit';
+
+  @override
+  String get acctSectionAccount => 'Account';
+
+  @override
+  String get acctSectionApp => 'App';
+
+  @override
+  String get acctSectionSupport => 'Support';
+
+  @override
+  String get acctMyDetails => 'My details';
+
+  @override
+  String get acctSavedAddresses => 'Saved addresses';
+
+  @override
+  String get acctSecurity => 'Security';
+
+  @override
+  String get acctTwoFactorOn => '2-step verification on';
+
+  @override
+  String get acctTwoFactorOff => '2-step verification off';
+
+  @override
+  String get acctWallet => 'Wallet';
+
+  @override
+  String get acctSoon => 'Soon';
+
+  @override
+  String get acctLanguage => 'Language';
+
+  @override
+  String get acctLangArabic => 'العربية';
+
+  @override
+  String get acctLangEnglish => 'English';
+
+  @override
+  String get acctPhoneSetting => 'Same as the phone';
+
+  @override
+  String get acctTheme => 'Appearance';
+
+  @override
+  String get acctThemeLight => 'Light';
+
+  @override
+  String get acctThemeDark => 'Dark';
+
+  @override
+  String get acctNotifications => 'Notifications';
+
+  @override
+  String get acctSupport => 'Support and complaints';
+
+  @override
+  String get acctLogout => 'Sign out';
+
+  @override
+  String get acctSuspendedTitle => 'Your account is suspended';
+
+  @override
+  String get acctSuspendedDefault =>
+      'You can\'t change your details for now. Contact support to know more.';
+
+  @override
+  String get acctLoadError => 'We couldn\'t refresh your account details.';
+
+  @override
+  String get acctPhoneLabel => 'Phone';
+
+  @override
+  String get acctPhoneHint => '01xxxxxxxxx';
+
+  @override
+  String get acctChangeEmail => 'Change';
+
+  @override
+  String get acctChangeEmailLabel => 'Change email';
+
+  @override
+  String get acctEmailNote => 'To change it we send a code to the new email.';
+
+  @override
+  String get acctSave => 'Save';
+
+  @override
+  String get acctSaved => 'Your details were saved.';
+
+  @override
+  String get acctAddAddress => 'Add an address';
+
+  @override
+  String get acctEditAddress => 'Edit address';
+
+  @override
+  String get acctAddressLabel => 'Address';
+
+  @override
+  String get acctAddressHint => 'Building, street, area';
+
+  @override
+  String get acctAddressRequired => 'Write the address';
+
+  @override
+  String get acctAddressMax => 'You can save up to 10 addresses';
+
+  @override
+  String acctAddressCount(int count) {
+    return '$count of 10';
+  }
+
+  @override
+  String get acctAddressesNote =>
+      'Addresses are saved as text, without a map pin.';
+
+  @override
+  String get acctAddressesEmpty => 'No saved addresses yet';
+
+  @override
+  String get acctAddressesEmptyBody => 'Save the places you order from often.';
+
+  @override
+  String get acctSaveAddress => 'Save address';
+
+  @override
+  String acctDeleteAddress(String address) {
+    return 'Delete $address';
+  }
+
+  @override
+  String get acctAddressDeleted => 'Address deleted.';
+
+  @override
+  String get acctUndo => 'Undo';
+
+  @override
+  String get acctTwoFactor => '2-step verification';
+
+  @override
+  String get acctTwoFactorBody =>
+      'We send a code to your email every time you sign in.';
+
+  @override
+  String get acctTwoFactorOffTitle => 'Turn off 2-step verification?';
+
+  @override
+  String get acctTwoFactorOffBody =>
+      'Anyone with your password could then sign in without a code.';
+
+  @override
+  String get acctTwoFactorTurnOff => 'Turn off';
+
+  @override
+  String get acctCancel => 'Cancel';
+
+  @override
+  String get acctPasswordTitle => 'Confirm it\'s you';
+
+  @override
+  String get acctPasswordBody =>
+      'Enter your password to turn off 2-step verification.';
+
+  @override
+  String get acctWrongPassword => 'That password isn\'t right.';
+
+  @override
+  String get acctTwoFactorOnDone => '2-step verification is on.';
+
+  @override
+  String get acctTwoFactorOffDone => '2-step verification is off.';
+
+  @override
+  String get acctNewEmailLabel => 'New email';
+
+  @override
+  String get acctEmailChanged => 'Your email was changed.';
+
+  @override
+  String get acctSameEmail => 'This is already your email';
+
+  @override
+  String get acctClose => 'Close';
+
+  @override
+  String get ntfTitle => 'Notifications';
+
+  @override
+  String get ntfMarkAllRead => 'Mark all read';
+
+  @override
+  String get ntfClearAll => 'Clear all';
+
+  @override
+  String get ntfClearTitle => 'Clear all notifications?';
+
+  @override
+  String get ntfClearBody => 'You can\'t get them back.';
+
+  @override
+  String get ntfClear => 'Clear';
+
+  @override
+  String get ntfToday => 'Today';
+
+  @override
+  String get ntfYesterday => 'Yesterday';
+
+  @override
+  String get ntfJustNow => 'Just now';
+
+  @override
+  String ntfMinutesAgo(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String ntfHoursAgo(int count) {
+    return '$count h ago';
+  }
+
+  @override
+  String get ntfUnread => 'Unread';
+
+  @override
+  String get ntfDismiss => 'Remove notification';
+
+  @override
+  String get ntfLive => 'Live: new notifications show up here';
+
+  @override
+  String get ntfOffline => 'Not connected: new notifications may be late';
+
+  @override
+  String get ntfConnectError => 'We lost the live connection.';
+
+  @override
+  String get ntfReconnect => 'Reconnect';
+
+  @override
+  String get ntfEmptyTitle => 'No notifications yet';
+
+  @override
+  String get ntfEmptyBody =>
+      'We\'ll tell you here when something happens with your orders.';
+
+  @override
+  String get ntfLoadError => 'We couldn\'t load your notifications.';
+
+  @override
+  String get ntfShowOlder => 'Show older';
+
+  @override
+  String get ntfAcceptedTitle => 'A courier accepted your order';
+
+  @override
+  String get ntfAcceptedBody => 'Follow it from the order page.';
+
+  @override
+  String get ntfUnavailableTitle => 'No courier is free right now';
+
+  @override
+  String get ntfUnavailableBody => 'You can order again from My orders.';
+
+  @override
+  String get ntfCancelledTitle => 'Your order was cancelled';
+
+  @override
+  String get ntfOrdersBody => 'Open My orders for the details.';
+
+  @override
+  String get ntfCompletedTitle => 'Your order was delivered';
+
+  @override
+  String get ntfTicketResolvedTitle => 'Your complaint was resolved';
+
+  @override
+  String get ntfTicketAssignedTitle => 'Support joined your complaint';
+
+  @override
+  String get ntfTicketAssignedBody => 'Reply to them in the complaint chat.';
+
+  @override
+  String get ntfDisputeTitle => 'The review of your order is done';
+
+  @override
+  String get supTitle => 'Support';
+
+  @override
+  String supOpenTab(int count) {
+    return 'Open · $count';
+  }
+
+  @override
+  String get supResolvedTab => 'Resolved';
+
+  @override
+  String get supStatusPending => 'Waiting for a reply';
+
+  @override
+  String get supStatusAssigned => 'With support';
+
+  @override
+  String get supStatusResolved => 'Resolved';
+
+  @override
+  String get supStatusOpen => 'Open';
+
+  @override
+  String supAboutOrder(String ref, String when) {
+    return 'About order $ref · $when';
+  }
+
+  @override
+  String supGeneral(String when) {
+    return 'General · $when';
+  }
+
+  @override
+  String supResolution(String note) {
+    return 'Resolution: $note';
+  }
+
+  @override
+  String get supHintTitle => 'Problem with an order?';
+
+  @override
+  String get supHintBody =>
+      'Pick the order and tell us what happened. The support team will answer you here.';
+
+  @override
+  String get supNewComplaint => 'New complaint';
+
+  @override
+  String get supResolvedEmpty => 'No resolved complaints yet';
+
+  @override
+  String get supLoadError => 'We couldn\'t load your complaints.';
+
+  @override
+  String get supOrderLabel => 'Which order?';
+
+  @override
+  String get supNoOrderOption => 'Not about an order';
+
+  @override
+  String get supOrdersLoading => 'Loading your orders…';
+
+  @override
+  String get supOrdersError =>
+      'We couldn\'t load your orders. You can still send it without one.';
+
+  @override
+  String get supSubjectLabel => 'Subject';
+
+  @override
+  String get supSubjectHint => 'In a few words';
+
+  @override
+  String get supSubjectRequired => 'Write a subject';
+
+  @override
+  String get supDescriptionLabel => 'What happened?';
+
+  @override
+  String get supDescriptionHint => 'Tell us the details';
+
+  @override
+  String get supDescriptionRequired => 'Tell us what happened';
+
+  @override
+  String get supSend => 'Send complaint';
+
+  @override
+  String get supSent =>
+      'We got your complaint. Support will answer you in its chat.';
+
+  @override
+  String supComplaintRef(String ref) {
+    return 'Complaint $ref';
+  }
+
+  @override
+  String get supChatEmpty =>
+      'Write to support here. You can attach a photo or a PDF.';
+
+  @override
+  String get supResolvedBanner => 'This complaint is resolved.';
+
+  @override
+  String get supReadOnly =>
+      'A resolved complaint can\'t get new messages. Open a new one if you need to.';
+
+  @override
+  String get supAttach => 'Attach a photo or PDF';
+
+  @override
+  String get supFileEmpty => 'The file is empty.';
+
+  @override
+  String get supFileTooBig => 'Files can be up to 10 MB.';
+
+  @override
+  String get supAttachFailed => 'We couldn\'t send the file.';
+
+  @override
+  String get updTitle => 'Update the app';
+
+  @override
+  String get updBody =>
+      'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.';
+
+  @override
+  String get updInstalled => 'Installed version';
+
+  @override
+  String get updMinimum => 'Oldest version that works';
+
+  @override
+  String get updLatest => 'Latest version';
+
+  @override
+  String get updLinkLabel => 'Download link';
+
+  @override
+  String get updCopy => 'Copy the download link';
+
+  @override
+  String get updCopied =>
+      'Link copied. Open it in your browser to install the new version.';
 }

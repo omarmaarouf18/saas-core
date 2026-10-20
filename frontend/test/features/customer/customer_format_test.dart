@@ -84,12 +84,35 @@ void main() {
           ['near', 'unknown', 'cheap', 'closed']);
     });
 
-    test('cheapest first, closed last', () {
+    test('cheapest: opening fee first, then price per km, closed last', () {
+      // final_price points the other way on purpose: it must be ignored.
+      final lowFee =
+          service(id: 'lowFee', tenantBase: 10, perKm: 9, finalPrice: 99);
+      final sameFeeCheapKm =
+          service(id: 'cheapKm', tenantBase: 15, perKm: 2, finalPrice: 80);
+      final sameFeeDearKm =
+          service(id: 'dearKm', tenantBase: 15, perKm: 6, finalPrice: 1);
+      final serviceBase = service(
+          id: 'serviceBase', base: 12, tenantBase: 0, perKm: 1, finalPrice: 5);
+      final closedCheap = service(
+          id: 'closed', tenantBase: 1, perKm: 1, finalPrice: 1, open: false);
       expect(
-          sortMarketServices(
-                  [near, closed, unknown, cheap], MarketSort.cheapest)
+          sortMarketServices([
+            closedCheap,
+            sameFeeDearKm,
+            serviceBase,
+            sameFeeCheapKm,
+            lowFee,
+          ], MarketSort.cheapest)
               .map((s) => s.id),
-          ['cheap', 'unknown', 'near', 'closed']);
+          ['lowFee', 'serviceBase', 'cheapKm', 'dearKm', 'closed']);
+    });
+
+    test('cheapest keeps the server order for equal tariffs', () {
+      final a = service(id: 'a', finalPrice: 90);
+      final b = service(id: 'b', finalPrice: 10);
+      expect(sortMarketServices([a, b], MarketSort.cheapest).map((s) => s.id),
+          ['a', 'b']);
     });
   });
 }
