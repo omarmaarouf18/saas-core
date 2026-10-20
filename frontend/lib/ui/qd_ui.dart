@@ -17,6 +17,7 @@ export 'components/qd_map_overlay.dart';
 export 'components/qd_money.dart';
 export 'components/qd_price_breakdown.dart';
 export 'components/qd_progress.dart';
+export 'components/qd_rings.dart';
 export 'components/qd_route_lines.dart';
 export 'components/qd_route_stops.dart';
 export 'components/qd_segmented.dart';

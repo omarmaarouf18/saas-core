@@ -3389,4 +3389,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatSendFailed(String error) {
     return 'We couldn\'t send the message. $error';
   }
+
+  @override
+  String get ordSearchingTitle => 'Looking for a courier';
+
+  @override
+  String get ordSearchingBody =>
+      'We offer your order to couriers one by one until one accepts.';
+
+  @override
+  String ordSearchingBodyCompany(String company) {
+    return 'We offer your order to $company couriers one by one until one accepts.';
+  }
+
+  @override
+  String ordOfferedTitle(String name) {
+    return '$name is looking at your order';
+  }
+
+  @override
+  String get ordOfferedTitleNoName => 'A courier is looking at your order';
+
+  @override
+  String get ordOfferedSub => 'Got more details? Send them in the chat.';
+
+  @override
+  String get ordCancelOrder => 'Cancel order';
+
+  @override
+  String get ordCancelSheetTitle => 'Cancel this order?';
+
+  @override
+  String get ordCancelSheetBody =>
+      'Tell the company why. A reason is required.';
+
+  @override
+  String get ordCancelReasonLabel => 'Reason';
+
+  @override
+  String get ordCancelKeep => 'Keep the order';
+
+  @override
+  String get ordCancelDone => 'Your order was cancelled.';
+
+  @override
+  String get ordCancelDoneRefunded =>
+      'Your order was cancelled and the amount was refunded.';
+
+  @override
+  String get ordUnavailableTitle => 'No courier available right now';
+
+  @override
+  String get ordUnavailableBody =>
+      'All couriers are busy. You can send the same order again.';
+
+  @override
+  String get ordRetryBooking => 'Order again';
+
+  @override
+  String get ordRetryBooked => 'We sent your order again.';
 }

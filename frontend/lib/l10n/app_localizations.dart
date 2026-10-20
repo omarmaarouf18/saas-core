@@ -6128,6 +6128,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send the message. {error}'**
   String chatSendFailed(String error);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for a courier'**
+  String get ordSearchingTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We offer your order to couriers one by one until one accepts.'**
+  String get ordSearchingBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We offer your order to {company} couriers one by one until one accepts.'**
+  String ordSearchingBodyCompany(String company);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is looking at your order'**
+  String ordOfferedTitle(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'A courier is looking at your order'**
+  String get ordOfferedTitleNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Got more details? Send them in the chat.'**
+  String get ordOfferedSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get ordCancelOrder;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this order?'**
+  String get ordCancelSheetTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the company why. A reason is required.'**
+  String get ordCancelSheetBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get ordCancelReasonLabel;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order'**
+  String get ordCancelKeep;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled.'**
+  String get ordCancelDone;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled and the amount was refunded.'**
+  String get ordCancelDoneRefunded;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier available right now'**
+  String get ordUnavailableTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'All couriers are busy. You can send the same order again.'**
+  String get ordUnavailableBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order again'**
+  String get ordRetryBooking;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent your order again.'**
+  String get ordRetryBooked;
 }
 
 class _AppLocalizationsDelegate

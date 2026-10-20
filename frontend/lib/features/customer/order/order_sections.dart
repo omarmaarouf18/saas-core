@@ -167,6 +167,9 @@ class OrderStateHeader extends StatelessWidget {
 
 /// How the price row of [OrderRouteCard] reads.
 enum OrderPriceMode {
+  /// Ended without a trip (cancelled, unknown): just "Price".
+  plain,
+
   /// Before a courier accepted: "Cash · estimated".
   estimate,
 
@@ -232,9 +235,10 @@ class OrderPriceRow extends StatelessWidget {
     final c = QdColors.of(context);
     final price = jobPrice(job);
     final cod = job.paymentMethod.trim().toLowerCase() == 'cod';
-    final label = !cod
+    final label = !cod || mode == OrderPriceMode.plain
         ? l10n.custPriceTitle
         : switch (mode) {
+            OrderPriceMode.plain => l10n.custPriceTitle,
             OrderPriceMode.estimate => l10n.ordCashEstimate,
             OrderPriceMode.toPay => l10n.ordPayCash,
             OrderPriceMode.paid => l10n.ordPaidCash,

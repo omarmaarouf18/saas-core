@@ -1251,5 +1251,22 @@
   "chatEmptyBody": "ابعت للمندوب أي تفاصيل زيادة عن طلبك.",
   "chatHint": "اكتب رسالة",
   "chatSend": "ابعت",
-  "chatSendFailed": "مقدرناش نبعت الرسالة. {error}"
+  "chatSendFailed": "مقدرناش نبعت الرسالة. {error}",
+  "ordSearchingTitle": "بندور على مندوب",
+  "ordSearchingBody": "بنعرض طلبك على المندوبين واحد ورا التاني لحد ما حد يقبل.",
+  "ordSearchingBodyCompany": "بنعرض طلبك على مندوبين {company} واحد ورا التاني لحد ما حد يقبل.",
+  "ordOfferedTitle": "{name} بيبص على طلبك",
+  "ordOfferedTitleNoName": "فيه مندوب بيبص على طلبك",
+  "ordOfferedSub": "لو عندك تفاصيل زيادة ابعتهاله",
+  "ordCancelOrder": "إلغاء الطلب",
+  "ordCancelSheetTitle": "تلغي الطلب ده؟",
+  "ordCancelSheetBody": "قول للشركة السبب. لازم تكتب سبب.",
+  "ordCancelReasonLabel": "السبب",
+  "ordCancelKeep": "خلّي الطلب",
+  "ordCancelDone": "طلبك اتلغى.",
+  "ordCancelDoneRefunded": "طلبك اتلغى والمبلغ رجعلك.",
+  "ordUnavailableTitle": "مفيش مندوب متاح دلوقتي",
+  "ordUnavailableBody": "كل المندوبين مشغولين. تقدر تبعت نفس الطلب تاني.",
+  "ordRetryBooking": "اطلب تاني",
+  "ordRetryBooked": "بعتنا طلبك تاني."
 }

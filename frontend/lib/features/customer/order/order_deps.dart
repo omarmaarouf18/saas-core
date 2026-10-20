@@ -37,10 +37,9 @@ class CourierLookupScope extends InheritedWidget {
 
   final CourierLookup lookup;
 
+  /// Reads without subscribing, so it can be called from initState.
   static CourierLookup of(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<CourierLookupScope>()
-          ?.lookup ??
+      context.getInheritedWidgetOfExactType<CourierLookupScope>()?.lookup ??
       const CourierLookup();
 
   @override

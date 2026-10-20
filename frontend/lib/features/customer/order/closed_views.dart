@@ -44,7 +44,7 @@ class OrderCancelledView extends StatelessWidget {
           ),
         ],
         const SizedBox(height: QdSpace.x5),
-        OrderRouteCard(job: job),
+        OrderRouteCard(job: job, priceMode: OrderPriceMode.plain),
       ],
     );
   }
@@ -107,7 +107,7 @@ class OrderUnknownView extends StatelessWidget {
           body: l10n.ordUnknownBody,
         ),
         const SizedBox(height: QdSpace.x5),
-        OrderRouteCard(job: job),
+        OrderRouteCard(job: job, priceMode: OrderPriceMode.plain),
       ],
     );
   }

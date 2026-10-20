@@ -3335,4 +3335,61 @@ class AppLocalizationsAr extends AppLocalizations {
   String chatSendFailed(String error) {
     return 'مقدرناش نبعت الرسالة. $error';
   }
+
+  @override
+  String get ordSearchingTitle => 'بندور على مندوب';
+
+  @override
+  String get ordSearchingBody =>
+      'بنعرض طلبك على المندوبين واحد ورا التاني لحد ما حد يقبل.';
+
+  @override
+  String ordSearchingBodyCompany(String company) {
+    return 'بنعرض طلبك على مندوبين $company واحد ورا التاني لحد ما حد يقبل.';
+  }
+
+  @override
+  String ordOfferedTitle(String name) {
+    return '$name بيبص على طلبك';
+  }
+
+  @override
+  String get ordOfferedTitleNoName => 'فيه مندوب بيبص على طلبك';
+
+  @override
+  String get ordOfferedSub => 'لو عندك تفاصيل زيادة ابعتهاله';
+
+  @override
+  String get ordCancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get ordCancelSheetTitle => 'تلغي الطلب ده؟';
+
+  @override
+  String get ordCancelSheetBody => 'قول للشركة السبب. لازم تكتب سبب.';
+
+  @override
+  String get ordCancelReasonLabel => 'السبب';
+
+  @override
+  String get ordCancelKeep => 'خلّي الطلب';
+
+  @override
+  String get ordCancelDone => 'طلبك اتلغى.';
+
+  @override
+  String get ordCancelDoneRefunded => 'طلبك اتلغى والمبلغ رجعلك.';
+
+  @override
+  String get ordUnavailableTitle => 'مفيش مندوب متاح دلوقتي';
+
+  @override
+  String get ordUnavailableBody =>
+      'كل المندوبين مشغولين. تقدر تبعت نفس الطلب تاني.';
+
+  @override
+  String get ordRetryBooking => 'اطلب تاني';
+
+  @override
+  String get ordRetryBooked => 'بعتنا طلبك تاني.';
 }

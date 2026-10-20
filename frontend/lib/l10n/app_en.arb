@@ -2039,5 +2039,83 @@
         "type": "String"
       }
     }
+  },
+  "ordSearchingTitle": "Looking for a courier",
+  "@ordSearchingTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSearchingBody": "We offer your order to couriers one by one until one accepts.",
+  "@ordSearchingBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordSearchingBodyCompany": "We offer your order to {company} couriers one by one until one accepts.",
+  "@ordSearchingBodyCompany": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "company": {
+        "type": "String"
+      }
+    }
+  },
+  "ordOfferedTitle": "{name} is looking at your order",
+  "@ordOfferedTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordOfferedTitleNoName": "A courier is looking at your order",
+  "@ordOfferedTitleNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferedSub": "Got more details? Send them in the chat.",
+  "@ordOfferedSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelOrder": "Cancel order",
+  "@ordCancelOrder": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelSheetTitle": "Cancel this order?",
+  "@ordCancelSheetTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelSheetBody": "Tell the company why. A reason is required.",
+  "@ordCancelSheetBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelReasonLabel": "Reason",
+  "@ordCancelReasonLabel": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelKeep": "Keep the order",
+  "@ordCancelKeep": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelDone": "Your order was cancelled.",
+  "@ordCancelDone": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelDoneRefunded": "Your order was cancelled and the amount was refunded.",
+  "@ordCancelDoneRefunded": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnavailableTitle": "No courier available right now",
+  "@ordUnavailableTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnavailableBody": "All couriers are busy. You can send the same order again.",
+  "@ordUnavailableBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRetryBooking": "Order again",
+  "@ordRetryBooking": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRetryBooked": "We sent your order again.",
+  "@ordRetryBooked": {
+    "description": "FE-CUST-2 redesigned order detail."
   }
 }
