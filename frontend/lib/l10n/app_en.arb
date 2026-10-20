@@ -1896,5 +1896,94 @@
         "type": "String"
       }
     }
+  },
+  "ordTitle": "Your order",
+  "@ordTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordLoadError": "We couldn't load your order",
+  "@ordLoadError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRefreshError": "We couldn't update your order. This is the last update we have.",
+  "@ordRefreshError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnknownTitle": "We can't show this order's status",
+  "@ordUnknownTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordUnknownBody": "Pull down to refresh. If it stays like this, contact support.",
+  "@ordUnknownBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPickupFrom": "Pickup from",
+  "@ordPickupFrom": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliverTo": "Delivery at",
+  "@ordDeliverTo": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCashEstimate": "Cash · estimated",
+  "@ordCashEstimate": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPayCash": "You'll pay cash",
+  "@ordPayCash": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPaidCash": "Paid cash",
+  "@ordPaidCash": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceNotSet": "Not set yet",
+  "@ordPriceNotSet": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCourierFallback": "Your courier",
+  "@ordCourierFallback": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordChatCourier": "Chat with the courier",
+  "@ordChatCourier": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelledTitle": "Order cancelled",
+  "@ordCancelledTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelledBody": "This order won't go ahead. You can order again any time.",
+  "@ordCancelledBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordCancelReason": "Reason: {reason}",
+  "@ordCancelReason": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalExpiredTitle": "The price offer ran out of time",
+  "@ordProposalExpiredTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalExpiredBody": "Nobody answered the price offer in time, so the order was cancelled. You can order again.",
+  "@ordProposalExpiredBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordReviewTitle": "Your order is under review",
+  "@ordReviewTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordReviewBody": "The company is checking the trip before closing the order. Nothing is needed from you.",
+  "@ordReviewBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOnHold": "Amount on hold",
+  "@ordOnHold": {
+    "description": "FE-CUST-2 redesigned order detail."
   }
 }

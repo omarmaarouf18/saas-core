@@ -3230,4 +3230,72 @@ class AppLocalizationsAr extends AppLocalizations {
   String custFromPrice(String base, String rate) {
     return 'من $base + $rate للكيلو';
   }
+
+  @override
+  String get ordTitle => 'طلبك';
+
+  @override
+  String get ordLoadError => 'مقدرناش نحمّل طلبك';
+
+  @override
+  String get ordRefreshError => 'مقدرناش نحدّث طلبك. ده آخر تحديث عندنا.';
+
+  @override
+  String get ordUnknownTitle => 'مش قادرين نعرض حالة الطلب ده';
+
+  @override
+  String get ordUnknownBody => 'اسحب لتحت عشان تحدّث. لو فضل كده كلّم الدعم.';
+
+  @override
+  String get ordPickupFrom => 'الاستلام من';
+
+  @override
+  String get ordDeliverTo => 'التسليم في';
+
+  @override
+  String get ordCashEstimate => 'كاش · متوقع';
+
+  @override
+  String get ordPayCash => 'هتدفع كاش';
+
+  @override
+  String get ordPaidCash => 'دفعت كاش';
+
+  @override
+  String get ordPriceNotSet => 'لسه متحددش';
+
+  @override
+  String get ordCourierFallback => 'المندوب بتاعك';
+
+  @override
+  String get ordChatCourier => 'محادثة المندوب';
+
+  @override
+  String get ordCancelledTitle => 'الطلب اتلغى';
+
+  @override
+  String get ordCancelledBody =>
+      'الطلب ده مش هيكمّل. تقدر تطلب تاني في أي وقت.';
+
+  @override
+  String ordCancelReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ordProposalExpiredTitle => 'عرض السعر وقته خلص';
+
+  @override
+  String get ordProposalExpiredBody =>
+      'محدش رد على عرض السعر في الوقت، فالطلب اتلغى. تقدر تطلب تاني.';
+
+  @override
+  String get ordReviewTitle => 'طلبك بيتراجع';
+
+  @override
+  String get ordReviewBody =>
+      'الشركة بتراجع المشوار قبل ما تقفل الطلب. مش مطلوب منك حاجة.';
+
+  @override
+  String get ordOnHold => 'المبلغ المحجوز';
 }

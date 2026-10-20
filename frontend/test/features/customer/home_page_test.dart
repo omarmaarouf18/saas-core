@@ -45,7 +45,8 @@ void main() {
     // awaiting_price_response counts as ongoing (old Home missed it).
     final card = find.byKey(const Key('cust_home_ongoing'));
     expect(card, findsOneWidget);
-    expect(find.text('Deliver an order · \u2066#QD-NEW22222\u2069'), findsOneWidget);
+    expect(find.text('Deliver an order · \u2066#QD-NEW22222\u2069'),
+        findsOneWidget);
     expect(find.text('New price offered'), findsOneWidget);
     expect(find.text('To Zamalek, 26th of July St'), findsOneWidget);
 

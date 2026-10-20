@@ -1,28 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../models/job.dart';
-import '../../screens/job_status_screen.dart';
 import '../../screens/notifications_screen.dart';
+import 'order/order_detail_page.dart';
 
-/// Where the redesigned customer pages hand off to screens that are not
-/// rebuilt yet (order detail = the existing JobStatusScreen until FE-CUST-2,
-/// notifications). Swappable through [CustomerNavScope] for tests.
+/// Navigation out of the redesigned customer pages: the order detail
+/// (FE-CUST-2 [OrderDetailPage]) and the notifications screen, which is not
+/// rebuilt yet. Swappable through [CustomerNavScope] for tests.
 class CustomerNav {
   const CustomerNav();
 
   /// Opens the order detail. After a booking, [replaceStack] drops the
   /// marketplace and booking pages so "back" returns to the shell.
   Future<void> openOrder(BuildContext context, Job job,
-      {bool replaceStack = false}) {
-    final route = MaterialPageRoute<void>(
-      builder: (_) => JobStatusScreen(job: job),
-    );
-    final nav = Navigator.of(context);
-    if (replaceStack) {
-      return nav.pushAndRemoveUntil(route, (r) => r.isFirst);
-    }
-    return nav.push(route);
-  }
+          {bool replaceStack = false}) =>
+      OrderDetailPage.open(context, job, replaceStack: replaceStack);
 
   Future<void> openNotifications(BuildContext context) =>
       Navigator.of(context).push(MaterialPageRoute<void>(

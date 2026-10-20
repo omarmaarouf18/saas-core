@@ -5936,6 +5936,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'From {base} + {rate}/km'**
   String custFromPrice(String base, String rate);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order'**
+  String get ordTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your order'**
+  String get ordLoadError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t update your order. This is the last update we have.'**
+  String get ordRefreshError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t show this order\'s status'**
+  String get ordUnknownTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down to refresh. If it stays like this, contact support.'**
+  String get ordUnknownBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup from'**
+  String get ordPickupFrom;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery at'**
+  String get ordDeliverTo;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · estimated'**
+  String get ordCashEstimate;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll pay cash'**
+  String get ordPayCash;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid cash'**
+  String get ordPaidCash;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set yet'**
+  String get ordPriceNotSet;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your courier'**
+  String get ordCourierFallback;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with the courier'**
+  String get ordChatCourier;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled'**
+  String get ordCancelledTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'This order won\'t go ahead. You can order again any time.'**
+  String get ordCancelledBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ordCancelReason(String reason);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The price offer ran out of time'**
+  String get ordProposalExpiredTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody answered the price offer in time, so the order was cancelled. You can order again.'**
+  String get ordProposalExpiredBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is under review'**
+  String get ordReviewTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The company is checking the trip before closing the order. Nothing is needed from you.'**
+  String get ordReviewBody;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount on hold'**
+  String get ordOnHold;
 }
 
 class _AppLocalizationsDelegate

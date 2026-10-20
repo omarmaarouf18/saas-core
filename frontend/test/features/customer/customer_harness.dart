@@ -163,6 +163,67 @@ class FakeMarketplace extends ChangeNotifier implements MarketplaceProvider {
     return nextBookedJob;
   }
 
+  // --- Order detail (FE-CUST-2) ---
+
+  /// What fetchJobStatus returns next; null = failure with [nextStatusError].
+  Job? nextStatus;
+  String? nextStatusError = 'Service unavailable';
+  Completer<void>? statusGate;
+  final List<String> statusCalls = [];
+
+  @override
+  Future<Job?> fetchJobStatus(String jobId, String userToken) async {
+    statusCalls.add(jobId);
+    error = null;
+    if (statusGate != null) await statusGate!.future;
+    if (nextStatus == null) {
+      error = nextStatusError;
+      return null;
+    }
+    return nextStatus;
+  }
+
+  final List<Map<String, Object?>> cancelCalls = [];
+  Object? nextCancelError;
+
+  @override
+  Future<Map<String, dynamic>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String userToken,
+  }) async {
+    cancelCalls.add({'jobId': jobId, 'reason': reason, 'token': userToken});
+    if (nextCancelError != null) throw nextCancelError!;
+    return {'status': 'cancelled'};
+  }
+
+  final List<Map<String, Object?>> proposeCalls = [];
+  final List<Map<String, Object?>> respondCalls = [];
+  Object? nextPriceError;
+  Job? nextPriceJob;
+
+  @override
+  Future<Job?> proposePrice({
+    required String jobId,
+    required double proposedPrice,
+    required String userToken,
+  }) async {
+    proposeCalls.add({'jobId': jobId, 'price': proposedPrice});
+    if (nextPriceError != null) throw nextPriceError!;
+    return nextPriceJob;
+  }
+
+  @override
+  Future<Job?> respondPrice({
+    required String jobId,
+    required String decision,
+    required String userToken,
+  }) async {
+    respondCalls.add({'jobId': jobId, 'decision': decision});
+    if (nextPriceError != null) throw nextPriceError!;
+    return nextPriceJob;
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -3281,4 +3281,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String custFromPrice(String base, String rate) {
     return 'From $base + $rate/km';
   }
+
+  @override
+  String get ordTitle => 'Your order';
+
+  @override
+  String get ordLoadError => 'We couldn\'t load your order';
+
+  @override
+  String get ordRefreshError =>
+      'We couldn\'t update your order. This is the last update we have.';
+
+  @override
+  String get ordUnknownTitle => 'We can\'t show this order\'s status';
+
+  @override
+  String get ordUnknownBody =>
+      'Pull down to refresh. If it stays like this, contact support.';
+
+  @override
+  String get ordPickupFrom => 'Pickup from';
+
+  @override
+  String get ordDeliverTo => 'Delivery at';
+
+  @override
+  String get ordCashEstimate => 'Cash · estimated';
+
+  @override
+  String get ordPayCash => 'You\'ll pay cash';
+
+  @override
+  String get ordPaidCash => 'Paid cash';
+
+  @override
+  String get ordPriceNotSet => 'Not set yet';
+
+  @override
+  String get ordCourierFallback => 'Your courier';
+
+  @override
+  String get ordChatCourier => 'Chat with the courier';
+
+  @override
+  String get ordCancelledTitle => 'Order cancelled';
+
+  @override
+  String get ordCancelledBody =>
+      'This order won\'t go ahead. You can order again any time.';
+
+  @override
+  String ordCancelReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ordProposalExpiredTitle => 'The price offer ran out of time';
+
+  @override
+  String get ordProposalExpiredBody =>
+      'Nobody answered the price offer in time, so the order was cancelled. You can order again.';
+
+  @override
+  String get ordReviewTitle => 'Your order is under review';
+
+  @override
+  String get ordReviewBody =>
+      'The company is checking the trip before closing the order. Nothing is needed from you.';
+
+  @override
+  String get ordOnHold => 'Amount on hold';
 }
