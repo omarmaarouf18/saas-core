@@ -3808,4 +3808,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String authDevOtp(String otp) {
     return 'Test mode: we filled in the code $otp for you.';
   }
+
+  @override
+  String get resetTitle => 'Forgot your password?';
+
+  @override
+  String get resetEmailBody =>
+      'Enter your account email and we\'ll send you a code.';
+
+  @override
+  String get resetSendCode => 'Send the code';
+
+  @override
+  String get resetCodeSent => 'We sent a code to your email.';
+
+  @override
+  String get resetNewTitle => 'New password';
+
+  @override
+  String get resetNewBody => 'Choose a password you don\'t use anywhere else.';
+
+  @override
+  String get resetNewLabel => 'New password';
+
+  @override
+  String get resetConfirmLabel => 'Type it again';
+
+  @override
+  String get resetMismatch => 'The two passwords don\'t match';
+
+  @override
+  String get resetSave => 'Save password';
+
+  @override
+  String get resetDone =>
+      'Your password was changed. Sign in with the new one.';
+
+  @override
+  String get resetExpired =>
+      'This reset ran out of time. Start again to get a new code.';
+
+  @override
+  String get resetStartAgain => 'Start again';
+
+  @override
+  String resetStep(int current, int total) {
+    return 'Step $current of $total';
+  }
 }

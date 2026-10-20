@@ -3746,4 +3746,49 @@ class AppLocalizationsAr extends AppLocalizations {
   String authDevOtp(String otp) {
     return 'وضع التجربة: كتبنالك الكود $otp.';
   }
+
+  @override
+  String get resetTitle => 'نسيت كلمة السر؟';
+
+  @override
+  String get resetEmailBody => 'اكتب إيميل حسابك وهنبعتلك كود.';
+
+  @override
+  String get resetSendCode => 'ابعت الكود';
+
+  @override
+  String get resetCodeSent => 'بعتنا كود على إيميلك.';
+
+  @override
+  String get resetNewTitle => 'كلمة سر جديدة';
+
+  @override
+  String get resetNewBody => 'اختار كلمة سر مش مستخدمها في أي حتة تانية.';
+
+  @override
+  String get resetNewLabel => 'كلمة السر الجديدة';
+
+  @override
+  String get resetConfirmLabel => 'اكتبها تاني';
+
+  @override
+  String get resetMismatch => 'كلمتين السر مش زي بعض';
+
+  @override
+  String get resetSave => 'احفظ كلمة السر';
+
+  @override
+  String get resetDone => 'كلمة السر اتغيرت. ادخل بالجديدة.';
+
+  @override
+  String get resetExpired =>
+      'وقت تغيير كلمة السر خلص. ابدأ من الأول عشان ياخد كود جديد.';
+
+  @override
+  String get resetStartAgain => 'ابدأ من الأول';
+
+  @override
+  String resetStep(int current, int total) {
+    return 'خطوة $current من $total';
+  }
 }

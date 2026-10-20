@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/feature_flags.dart';
-import '../../screens/forgot_password_screen.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/login_screen.dart';
 import 'login_page.dart';
+import 'reset_password_page.dart';
 
 /// The signed-out start screen: the redesigned [LoginPage] when [redesign]
 /// (default: the `QD_REDESIGN_AUTH` flag) is on, otherwise the existing
@@ -30,7 +30,7 @@ class AuthNav {
   /// reset ended with (to prefill sign-in), or null.
   Future<String?> openPasswordReset(BuildContext context, {String? email}) =>
       Navigator.of(context).push<String>(MaterialPageRoute<String>(
-        builder: (_) => ForgotPasswordScreen(initialEmail: email),
+        builder: (_) => ResetPasswordPage(initialEmail: email),
       ));
 
   /// After signing out: the signed-out start screen, replacing the stack.

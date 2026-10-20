@@ -6860,6 +6860,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Test mode: we filled in the code {otp} for you.'**
   String authDevOtp(String otp);
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get resetTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email and we\'ll send you a code.'**
+  String get resetEmailBody;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the code'**
+  String get resetSendCode;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a code to your email.'**
+  String get resetCodeSent;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get resetNewTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password you don\'t use anywhere else.'**
+  String get resetNewBody;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get resetNewLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it again'**
+  String get resetConfirmLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords don\'t match'**
+  String get resetMismatch;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get resetSave;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password was changed. Sign in with the new one.'**
+  String get resetDone;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset ran out of time. Start again to get a new code.'**
+  String get resetExpired;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get resetStartAgain;
+
+  /// FE-AUTH-ACCOUNT redesigned password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String resetStep(int current, int total);
 }
 
 class _AppLocalizationsDelegate

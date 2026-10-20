@@ -2618,5 +2618,69 @@
         "type": "String"
       }
     }
+  },
+  "resetTitle": "Forgot your password?",
+  "@resetTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetEmailBody": "Enter your account email and we'll send you a code.",
+  "@resetEmailBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetSendCode": "Send the code",
+  "@resetSendCode": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetCodeSent": "We sent a code to your email.",
+  "@resetCodeSent": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewTitle": "New password",
+  "@resetNewTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewBody": "Choose a password you don't use anywhere else.",
+  "@resetNewBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetNewLabel": "New password",
+  "@resetNewLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetConfirmLabel": "Type it again",
+  "@resetConfirmLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetMismatch": "The two passwords don't match",
+  "@resetMismatch": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetSave": "Save password",
+  "@resetSave": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetDone": "Your password was changed. Sign in with the new one.",
+  "@resetDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetExpired": "This reset ran out of time. Start again to get a new code.",
+  "@resetExpired": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetStartAgain": "Start again",
+  "@resetStartAgain": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset."
+  },
+  "resetStep": "Step {current} of {total}",
+  "@resetStep": {
+    "description": "FE-AUTH-ACCOUNT redesigned password reset.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }

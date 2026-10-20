@@ -1373,5 +1373,19 @@
   "authResendPrompt": "موصلكش؟",
   "authResendNow": "ابعت الكود تاني",
   "authCodeResent": "بعتنالك كود جديد.",
-  "authDevOtp": "وضع التجربة: كتبنالك الكود {otp}."
+  "authDevOtp": "وضع التجربة: كتبنالك الكود {otp}.",
+  "resetTitle": "نسيت كلمة السر؟",
+  "resetEmailBody": "اكتب إيميل حسابك وهنبعتلك كود.",
+  "resetSendCode": "ابعت الكود",
+  "resetCodeSent": "بعتنا كود على إيميلك.",
+  "resetNewTitle": "كلمة سر جديدة",
+  "resetNewBody": "اختار كلمة سر مش مستخدمها في أي حتة تانية.",
+  "resetNewLabel": "كلمة السر الجديدة",
+  "resetConfirmLabel": "اكتبها تاني",
+  "resetMismatch": "كلمتين السر مش زي بعض",
+  "resetSave": "احفظ كلمة السر",
+  "resetDone": "كلمة السر اتغيرت. ادخل بالجديدة.",
+  "resetExpired": "وقت تغيير كلمة السر خلص. ابدأ من الأول عشان ياخد كود جديد.",
+  "resetStartAgain": "ابدأ من الأول",
+  "resetStep": "خطوة {current} من {total}"
 }
