@@ -222,6 +222,9 @@ type OwnerJobResponse struct {
 	PriceProposalExpiresAt    *time.Time `json:"price_proposal_expires_at,omitempty"`
 	CreatedAt                 time.Time  `json:"created_at"`
 	UpdatedAt                 time.Time  `json:"updated_at"`
+	// DistanceReview is the owner-only COD under-distance review flag
+	// (FIX-COD-RECON); omitted when the job was not flagged.
+	DistanceReview *DistanceReview `json:"distance_review,omitempty"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -258,6 +261,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		PriceProposalExpiresAt:    j.PriceProposalExpiresAt,
 		CreatedAt:                 j.CreatedAt,
 		UpdatedAt:                 j.UpdatedAt,
+		DistanceReview:            j.DistanceReview,
 	}
 }
 
