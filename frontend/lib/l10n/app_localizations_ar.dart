@@ -2939,4 +2939,290 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get qdMainNavigation => 'التنقل الرئيسي';
+
+  @override
+  String get custNavHome => 'الرئيسية';
+
+  @override
+  String get custNavOrders => 'طلباتي';
+
+  @override
+  String get custNavAccount => 'حسابي';
+
+  @override
+  String get custPickupFrom => 'الاستلام من';
+
+  @override
+  String get custCurrentLocation => 'مكانك الحالي';
+
+  @override
+  String get custPinnedLocation => 'مكان على الخريطة';
+
+  @override
+  String get custChooseLocation => 'اختار المكان';
+
+  @override
+  String get custHomeTitle => 'عايز تبعت إيه النهارده؟';
+
+  @override
+  String get custCatDelivery => 'توصيل طلب';
+
+  @override
+  String get custCatDeliverySub => 'من مكان لمكان جوه المدينة';
+
+  @override
+  String get custCatShipping => 'شحن طرد';
+
+  @override
+  String get custCatShippingSub => 'بين المحافظات';
+
+  @override
+  String get custCatRide => 'مشوار';
+
+  @override
+  String get custCatRideSub => 'عربية توصلك لحد ما تروح';
+
+  @override
+  String get custAllServices => 'كل الخدمات';
+
+  @override
+  String get custServicesSection => 'الخدمات';
+
+  @override
+  String get custOngoingOrder => 'طلب جاري';
+
+  @override
+  String get custNoOngoing => 'مفيش طلبات جارية دلوقتي.';
+
+  @override
+  String get custOrderFallback => 'طلب';
+
+  @override
+  String custOrderTitleRef(String title, String ref) {
+    return '$title · $ref';
+  }
+
+  @override
+  String get custTrack => 'التفاصيل';
+
+  @override
+  String custToPlace(String place) {
+    return 'إلى $place';
+  }
+
+  @override
+  String get custJobsLoadError => 'معرفناش نجيب طلباتك.';
+
+  @override
+  String custCompaniesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شركة متاحة',
+      two: 'شركتين متاحين',
+      one: 'شركة واحدة متاحة',
+      zero: 'مفيش شركات متاحة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String custNearPlace(String place, String km) {
+    return 'قريب من $place · لحد $km كم';
+  }
+
+  @override
+  String get custSortLabel => 'الترتيب';
+
+  @override
+  String get custSortNearest => 'الأقرب';
+
+  @override
+  String get custSortCheapest => 'الأرخص';
+
+  @override
+  String get custFilters => 'الفلاتر';
+
+  @override
+  String get custOpen => 'مفتوح';
+
+  @override
+  String get custClosed => 'مقفول';
+
+  @override
+  String custOpensAt(String when) {
+    return 'بيفتح $when';
+  }
+
+  @override
+  String custKmAway(String km) {
+    return '$km كم منك';
+  }
+
+  @override
+  String get custEstimatedPrice => 'السعر المتوقع';
+
+  @override
+  String custAboutAmount(String amount) {
+    return 'حوالي $amount';
+  }
+
+  @override
+  String get custLocating => 'بنحدد مكانك…';
+
+  @override
+  String get custLocationOffBanner =>
+      'مقدرناش نعرف مكانك، فالشركات دي حوالين المكان الافتراضي. اختار منطقتك عشان تشوف اللي قريب منك.';
+
+  @override
+  String get custPickArea => 'اختار المنطقة على الخريطة';
+
+  @override
+  String get custNoCompaniesTitle => 'مفيش شركات قريبة';
+
+  @override
+  String get custNoCompaniesBody => 'جرّب مسافة أكبر أو منطقة تانية.';
+
+  @override
+  String get custChangeFilters => 'غيّر الفلاتر';
+
+  @override
+  String get custFilterDistance => 'المسافة';
+
+  @override
+  String custRadiusKm(String km) {
+    return '$km كم';
+  }
+
+  @override
+  String get custSearchArea => 'منطقة البحث';
+
+  @override
+  String get custShowResults => 'اعرض النتايج';
+
+  @override
+  String get custPickupPlace => 'مكان الاستلام';
+
+  @override
+  String get custDropoffPlace => 'مكان التسليم';
+
+  @override
+  String get custPickerHint =>
+      'حرّك الخريطة لحد ما العلامة تبقى على المكان بالظبط';
+
+  @override
+  String get custNoteLabel => 'علامة تساعد المندوب · اختياري';
+
+  @override
+  String get custNoteHint => 'مثلاً: العمارة اللي جنب الصيدلية، الدور التالت';
+
+  @override
+  String get custConfirmPlace => 'أكّد المكان';
+
+  @override
+  String get custMyLocation => 'مكاني الحالي';
+
+  @override
+  String get custLocationDenied =>
+      'الموقع مقفول فمش هنقدر نحدد مكانك. حرّك الخريطة واختار المكان بنفسك.';
+
+  @override
+  String get custConfirmOrder => 'تأكيد الطلب';
+
+  @override
+  String get custChange => 'غيّر';
+
+  @override
+  String get custRouteTitle => 'من فين لفين؟';
+
+  @override
+  String get custChooseDropoff => 'اختار مكان التسليم';
+
+  @override
+  String get custPriceTitle => 'السعر';
+
+  @override
+  String get custBaseFare => 'فتح الطلب';
+
+  @override
+  String get custPerKm => 'سعر الكيلو';
+
+  @override
+  String custDistanceLine(String km, String rate) {
+    return '$km كم × $rate';
+  }
+
+  @override
+  String get custEstimate => 'المتوقع';
+
+  @override
+  String get custPriceNeedsDropoff => 'اختار مكان التسليم عشان نحسب السعر.';
+
+  @override
+  String get custPriceDisclaimer =>
+      'ده تقدير بالمسافة المباشرة. السعر ممكن يتغير لو المندوب عرض سعر تاني ووافقت عليه.';
+
+  @override
+  String get custPayCash => 'كاش للمندوب';
+
+  @override
+  String get custPayOnlineSoon => 'الدفع الإلكتروني قريب';
+
+  @override
+  String get custChooseDropoffFirst => 'اختار مكان التسليم الأول';
+
+  @override
+  String get custOrderNow => 'اطلب دلوقتي';
+
+  @override
+  String custBookingFailed(String reason) {
+    return 'مقدرناش نبعت طلبك. $reason';
+  }
+
+  @override
+  String get custServiceClosed => 'الشركة دي مقفولة دلوقتي ومش بتاخد طلبات.';
+
+  @override
+  String get custOrdersTitle => 'طلباتي';
+
+  @override
+  String get custOrdersKind => 'نوع الطلبات';
+
+  @override
+  String custTabOngoing(int count) {
+    return 'الجارية · $count';
+  }
+
+  @override
+  String get custTabPast => 'السابقة';
+
+  @override
+  String get custCashOnDelivery => 'كاش عند الاستلام';
+
+  @override
+  String get custNoOngoingTitle => 'مفيش طلبات جارية';
+
+  @override
+  String get custNoPastTitle => 'لسه مفيش طلبات سابقة';
+
+  @override
+  String get custOrdersEmptyBody => 'اطلب توصيل أو شحن أو مشوار وهيظهر هنا.';
+
+  @override
+  String get custBrowseServices => 'شوف الخدمات';
+
+  @override
+  String custTodayAt(String time) {
+    return 'النهارده · $time';
+  }
+
+  @override
+  String custDateAt(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String custNearYou(String km) {
+    return 'قريب منك · لحد $km كم';
+  }
 }

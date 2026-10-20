@@ -38,9 +38,33 @@ jobs:
         working-directory: frontend
         run: flutter test --update-goldens test/golden_screens_test.dart
 
+      # Redesign A goldens (FE-DS gallery + rebuilt feature screens). They
+      # rasterise the bundled Plex font, so CI-rendered baselines matter.
+      - name: Regenerate redesign gallery goldens
+        working-directory: frontend
+        run: flutter test --update-goldens test/ui/qd_gallery_golden_test.dart
+
+      - name: Regenerate feature screen goldens
+        working-directory: frontend
+        run: |
+          if [ -d test/features ]; then
+            flutter test --update-goldens test/features/
+          else
+            echo "test/features/ not present, skipping"
+          fi
+
       - name: Upload CI-rendered baselines
         uses: actions/upload-artifact@v4
         with:
           name: ci-rendered-goldens
           path: frontend/test/goldens/
+          if-no-files-found: error
+
+      - name: Upload CI-rendered redesign baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-rendered-redesign-goldens
+          path: |
+            frontend/test/ui/goldens/
+            frontend/test/features/**/goldens/
           if-no-files-found: error

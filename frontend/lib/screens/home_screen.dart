@@ -35,7 +35,7 @@ import 'subscription_screen.dart';
 import 'owner_configuration_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
-import 'customer_home_screen.dart';
+import '../features/customer/customer_shell.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import 'owner_fleet_map_screen.dart';
 
@@ -216,7 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex);
     }
     if (user.role == 'user') {
-      return const CustomerHomeScreen();
+      // FE-CUST-1: redesigned customer shell behind QD_REDESIGN_CUSTOMER.
+      return customerRootScreen();
     }
     if (user.role != 'owner') {
       return _buildNonOwnerShell(user, l10n);

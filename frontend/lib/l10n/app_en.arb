@@ -1474,5 +1474,415 @@
       }
     }
   },
-  "qdMainNavigation": "Main navigation"
+  "qdMainNavigation": "Main navigation",
+  "custNavHome": "Home",
+  "@custNavHome": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNavOrders": "My orders",
+  "@custNavOrders": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNavAccount": "Account",
+  "@custNavAccount": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPickupFrom": "Pick up from",
+  "@custPickupFrom": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCurrentLocation": "Your current location",
+  "@custCurrentLocation": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPinnedLocation": "Pinned location",
+  "@custPinnedLocation": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custChooseLocation": "Choose a location",
+  "@custChooseLocation": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custHomeTitle": "What are you sending today?",
+  "@custHomeTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatDelivery": "Deliver an order",
+  "@custCatDelivery": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatDeliverySub": "From place to place in the city",
+  "@custCatDeliverySub": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatShipping": "Ship a parcel",
+  "@custCatShipping": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatShippingSub": "Between governorates",
+  "@custCatShippingSub": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatRide": "Ride",
+  "@custCatRide": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCatRideSub": "A car that takes you where you're going",
+  "@custCatRideSub": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custAllServices": "All services",
+  "@custAllServices": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custServicesSection": "Services",
+  "@custServicesSection": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOngoingOrder": "Ongoing order",
+  "@custOngoingOrder": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoOngoing": "No ongoing orders right now.",
+  "@custNoOngoing": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrderFallback": "Order",
+  "@custOrderFallback": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrderTitleRef": "{title} · {ref}",
+  "@custOrderTitleRef": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "custTrack": "Details",
+  "@custTrack": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custToPlace": "To {place}",
+  "@custToPlace": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "custJobsLoadError": "We couldn't load your orders.",
+  "@custJobsLoadError": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCompaniesCount": "{count, plural, =0{No companies available} =1{1 company available} other{{count} companies available}}",
+  "@custCompaniesCount": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "custNearPlace": "Near {place} · up to {km} km",
+  "@custNearPlace": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "custSortLabel": "Sort",
+  "@custSortLabel": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custSortNearest": "Nearest",
+  "@custSortNearest": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custSortCheapest": "Cheapest",
+  "@custSortCheapest": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custFilters": "Filters",
+  "@custFilters": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOpen": "Open",
+  "@custOpen": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custClosed": "Closed",
+  "@custClosed": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOpensAt": "Opens {when}",
+  "@custOpensAt": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "custKmAway": "{km} km from you",
+  "@custKmAway": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "custEstimatedPrice": "Estimated price",
+  "@custEstimatedPrice": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custAboutAmount": "About {amount}",
+  "@custAboutAmount": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "custLocating": "Finding your location…",
+  "@custLocating": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custLocationOffBanner": "We couldn't get your location, so these companies are near the default area. Pick your area to see what's near you.",
+  "@custLocationOffBanner": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPickArea": "Pick area on map",
+  "@custPickArea": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoCompaniesTitle": "No companies nearby",
+  "@custNoCompaniesTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoCompaniesBody": "Try a longer distance or another area.",
+  "@custNoCompaniesBody": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custChangeFilters": "Change filters",
+  "@custChangeFilters": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custFilterDistance": "Distance",
+  "@custFilterDistance": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custRadiusKm": "{km} km",
+  "@custRadiusKm": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "custSearchArea": "Search area",
+  "@custSearchArea": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custShowResults": "Show results",
+  "@custShowResults": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPickupPlace": "Pickup place",
+  "@custPickupPlace": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custDropoffPlace": "Drop-off place",
+  "@custDropoffPlace": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPickerHint": "Move the map until the pin is exactly on the place",
+  "@custPickerHint": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoteLabel": "A landmark for the courier · optional",
+  "@custNoteLabel": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoteHint": "e.g. the building next to the pharmacy, 3rd floor",
+  "@custNoteHint": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custConfirmPlace": "Confirm place",
+  "@custConfirmPlace": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custMyLocation": "My location",
+  "@custMyLocation": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custLocationDenied": "Location is off, so we can't find you. Move the map and pick the place yourself.",
+  "@custLocationDenied": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custConfirmOrder": "Confirm order",
+  "@custConfirmOrder": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custChange": "Change",
+  "@custChange": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custRouteTitle": "From where to where?",
+  "@custRouteTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custChooseDropoff": "Choose the drop-off place",
+  "@custChooseDropoff": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPriceTitle": "Price",
+  "@custPriceTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custBaseFare": "Order opening",
+  "@custBaseFare": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPerKm": "Per km",
+  "@custPerKm": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custDistanceLine": "{km} km × {rate}",
+  "@custDistanceLine": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "custEstimate": "Estimate",
+  "@custEstimate": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPriceNeedsDropoff": "Choose the drop-off place to see the estimate.",
+  "@custPriceNeedsDropoff": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPriceDisclaimer": "This is an estimate by straight-line distance. The price can change if the courier offers another price and you accept it.",
+  "@custPriceDisclaimer": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPayCash": "Cash to the courier",
+  "@custPayCash": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custPayOnlineSoon": "Electronic payment is coming soon",
+  "@custPayOnlineSoon": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custChooseDropoffFirst": "Choose the drop-off place first",
+  "@custChooseDropoffFirst": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrderNow": "Order now",
+  "@custOrderNow": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custBookingFailed": "We couldn't place your order. {reason}",
+  "@custBookingFailed": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "custServiceClosed": "This company is closed now, so it can't take orders.",
+  "@custServiceClosed": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrdersTitle": "My orders",
+  "@custOrdersTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrdersKind": "Order type",
+  "@custOrdersKind": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custTabOngoing": "Ongoing · {count}",
+  "@custTabOngoing": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "custTabPast": "Past",
+  "@custTabPast": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custCashOnDelivery": "Cash on delivery",
+  "@custCashOnDelivery": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoOngoingTitle": "No ongoing orders",
+  "@custNoOngoingTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custNoPastTitle": "No past orders yet",
+  "@custNoPastTitle": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custOrdersEmptyBody": "Book a delivery, a parcel or a ride and it shows up here.",
+  "@custOrdersEmptyBody": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custBrowseServices": "Browse services",
+  "@custBrowseServices": {
+    "description": "FE-CUST-1 redesigned customer screens."
+  },
+  "custTodayAt": "Today · {time}",
+  "@custTodayAt": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "custDateAt": "{date} · {time}",
+  "@custDateAt": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "custNearYou": "Near you · up to {km} km",
+  "@custNearYou": {
+    "description": "FE-CUST-1 redesigned customer screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  }
 }

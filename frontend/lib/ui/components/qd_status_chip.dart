@@ -94,14 +94,19 @@ enum QdJobStatus {
 }
 
 /// The chips for one job: its status, then a separate warning chip when a
-/// courier's cancellation request is waiting for the owner.
+/// courier's cancellation request is waiting for the owner. A finished job
+/// (delivered or cancelled) never shows that chip: the request is moot.
 List<QdJobStatus> qdJobStatusChips(
   String? status, {
   String? cancellationRequestStatus,
 }) {
+  final main = QdJobStatus.fromBackend(status);
+  final isTerminal =
+      main == QdJobStatus.completed || main == QdJobStatus.cancelled;
   return [
-    QdJobStatus.fromBackend(status),
-    if (cancellationRequestStatus?.trim().toLowerCase() == 'pending')
+    main,
+    if (!isTerminal &&
+        cancellationRequestStatus?.trim().toLowerCase() == 'pending')
       QdJobStatus.cancellationRequested,
   ];
 }

@@ -25,6 +25,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/component_library_screen.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
+import 'ui/qd_licenses.dart';
 import 'widgets/kyc_rejection_dialog_host.dart';
 import 'widgets/themed_panel.dart';
 
@@ -49,6 +50,10 @@ void main() {
   // Poppins is bundled under assets/fonts/ — brand typography must render
   // identically offline and never depend on runtime font downloads.
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  // IBM Plex Sans Arabic (redesign A) ships under the SIL OFL, which asks
+  // for its license to be shown with the app.
+  registerQdFontLicenses();
 
   final apiClient = ApiClient();
 
