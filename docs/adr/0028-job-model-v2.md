@@ -1,6 +1,6 @@
 # ADR-0028: Job Model v2 (Recipient, Address Text, Status History, Pickup Phase, ETA, Saved Addresses)
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-10-19 (Revised 2026-10-20)
 - **Related**: ADR-0002 (Per-Job Escrow Integrity), ADR-0006 (Negotiable Transport Pricing), ADR-0007 (GPS Reconciliation), ADR-0008 (Live Employee Tracking), ADR-0009 (Atomic CAS Guards), ADR-0024 (Expired-Subscription Booking Gate), ADR-0025 (Working Hours Schedule), ADR-0027 (Employee Cancellation Request Workflow); FE-DS design system (`docs/design/DESIGN_SYSTEM.md`, `docs/worklog/FE-DS.md` §6); Redesign A mockups (`docs/design/redesign-a/00-SCREEN-MAP.html`, `A-Book.html`, `A-Track.html`, `A-Searching.html`, `A-Courier.html`)
 - **Implementation Lane**: Documentation only (proposal). Code implementation will follow in sequential tasks: backend models & DTOs, endpoint updates, auth-service saved addresses, reviewer console, and modular frontend consumption (`frontend/lib/features/customer/**`, `frontend/lib/features/courier/**`).
@@ -271,7 +271,7 @@ All request body additions are optional. All response body additions are non-bre
 +    "address": "4 شارع التحرير، الدقي",
      "address_note": "بجوار مترو الدقي"
    },
--  "payment_method": "cash",
+-  "payment_method": "cod",
 +  "payment_method": "cod",
 +  "recipient": {
 +    "name": "محمود إبراهيم",
