@@ -680,5 +680,24 @@ List<QdGallerySection> qdGallerySections({
         ),
       ]);
     }),
+    QdGallerySection('rings', 'QdRings', (context) {
+      final c = QdColors.of(context);
+      return _col([
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            QdRings(),
+            QdRings(icon: Icons.local_shipping_outlined, size: 72),
+          ],
+        ),
+        Text(
+          _t(context, 'Looking for a courier near you',
+              'بندور على مندوب قريب منك'),
+          textAlign: TextAlign.center,
+          style: QdText.sheetTitle.copyWith(color: c.textPrimary),
+        ),
+      ]);
+    }),
   ];
 }

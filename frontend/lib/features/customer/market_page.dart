@@ -19,7 +19,10 @@ const List<double> kMarketRadiiKm = [5, 10, 25, 50, 100];
 const double kDefaultMarketRadiusKm = 50;
 
 /// Orders [services] for display: open (or unknown) companies first, closed
-/// ones last; inside each group nearest or cheapest first. Stable.
+/// ones last; inside each group nearest first, or cheapest first by the
+/// tariff the card shows (opening fee, then price per km). The server's
+/// `final_price` is never used: it prices the search point → company
+/// distance, a figure the customer never sees. Stable.
 List<MarketplaceService> sortMarketServices(
     Iterable<MarketplaceService> services, MarketSort sort) {
   final indexed = services.toList().asMap().entries.toList();
@@ -29,11 +32,16 @@ List<MarketplaceService> sortMarketServices(
     if (closedA != closedB) return closedA - closedB;
     final byKey = switch (sort) {
       MarketSort.nearest => a.value.distanceKM.compareTo(b.value.distanceKM),
-      MarketSort.cheapest => a.value.finalPrice.compareTo(b.value.finalPrice),
+      MarketSort.cheapest => _compareTariff(a.value, b.value),
     };
     return byKey != 0 ? byKey : a.key.compareTo(b.key);
   });
   return [for (final e in indexed) e.value];
+}
+
+int _compareTariff(MarketplaceService a, MarketplaceService b) {
+  final byFee = baseFareOf(a).compareTo(baseFareOf(b));
+  return byFee != 0 ? byFee : a.tenantPricePerKM.compareTo(b.tenantPricePerKM);
 }
 
 /// Marketplace (A-Market): companies offering [category] near the pickup,
@@ -109,9 +117,10 @@ class _CustomerMarketPageState extends State<CustomerMarketPage> {
       lat: place.latitude,
       lon: place.longitude,
       radius: _radius,
-      // The backend sorts only by "price"; "none" keeps its $nearSphere
-      // order and the client sorts by distance_km (sortMarketServices).
-      sortBy: _sort == MarketSort.cheapest ? 'price' : 'none',
+      // Both orders are client-side (sortMarketServices): "none" keeps the
+      // backend's $nearSphere order; its "price" sort would order by the
+      // hidden final_price.
+      sortBy: 'none',
     );
     if (!mounted || gen != _generation) return;
     setState(() {
