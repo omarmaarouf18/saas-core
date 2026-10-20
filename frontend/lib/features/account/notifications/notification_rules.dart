@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/notification_model.dart';
 import '../../../models/support_ticket.dart';
-import '../../../screens/customer_tickets_screen.dart';
-import '../../../screens/ticket_chat_screen.dart';
+import '../support/tickets_page.dart';
 
 /// Where tapping a notification leads.
 enum NotificationTargetKind { none, orders, ticket, tickets }
@@ -143,22 +142,16 @@ class NotificationLinks {
         Navigator.of(ctx).popUntil((route) => route.isFirst);
         showOrders?.call();
       },
-      openTicket: (ctx, id, {required resolved}) =>
-          Navigator.of(ctx).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => TicketChatScreen(
-            ticket: SupportTicket(
-              id: id,
-              customerId: '',
-              status: resolved ? 'resolved' : 'assigned',
-              createdAt: DateTime.now(),
-            ),
-          ),
+      openTicket: (ctx, id, {required resolved}) => openTicketChat(
+        ctx,
+        SupportTicket(
+          id: id,
+          customerId: '',
+          status: resolved ? 'resolved' : 'assigned',
+          createdAt: DateTime.now(),
         ),
       ),
-      openTickets: (ctx) => Navigator.of(ctx).push<void>(
-        MaterialPageRoute<void>(builder: (_) => const CustomerTicketsScreen()),
-      ),
+      openTickets: TicketsPage.open,
     );
   }
 

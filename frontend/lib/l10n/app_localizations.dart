@@ -7496,6 +7496,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The review of your order is done'**
   String get ntfDisputeTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open · {count}'**
+  String supOpenTab(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supResolvedTab;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a reply'**
+  String get supStatusPending;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'With support'**
+  String get supStatusAssigned;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supStatusResolved;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get supStatusOpen;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'About order {ref} · {when}'**
+  String supAboutOrder(String ref, String when);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'General · {when}'**
+  String supGeneral(String when);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution: {note}'**
+  String supResolution(String note);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem with an order?'**
+  String get supHintTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the order and tell us what happened. The support team will answer you here.'**
+  String get supHintBody;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'New complaint'**
+  String get supNewComplaint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'No resolved complaints yet'**
+  String get supResolvedEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your complaints.'**
+  String get supLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Which order?'**
+  String get supOrderLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Not about an order'**
+  String get supNoOrderOption;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your orders…'**
+  String get supOrdersLoading;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your orders. You can still send it without one.'**
+  String get supOrdersError;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get supSubjectLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'In a few words'**
+  String get supSubjectHint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a subject'**
+  String get supSubjectRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened?'**
+  String get supDescriptionLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us the details'**
+  String get supDescriptionHint;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened'**
+  String get supDescriptionRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Send complaint'**
+  String get supSend;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We got your complaint. Support will answer you in its chat.'**
+  String get supSent;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint {ref}'**
+  String supComplaintRef(String ref);
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Write to support here. You can attach a photo or a PDF.'**
+  String get supChatEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'This complaint is resolved.'**
+  String get supResolvedBanner;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'A resolved complaint can\'t get new messages. Open a new one if you need to.'**
+  String get supReadOnly;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a photo or PDF'**
+  String get supAttach;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is empty.'**
+  String get supFileEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Files can be up to 10 MB.'**
+  String get supFileTooBig;
+
+  /// FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send the file.'**
+  String get supAttachFailed;
 }
 
 class _AppLocalizationsDelegate

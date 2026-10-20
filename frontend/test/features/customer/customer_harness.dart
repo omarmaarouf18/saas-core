@@ -16,6 +16,7 @@ import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
+import 'package:frontend/models/support_ticket.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
@@ -354,6 +355,86 @@ class FakeChat extends ChangeNotifier implements ChatProvider {
     disconnects++;
     isConnected = false;
     notifyListeners();
+  }
+
+  // --- Support tickets (FE-AUTH-ACCOUNT) ---
+
+  @override
+  List<SupportTicket> customerTickets = [];
+
+  @override
+  bool isLoadingTickets = false;
+
+  @override
+  String? ticketsError;
+
+  List<SupportTicket> nextTickets = [];
+  String? nextTicketsError;
+  Completer<void>? ticketsGate;
+  int ticketCalls = 0;
+
+  @override
+  Future<List<SupportTicket>> fetchCustomerTickets(
+      {bool refresh = false, int page = 1, int limit = 20}) async {
+    ticketCalls++;
+    if (refresh) customerTickets = [];
+    isLoadingTickets = true;
+    ticketsError = null;
+    notifyListeners();
+    if (ticketsGate != null) await ticketsGate!.future;
+    isLoadingTickets = false;
+    if (nextTicketsError != null) {
+      ticketsError = nextTicketsError;
+    } else {
+      customerTickets = List.of(nextTickets);
+    }
+    notifyListeners();
+    return customerTickets;
+  }
+
+  final List<String> createdContexts = [];
+  Object? nextCreateError;
+  Map<String, dynamic> nextCreated = {
+    'ticket_id': 'tkt-new',
+    'customer_id': 'user-1',
+    'status': 'pending',
+  };
+
+  @override
+  Future<Map<String, dynamic>> createTicket(
+      {required String contextId, required String userToken}) async {
+    createdContexts.add(contextId);
+    if (nextCreateError != null) throw nextCreateError!;
+    return {...nextCreated, 'context_id': contextId};
+  }
+
+  final List<(String, String, int)> uploads = [];
+  Object? nextUploadError;
+
+  @override
+  Future<ChatMessage?> uploadTicketAttachment({
+    required String ticketId,
+    required List<int> fileBytes,
+    required String filename,
+    String? content,
+  }) async {
+    uploads.add((ticketId, filename, fileBytes.length));
+    if (nextUploadError != null) throw nextUploadError!;
+    final msg = ChatMessage(
+      id: 'att-${uploads.length}',
+      channel: 'ticket:$ticketId',
+      senderId: 'user-1',
+      senderUsername: 'Mona',
+      content: filename,
+      type: 'attachment',
+      attachmentUrl: 'https://files.invalid/$filename',
+      attachmentName: filename,
+      attachmentType: filename.endsWith('.pdf') ? 'application/pdf' : null,
+      attachmentSize: fileBytes.length,
+    );
+    messages = [...messages, msg];
+    notifyListeners();
+    return msg;
   }
 
   @override

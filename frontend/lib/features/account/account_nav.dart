@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/notifications_provider.dart';
-import '../../screens/customer_tickets_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../auth/auth_nav.dart';
 import 'notifications/notifications_page.dart';
+import 'support/tickets_page.dart';
 
 /// Navigation out of the redesigned account pages. Swappable through
 /// [AccountNavScope] for tests.
@@ -20,10 +20,7 @@ class AccountNav {
   Future<void> openNotifications(BuildContext context) =>
       NotificationsPage.open(context);
 
-  Future<void> openSupport(BuildContext context) =>
-      Navigator.of(context).push<void>(MaterialPageRoute<void>(
-        builder: (_) => const CustomerTicketsScreen(),
-      ));
+  Future<void> openSupport(BuildContext context) => TicketsPage.open(context);
 
   /// Same steps as utils/logout_helper.dart: stop the notification stream,
   /// revoke the session, then the signed-out start screen (flag-selected).

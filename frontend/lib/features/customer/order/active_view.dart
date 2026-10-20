@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../ui/qd_ui.dart';
-import '../../../widgets/create_ticket_dialog.dart';
+import '../../account/support/new_complaint_sheet.dart';
 import '../customer_format.dart';
 import 'order_controller.dart';
 import 'order_sections.dart';
@@ -12,7 +12,7 @@ import 'track_map.dart';
 
 /// active / assigned (A-Track): the live map on top, then the courier with
 /// chat, the steps we can know, the route and price, and "open a
-/// complaint" (the existing CreateTicketDialog for now).
+/// complaint" (the FE-AUTH-ACCOUNT complaint sheet, this order preselected).
 class OrderActiveView extends StatefulWidget {
   const OrderActiveView({super.key, required this.job});
 
@@ -33,13 +33,12 @@ class _OrderActiveViewState extends State<OrderActiveView> {
     ]);
   }
 
-  void _complain() {
-    showDialog<void>(
-      context: context,
-      // Typed subject / description are never lost to an outside tap.
-      barrierDismissible: false,
-      builder: (_) => CreateTicketDialog(contextId: widget.job.id),
-    );
+  Future<void> _complain() async {
+    final ticket =
+        await NewComplaintSheet.show(context, preselectedJobId: widget.job.id);
+    if (ticket != null && mounted) {
+      showOrderNotice(context, context.l10n.supSent);
+    }
   }
 
   @override

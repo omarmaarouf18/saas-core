@@ -4145,4 +4145,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ntfDisputeTitle => 'The review of your order is done';
+
+  @override
+  String get supTitle => 'Support';
+
+  @override
+  String supOpenTab(int count) {
+    return 'Open · $count';
+  }
+
+  @override
+  String get supResolvedTab => 'Resolved';
+
+  @override
+  String get supStatusPending => 'Waiting for a reply';
+
+  @override
+  String get supStatusAssigned => 'With support';
+
+  @override
+  String get supStatusResolved => 'Resolved';
+
+  @override
+  String get supStatusOpen => 'Open';
+
+  @override
+  String supAboutOrder(String ref, String when) {
+    return 'About order $ref · $when';
+  }
+
+  @override
+  String supGeneral(String when) {
+    return 'General · $when';
+  }
+
+  @override
+  String supResolution(String note) {
+    return 'Resolution: $note';
+  }
+
+  @override
+  String get supHintTitle => 'Problem with an order?';
+
+  @override
+  String get supHintBody =>
+      'Pick the order and tell us what happened. The support team will answer you here.';
+
+  @override
+  String get supNewComplaint => 'New complaint';
+
+  @override
+  String get supResolvedEmpty => 'No resolved complaints yet';
+
+  @override
+  String get supLoadError => 'We couldn\'t load your complaints.';
+
+  @override
+  String get supOrderLabel => 'Which order?';
+
+  @override
+  String get supNoOrderOption => 'Not about an order';
+
+  @override
+  String get supOrdersLoading => 'Loading your orders…';
+
+  @override
+  String get supOrdersError =>
+      'We couldn\'t load your orders. You can still send it without one.';
+
+  @override
+  String get supSubjectLabel => 'Subject';
+
+  @override
+  String get supSubjectHint => 'In a few words';
+
+  @override
+  String get supSubjectRequired => 'Write a subject';
+
+  @override
+  String get supDescriptionLabel => 'What happened?';
+
+  @override
+  String get supDescriptionHint => 'Tell us the details';
+
+  @override
+  String get supDescriptionRequired => 'Tell us what happened';
+
+  @override
+  String get supSend => 'Send complaint';
+
+  @override
+  String get supSent =>
+      'We got your complaint. Support will answer you in its chat.';
+
+  @override
+  String supComplaintRef(String ref) {
+    return 'Complaint $ref';
+  }
+
+  @override
+  String get supChatEmpty =>
+      'Write to support here. You can attach a photo or a PDF.';
+
+  @override
+  String get supResolvedBanner => 'This complaint is resolved.';
+
+  @override
+  String get supReadOnly =>
+      'A resolved complaint can\'t get new messages. Open a new one if you need to.';
+
+  @override
+  String get supAttach => 'Attach a photo or PDF';
+
+  @override
+  String get supFileEmpty => 'The file is empty.';
+
+  @override
+  String get supFileTooBig => 'Files can be up to 10 MB.';
+
+  @override
+  String get supAttachFailed => 'We couldn\'t send the file.';
 }

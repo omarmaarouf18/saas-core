@@ -3070,5 +3070,173 @@
   "ntfDisputeTitle": "The review of your order is done",
   "@ntfDisputeTitle": {
     "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "supTitle": "Support",
+  "@supTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOpenTab": "Open · {count}",
+  "@supOpenTab": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "supResolvedTab": "Resolved",
+  "@supResolvedTab": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusPending": "Waiting for a reply",
+  "@supStatusPending": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusAssigned": "With support",
+  "@supStatusAssigned": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusResolved": "Resolved",
+  "@supStatusResolved": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supStatusOpen": "Open",
+  "@supStatusOpen": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAboutOrder": "About order {ref} · {when}",
+  "@supAboutOrder": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "supGeneral": "General · {when}",
+  "@supGeneral": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "supResolution": "Resolution: {note}",
+  "@supResolution": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "supHintTitle": "Problem with an order?",
+  "@supHintTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supHintBody": "Pick the order and tell us what happened. The support team will answer you here.",
+  "@supHintBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supNewComplaint": "New complaint",
+  "@supNewComplaint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supResolvedEmpty": "No resolved complaints yet",
+  "@supResolvedEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supLoadError": "We couldn't load your complaints.",
+  "@supLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrderLabel": "Which order?",
+  "@supOrderLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supNoOrderOption": "Not about an order",
+  "@supNoOrderOption": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrdersLoading": "Loading your orders…",
+  "@supOrdersLoading": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supOrdersError": "We couldn't load your orders. You can still send it without one.",
+  "@supOrdersError": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectLabel": "Subject",
+  "@supSubjectLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectHint": "In a few words",
+  "@supSubjectHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSubjectRequired": "Write a subject",
+  "@supSubjectRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionLabel": "What happened?",
+  "@supDescriptionLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionHint": "Tell us the details",
+  "@supDescriptionHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supDescriptionRequired": "Tell us what happened",
+  "@supDescriptionRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSend": "Send complaint",
+  "@supSend": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supSent": "We got your complaint. Support will answer you in its chat.",
+  "@supSent": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supComplaintRef": "Complaint {ref}",
+  "@supComplaintRef": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "supChatEmpty": "Write to support here. You can attach a photo or a PDF.",
+  "@supChatEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supResolvedBanner": "This complaint is resolved.",
+  "@supResolvedBanner": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supReadOnly": "A resolved complaint can't get new messages. Open a new one if you need to.",
+  "@supReadOnly": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAttach": "Attach a photo or PDF",
+  "@supAttach": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supFileEmpty": "The file is empty.",
+  "@supFileEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supFileTooBig": "Files can be up to 10 MB.",
+  "@supFileTooBig": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "supAttachFailed": "We couldn't send the file.",
+  "@supAttachFailed": {
+    "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
   }
 }

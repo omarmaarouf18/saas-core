@@ -32,7 +32,8 @@ class StubMarketplaceProvider extends MarketplaceProvider {
 /// UX-17: AuthProvider-driven launch router test. The fake provider controls
 /// only the two getters the gate consults (isLoading, isAuthenticated), so
 /// the restore timing is deterministic without secure storage or networking.
-class GateAuthProvider extends AuthProvider {  GateAuthProvider(super.apiClient);
+class GateAuthProvider extends AuthProvider {
+  GateAuthProvider(super.apiClient);
 
   bool mockLoading = false;
   String? mockToken;
@@ -83,9 +84,8 @@ Widget createGateApp(GateAuthProvider auth) {
         create: (_) => NotificationsProvider(
           apiClient,
           // Never touches dart:io in tests; the gate test is offline.
-          sseStreamSource:
-              ({required method, required url, required header}) =>
-                  const Stream.empty(),
+          sseStreamSource: ({required method, required url, required header}) =>
+              const Stream.empty(),
         ),
       ),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
@@ -104,7 +104,8 @@ Widget createGateApp(GateAuthProvider auth) {
 }
 
 void main() {
-  testWidgets('UX-17 auth gate: loading shows splash, authed shows home, '
+  testWidgets(
+      'UX-17 auth gate: loading shows splash, authed shows home, '
       'logged out shows login; no LoginScreen frame while loading',
       (tester) async {
     final auth = GateAuthProvider(ApiClient())..mockLoading = true;
@@ -135,7 +136,8 @@ void main() {
     expect(find.byType(HomeScreen), findsNothing);
   });
 
-  testWidgets('UX-17 auth gate: unauthenticated start routes to login '
+  testWidgets(
+      'UX-17 auth gate: unauthenticated start routes to login '
       'without ever rendering the splash', (tester) async {
     final auth = GateAuthProvider(ApiClient())..mockLoading = false;
 

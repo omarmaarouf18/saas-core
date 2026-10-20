@@ -4078,4 +4078,121 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ntfDisputeTitle => 'مراجعة طلبك خلصت';
+
+  @override
+  String get supTitle => 'الدعم';
+
+  @override
+  String supOpenTab(int count) {
+    return 'مفتوحة · $count';
+  }
+
+  @override
+  String get supResolvedTab => 'اتحلت';
+
+  @override
+  String get supStatusPending => 'مستنية رد';
+
+  @override
+  String get supStatusAssigned => 'مع الدعم';
+
+  @override
+  String get supStatusResolved => 'اتحلت';
+
+  @override
+  String get supStatusOpen => 'مفتوحة';
+
+  @override
+  String supAboutOrder(String ref, String when) {
+    return 'عن طلب $ref · $when';
+  }
+
+  @override
+  String supGeneral(String when) {
+    return 'عامة · $when';
+  }
+
+  @override
+  String supResolution(String note) {
+    return 'الحل: $note';
+  }
+
+  @override
+  String get supHintTitle => 'عندك مشكلة في طلب؟';
+
+  @override
+  String get supHintBody =>
+      'اختار الطلب واكتب اللي حصل، وفريق الدعم هيرد عليك هنا.';
+
+  @override
+  String get supNewComplaint => 'شكوى جديدة';
+
+  @override
+  String get supResolvedEmpty => 'مفيش شكاوى اتحلت لسه';
+
+  @override
+  String get supLoadError => 'معرفناش نجيب شكاويك.';
+
+  @override
+  String get supOrderLabel => 'أنهي طلب؟';
+
+  @override
+  String get supNoOrderOption => 'مش عن طلب';
+
+  @override
+  String get supOrdersLoading => 'بنجيب طلباتك…';
+
+  @override
+  String get supOrdersError => 'معرفناش نجيب طلباتك. تقدر تبعتها من غير طلب.';
+
+  @override
+  String get supSubjectLabel => 'الموضوع';
+
+  @override
+  String get supSubjectHint => 'باختصار';
+
+  @override
+  String get supSubjectRequired => 'اكتب الموضوع';
+
+  @override
+  String get supDescriptionLabel => 'إيه اللي حصل؟';
+
+  @override
+  String get supDescriptionHint => 'احكيلنا التفاصيل';
+
+  @override
+  String get supDescriptionRequired => 'اكتب اللي حصل';
+
+  @override
+  String get supSend => 'ابعت الشكوى';
+
+  @override
+  String get supSent => 'شكوتك وصلت. الدعم هيرد عليك في المحادثة بتاعتها.';
+
+  @override
+  String supComplaintRef(String ref) {
+    return 'شكوى $ref';
+  }
+
+  @override
+  String get supChatEmpty => 'اكتب للدعم هنا. تقدر ترفق صورة أو PDF.';
+
+  @override
+  String get supResolvedBanner => 'الشكوى دي اتحلت.';
+
+  @override
+  String get supReadOnly =>
+      'الشكوى اللي اتحلت مينفعش يتبعت فيها رسايل. افتح شكوى جديدة لو محتاج.';
+
+  @override
+  String get supAttach => 'ارفق صورة أو PDF';
+
+  @override
+  String get supFileEmpty => 'الملف فاضي.';
+
+  @override
+  String get supFileTooBig => 'الملف ميزيدش عن 10 ميجا.';
+
+  @override
+  String get supAttachFailed => 'معرفناش نبعت الملف.';
 }

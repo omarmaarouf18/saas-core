@@ -203,9 +203,13 @@ void main() {
 
     // UX-04: the shipping tile advertises shipping, not cleaning — its
     // description must carry the dedicated shipping copy (EN fixture text).
-    expect(find.text('Book shipping for parcels and goods with GPS-tracked settlement.'),
+    expect(
+        find.text(
+            'Book shipping for parcels and goods with GPS-tracked settlement.'),
         findsOneWidget);
-    expect(find.text('On-demand home cleaning, maintenance, and handyman services.'),
+    expect(
+        find.text(
+            'On-demand home cleaning, maintenance, and handyman services.'),
         findsNothing);
     expect(find.byKey(const Key('category_tile_all')), findsOneWidget);
   });
