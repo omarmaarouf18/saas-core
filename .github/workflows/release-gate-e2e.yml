@@ -2,7 +2,7 @@ name: Release Gate E2E
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, logic-exploitation ]
   workflow_dispatch:
 
 jobs:
