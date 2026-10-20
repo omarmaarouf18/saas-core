@@ -53,6 +53,21 @@ func main() {
 		os.Exit(runCountUnfundedDigitalJobs())
 	}
 
+	// --count-stuck-cod-reconciliation-jobs: read-only FIX-COD-RECON check.
+	// Prints how many COD jobs sit in escrow_reconciliation_required with no
+	// locked escrow, by escrow_failure_reason, as JSON.
+	if len(os.Args) > 1 && os.Args[1] == "--count-stuck-cod-reconciliation-jobs" {
+		os.Exit(runCountStuckCODReconciliationJobs())
+	}
+
+	// --repair-stuck-cod-reconciliation-jobs [--confirm]: FIX-COD-RECON
+	// repair. Without --confirm it is a dry run that prints the plan; with
+	// --confirm it completes the under-distance COD jobs (cash = booked
+	// amount, distance_review flag set). Idempotent.
+	if len(os.Args) > 1 && os.Args[1] == "--repair-stuck-cod-reconciliation-jobs" {
+		os.Exit(runRepairStuckCODReconciliationJobs(os.Args[2:]))
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("[USER] Failed to load configuration: %v", err)
@@ -156,5 +171,58 @@ func runCountUnfundedDigitalJobs() int {
 	}
 	out, _ := json.Marshal(report)
 	fmt.Println(string(out))
+	return 0
+}
+
+// runCountStuckCODReconciliationJobs implements --count-stuck-cod-reconciliation-jobs.
+func runCountStuckCODReconciliationJobs() int {
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	report, err := store.CountStuckCODReconciliationJobsAt(ctx, cfg.MongoURI, cfg.MongoDatabase)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return 1
+	}
+	out, _ := json.Marshal(report)
+	fmt.Println(string(out))
+	return 0
+}
+
+// runRepairStuckCODReconciliationJobs implements
+// --repair-stuck-cod-reconciliation-jobs [--confirm]. Writes happen only
+// with exactly --confirm; any other argument is refused.
+func runRepairStuckCODReconciliationJobs(args []string) int {
+	apply := false
+	for _, a := range args {
+		if a != "--confirm" {
+			fmt.Fprintf(os.Stderr, "unknown argument %q (only --confirm is accepted)\n", a)
+			return 2
+		}
+		apply = true
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	result, err := store.RepairStuckCODReconciliationJobsAt(ctx, cfg.MongoURI, cfg.MongoDatabase, apply)
+	if result != nil {
+		out, _ := json.Marshal(result)
+		fmt.Println(string(out))
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return 1
+	}
+	if !apply {
+		fmt.Fprintln(os.Stderr, "dry run: nothing written; pass --confirm to apply")
+	}
 	return 0
 }

@@ -189,8 +189,13 @@ type DistanceReview struct {
 	Source    string    `json:"source,omitempty" bson:"source,omitempty"`
 }
 
-// DistanceReviewSourceCompleteJob marks a flag set by CompleteJob.
-const DistanceReviewSourceCompleteJob = "complete_job"
+// DistanceReview sources. A stuck_job_repair flag was set by the
+// --repair-stuck-cod-reconciliation-jobs CLI for a job parked before the
+// fix: its actual_cash_amount is the booked amount, not a courier entry.
+const (
+	DistanceReviewSourceCompleteJob = "complete_job"
+	DistanceReviewSourceRepair      = "stuck_job_repair"
+)
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
 type OwnerJobResponse struct {
