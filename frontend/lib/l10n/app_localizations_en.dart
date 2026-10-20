@@ -4044,4 +4044,105 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctClose => 'Close';
+
+  @override
+  String get ntfTitle => 'Notifications';
+
+  @override
+  String get ntfMarkAllRead => 'Mark all read';
+
+  @override
+  String get ntfClearAll => 'Clear all';
+
+  @override
+  String get ntfClearTitle => 'Clear all notifications?';
+
+  @override
+  String get ntfClearBody => 'You can\'t get them back.';
+
+  @override
+  String get ntfClear => 'Clear';
+
+  @override
+  String get ntfToday => 'Today';
+
+  @override
+  String get ntfYesterday => 'Yesterday';
+
+  @override
+  String get ntfJustNow => 'Just now';
+
+  @override
+  String ntfMinutesAgo(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String ntfHoursAgo(int count) {
+    return '$count h ago';
+  }
+
+  @override
+  String get ntfUnread => 'Unread';
+
+  @override
+  String get ntfDismiss => 'Remove notification';
+
+  @override
+  String get ntfLive => 'Live: new notifications show up here';
+
+  @override
+  String get ntfOffline => 'Not connected: new notifications may be late';
+
+  @override
+  String get ntfConnectError => 'We lost the live connection.';
+
+  @override
+  String get ntfReconnect => 'Reconnect';
+
+  @override
+  String get ntfEmptyTitle => 'No notifications yet';
+
+  @override
+  String get ntfEmptyBody =>
+      'We\'ll tell you here when something happens with your orders.';
+
+  @override
+  String get ntfLoadError => 'We couldn\'t load your notifications.';
+
+  @override
+  String get ntfShowOlder => 'Show older';
+
+  @override
+  String get ntfAcceptedTitle => 'A courier accepted your order';
+
+  @override
+  String get ntfAcceptedBody => 'Follow it from the order page.';
+
+  @override
+  String get ntfUnavailableTitle => 'No courier is free right now';
+
+  @override
+  String get ntfUnavailableBody => 'You can order again from My orders.';
+
+  @override
+  String get ntfCancelledTitle => 'Your order was cancelled';
+
+  @override
+  String get ntfOrdersBody => 'Open My orders for the details.';
+
+  @override
+  String get ntfCompletedTitle => 'Your order was delivered';
+
+  @override
+  String get ntfTicketResolvedTitle => 'Your complaint was resolved';
+
+  @override
+  String get ntfTicketAssignedTitle => 'Support joined your complaint';
+
+  @override
+  String get ntfTicketAssignedBody => 'Reply to them in the complaint chat.';
+
+  @override
+  String get ntfDisputeTitle => 'The review of your order is done';
 }

@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../screens/customer_tickets_screen.dart';
-import '../../screens/notifications_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../auth/auth_nav.dart';
+import 'notifications/notifications_page.dart';
 
 /// Navigation out of the redesigned account pages. Swappable through
 /// [AccountNavScope] for tests.
@@ -18,9 +18,7 @@ class AccountNav {
       Navigator.of(context).push<T>(qdPageRoute<T>(page));
 
   Future<void> openNotifications(BuildContext context) =>
-      Navigator.of(context).push<void>(MaterialPageRoute<void>(
-        builder: (_) => const NotificationsScreen(),
-      ));
+      NotificationsPage.open(context);
 
   Future<void> openSupport(BuildContext context) =>
       Navigator.of(context).push<void>(MaterialPageRoute<void>(

@@ -8,6 +8,7 @@ import '../../providers/marketplace_provider.dart';
 import '../../screens/customer_home_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
+import '../account/notifications/notification_rules.dart';
 import 'customer_jobs_controller.dart';
 import 'customer_theme.dart';
 import 'home_page.dart';
@@ -67,6 +68,8 @@ class _CustomerShellState extends State<CustomerShell> {
     if (i != 2) _jobs.refresh();
   }
 
+  void _showOrders() => _select(1);
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -75,41 +78,45 @@ class _CustomerShellState extends State<CustomerShell> {
 
     return ChangeNotifierProvider<CustomerJobsController>.value(
       value: _jobs,
-      child: CustomerTheme(
-        child: Scaffold(
-          key: const Key('customer_shell'),
-          body: IndexedStack(
-            index: _index,
-            children: [
-              lazy(0, () => const CustomerHomePage()),
-              lazy(
-                1,
-                () => CustomerOrdersPage(
-                  now: widget.now,
-                  onBrowseServices: () => CustomerMarketPage.open(context),
+      // Notification links to an order switch to the My orders tab.
+      child: OrdersTabScope(
+        showOrders: _showOrders,
+        child: CustomerTheme(
+          child: Scaffold(
+            key: const Key('customer_shell'),
+            body: IndexedStack(
+              index: _index,
+              children: [
+                lazy(0, () => const CustomerHomePage()),
+                lazy(
+                  1,
+                  () => CustomerOrdersPage(
+                    now: widget.now,
+                    onBrowseServices: () => CustomerMarketPage.open(context),
+                  ),
                 ),
-              ),
-              lazy(2, () => const AccountPage()),
-            ],
-          ),
-          bottomNavigationBar: QdBottomNav(
-            key: const Key('customer_shell_nav'),
-            currentIndex: _index,
-            onTap: _select,
-            items: [
-              QdNavItem(
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: l10n.custNavHome),
-              QdNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long,
-                  label: l10n.custNavOrders),
-              QdNavItem(
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: l10n.custNavAccount),
-            ],
+                lazy(2, () => const AccountPage()),
+              ],
+            ),
+            bottomNavigationBar: QdBottomNav(
+              key: const Key('customer_shell_nav'),
+              currentIndex: _index,
+              onTap: _select,
+              items: [
+                QdNavItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home,
+                    label: l10n.custNavHome),
+                QdNavItem(
+                    icon: Icons.receipt_long_outlined,
+                    activeIcon: Icons.receipt_long,
+                    label: l10n.custNavOrders),
+                QdNavItem(
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    label: l10n.custNavAccount),
+              ],
+            ),
           ),
         ),
       ),

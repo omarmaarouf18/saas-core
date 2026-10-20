@@ -7304,6 +7304,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get acctClose;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ntfTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get ntfMarkAllRead;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get ntfClearAll;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all notifications?'**
+  String get ntfClearTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t get them back.'**
+  String get ntfClearBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get ntfClear;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ntfToday;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get ntfYesterday;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get ntfJustNow;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String ntfMinutesAgo(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h ago'**
+  String ntfHoursAgo(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get ntfUnread;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Remove notification'**
+  String get ntfDismiss;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Live: new notifications show up here'**
+  String get ntfLive;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected: new notifications may be late'**
+  String get ntfOffline;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We lost the live connection.'**
+  String get ntfConnectError;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get ntfReconnect;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get ntfEmptyTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell you here when something happens with your orders.'**
+  String get ntfEmptyBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your notifications.'**
+  String get ntfLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Show older'**
+  String get ntfShowOlder;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'A courier accepted your order'**
+  String get ntfAcceptedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Follow it from the order page.'**
+  String get ntfAcceptedBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is free right now'**
+  String get ntfUnavailableTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'You can order again from My orders.'**
+  String get ntfUnavailableBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was cancelled'**
+  String get ntfCancelledTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Open My orders for the details.'**
+  String get ntfOrdersBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ntfCompletedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Your complaint was resolved'**
+  String get ntfTicketResolvedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Support joined your complaint'**
+  String get ntfTicketAssignedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to them in the complaint chat.'**
+  String get ntfTicketAssignedBody;
+
+  /// FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).
+  ///
+  /// In en, this message translates to:
+  /// **'The review of your order is done'**
+  String get ntfDisputeTitle;
 }
 
 class _AppLocalizationsDelegate

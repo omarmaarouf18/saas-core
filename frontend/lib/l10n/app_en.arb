@@ -2932,5 +2932,143 @@
   "acctClose": "Close",
   "@acctClose": {
     "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "ntfTitle": "Notifications",
+  "@ntfTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfMarkAllRead": "Mark all read",
+  "@ntfMarkAllRead": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearAll": "Clear all",
+  "@ntfClearAll": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearTitle": "Clear all notifications?",
+  "@ntfClearTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClearBody": "You can't get them back.",
+  "@ntfClearBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfClear": "Clear",
+  "@ntfClear": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfToday": "Today",
+  "@ntfToday": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfYesterday": "Yesterday",
+  "@ntfYesterday": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfJustNow": "Just now",
+  "@ntfJustNow": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfMinutesAgo": "{count} min ago",
+  "@ntfMinutesAgo": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ntfHoursAgo": "{count} h ago",
+  "@ntfHoursAgo": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ntfUnread": "Unread",
+  "@ntfUnread": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfDismiss": "Remove notification",
+  "@ntfDismiss": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfLive": "Live: new notifications show up here",
+  "@ntfLive": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfOffline": "Not connected: new notifications may be late",
+  "@ntfOffline": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfConnectError": "We lost the live connection.",
+  "@ntfConnectError": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfReconnect": "Reconnect",
+  "@ntfReconnect": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfEmptyTitle": "No notifications yet",
+  "@ntfEmptyTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfEmptyBody": "We'll tell you here when something happens with your orders.",
+  "@ntfEmptyBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfLoadError": "We couldn't load your notifications.",
+  "@ntfLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfShowOlder": "Show older",
+  "@ntfShowOlder": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfAcceptedTitle": "A courier accepted your order",
+  "@ntfAcceptedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfAcceptedBody": "Follow it from the order page.",
+  "@ntfAcceptedBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfUnavailableTitle": "No courier is free right now",
+  "@ntfUnavailableTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfUnavailableBody": "You can order again from My orders.",
+  "@ntfUnavailableBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfCancelledTitle": "Your order was cancelled",
+  "@ntfCancelledTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfOrdersBody": "Open My orders for the details.",
+  "@ntfOrdersBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfCompletedTitle": "Your order was delivered",
+  "@ntfCompletedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketResolvedTitle": "Your complaint was resolved",
+  "@ntfTicketResolvedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketAssignedTitle": "Support joined your complaint",
+  "@ntfTicketAssignedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfTicketAssignedBody": "Reply to them in the complaint chat.",
+  "@ntfTicketAssignedBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
+  },
+  "ntfDisputeTitle": "The review of your order is done",
+  "@ntfDisputeTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned notifications (A-Notifs)."
   }
 }

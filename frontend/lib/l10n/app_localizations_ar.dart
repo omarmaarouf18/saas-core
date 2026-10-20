@@ -3978,4 +3978,104 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get acctClose => 'اقفل';
+
+  @override
+  String get ntfTitle => 'الإشعارات';
+
+  @override
+  String get ntfMarkAllRead => 'قريت الكل';
+
+  @override
+  String get ntfClearAll => 'امسح الكل';
+
+  @override
+  String get ntfClearTitle => 'تمسح كل الإشعارات؟';
+
+  @override
+  String get ntfClearBody => 'مش هتقدر ترجّعهم تاني.';
+
+  @override
+  String get ntfClear => 'امسح';
+
+  @override
+  String get ntfToday => 'النهارده';
+
+  @override
+  String get ntfYesterday => 'امبارح';
+
+  @override
+  String get ntfJustNow => 'دلوقتي';
+
+  @override
+  String ntfMinutesAgo(int count) {
+    return 'من $count دقيقة';
+  }
+
+  @override
+  String ntfHoursAgo(int count) {
+    return 'من $count ساعة';
+  }
+
+  @override
+  String get ntfUnread => 'مش مقروء';
+
+  @override
+  String get ntfDismiss => 'امسح الإشعار';
+
+  @override
+  String get ntfLive => 'متصل: الإشعارات الجديدة بتظهر هنا';
+
+  @override
+  String get ntfOffline => 'مش متصل: الإشعارات الجديدة ممكن تتأخر';
+
+  @override
+  String get ntfConnectError => 'الاتصال المباشر وقع.';
+
+  @override
+  String get ntfReconnect => 'اتصل تاني';
+
+  @override
+  String get ntfEmptyTitle => 'مفيش إشعارات لسه';
+
+  @override
+  String get ntfEmptyBody => 'هنقولك هنا لما يحصل حاجة في طلباتك.';
+
+  @override
+  String get ntfLoadError => 'معرفناش نجيب الإشعارات.';
+
+  @override
+  String get ntfShowOlder => 'اعرض الأقدم';
+
+  @override
+  String get ntfAcceptedTitle => 'مندوب قبل طلبك';
+
+  @override
+  String get ntfAcceptedBody => 'تابعه من صفحة الطلب.';
+
+  @override
+  String get ntfUnavailableTitle => 'مفيش مندوب فاضي دلوقتي';
+
+  @override
+  String get ntfUnavailableBody => 'تقدر تطلب تاني من طلباتي.';
+
+  @override
+  String get ntfCancelledTitle => 'طلبك اتلغى';
+
+  @override
+  String get ntfOrdersBody => 'افتح طلباتي عشان تشوف التفاصيل.';
+
+  @override
+  String get ntfCompletedTitle => 'طلبك اتسلم';
+
+  @override
+  String get ntfTicketResolvedTitle => 'شكوتك اتحلت';
+
+  @override
+  String get ntfTicketAssignedTitle => 'الدعم دخل على شكوتك';
+
+  @override
+  String get ntfTicketAssignedBody => 'رد عليهم في محادثة الشكوى.';
+
+  @override
+  String get ntfDisputeTitle => 'مراجعة طلبك خلصت';
 }
