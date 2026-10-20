@@ -1884,5 +1884,17 @@
         "type": "String"
       }
     }
+  },
+  "custFromPrice": "From {base} + {rate}/km",
+  "@custFromPrice": {
+    "description": "FE-CUST-2 marketplace card price.",
+    "placeholders": {
+      "base": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
   }
 }

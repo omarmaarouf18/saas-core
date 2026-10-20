@@ -10,6 +10,7 @@ import 'customer_format.dart';
 import 'customer_location.dart';
 import 'customer_theme.dart';
 import 'picker_page.dart';
+import 'price_estimate.dart';
 
 enum MarketSort { nearest, cheapest }
 
@@ -36,7 +37,8 @@ List<MarketplaceService> sortMarketServices(
 }
 
 /// Marketplace (A-Market): companies offering [category] near the pickup,
-/// with the server's estimated price, distance and open / closed state.
+/// with each company's tariff (opening fee + price per km), distance and
+/// open / closed state.
 /// Ratings are not shown: they need one request per company today.
 class CustomerMarketPage extends StatefulWidget {
   const CustomerMarketPage({super.key, this.category, this.pickup, this.now});
@@ -107,9 +109,9 @@ class _CustomerMarketPageState extends State<CustomerMarketPage> {
       lat: place.latitude,
       lon: place.longitude,
       radius: _radius,
-      // The backend sorts by price for "price"; any other value keeps the
-      // $nearSphere distance order.
-      sortBy: _sort == MarketSort.cheapest ? 'price' : 'distance',
+      // The backend sorts only by "price"; "none" keeps its $nearSphere
+      // order and the client sorts by distance_km (sortMarketServices).
+      sortBy: _sort == MarketSort.cheapest ? 'price' : 'none',
     );
     if (!mounted || gen != _generation) return;
     setState(() {
@@ -398,14 +400,21 @@ class _ServiceCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
+                Text(l10n.custPriceTitle,
+                    style: QdText.secondary.copyWith(color: c.textSecondary)),
+                const SizedBox(width: QdSpace.x3),
+                // Tariff, not a trip price: the server's final_price is
+                // priced on the distance from the search point to the
+                // company. The trip estimate is on the booking page.
                 Expanded(
-                  child: Text(l10n.custEstimatedPrice,
-                      style: QdText.secondary.copyWith(color: c.textSecondary)),
-                ),
-                Text(
-                  l10n.custAboutAmount(formatMoney(l10n, service.finalPrice)),
-                  style: QdText.rowTitle.copyWith(
-                      color: c.textPrimary, fontWeight: FontWeight.w700),
+                  child: Text(
+                    l10n.custFromPrice(formatMoney(l10n, baseFareOf(service)),
+                        formatMoney(l10n, service.tenantPricePerKM)),
+                    key: Key('cust_market_price_${service.id}'),
+                    textAlign: TextAlign.end,
+                    style: QdText.bodyStrong.copyWith(
+                        color: c.textPrimary, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),

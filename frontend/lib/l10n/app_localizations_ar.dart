@@ -3225,4 +3225,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String custNearYou(String km) {
     return 'قريب منك · لحد $km كم';
   }
+
+  @override
+  String custFromPrice(String base, String rate) {
+    return 'من $base + $rate للكيلو';
+  }
 }

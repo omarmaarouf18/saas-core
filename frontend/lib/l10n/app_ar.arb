@@ -1218,5 +1218,6 @@
   "custBrowseServices": "شوف الخدمات",
   "custTodayAt": "النهارده · {time}",
   "custDateAt": "{date} · {time}",
-  "custNearYou": "قريب منك · لحد {km} كم"
+  "custNearYou": "قريب منك · لحد {km} كم",
+  "custFromPrice": "من {base} + {rate} للكيلو"
 }

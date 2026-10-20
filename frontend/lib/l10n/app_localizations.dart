@@ -5930,6 +5930,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Near you · up to {km} km'**
   String custNearYou(String km);
+
+  /// FE-CUST-2 marketplace card price.
+  ///
+  /// In en, this message translates to:
+  /// **'From {base} + {rate}/km'**
+  String custFromPrice(String base, String rate);
 }
 
 class _AppLocalizationsDelegate
