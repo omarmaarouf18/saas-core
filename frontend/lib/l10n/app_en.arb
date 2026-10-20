@@ -3238,5 +3238,37 @@
   "supAttachFailed": "We couldn't send the file.",
   "@supAttachFailed": {
     "description": "FE-AUTH-ACCOUNT redesigned support (A-Tickets) and ticket chat."
+  },
+  "updTitle": "Update the app",
+  "@updTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updBody": "This version doesn't work anymore. Install the new one to keep using Quick Delivery.",
+  "@updBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updInstalled": "Installed version",
+  "@updInstalled": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updMinimum": "Oldest version that works",
+  "@updMinimum": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updLatest": "Latest version",
+  "@updLatest": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updLinkLabel": "Download link",
+  "@updLinkLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updCopy": "Copy the download link",
+  "@updCopy": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "updCopied": "Link copied. Open it in your browser to install the new version.",
+  "@updCopied": {
+    "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
   }
 }

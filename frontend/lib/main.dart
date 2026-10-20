@@ -12,6 +12,7 @@ import 'core/feature_flags.dart';
 import 'core/update_gate.dart';
 import 'core/theme.dart';
 import 'features/auth/auth_gate.dart';
+import 'features/auth/redesign_update_gate.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
@@ -62,7 +63,10 @@ void main() {
   // HTTP 426 forced-update gate (QA audit A5): route any upgrade-required
   // response to the blocking UpdateRequiredScreen instead of letting it
   // surface as an unmapped generic error.
-  apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
+  // FE-AUTH-ACCOUNT: the redesigned screen behind QD_REDESIGN_AUTH.
+  apiClient.onUpdateRequired = kRedesignAuth
+      ? RedesignUpdateGate(appNavigatorKey).handle
+      : UpdateGate(appNavigatorKey).handle;
 
   runApp(
     MultiProvider(

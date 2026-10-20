@@ -4265,4 +4265,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supAttachFailed => 'We couldn\'t send the file.';
+
+  @override
+  String get updTitle => 'Update the app';
+
+  @override
+  String get updBody =>
+      'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.';
+
+  @override
+  String get updInstalled => 'Installed version';
+
+  @override
+  String get updMinimum => 'Oldest version that works';
+
+  @override
+  String get updLatest => 'Latest version';
+
+  @override
+  String get updLinkLabel => 'Download link';
+
+  @override
+  String get updCopy => 'Copy the download link';
+
+  @override
+  String get updCopied =>
+      'Link copied. Open it in your browser to install the new version.';
 }

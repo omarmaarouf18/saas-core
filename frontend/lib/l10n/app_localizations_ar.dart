@@ -4195,4 +4195,30 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get supAttachFailed => 'معرفناش نبعت الملف.';
+
+  @override
+  String get updTitle => 'لازم تحدّث التطبيق';
+
+  @override
+  String get updBody =>
+      'النسخة دي مبقتش شغالة. نزّل النسخة الجديدة عشان تكمل على كويك ديليفري.';
+
+  @override
+  String get updInstalled => 'النسخة اللي عندك';
+
+  @override
+  String get updMinimum => 'أقدم نسخة شغالة';
+
+  @override
+  String get updLatest => 'أحدث نسخة';
+
+  @override
+  String get updLinkLabel => 'لينك التحميل';
+
+  @override
+  String get updCopy => 'انسخ لينك التحميل';
+
+  @override
+  String get updCopied =>
+      'اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة.';
 }

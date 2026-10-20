@@ -7706,6 +7706,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send the file.'**
   String get supAttachFailed;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app'**
+  String get updTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.'**
+  String get updBody;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed version'**
+  String get updInstalled;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest version that works'**
+  String get updMinimum;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest version'**
+  String get updLatest;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Download link'**
+  String get updLinkLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the download link'**
+  String get updCopy;
+
+  /// FE-AUTH-ACCOUNT redesigned update-required screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied. Open it in your browser to install the new version.'**
+  String get updCopied;
 }
 
 class _AppLocalizationsDelegate
