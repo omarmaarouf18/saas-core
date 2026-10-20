@@ -829,6 +829,36 @@ func TestContract_AuthService(t *testing.T) {
 		if respGood.StatusCode != http.StatusOK {
 			t.Fatalf("Expected 200 OK, got %d: %s", respGood.StatusCode, string(body))
 		}
+
+		var parsedConfirm struct {
+			Status string `json:"status"`
+			Token  string `json:"token"`
+		}
+		if err := json.Unmarshal(body, &parsedConfirm); err != nil || parsedConfirm.Token == "" {
+			t.Fatalf("Expected fresh token in email-change confirm response, got %s (err: %v)", string(body), err)
+		}
+
+		oldCustomerToken := customerToken
+		customerToken = parsedConfirm.Token
+
+		// Assertion for SEC-07c:
+		// The OLD token now gets 401 on GET /auth/user, the new one gets 200.
+		userURL := fmt.Sprintf("%s/api/v1/auth/user", cfg.GatewayURL)
+		respOld, _, err := GetJSON(ctx, userURL, oldCustomerToken)
+		if err != nil {
+			t.Fatalf("Request with old token failed: %v", err)
+		}
+		if respOld.StatusCode != http.StatusUnauthorized {
+			t.Errorf("Expected 401 Unauthorized for revoked old token (SEC-07c), got %d", respOld.StatusCode)
+		}
+
+		respNew, _, err := GetJSON(ctx, userURL, customerToken)
+		if err != nil {
+			t.Fatalf("Request with new token failed: %v", err)
+		}
+		if respNew.StatusCode != http.StatusOK {
+			t.Errorf("Expected 200 OK for fresh token after email change, got %d", respNew.StatusCode)
+		}
 	})
 
 	// -------------------------------------------------------------------------
