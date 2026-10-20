@@ -45,6 +45,10 @@ class AuthProvider extends ChangeNotifier {
   UserProfile? _user;
   String? _token;
   bool _isLoading = false;
+  // HOTFIX-LOGIN: true only while the stored session is restored at launch
+  // (_tryAutoLogin). [isLoading] is also true during every auth request, so
+  // the launch gate must key off this flag instead.
+  bool _isRestoringSession = false;
   String? _error;
   // HTTP status of the most recent failed auth call, if the failure carried
   // one (e.g. 429 lockout on verify-code). Screens branch on this for
@@ -61,6 +65,7 @@ class AuthProvider extends ChangeNotifier {
   UserProfile? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
+  bool get isRestoringSession => _isRestoringSession;
   String? get error => _error;
   int? get lastErrorStatusCode => _lastErrorStatusCode;
   String? get lastErrorCode => _lastErrorCode;
@@ -90,6 +95,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _tryAutoLogin() async {
     _isLoading = true;
+    _isRestoringSession = true;
     notifyListeners();
     try {
       final token = await _secureStorage.read(key: 'jwt_token');
@@ -118,6 +124,7 @@ class AuthProvider extends ChangeNotifier {
       // Silent fail on load
     } finally {
       _isLoading = false;
+      _isRestoringSession = false;
       notifyListeners();
     }
   }

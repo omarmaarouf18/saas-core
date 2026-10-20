@@ -161,9 +161,14 @@ class MyApp extends StatelessWidget {
 }
 
 /// UX-17: chooses the launch destination from the live AuthProvider state.
-/// While the stored session is being restored (`isLoading`) a neutral splash
-/// is shown, so the login screen is never rendered as a flash frame before
-/// the session verdict exists.
+/// While the stored session is being restored (`isRestoringSession`) a
+/// neutral splash is shown, so the login screen is never rendered as a flash
+/// frame before the session verdict exists.
+///
+/// HOTFIX-LOGIN: never key the splash off `isLoading`. It is also true during
+/// every sign-in/sign-up request, and swapping LoginScreen for the splash then
+/// unmounts it mid-request, so a login that needs a code never pushed
+/// OtpScreen.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -174,7 +179,7 @@ class AuthGate extends StatelessWidget {
       return const RedesignAuthGate(splash: AuthSplashScreen());
     }
     final auth = Provider.of<AuthProvider>(context);
-    if (auth.isLoading) {
+    if (auth.isRestoringSession) {
       return const AuthSplashScreen();
     }
     return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
@@ -184,7 +189,7 @@ class AuthGate extends StatelessWidget {
 /// UX-17: neutral launch splash shown while AuthProvider is restoring the
 /// stored session. Keeps the app from flashing the login screen (and its
 /// auth-only chrome) before the session verdict exists; [AuthGate] routes to
-/// Home/Login the moment `isLoading` clears. Theme-aware (no raw colors) and
+/// Home/Login the moment `isRestoringSession` clears. Theme-aware (no raw colors) and
 /// text-free apart from the localized brand wordmark.
 class AuthSplashScreen extends StatelessWidget {
   const AuthSplashScreen({super.key});

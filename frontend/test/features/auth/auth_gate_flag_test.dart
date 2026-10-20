@@ -30,14 +30,18 @@ void main() {
     testWidgets('splash during the first restore, then sign in',
         (tester) async {
       usePhone(tester);
-      final deps = AuthTestDeps()..auth.isLoading = true;
+      final deps = AuthTestDeps()
+        ..auth.isRestoringSession = true
+        ..auth.isLoading = true;
       await tester.pumpWidget(authApp(
           deps, const RedesignAuthGate(splash: SizedBox(key: splashKey))));
       expect(find.byKey(splashKey), findsOneWidget);
       expect(find.byType(LoginPage), findsNothing);
 
-      deps.auth.isLoading = false;
-      deps.auth.notifyListeners();
+      deps.auth
+        ..isRestoringSession = false
+        ..isLoading = false
+        ..notifyListeners();
       await tester.pumpAndSettle();
       expect(find.byType(LoginPage), findsOneWidget);
     });

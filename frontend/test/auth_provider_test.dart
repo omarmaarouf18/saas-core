@@ -409,4 +409,64 @@ void main() {
       throwsA(isA<ApiClientException>()),
     );
   });
+  group('HOTFIX-LOGIN isRestoringSession', () {
+    test('is true from construction until the stored-session restore ends',
+        () async {
+      final (auth, _) = makeAuth(
+          handler: (req) => MockHttpResponse(200, jsonBody: {
+                'id': 'u-s',
+                'email': 's@x.dev',
+                'username': 'seeded',
+                'role': 'customer',
+              }),
+          seededSession: {...seededSession});
+
+      // The restore starts in the constructor, before the first frame.
+      expect(auth.isRestoringSession, isTrue);
+      expect(auth.isLoading, isTrue);
+
+      await pump();
+      expect(auth.isRestoringSession, isFalse);
+      expect(auth.isLoading, isFalse);
+      expect(auth.isAuthenticated, isTrue);
+    });
+
+    test('clears when no session is stored', () async {
+      final (auth, _) = makeAuth(handler: (req) => MockHttpResponse.ok());
+      expect(auth.isRestoringSession, isTrue);
+
+      await pump();
+      expect(auth.isRestoringSession, isFalse);
+      expect(auth.isAuthenticated, isFalse);
+    });
+
+    test('stays false during auth requests while isLoading is true', () async {
+      final (auth, _) = makeAuth(
+          handler: (req) =>
+              MockHttpResponse(200, jsonBody: {'dev_otp': '424242'}));
+      await pump();
+
+      final calls = <String, Future<Object?> Function()>{
+        'login': () => auth.login('e@x.dev', 'pw'),
+        'signup': () => auth.signup('e@x.dev', 'e', 'secret1', 'user'),
+        'verifyOtp': () => auth.verifyOtp('e@x.dev', '424242'),
+        'resendOtp': () => auth.resendOtp('e@x.dev'),
+        'forgotPassword': () => auth.forgotPassword('e@x.dev'),
+      };
+      for (final MapEntry(:key, :value) in calls.entries) {
+        final restoreSeen = <bool>[];
+        void listener() => restoreSeen.add(auth.isRestoringSession);
+        auth.addListener(listener);
+        final pending = value();
+        // isLoading semantics are unchanged for every other caller.
+        expect(auth.isLoading, isTrue, reason: key);
+        expect(auth.isRestoringSession, isFalse, reason: key);
+        await pending;
+        auth.removeListener(listener);
+        expect(auth.isLoading, isFalse, reason: key);
+        expect(restoreSeen, isNotEmpty, reason: key);
+        expect(restoreSeen, everyElement(isFalse), reason: key);
+      }
+    });
+  });
 }

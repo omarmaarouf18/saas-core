@@ -46,6 +46,9 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
   bool isLoading = false;
 
   @override
+  bool isRestoringSession = false;
+
+  @override
   String? error;
 
   @override
