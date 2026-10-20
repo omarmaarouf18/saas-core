@@ -172,7 +172,30 @@ type Job struct {
 	CancellationRequestStatus string     `json:"cancellation_request_status,omitempty"  bson:"cancellation_request_status,omitempty"`
 	CreatedAt                 time.Time  `json:"created_at"                    bson:"created_at"`
 	UpdatedAt                 time.Time  `json:"updated_at"                    bson:"updated_at"`
+	// DistanceReview is set on a COD delivery/shipping job completed with a
+	// tracked GPS distance under the ADR-0007 threshold (FIX-COD-RECON).
+	DistanceReview *DistanceReview `json:"distance_review,omitempty" bson:"distance_review,omitempty"`
 }
+
+// DistanceReview is an owner-facing review flag for a cash-on-delivery job
+// whose tracked GPS distance was under 70 % of the booked distance (ADR-0007
+// under-distance check). Unlike the non-COD path, the job still completes and
+// the collected cash is recorded: no platform money is held, so there is
+// nothing to release or refund (FIX-COD-RECON). Source says what set it.
+type DistanceReview struct {
+	ActualKm  float64   `json:"actual_km"        bson:"actual_km"`
+	BookedKm  float64   `json:"booked_km"        bson:"booked_km"`
+	FlaggedAt time.Time `json:"flagged_at"       bson:"flagged_at"`
+	Source    string    `json:"source,omitempty" bson:"source,omitempty"`
+}
+
+// DistanceReview sources. A stuck_job_repair flag was set by the
+// --repair-stuck-cod-reconciliation-jobs CLI for a job parked before the
+// fix: its actual_cash_amount is the booked amount, not a courier entry.
+const (
+	DistanceReviewSourceCompleteJob = "complete_job"
+	DistanceReviewSourceRepair      = "stuck_job_repair"
+)
 
 // OwnerJobResponse provides full tenant job visibility for business owners.
 type OwnerJobResponse struct {
@@ -204,6 +227,9 @@ type OwnerJobResponse struct {
 	PriceProposalExpiresAt    *time.Time `json:"price_proposal_expires_at,omitempty"`
 	CreatedAt                 time.Time  `json:"created_at"`
 	UpdatedAt                 time.Time  `json:"updated_at"`
+	// DistanceReview is the owner-only COD under-distance review flag
+	// (FIX-COD-RECON); omitted when the job was not flagged.
+	DistanceReview *DistanceReview `json:"distance_review,omitempty"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -240,6 +266,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		PriceProposalExpiresAt:    j.PriceProposalExpiresAt,
 		CreatedAt:                 j.CreatedAt,
 		UpdatedAt:                 j.UpdatedAt,
+		DistanceReview:            j.DistanceReview,
 	}
 }
 

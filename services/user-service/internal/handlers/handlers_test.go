@@ -5967,8 +5967,10 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 	}
 	mustCreateService(t, s, ctx, delivSvcLong)
 
-	// (c) Actual distance under 70% of booked — lands in escrow_reconciliation_required with note, NOT auto-completed
-	t.Run("Actual distance under 70% of booked flags job for reconciliation review", func(t *testing.T) {
+	// (c) Actual distance under 70% of booked on a COD job — completes with a
+	// distance_review flag instead of escrow reconciliation (FIX-COD-RECON;
+	// the non-COD path is covered in cod_distance_review_regression_test.go)
+	t.Run("COD actual distance under 70% of booked completes with distance review flag", func(t *testing.T) {
 		jobC := &models.Job{
 			ID:                 "job-adr7-short",
 			OwnerID:            "owner-adr7-123",
@@ -6000,22 +6002,20 @@ func TestCompleteJob_ADR0007_Phase1_SettlementAndReconciliation(t *testing.T) {
 		u.CompleteJob(rec, req)
 
 		if rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK response with reconciliation flag, got %d: %s", rec.Code, rec.Body.String())
+			t.Fatalf("Expected 200 OK on COD complete with distance mismatch, got %d: %s", rec.Code, rec.Body.String())
 		}
 		var resp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &resp)
-
-		if resp["status"] != string(models.JobStatusEscrowReconciliationRequired) {
-			t.Errorf("Expected status %q, got %v", models.JobStatusEscrowReconciliationRequired, resp["status"])
-		}
-		note, _ := resp["reconciliation_note"].(string)
-		if !strings.Contains(note, "tracked_distance_mismatch") {
-			t.Errorf("Expected reconciliation_note to contain 'tracked_distance_mismatch', got %q", note)
+		if _, ok := resp["distance_review"]; !ok {
+			t.Errorf("Expected distance_review in response, got %v", resp)
 		}
 
 		updatedJob := s.GetJob(ctx, jobC.ID)
-		if updatedJob.Status != models.JobStatusEscrowReconciliationRequired {
-			t.Errorf("Expected DB job status to be escrow_reconciliation_required, got %s", updatedJob.Status)
+		if updatedJob.Status != models.JobStatusCompleted {
+			t.Errorf("Expected COD job status to be completed, got %s", updatedJob.Status)
+		}
+		if updatedJob.DistanceReview == nil || updatedJob.DistanceReview.BookedKm != 99.9 {
+			t.Errorf("Expected distance_review with booked_km 99.9, got %+v", updatedJob.DistanceReview)
 		}
 	})
 

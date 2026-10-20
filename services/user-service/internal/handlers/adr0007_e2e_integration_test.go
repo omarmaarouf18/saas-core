@@ -179,7 +179,9 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 	// -------------------------------------------------------------------------
 	// STEP 3: UNDER-DISTANCE RECONCILIATION REVIEW FLAG
 	// -------------------------------------------------------------------------
-	t.Run("E2E Step 3: Under-distance tracked waypoints (< 70% of booked) flags job for manual review", func(t *testing.T) {
+	// FIX-COD-RECON: a COD job completes (cash recorded) with a
+	// distance_review flag instead of entering escrow reconciliation.
+	t.Run("E2E Step 3: Under-distance tracked waypoints (< 70% of booked) completes COD job with review flag", func(t *testing.T) {
 		trackReq := map[string]any{
 			"owner_id":       tokenOwner,
 			"service_id":     svcLongDelivery.ID,
@@ -228,26 +230,29 @@ func TestADR0007_E2E_DeliveryGPSReconciliation(t *testing.T) {
 
 		t.Logf("[RAW RESPONSE CompleteJob Under-Distance]: status=%d body=%s", rec.Code, rec.Body.String())
 		if rec.Code != http.StatusOK {
-			t.Fatalf("Expected 200 OK with reconciliation payload, got %d", rec.Code)
+			t.Fatalf("Expected 200 OK on COD completion with review flag, got %d", rec.Code)
 		}
 		var compResp map[string]any
 		json.Unmarshal(rec.Body.Bytes(), &compResp)
 
-		if compResp["status"] != string(models.JobStatusEscrowReconciliationRequired) {
-			t.Errorf("Expected status %s, got %v", models.JobStatusEscrowReconciliationRequired, compResp["status"])
+		review, _ := compResp["distance_review"].(map[string]any)
+		if review == nil {
+			t.Errorf("Expected distance_review in response, got %v", compResp)
 		}
-		note, _ := compResp["reconciliation_note"].(string)
-		if !strings.Contains(note, "tracked_distance_mismatch") {
-			t.Errorf("Expected note to contain 'tracked_distance_mismatch', got %q", note)
+		if _, ok := compResp["cash_amount_recorded"]; !ok {
+			t.Errorf("Expected cash_amount_recorded in response, got %v", compResp)
 		}
 
-		// Confirm DB status is escrow_reconciliation_required (not auto-completed)
+		// Confirm DB status is completed with the flag and the cash recorded
 		dbJob := s.GetJob(ctx, jobID)
 		if dbJob == nil {
 			t.Fatalf("dbJob is nil for jobID %s in Step 3", jobID)
 		}
-		if dbJob.Status != models.JobStatusEscrowReconciliationRequired {
-			t.Errorf("Expected DB job status escrow_reconciliation_required, got %s", dbJob.Status)
+		if dbJob.Status != models.JobStatusCompleted {
+			t.Errorf("Expected DB job status completed, got %s", dbJob.Status)
+		}
+		if dbJob.DistanceReview == nil || dbJob.ActualCashAmount == nil {
+			t.Errorf("Expected distance_review and actual_cash_amount on DB job, got review=%+v cash=%v", dbJob.DistanceReview, dbJob.ActualCashAmount)
 		}
 	})
 
