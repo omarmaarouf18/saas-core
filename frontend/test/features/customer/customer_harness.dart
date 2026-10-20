@@ -12,6 +12,7 @@ import 'package:frontend/features/customer/customer_nav.dart';
 import 'package:frontend/features/customer/customer_theme.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/user_profile.dart';
@@ -250,6 +251,76 @@ class FakeChat extends ChangeNotifier implements ChatProvider {
   bool isLoadingHistory = false;
 
   @override
+  List<ChatMessage> messages = [];
+
+  @override
+  bool isConnected = false;
+
+  @override
+  bool isConnecting = false;
+
+  @override
+  String? error;
+
+  @override
+  String? subscriptionError;
+
+  /// What the next history fetch does: messages, an error, a refusal.
+  List<ChatMessage> nextHistory = [];
+  String? nextHistoryError;
+  bool nextHistoryDenied = false;
+  Completer<void>? historyGate;
+  Object? nextSendError;
+  Completer<void>? sendGate;
+
+  final List<String> historyCalls = [];
+  final List<String> connectCalls = [];
+  final List<String> sent = [];
+  int disconnects = 0;
+
+  @override
+  Future<void> fetchChannelHistory(String channel, String token) async {
+    historyCalls.add(channel);
+    error = null;
+    subscriptionError = null;
+    messages = [];
+    isLoadingHistory = true;
+    notifyListeners();
+    if (historyGate != null) await historyGate!.future;
+    isLoadingHistory = false;
+    if (nextHistoryDenied) {
+      error = 'denied';
+      subscriptionError = 'not authorized for this channel';
+    } else if (nextHistoryError != null) {
+      error = nextHistoryError;
+    } else {
+      messages = List.of(nextHistory);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribeChannel(String channel, String token) {
+    connectCalls.add(channel);
+    isConnected = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> sendMessage(String content) async {
+    sent.add(content);
+    if (sendGate != null) await sendGate!.future;
+    if (nextSendError != null) throw nextSendError!;
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+    isConnected = false;
+    notifyListeners();
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -293,7 +364,9 @@ class CustomerTestDeps {
     FakeNotifications? notifications,
     FakeLocator? locator,
     RecordingNav? nav,
-  })  : auth = auth ?? FakeAuth(),
+    FakeChat? chat,
+  })  : chat = chat ?? FakeChat(),
+        auth = auth ?? FakeAuth(),
         marketplace = marketplace ?? FakeMarketplace(),
         notifications = notifications ?? FakeNotifications(),
         locator = locator ?? FakeLocator(),
@@ -304,6 +377,7 @@ class CustomerTestDeps {
   final FakeNotifications notifications;
   final FakeLocator locator;
   final RecordingNav nav;
+  final FakeChat chat;
 }
 
 /// The app around a customer page: real app theme (so [CustomerTheme] is
@@ -325,7 +399,7 @@ Widget customerApp(
           value: deps.notifications),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => FakeThemeProvider()),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
-      ChangeNotifierProvider<ChatProvider>(create: (_) => FakeChat()),
+      ChangeNotifierProvider<ChatProvider>.value(value: deps.chat),
     ],
     child: CustomerMapTilesScope(
       tileProvider: BlankTileProvider(),

@@ -3298,4 +3298,41 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordOnHold => 'المبلغ المحجوز';
+
+  @override
+  String get chatYou => 'إنت';
+
+  @override
+  String chatUserFallback(String id) {
+    return 'مستخدم $id';
+  }
+
+  @override
+  String get chatLive => 'متصل';
+
+  @override
+  String get chatConnecting => 'بيتوصل…';
+
+  @override
+  String get chatOffline => 'مش متصل، بنحاول تاني';
+
+  @override
+  String get chatDenied => 'مش مسموحلك تفتح المحادثة دي.';
+
+  @override
+  String get chatEmptyTitle => 'مفيش رسايل لسه';
+
+  @override
+  String get chatEmptyBody => 'ابعت للمندوب أي تفاصيل زيادة عن طلبك.';
+
+  @override
+  String get chatHint => 'اكتب رسالة';
+
+  @override
+  String get chatSend => 'ابعت';
+
+  @override
+  String chatSendFailed(String error) {
+    return 'مقدرناش نبعت الرسالة. $error';
+  }
 }

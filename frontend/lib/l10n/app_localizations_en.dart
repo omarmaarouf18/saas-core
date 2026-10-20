@@ -3351,4 +3351,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordOnHold => 'Amount on hold';
+
+  @override
+  String get chatYou => 'You';
+
+  @override
+  String chatUserFallback(String id) {
+    return 'User $id';
+  }
+
+  @override
+  String get chatLive => 'Connected';
+
+  @override
+  String get chatConnecting => 'Connecting…';
+
+  @override
+  String get chatOffline => 'Not connected, retrying';
+
+  @override
+  String get chatDenied => 'You can\'t open this chat.';
+
+  @override
+  String get chatEmptyTitle => 'No messages yet';
+
+  @override
+  String get chatEmptyBody =>
+      'Send the courier any extra details about your order.';
+
+  @override
+  String get chatHint => 'Write a message';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String chatSendFailed(String error) {
+    return 'We couldn\'t send the message. $error';
+  }
 }

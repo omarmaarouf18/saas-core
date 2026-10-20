@@ -1985,5 +1985,59 @@
   "ordOnHold": "Amount on hold",
   "@ordOnHold": {
     "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatYou": "You",
+  "@chatYou": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatUserFallback": "User {id}",
+  "@chatUserFallback": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "chatLive": "Connected",
+  "@chatLive": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatConnecting": "Connecting…",
+  "@chatConnecting": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatOffline": "Not connected, retrying",
+  "@chatOffline": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatDenied": "You can't open this chat.",
+  "@chatDenied": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatEmptyTitle": "No messages yet",
+  "@chatEmptyTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatEmptyBody": "Send the courier any extra details about your order.",
+  "@chatEmptyBody": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatHint": "Write a message",
+  "@chatHint": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatSend": "Send",
+  "@chatSend": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "chatSendFailed": "We couldn't send the message. {error}",
+  "@chatSendFailed": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

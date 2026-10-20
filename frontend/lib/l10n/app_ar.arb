@@ -1240,5 +1240,16 @@
   "ordProposalExpiredBody": "محدش رد على عرض السعر في الوقت، فالطلب اتلغى. تقدر تطلب تاني.",
   "ordReviewTitle": "طلبك بيتراجع",
   "ordReviewBody": "الشركة بتراجع المشوار قبل ما تقفل الطلب. مش مطلوب منك حاجة.",
-  "ordOnHold": "المبلغ المحجوز"
+  "ordOnHold": "المبلغ المحجوز",
+  "chatYou": "إنت",
+  "chatUserFallback": "مستخدم {id}",
+  "chatLive": "متصل",
+  "chatConnecting": "بيتوصل…",
+  "chatOffline": "مش متصل، بنحاول تاني",
+  "chatDenied": "مش مسموحلك تفتح المحادثة دي.",
+  "chatEmptyTitle": "مفيش رسايل لسه",
+  "chatEmptyBody": "ابعت للمندوب أي تفاصيل زيادة عن طلبك.",
+  "chatHint": "اكتب رسالة",
+  "chatSend": "ابعت",
+  "chatSendFailed": "مقدرناش نبعت الرسالة. {error}"
 }
