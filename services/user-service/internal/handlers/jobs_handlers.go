@@ -736,6 +736,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delivery and Shipping GPS Trail Settlement Reconciliation (ADR-0007 Phase 1)
+	var distanceReview *models.DistanceReview
 	if svc.Category == "delivery" || svc.Category == "shipping" {
 		bookedDist := dist
 		var actualDist float64
@@ -748,7 +749,20 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Under-distance review flag: if actual tracked distance < 70% of booked distance
-		if bookedDist > 0 && actualDist < 0.70*bookedDist {
+		if bookedDist > 0 && actualDist < 0.70*bookedDist && job.PaymentMethod == "cod" {
+			// COD jobs hold no platform money (ADR-0017): the mismatch never
+			// blocks completion. It is recorded as an owner review flag and the
+			// job completes through the COD path below with the cash recorded
+			// (FIX-COD-RECON).
+			log.Printf("[SECURITY WARNING] Tracked distance mismatch for COD job %s: actual %.2f km vs booked %.2f km (< 70%% threshold). Completing with distance review flag.", job.ID, actualDist, bookedDist)
+			handlerutil.ShipSecurityEvent(ctx, "TRACKED_DISTANCE_MISMATCH", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km", job.ID, actualDist, bookedDist), handlerutil.GetClientIP(r))
+			distanceReview = &models.DistanceReview{
+				ActualKm:  math.Round(actualDist*100) / 100,
+				BookedKm:  math.Round(bookedDist*100) / 100,
+				FlaggedAt: time.Now().UTC(),
+				Source:    models.DistanceReviewSourceCompleteJob,
+			}
+		} else if bookedDist > 0 && actualDist < 0.70*bookedDist {
 			log.Printf("[SECURITY WARNING] Tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km (< 70%% threshold). Flagging for manual escrow reconciliation.", job.ID, actualDist, bookedDist)
 			handlerutil.ShipSecurityEvent(ctx, "TRACKED_DISTANCE_MISMATCH", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km", job.ID, actualDist, bookedDist), handlerutil.GetClientIP(r))
 
@@ -795,7 +809,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			cashAmount = math.Round(req.ActualCashAmount*100) / 100
 		}
 
-		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount); err != nil {
+		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount, distanceReview); err != nil {
 			if strings.Contains(err.Error(), "not active") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
@@ -809,14 +823,18 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("[USER] COD Job %s completed: actual_cash_collected=%.2f logged (0%% platform commission)", job.ID, cashAmount)
-		writeJSON(w, http.StatusOK, map[string]any{
+		resp := map[string]any{
 			"message":              "COD job completed and collection recorded (0% platform commission)",
 			"job_id":               job.ID,
 			"total_amount":         cashAmount,
 			"cash_amount_recorded": cashAmount,
 			"platform_fee":         0.0,
 			"platform_fee_pct":     0.0,
-		})
+		}
+		if distanceReview != nil {
+			resp["distance_review"] = distanceReview
+		}
+		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 

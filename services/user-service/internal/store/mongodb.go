@@ -1169,16 +1169,19 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 // CompleteCODJob updates job status to completed for Cash-on-Delivery jobs
 // with zero wallet mutation, persisting the actually-collected cash amount in
 // the same atomic status flip so the collection record can never diverge from
-// the completion event.
-func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64) error {
+// the completion event. A non-nil review (ADR-0007 under-distance flag,
+// FIX-COD-RECON) is written in the same update.
+func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64, review *models.DistanceReview) error {
+	set := bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()}
+	if review != nil {
+		set["distance_review"] = review
+	}
 	resJob, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id":    jobID,
 			"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 		},
-		bson.M{
-			"$set": bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()},
-		})
+		bson.M{"$set": set})
 	if err != nil {
 		return fmt.Errorf("failed to update COD job status: %w", err)
 	}
