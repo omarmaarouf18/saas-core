@@ -12,6 +12,7 @@ import 'order_controller.dart';
 import 'order_deps.dart';
 import 'order_sections.dart';
 import 'order_view.dart';
+import 'proposal_view.dart';
 import 'searching_views.dart';
 
 /// Order detail (FE-CUST-2): one route for one job id. It polls the job
@@ -118,6 +119,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     return switch (orderViewFor(job, ctl.now())) {
       OrderViewKind.searching => OrderSearchingView(job: job),
       OrderViewKind.unavailable => OrderUnavailableView(job: job),
+      OrderViewKind.priceProposal => OrderProposalView(job: job),
       OrderViewKind.cancelled => OrderCancelledView(job: job),
       OrderViewKind.underReview => OrderUnderReviewView(job: job),
       OrderViewKind.unknown => OrderUnknownView(job: job),

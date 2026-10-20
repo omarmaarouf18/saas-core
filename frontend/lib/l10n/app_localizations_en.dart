@@ -3448,4 +3448,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordRetryBooked => 'We sent your order again.';
+
+  @override
+  String ordProposalCourierTitle(String name) {
+    return '$name offered a different price';
+  }
+
+  @override
+  String get ordProposalCourierTitleNoName =>
+      'The courier offered a different price';
+
+  @override
+  String get ordProposalCourierSub =>
+      'You need to accept before the order starts.';
+
+  @override
+  String ordProposalMineTitle(String price) {
+    return 'You offered $price';
+  }
+
+  @override
+  String get ordProposalMineSub => 'Waiting for the courier to answer.';
+
+  @override
+  String get ordProposalOpenTitle => 'Agree on the price';
+
+  @override
+  String get ordProposalOpenSub => 'Send a price within the allowed range.';
+
+  @override
+  String get ordOriginalPrice => 'Original price';
+
+  @override
+  String get ordOfferedPrice => 'Offered price';
+
+  @override
+  String ordPriceMore(String amount) {
+    return '$amount more';
+  }
+
+  @override
+  String ordPriceLess(String amount) {
+    return '$amount less';
+  }
+
+  @override
+  String get ordPriceSame => 'Same price';
+
+  @override
+  String get ordOfferExpiresIn => 'Offer expires in';
+
+  @override
+  String get ordOfferExpiryNote =>
+      'If time runs out without an answer, the order is cancelled and you can order again.';
+
+  @override
+  String get ordDecline => 'Decline';
+
+  @override
+  String ordAcceptPrice(String price) {
+    return 'Accept $price';
+  }
+
+  @override
+  String get ordYourPrice => 'Your price';
+
+  @override
+  String ordPriceRange(String min, String max) {
+    return 'Between $min and $max';
+  }
+
+  @override
+  String get ordPriceInvalid => 'Enter a number, like 42.';
+
+  @override
+  String ordPriceOutOfRange(String min, String max) {
+    return 'Enter a price between $min and $max.';
+  }
+
+  @override
+  String get ordSendOffer => 'Send offer';
+
+  @override
+  String get ordOfferSent => 'Your offer was sent.';
+
+  @override
+  String get ordAccepted => 'You accepted the price.';
+
+  @override
+  String get ordDeclined => 'You declined the price.';
+
+  @override
+  String get ordStateChanged =>
+      'The order changed: the other side already answered or its status moved on.';
 }

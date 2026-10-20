@@ -3392,4 +3392,94 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordRetryBooked => 'بعتنا طلبك تاني.';
+
+  @override
+  String ordProposalCourierTitle(String name) {
+    return '$name عرض سعر تاني';
+  }
+
+  @override
+  String get ordProposalCourierTitleNoName => 'المندوب عرض سعر تاني';
+
+  @override
+  String get ordProposalCourierSub => 'لازم توافق عشان يبدأ';
+
+  @override
+  String ordProposalMineTitle(String price) {
+    return 'إنت عرضت $price';
+  }
+
+  @override
+  String get ordProposalMineSub => 'مستنيين رد المندوب.';
+
+  @override
+  String get ordProposalOpenTitle => 'اتفق على السعر';
+
+  @override
+  String get ordProposalOpenSub => 'ابعت سعر في الحدود المسموحة.';
+
+  @override
+  String get ordOriginalPrice => 'السعر الأصلي';
+
+  @override
+  String get ordOfferedPrice => 'السعر المعروض';
+
+  @override
+  String ordPriceMore(String amount) {
+    return 'أكتر بـ $amount';
+  }
+
+  @override
+  String ordPriceLess(String amount) {
+    return 'أقل بـ $amount';
+  }
+
+  @override
+  String get ordPriceSame => 'نفس السعر';
+
+  @override
+  String get ordOfferExpiresIn => 'العرض بيخلص بعد';
+
+  @override
+  String get ordOfferExpiryNote =>
+      'لو الوقت خلص من غير رد، الطلب بيتلغي وتقدر تطلب تاني.';
+
+  @override
+  String get ordDecline => 'مش موافق';
+
+  @override
+  String ordAcceptPrice(String price) {
+    return 'موافق على $price';
+  }
+
+  @override
+  String get ordYourPrice => 'السعر اللي تقترحه';
+
+  @override
+  String ordPriceRange(String min, String max) {
+    return 'من $min لـ $max';
+  }
+
+  @override
+  String get ordPriceInvalid => 'اكتب رقم، زي 42.';
+
+  @override
+  String ordPriceOutOfRange(String min, String max) {
+    return 'اكتب سعر من $min لـ $max.';
+  }
+
+  @override
+  String get ordSendOffer => 'ابعت العرض';
+
+  @override
+  String get ordOfferSent => 'عرضك اتبعت.';
+
+  @override
+  String get ordAccepted => 'وافقت على السعر.';
+
+  @override
+  String get ordDeclined => 'رفضت السعر.';
+
+  @override
+  String get ordStateChanged => 'الطلب اتغير: الطرف التاني رد أو حالته اتغيرت.';
 }

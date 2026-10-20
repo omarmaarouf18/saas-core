@@ -6230,6 +6230,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We sent your order again.'**
   String get ordRetryBooked;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} offered a different price'**
+  String ordProposalCourierTitle(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier offered a different price'**
+  String get ordProposalCourierTitleNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to accept before the order starts.'**
+  String get ordProposalCourierSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You offered {price}'**
+  String ordProposalMineTitle(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the courier to answer.'**
+  String get ordProposalMineSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Agree on the price'**
+  String get ordProposalOpenTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a price within the allowed range.'**
+  String get ordProposalOpenSub;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Original price'**
+  String get ordOriginalPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered price'**
+  String get ordOfferedPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} more'**
+  String ordPriceMore(String amount);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} less'**
+  String ordPriceLess(String amount);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Same price'**
+  String get ordPriceSame;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer expires in'**
+  String get ordOfferExpiresIn;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'If time runs out without an answer, the order is cancelled and you can order again.'**
+  String get ordOfferExpiryNote;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get ordDecline;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept {price}'**
+  String ordAcceptPrice(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price'**
+  String get ordYourPrice;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Between {min} and {max}'**
+  String ordPriceRange(String min, String max);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number, like 42.'**
+  String get ordPriceInvalid;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a price between {min} and {max}.'**
+  String ordPriceOutOfRange(String min, String max);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send offer'**
+  String get ordSendOffer;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your offer was sent.'**
+  String get ordOfferSent;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You accepted the price.'**
+  String get ordAccepted;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You declined the price.'**
+  String get ordDeclined;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The order changed: the other side already answered or its status moved on.'**
+  String get ordStateChanged;
 }
 
 class _AppLocalizationsDelegate

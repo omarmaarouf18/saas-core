@@ -2117,5 +2117,146 @@
   "ordRetryBooked": "We sent your order again.",
   "@ordRetryBooked": {
     "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalCourierTitle": "{name} offered a different price",
+  "@ordProposalCourierTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalCourierTitleNoName": "The courier offered a different price",
+  "@ordProposalCourierTitleNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalCourierSub": "You need to accept before the order starts.",
+  "@ordProposalCourierSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalMineTitle": "You offered {price}",
+  "@ordProposalMineTitle": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordProposalMineSub": "Waiting for the courier to answer.",
+  "@ordProposalMineSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalOpenTitle": "Agree on the price",
+  "@ordProposalOpenTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordProposalOpenSub": "Send a price within the allowed range.",
+  "@ordProposalOpenSub": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOriginalPrice": "Original price",
+  "@ordOriginalPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferedPrice": "Offered price",
+  "@ordOfferedPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceMore": "{amount} more",
+  "@ordPriceMore": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceLess": "{amount} less",
+  "@ordPriceLess": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceSame": "Same price",
+  "@ordPriceSame": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferExpiresIn": "Offer expires in",
+  "@ordOfferExpiresIn": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferExpiryNote": "If time runs out without an answer, the order is cancelled and you can order again.",
+  "@ordOfferExpiryNote": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDecline": "Decline",
+  "@ordDecline": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordAcceptPrice": "Accept {price}",
+  "@ordAcceptPrice": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordYourPrice": "Your price",
+  "@ordYourPrice": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceRange": "Between {min} and {max}",
+  "@ordPriceRange": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "ordPriceInvalid": "Enter a number, like 42.",
+  "@ordPriceInvalid": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordPriceOutOfRange": "Enter a price between {min} and {max}.",
+  "@ordPriceOutOfRange": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "ordSendOffer": "Send offer",
+  "@ordSendOffer": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordOfferSent": "Your offer was sent.",
+  "@ordOfferSent": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordAccepted": "You accepted the price.",
+  "@ordAccepted": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeclined": "You declined the price.",
+  "@ordDeclined": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordStateChanged": "The order changed: the other side already answered or its status moved on.",
+  "@ordStateChanged": {
+    "description": "FE-CUST-2 redesigned order detail."
   }
 }
