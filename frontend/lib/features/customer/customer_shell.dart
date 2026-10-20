@@ -6,8 +6,8 @@ import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/marketplace_provider.dart';
 import '../../screens/customer_home_screen.dart';
-import '../../screens/settings_screen.dart';
 import '../../ui/qd_ui.dart';
+import '../account/account_page.dart';
 import 'customer_jobs_controller.dart';
 import 'customer_theme.dart';
 import 'home_page.dart';
@@ -21,9 +21,8 @@ Widget customerRootScreen({bool redesign = kRedesignCustomer}) =>
     redesign ? const CustomerShell() : const CustomerHomeScreen();
 
 /// Redesigned customer shell (FE-CUST-1): Home / My orders / Account with a
-/// [QdBottomNav]. Home and My orders render under the redesign theme;
-/// Account is the existing SettingsScreen, under the app theme, until it is
-/// rebuilt.
+/// [QdBottomNav], all under the redesign theme. Account is the
+/// FE-AUTH-ACCOUNT [AccountPage].
 class CustomerShell extends StatefulWidget {
   const CustomerShell({super.key, this.initialIndex = 0, this.now});
 
@@ -71,7 +70,6 @@ class _CustomerShellState extends State<CustomerShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final appTheme = Theme.of(context);
     Widget lazy(int i, Widget Function() build) =>
         _visited.contains(i) ? build() : const SizedBox.shrink();
 
@@ -91,10 +89,7 @@ class _CustomerShellState extends State<CustomerShell> {
                   onBrowseServices: () => CustomerMarketPage.open(context),
                 ),
               ),
-              lazy(
-                2,
-                () => Theme(data: appTheme, child: const SettingsScreen()),
-              ),
+              lazy(2, () => const AccountPage()),
             ],
           ),
           bottomNavigationBar: QdBottomNav(

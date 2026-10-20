@@ -3791,4 +3791,191 @@ class AppLocalizationsAr extends AppLocalizations {
   String resetStep(int current, int total) {
     return 'خطوة $current من $total';
   }
+
+  @override
+  String get acctEdit => 'تعديل';
+
+  @override
+  String get acctSectionAccount => 'الحساب';
+
+  @override
+  String get acctSectionApp => 'التطبيق';
+
+  @override
+  String get acctSectionSupport => 'الدعم';
+
+  @override
+  String get acctMyDetails => 'بياناتي';
+
+  @override
+  String get acctSavedAddresses => 'العناوين المحفوظة';
+
+  @override
+  String get acctSecurity => 'الأمان';
+
+  @override
+  String get acctTwoFactorOn => 'التحقق بخطوتين شغال';
+
+  @override
+  String get acctTwoFactorOff => 'التحقق بخطوتين مقفول';
+
+  @override
+  String get acctWallet => 'المحفظة';
+
+  @override
+  String get acctSoon => 'قريب';
+
+  @override
+  String get acctLanguage => 'اللغة';
+
+  @override
+  String get acctLangArabic => 'العربية';
+
+  @override
+  String get acctLangEnglish => 'English';
+
+  @override
+  String get acctPhoneSetting => 'زي الموبايل';
+
+  @override
+  String get acctTheme => 'المظهر';
+
+  @override
+  String get acctThemeLight => 'فاتح';
+
+  @override
+  String get acctThemeDark => 'غامق';
+
+  @override
+  String get acctNotifications => 'الإشعارات';
+
+  @override
+  String get acctSupport => 'الدعم والشكاوى';
+
+  @override
+  String get acctLogout => 'تسجيل خروج';
+
+  @override
+  String get acctSuspendedTitle => 'حسابك متوقف';
+
+  @override
+  String get acctSuspendedDefault =>
+      'مش هتقدر تغيّر بياناتك دلوقتي. كلم الدعم عشان تعرف أكتر.';
+
+  @override
+  String get acctLoadError => 'معرفناش نحدّث بيانات حسابك.';
+
+  @override
+  String get acctPhoneLabel => 'الموبايل';
+
+  @override
+  String get acctPhoneHint => '01xxxxxxxxx';
+
+  @override
+  String get acctChangeEmail => 'غيّر';
+
+  @override
+  String get acctChangeEmailLabel => 'غيّر الإيميل';
+
+  @override
+  String get acctEmailNote => 'عشان تغيّره هنبعت كود على الإيميل الجديد.';
+
+  @override
+  String get acctSave => 'احفظ';
+
+  @override
+  String get acctSaved => 'بياناتك اتحفظت.';
+
+  @override
+  String get acctAddAddress => 'ضيف عنوان';
+
+  @override
+  String get acctEditAddress => 'عدّل العنوان';
+
+  @override
+  String get acctAddressLabel => 'العنوان';
+
+  @override
+  String get acctAddressHint => 'العمارة، الشارع، المنطقة';
+
+  @override
+  String get acctAddressRequired => 'اكتب العنوان';
+
+  @override
+  String get acctAddressMax => 'تقدر تحفظ لحد 10 عناوين';
+
+  @override
+  String acctAddressCount(int count) {
+    return '$count من 10';
+  }
+
+  @override
+  String get acctAddressesNote =>
+      'العناوين بتتحفظ كنص، من غير مكان على الخريطة.';
+
+  @override
+  String get acctAddressesEmpty => 'مفيش عناوين محفوظة لسه';
+
+  @override
+  String get acctAddressesEmptyBody => 'احفظ الأماكن اللي بتطلب منها كتير.';
+
+  @override
+  String get acctSaveAddress => 'احفظ العنوان';
+
+  @override
+  String acctDeleteAddress(String address) {
+    return 'امسح $address';
+  }
+
+  @override
+  String get acctAddressDeleted => 'العنوان اتمسح.';
+
+  @override
+  String get acctUndo => 'رجّعه';
+
+  @override
+  String get acctTwoFactor => 'التحقق بخطوتين';
+
+  @override
+  String get acctTwoFactorBody => 'هنبعتلك كود على الإيميل كل مرة تدخل.';
+
+  @override
+  String get acctTwoFactorOffTitle => 'تقفل التحقق بخطوتين؟';
+
+  @override
+  String get acctTwoFactorOffBody =>
+      'ساعتها أي حد معاه كلمة السر هيقدر يدخل من غير كود.';
+
+  @override
+  String get acctTwoFactorTurnOff => 'اقفله';
+
+  @override
+  String get acctCancel => 'إلغاء';
+
+  @override
+  String get acctPasswordTitle => 'أكد إنه أنت';
+
+  @override
+  String get acctPasswordBody => 'اكتب كلمة السر عشان تقفل التحقق بخطوتين.';
+
+  @override
+  String get acctWrongPassword => 'كلمة السر دي مش صح.';
+
+  @override
+  String get acctTwoFactorOnDone => 'التحقق بخطوتين اشتغل.';
+
+  @override
+  String get acctTwoFactorOffDone => 'التحقق بخطوتين اتقفل.';
+
+  @override
+  String get acctNewEmailLabel => 'الإيميل الجديد';
+
+  @override
+  String get acctEmailChanged => 'الإيميل اتغير.';
+
+  @override
+  String get acctSameEmail => 'ده الإيميل بتاعك أصلاً';
+
+  @override
+  String get acctClose => 'اقفل';
 }

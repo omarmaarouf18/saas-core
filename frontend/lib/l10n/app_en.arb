@@ -2682,5 +2682,255 @@
         "type": "int"
       }
     }
+  },
+  "acctEdit": "Edit",
+  "@acctEdit": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionAccount": "Account",
+  "@acctSectionAccount": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionApp": "App",
+  "@acctSectionApp": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSectionSupport": "Support",
+  "@acctSectionSupport": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctMyDetails": "My details",
+  "@acctMyDetails": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSavedAddresses": "Saved addresses",
+  "@acctSavedAddresses": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSecurity": "Security",
+  "@acctSecurity": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOn": "2-step verification on",
+  "@acctTwoFactorOn": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOff": "2-step verification off",
+  "@acctTwoFactorOff": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctWallet": "Wallet",
+  "@acctWallet": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSoon": "Soon",
+  "@acctSoon": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLanguage": "Language",
+  "@acctLanguage": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLangArabic": "العربية",
+  "@acctLangArabic": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLangEnglish": "English",
+  "@acctLangEnglish": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneSetting": "Same as the phone",
+  "@acctPhoneSetting": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTheme": "Appearance",
+  "@acctTheme": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctThemeLight": "Light",
+  "@acctThemeLight": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctThemeDark": "Dark",
+  "@acctThemeDark": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctNotifications": "Notifications",
+  "@acctNotifications": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSupport": "Support and complaints",
+  "@acctSupport": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLogout": "Sign out",
+  "@acctLogout": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSuspendedTitle": "Your account is suspended",
+  "@acctSuspendedTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSuspendedDefault": "You can't change your details for now. Contact support to know more.",
+  "@acctSuspendedDefault": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctLoadError": "We couldn't refresh your account details.",
+  "@acctLoadError": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneLabel": "Phone",
+  "@acctPhoneLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPhoneHint": "01xxxxxxxxx",
+  "@acctPhoneHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctChangeEmail": "Change",
+  "@acctChangeEmail": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctChangeEmailLabel": "Change email",
+  "@acctChangeEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEmailNote": "To change it we send a code to the new email.",
+  "@acctEmailNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSave": "Save",
+  "@acctSave": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSaved": "Your details were saved.",
+  "@acctSaved": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddAddress": "Add an address",
+  "@acctAddAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEditAddress": "Edit address",
+  "@acctEditAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressLabel": "Address",
+  "@acctAddressLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressHint": "Building, street, area",
+  "@acctAddressHint": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressRequired": "Write the address",
+  "@acctAddressRequired": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressMax": "You can save up to 10 addresses",
+  "@acctAddressMax": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressCount": "{count} of 10",
+  "@acctAddressCount": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "acctAddressesNote": "Addresses are saved as text, without a map pin.",
+  "@acctAddressesNote": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressesEmpty": "No saved addresses yet",
+  "@acctAddressesEmpty": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctAddressesEmptyBody": "Save the places you order from often.",
+  "@acctAddressesEmptyBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSaveAddress": "Save address",
+  "@acctSaveAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctDeleteAddress": "Delete {address}",
+  "@acctDeleteAddress": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings).",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "acctAddressDeleted": "Address deleted.",
+  "@acctAddressDeleted": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctUndo": "Undo",
+  "@acctUndo": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactor": "2-step verification",
+  "@acctTwoFactor": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorBody": "We send a code to your email every time you sign in.",
+  "@acctTwoFactorBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffTitle": "Turn off 2-step verification?",
+  "@acctTwoFactorOffTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffBody": "Anyone with your password could then sign in without a code.",
+  "@acctTwoFactorOffBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorTurnOff": "Turn off",
+  "@acctTwoFactorTurnOff": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctCancel": "Cancel",
+  "@acctCancel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPasswordTitle": "Confirm it's you",
+  "@acctPasswordTitle": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctPasswordBody": "Enter your password to turn off 2-step verification.",
+  "@acctPasswordBody": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctWrongPassword": "That password isn't right.",
+  "@acctWrongPassword": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOnDone": "2-step verification is on.",
+  "@acctTwoFactorOnDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctTwoFactorOffDone": "2-step verification is off.",
+  "@acctTwoFactorOffDone": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctNewEmailLabel": "New email",
+  "@acctNewEmailLabel": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctEmailChanged": "Your email was changed.",
+  "@acctEmailChanged": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctSameEmail": "This is already your email",
+  "@acctSameEmail": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+  },
+  "acctClose": "Close",
+  "@acctClose": {
+    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
   }
 }

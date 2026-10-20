@@ -3855,4 +3855,193 @@ class AppLocalizationsEn extends AppLocalizations {
   String resetStep(int current, int total) {
     return 'Step $current of $total';
   }
+
+  @override
+  String get acctEdit => 'Edit';
+
+  @override
+  String get acctSectionAccount => 'Account';
+
+  @override
+  String get acctSectionApp => 'App';
+
+  @override
+  String get acctSectionSupport => 'Support';
+
+  @override
+  String get acctMyDetails => 'My details';
+
+  @override
+  String get acctSavedAddresses => 'Saved addresses';
+
+  @override
+  String get acctSecurity => 'Security';
+
+  @override
+  String get acctTwoFactorOn => '2-step verification on';
+
+  @override
+  String get acctTwoFactorOff => '2-step verification off';
+
+  @override
+  String get acctWallet => 'Wallet';
+
+  @override
+  String get acctSoon => 'Soon';
+
+  @override
+  String get acctLanguage => 'Language';
+
+  @override
+  String get acctLangArabic => 'العربية';
+
+  @override
+  String get acctLangEnglish => 'English';
+
+  @override
+  String get acctPhoneSetting => 'Same as the phone';
+
+  @override
+  String get acctTheme => 'Appearance';
+
+  @override
+  String get acctThemeLight => 'Light';
+
+  @override
+  String get acctThemeDark => 'Dark';
+
+  @override
+  String get acctNotifications => 'Notifications';
+
+  @override
+  String get acctSupport => 'Support and complaints';
+
+  @override
+  String get acctLogout => 'Sign out';
+
+  @override
+  String get acctSuspendedTitle => 'Your account is suspended';
+
+  @override
+  String get acctSuspendedDefault =>
+      'You can\'t change your details for now. Contact support to know more.';
+
+  @override
+  String get acctLoadError => 'We couldn\'t refresh your account details.';
+
+  @override
+  String get acctPhoneLabel => 'Phone';
+
+  @override
+  String get acctPhoneHint => '01xxxxxxxxx';
+
+  @override
+  String get acctChangeEmail => 'Change';
+
+  @override
+  String get acctChangeEmailLabel => 'Change email';
+
+  @override
+  String get acctEmailNote => 'To change it we send a code to the new email.';
+
+  @override
+  String get acctSave => 'Save';
+
+  @override
+  String get acctSaved => 'Your details were saved.';
+
+  @override
+  String get acctAddAddress => 'Add an address';
+
+  @override
+  String get acctEditAddress => 'Edit address';
+
+  @override
+  String get acctAddressLabel => 'Address';
+
+  @override
+  String get acctAddressHint => 'Building, street, area';
+
+  @override
+  String get acctAddressRequired => 'Write the address';
+
+  @override
+  String get acctAddressMax => 'You can save up to 10 addresses';
+
+  @override
+  String acctAddressCount(int count) {
+    return '$count of 10';
+  }
+
+  @override
+  String get acctAddressesNote =>
+      'Addresses are saved as text, without a map pin.';
+
+  @override
+  String get acctAddressesEmpty => 'No saved addresses yet';
+
+  @override
+  String get acctAddressesEmptyBody => 'Save the places you order from often.';
+
+  @override
+  String get acctSaveAddress => 'Save address';
+
+  @override
+  String acctDeleteAddress(String address) {
+    return 'Delete $address';
+  }
+
+  @override
+  String get acctAddressDeleted => 'Address deleted.';
+
+  @override
+  String get acctUndo => 'Undo';
+
+  @override
+  String get acctTwoFactor => '2-step verification';
+
+  @override
+  String get acctTwoFactorBody =>
+      'We send a code to your email every time you sign in.';
+
+  @override
+  String get acctTwoFactorOffTitle => 'Turn off 2-step verification?';
+
+  @override
+  String get acctTwoFactorOffBody =>
+      'Anyone with your password could then sign in without a code.';
+
+  @override
+  String get acctTwoFactorTurnOff => 'Turn off';
+
+  @override
+  String get acctCancel => 'Cancel';
+
+  @override
+  String get acctPasswordTitle => 'Confirm it\'s you';
+
+  @override
+  String get acctPasswordBody =>
+      'Enter your password to turn off 2-step verification.';
+
+  @override
+  String get acctWrongPassword => 'That password isn\'t right.';
+
+  @override
+  String get acctTwoFactorOnDone => '2-step verification is on.';
+
+  @override
+  String get acctTwoFactorOffDone => '2-step verification is off.';
+
+  @override
+  String get acctNewEmailLabel => 'New email';
+
+  @override
+  String get acctEmailChanged => 'Your email was changed.';
+
+  @override
+  String get acctSameEmail => 'This is already your email';
+
+  @override
+  String get acctClose => 'Close';
 }

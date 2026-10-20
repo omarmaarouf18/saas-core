@@ -6944,6 +6944,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Step {current} of {total}'**
   String resetStep(int current, int total);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get acctEdit;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get acctSectionAccount;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get acctSectionApp;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get acctSectionSupport;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'My details'**
+  String get acctMyDetails;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Saved addresses'**
+  String get acctSavedAddresses;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get acctSecurity;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification on'**
+  String get acctTwoFactorOn;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification off'**
+  String get acctTwoFactorOff;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get acctWallet;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get acctSoon;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get acctLanguage;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get acctLangArabic;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get acctLangEnglish;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Same as the phone'**
+  String get acctPhoneSetting;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get acctTheme;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get acctThemeLight;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get acctThemeDark;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get acctNotifications;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Support and complaints'**
+  String get acctSupport;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get acctLogout;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended'**
+  String get acctSuspendedTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change your details for now. Contact support to know more.'**
+  String get acctSuspendedDefault;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t refresh your account details.'**
+  String get acctLoadError;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get acctPhoneLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'01xxxxxxxxx'**
+  String get acctPhoneHint;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get acctChangeEmail;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Change email'**
+  String get acctChangeEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'To change it we send a code to the new email.'**
+  String get acctEmailNote;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get acctSave;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your details were saved.'**
+  String get acctSaved;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Add an address'**
+  String get acctAddAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit address'**
+  String get acctEditAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get acctAddressLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Building, street, area'**
+  String get acctAddressHint;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Write the address'**
+  String get acctAddressRequired;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'You can save up to 10 addresses'**
+  String get acctAddressMax;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of 10'**
+  String acctAddressCount(int count);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses are saved as text, without a map pin.'**
+  String get acctAddressesNote;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'No saved addresses yet'**
+  String get acctAddressesEmpty;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save the places you order from often.'**
+  String get acctAddressesEmptyBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Save address'**
+  String get acctSaveAddress;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {address}'**
+  String acctDeleteAddress(String address);
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Address deleted.'**
+  String get acctAddressDeleted;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get acctUndo;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification'**
+  String get acctTwoFactor;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'We send a code to your email every time you sign in.'**
+  String get acctTwoFactorBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off 2-step verification?'**
+  String get acctTwoFactorOffTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with your password could then sign in without a code.'**
+  String get acctTwoFactorOffBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get acctTwoFactorTurnOff;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get acctCancel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you'**
+  String get acctPasswordTitle;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password to turn off 2-step verification.'**
+  String get acctPasswordBody;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'That password isn\'t right.'**
+  String get acctWrongPassword;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification is on.'**
+  String get acctTwoFactorOnDone;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'2-step verification is off.'**
+  String get acctTwoFactorOffDone;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'New email'**
+  String get acctNewEmailLabel;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Your email was changed.'**
+  String get acctEmailChanged;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'This is already your email'**
+  String get acctSameEmail;
+
+  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get acctClose;
 }
 
 class _AppLocalizationsDelegate
