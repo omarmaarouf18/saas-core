@@ -57,4 +57,16 @@ The task prompt says (c) must fail before the fix. It does not, and I left it as
 - The (c) finding above: if sign-up is still reported broken in production, it needs its own investigation.
 
 ## Open questions
-- none
+- none for items 1–3.
+
+## Follow-up: end-to-end integration test (stopped)
+Asked for: a `frontend/integration_test/` test run on Linux against the local staging stack. It signs up a fresh customer, logs out, logs in again, checks that the code screen appears and that the dev OTP lands on the customer home. Then a seeded courier logs in and lands on home with no code. It runs twice: once with the AuthGate change reverted locally (must fail), once on HEAD (must pass).
+
+Checked before stopping:
+- Display/desktop session: available (`DISPLAY=:0`, `WAYLAND_DISPLAY=wayland-0`). `flutter devices` lists `Linux (desktop) • linux • linux-x64 • Fedora Linux 44 (Workstation Edition) 7.2.11-200.fc44.x86_64`.
+- Linux build on this base: `flutter build linux --debug` ended with `✓ Built build/linux/x64/debug/bundle/frontend`. The FE-LINUX-BUILD CMake changes are not needed for this.
+- Nothing was written and no test was run; the tree is unchanged.
+
+Stopped on these decisions (no test written, nothing reverted):
+1. **`integration_test` is not a dependency.** `frontend/pubspec.yaml` lists only `flutter_test` and `flutter_lints` under dev_dependencies. Adding `integration_test: sdk: flutter` changes `pubspec.yaml` and `pubspec.lock`, which are hot paths. This task's prompt does not grant ownership of them. Owner decision: grant HOTFIX-LOGIN ownership of `frontend/pubspec.yaml`/`pubspec.lock` for this one dev dependency (its own commit), or add it in a separate task first.
+2. **No seeded courier in the staging stack.** `scripts/staging_up.sh` seeds no app users. The Go e2e suites create users with direct Mongo writes (`tests/e2e/e2e_helpers.go`, e.g. `db.SeedCustomer`), which a Dart integration test cannot call. Owner decision: (a) give the courier credentials, or a seed step to run before the test (e.g. a small Go helper or `mongosh` script under `scripts/`, which is outside this lane), or (b) have the test create the courier through the app's API (owner signup + OTP, then the owner creates an employee). Option (b) needs the employee-creation endpoint and its first-login flow confirmed, and makes the test much longer.
