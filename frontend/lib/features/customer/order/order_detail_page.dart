@@ -9,9 +9,9 @@ import '../../../ui/qd_ui.dart';
 import '../customer_theme.dart';
 import 'active_view.dart';
 import 'closed_views.dart';
+import 'completed_view.dart';
 import 'order_controller.dart';
 import 'order_deps.dart';
-import 'order_sections.dart';
 import 'order_view.dart';
 import 'proposal_view.dart';
 import 'searching_views.dart';
@@ -125,23 +125,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       OrderViewKind.cancelled => OrderCancelledView(job: job),
       OrderViewKind.underReview => OrderUnderReviewView(job: job),
       OrderViewKind.unknown => OrderUnknownView(job: job),
-      // Replaced by their own views in the following FE-CUST-2 items.
-      _ => _InterimView(job: job),
+      OrderViewKind.completed => OrderCompletedView(job: job),
     };
   }
-}
-
-class _InterimView extends StatelessWidget {
-  const _InterimView({required this.job});
-
-  final Job job;
-
-  @override
-  Widget build(BuildContext context) => OrderLayout(
-        children: [
-          OrderRefRow(job: job),
-          const SizedBox(height: QdSpace.x4),
-          OrderRouteCard(job: job),
-        ],
-      );
 }

@@ -3535,4 +3535,87 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordRecenter => 'رجّع الخريطة للنص';
+
+  @override
+  String get ordDeliveredTitle => 'طلبك اتسلم';
+
+  @override
+  String ordDeliveredPaidCash(String price) {
+    return 'دفعت $price كاش';
+  }
+
+  @override
+  String ordDeliveredPaid(String price) {
+    return 'دفعت $price';
+  }
+
+  @override
+  String ordRateCourier(String name) {
+    return 'قيّم $name';
+  }
+
+  @override
+  String get ordRateCourierNoName => 'قيّم المندوب';
+
+  @override
+  String get ordRateCompany => 'قيّم الشركة';
+
+  @override
+  String get ordRatedThanks => 'شكرًا، تقييمك اتبعت.';
+
+  @override
+  String rateQuestion(String name) {
+    return 'إيه رأيك في $name؟';
+  }
+
+  @override
+  String get rateQuestionCourier => 'إيه رأيك في المندوب؟';
+
+  @override
+  String get rateQuestionCompany => 'إيه رأيك في الشركة؟';
+
+  @override
+  String get rateStars => 'التقييم';
+
+  @override
+  String get rateBlindNote =>
+      'تقييمك مش هيظهر للطرف التاني غير لما هو كمان يقيّمك، والتعليق بيروح للشركة بس.';
+
+  @override
+  String get rateComment => 'تعليق · اختياري';
+
+  @override
+  String get rateSend => 'ابعت التقييم';
+
+  @override
+  String get rateNotNow => 'مش دلوقتي';
+
+  @override
+  String rateFailed(String error) {
+    return 'مقدرناش نبعت تقييمك. $error';
+  }
+
+  @override
+  String get rateIdentityError => 'مش عارفين نقيّم مين في الطلب ده.';
+
+  @override
+  String get rateOtherRated => 'الطرف التاني قيّمك. التقييمين ظاهرين دلوقتي.';
+
+  @override
+  String get rateOtherCheckFailed => 'مقدرناش نعرف إذا كان الطرف التاني قيّمك.';
+
+  @override
+  String get rateClose => 'إغلاق';
+
+  @override
+  String rateStar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نجوم',
+      two: 'نجمتين',
+      one: 'نجمة',
+    );
+    return '$_temp0';
+  }
 }

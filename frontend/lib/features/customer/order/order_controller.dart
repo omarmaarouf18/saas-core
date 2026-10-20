@@ -145,6 +145,18 @@ class OrderController extends ChangeNotifier {
     });
   }
 
+  bool _rated = false;
+
+  /// The customer rated this order in this session (the API has no
+  /// "did I rate this job" read; the server answers "already rated" on a
+  /// second try, which the rating page treats as success).
+  bool get rated => _rated;
+
+  void markRated() {
+    _rated = true;
+    _notify();
+  }
+
   /// The price proposal countdown reached zero: show the expired view now
   /// and ask the server for the cancelled job.
   void proposalExpired() {

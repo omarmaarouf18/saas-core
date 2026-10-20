@@ -186,6 +186,40 @@ class FakeMarketplace extends ChangeNotifier implements MarketplaceProvider {
     return nextStatus;
   }
 
+  final List<Map<String, Object?>> rateCalls = [];
+  Object? nextRateError;
+  Completer<void>? rateGate;
+  List<Map<String, Object?>> ratingsReceived = [];
+  Object? nextRatingsError;
+  int ratingsCalls = 0;
+
+  @override
+  Future<Map<String, dynamic>> rateJob({
+    required String jobId,
+    required String ratedByToken,
+    required String ratedUserId,
+    required int stars,
+    required String comment,
+  }) async {
+    rateCalls.add({
+      'jobId': jobId,
+      'ratedBy': ratedByToken,
+      'ratedUser': ratedUserId,
+      'stars': stars,
+      'comment': comment,
+    });
+    if (rateGate != null) await rateGate!.future;
+    if (nextRateError != null) throw nextRateError!;
+    return {'status': 'ok'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchRatings(String userTokenOrId) async {
+    ratingsCalls++;
+    if (nextRatingsError != null) throw nextRatingsError!;
+    return {'ratings': ratingsReceived};
+  }
+
   final List<Map<String, Object?>> cancelCalls = [];
   Object? nextCancelError;
 

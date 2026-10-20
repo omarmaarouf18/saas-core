@@ -6482,6 +6482,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Center the map'**
   String get ordRecenter;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ordDeliveredTitle;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid {price} cash'**
+  String ordDeliveredPaidCash(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'You paid {price}'**
+  String ordDeliveredPaid(String price);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {name}'**
+  String ordRateCourier(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the courier'**
+  String get ordRateCourierNoName;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the company'**
+  String get ordRateCompany;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, your rating was sent.'**
+  String get ordRatedThanks;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was {name}?'**
+  String rateQuestion(String name);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was the courier?'**
+  String get rateQuestionCourier;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'How was the company?'**
+  String get rateQuestionCompany;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get rateStars;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating shows to the other side only after they rate you too. The comment goes to the company only.'**
+  String get rateBlindNote;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment · optional'**
+  String get rateComment;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send rating'**
+  String get rateSend;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get rateNotNow;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send your rating. {error}'**
+  String rateFailed(String error);
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t tell who to rate for this order.'**
+  String get rateIdentityError;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'The other side already rated you. Both ratings are visible now.'**
+  String get rateOtherRated;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check whether the other side rated you.'**
+  String get rateOtherCheckFailed;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get rateClose;
+
+  /// FE-CUST-2 redesigned order detail.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 star} other{{count} stars}}'**
+  String rateStar(int count);
 }
 
 class _AppLocalizationsDelegate

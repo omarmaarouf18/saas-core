@@ -3594,4 +3594,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordRecenter => 'Center the map';
+
+  @override
+  String get ordDeliveredTitle => 'Your order was delivered';
+
+  @override
+  String ordDeliveredPaidCash(String price) {
+    return 'You paid $price cash';
+  }
+
+  @override
+  String ordDeliveredPaid(String price) {
+    return 'You paid $price';
+  }
+
+  @override
+  String ordRateCourier(String name) {
+    return 'Rate $name';
+  }
+
+  @override
+  String get ordRateCourierNoName => 'Rate the courier';
+
+  @override
+  String get ordRateCompany => 'Rate the company';
+
+  @override
+  String get ordRatedThanks => 'Thanks, your rating was sent.';
+
+  @override
+  String rateQuestion(String name) {
+    return 'How was $name?';
+  }
+
+  @override
+  String get rateQuestionCourier => 'How was the courier?';
+
+  @override
+  String get rateQuestionCompany => 'How was the company?';
+
+  @override
+  String get rateStars => 'Rating';
+
+  @override
+  String get rateBlindNote =>
+      'Your rating shows to the other side only after they rate you too. The comment goes to the company only.';
+
+  @override
+  String get rateComment => 'Comment · optional';
+
+  @override
+  String get rateSend => 'Send rating';
+
+  @override
+  String get rateNotNow => 'Not now';
+
+  @override
+  String rateFailed(String error) {
+    return 'We couldn\'t send your rating. $error';
+  }
+
+  @override
+  String get rateIdentityError => 'We can\'t tell who to rate for this order.';
+
+  @override
+  String get rateOtherRated =>
+      'The other side already rated you. Both ratings are visible now.';
+
+  @override
+  String get rateOtherCheckFailed =>
+      'We couldn\'t check whether the other side rated you.';
+
+  @override
+  String get rateClose => 'Close';
+
+  @override
+  String rateStar(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stars',
+      one: '1 star',
+    );
+    return '$_temp0';
+  }
 }

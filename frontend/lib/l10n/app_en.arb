@@ -2331,5 +2331,119 @@
   "ordRecenter": "Center the map",
   "@ordRecenter": {
     "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliveredTitle": "Your order was delivered",
+  "@ordDeliveredTitle": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordDeliveredPaidCash": "You paid {price} cash",
+  "@ordDeliveredPaidCash": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordDeliveredPaid": "You paid {price}",
+  "@ordDeliveredPaid": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ordRateCourier": "Rate {name}",
+  "@ordRateCourier": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ordRateCourierNoName": "Rate the courier",
+  "@ordRateCourierNoName": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRateCompany": "Rate the company",
+  "@ordRateCompany": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "ordRatedThanks": "Thanks, your rating was sent.",
+  "@ordRatedThanks": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateQuestion": "How was {name}?",
+  "@rateQuestion": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "rateQuestionCourier": "How was the courier?",
+  "@rateQuestionCourier": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateQuestionCompany": "How was the company?",
+  "@rateQuestionCompany": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateStars": "Rating",
+  "@rateStars": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateBlindNote": "Your rating shows to the other side only after they rate you too. The comment goes to the company only.",
+  "@rateBlindNote": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateComment": "Comment · optional",
+  "@rateComment": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateSend": "Send rating",
+  "@rateSend": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateNotNow": "Not now",
+  "@rateNotNow": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateFailed": "We couldn't send your rating. {error}",
+  "@rateFailed": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "rateIdentityError": "We can't tell who to rate for this order.",
+  "@rateIdentityError": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateOtherRated": "The other side already rated you. Both ratings are visible now.",
+  "@rateOtherRated": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateOtherCheckFailed": "We couldn't check whether the other side rated you.",
+  "@rateOtherCheckFailed": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateClose": "Close",
+  "@rateClose": {
+    "description": "FE-CUST-2 redesigned order detail."
+  },
+  "rateStar": "{count, plural, =1{1 star} other{{count} stars}}",
+  "@rateStar": {
+    "description": "FE-CUST-2 redesigned order detail.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
