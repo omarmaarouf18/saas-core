@@ -355,5 +355,5 @@ void showOrderNotice(BuildContext context, String message,
 void openCourierChat(BuildContext context, Job job) {
   final l10n = context.l10n;
   CustomerChatPage.openJob(context,
-      jobId: job.id, title: l10n.ordChatCourier, subtitle: jobRef(job));
+      jobId: job.id, title: l10n.ordChatCourier, subtitle: jobRefIsolated(job));
 }
