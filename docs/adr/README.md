@@ -56,6 +56,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0025: Working-Hours-Based Out-of-Service Badge and Booking Gate](0025-working-hours-based-closed-badge.md) — Accepted
 *   [ADR-0026: Two-Phase Password Reset (Verify-Code, Then Set-Password)](0026-two-phase-password-reset.md) — Accepted
 *   [ADR-0027: Employee Cancellation-Request Workflow (Owner-Approved)](0027-employee-cancellation-request-workflow.md) — Accepted
+*   [ADR-0028: Job Model v2 (Recipient, Address Text, Status History, Pickup Phase, ETA, Saved Addresses)](0028-job-model-v2.md) — Proposed
 
 
 
