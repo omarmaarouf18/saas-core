@@ -39,9 +39,27 @@ endif()
 # Be cautious about adding new options here, as plugins use this function by
 # default. In most cases, you should add new options to specific targets instead
 # of modifying this function.
+
+# Plugin headers can trigger clang >= 15's deprecation of whitespace before a
+# literal operator (e.g. `inline operator "" _json` in json.hpp, bundled with
+# flutter_secure_storage_linux), which breaks their build under -Werror.
+# Check the positive flag form: an unknown positive warning option makes clang
+# diagnose `-Wunknown-warning-option`, which check_cxx_compiler_flag's
+# FAIL_REGEX catches, while an unknown `-Wno-...` form is silently deferred and
+# would report a false positive. Compilers that lack the flag (older GCC and
+# clang) are left exactly as before.
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(
+  "-Wdeprecated-literal-operator"
+  CXX_HAS_DEPRECATED_LITERAL_OPERATOR
+)
+
 function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
   target_compile_options(${TARGET} PRIVATE -Wall -Werror)
+  if(CXX_HAS_DEPRECATED_LITERAL_OPERATOR)
+    target_compile_options(${TARGET} PRIVATE -Wno-deprecated-literal-operator)
+  endif()
   target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
   target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 endfunction()

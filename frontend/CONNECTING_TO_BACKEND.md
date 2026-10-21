@@ -163,3 +163,26 @@ The live employee location update subsystem connects assigned workers on active 
   * Tracking starts automatically when an active job assigned to the current employee is loaded in `EmployeeJobsScreen`.
   * Tracking stops automatically when the job transitions out of `active` status (e.g. `completeJob`), when the employee navigates away from the dashboard (`deactivate()`), or when `EmployeeLocationProvider` is disposed.
 
+---
+
+## 9. Linux Desktop
+
+Required system packages before the first Linux desktop build:
+
+| Distribution | Packages |
+| :--- | :--- |
+| **Fedora** | `sudo dnf install libsecret-devel jsoncpp-devel gtk3-devel` |
+| **Ubuntu** | `sudo apt install libsecret-1-dev libjsoncpp-dev libgtk-3-dev` |
+
+Run the app on the Linux host (against the local Docker Compose stack — Linux desktop shares the host network, so the default `API_BASE_URL`, `https://localhost:8080/api/v1`, already targets `localhost`; pass it only if the gateway runs elsewhere):
+
+```bash
+cd frontend
+flutter run -d linux \
+  --dart-define=QD_REDESIGN_CUSTOMER=true \
+  --dart-define=API_BASE_URL=https://localhost:8080/api/v1
+```
+
+> [!IMPORTANT]
+> After changing build flags (compiler flags in `frontend/linux/CMakeLists.txt`, plugin target options, toolchain switches), remove the CMake build cache and rebuild from scratch: `rm -rf build/linux`. CMake caches configure-time results and compile options under `build/linux`, so incremental rebuilds reuse stale flags.
+
