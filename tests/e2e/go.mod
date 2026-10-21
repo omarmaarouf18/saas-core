@@ -2,7 +2,7 @@ module github.com/project/tests/e2e
 
 go 1.26
 
-toolchain go1.26.9
+toolchain go1.26.10
 
 require (
 	github.com/gorilla/websocket v1.5.3

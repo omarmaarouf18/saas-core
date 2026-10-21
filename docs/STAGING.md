@@ -89,7 +89,7 @@ The staging stack runs identical production container build targets (`target: pr
 
 ### Prerequisites
 - Docker Engine 24.0+ and Docker Compose v2.20+
-- Go 1.26.6+ (for test execution)
+- Go 1.26.10+ (for test execution)
 - OpenSSL (for certificate generation)
 - Curl
 
