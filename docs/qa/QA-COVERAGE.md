@@ -278,7 +278,7 @@ The repository has an extensive prior security pedigree stemming from the Indepe
   - **`govulncheck`**: Runs the official Go vulnerability scanner (`golang/govulncheck-action@v1`) against all service dependency trees to flag public CVEs.
 * **Integrity Gates in CI**:
   - **Commit SHA Verifier**: Verifies that every 40-character commit SHA referenced in Markdown files actually exists in git and is reachable from the branch history, preventing phantom documentation drift.
-  - **Go Version Consistency (Drift Guard)**: Strictly enforces identical Go language (`1.26`), patch (`1.26.6`), and toolchain versions across `go.work`, all service `go.mod` files, `ci.yml`, and Dockerfiles.
+  - **Go Version Consistency (Drift Guard)**: Strictly enforces identical Go language (`1.26`), patch (`1.26.10`, from `tools/versions.env`), and toolchain versions across `go.work`, all service `go.mod` files, `ci.yml`, and Dockerfiles.
 * **Independent Code Review Repro Test Suites (Q1 through Q27)**:
   - The codebase contains dedicated regression test suites verifying fixes for 27 security and concurrency audit findings, including:
     - `audit_token_repro_test.go` (Q11, Q12: device token upsert concurrency & crypto audit IDs)

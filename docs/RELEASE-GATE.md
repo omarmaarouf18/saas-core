@@ -20,7 +20,7 @@ Release validation is split across three distinct enforcement tiers:
 | Hook: .githooks/pre-push | Make Target: make ci                                                   |
 | - gofmt -l . (zero unformatted files)                                                             |
 | - Commit SHA reachability & drift check (all 40-char SHAs exist in branch history)                |
-| - Go version consistency across all go.mod, go.work, and Dockerfiles (1.26.6 / 1.26)              |
+| - Go version consistency across all go.mod, go.work, and Dockerfiles (1.26.10 / 1.26)             |
 | - make docs-check (docgen AST sync, dependency version locks, status alignment)                   |
 | - make contract-test (in-process AST reflection & schema contract tests: tests/contracts/)        |
 | - Unit, vet, and component integration tests for all 5 services and shared/infra                 |
