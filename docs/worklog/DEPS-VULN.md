@@ -14,6 +14,7 @@
 ## Changes per commit (message only — NO SHAs)
 1. `DEPS-VULN: govulncheck triage of Go dependencies (phase 1, docs only)`
 2. `DEPS-VULN: worklog (phase 1)`
+3. `DEPS-VULN: worklog: phase 2 blocked on JOB-V2-BE`
 
 ## Verification
 
@@ -162,3 +163,8 @@ exit=1
 - Mongo target: v2.8.0 everywhere (proposed) or the minimum v2.4.2?
 - tests/e2e: should phase 2 make it tidy and commit a `tests/e2e/go.sum` (needed for `go get`/`go mod tidy` to work in module mode), or only bump the `mongo-driver/v2` line?
 - Gate follow-up 1 (`GOWORK=off` for services in `scripts/govulncheck-module.sh`): separate task, or in this lane?
+
+## Phase 2 — blocked (waiting for JOB-V2-BE)
+- Owner decisions on phase 1: go phase 2; mongo-driver/v2 target v2.8.0; tidy `tests/e2e` and commit its `go.sum` in its own commit before the upgrades; gate fix is a separate task (WF-GOWORK-OFF), `scripts/` not touched here; group 1 before group 2; no majors.
+- Step 5 precondition failed: the branch is not behind logic-exploitation (local and origin tip are both the GO-1-26-10 merge, `git rev-list --count HEAD..logic-exploitation` = 0), but no JOB-V2-BE commit exists on any branch (`git log --all --oneline | grep -i JOB-V2-BE` prints nothing).
+- Owner chose "Stop and wait": phase 2 starts after JOB-V2-BE is merged into logic-exploitation and the owner recreates this worktree. No `go.mod`/`go.sum` changed.
