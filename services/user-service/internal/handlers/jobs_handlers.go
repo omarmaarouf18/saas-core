@@ -599,8 +599,15 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// Lock escrow only for non-COD (or skip for COD jobs)
 	if req.PaymentMethod == "cod" {
 		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
-		// Progress to active.
-		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+		// Progress to active. The activation entry rides the same atomic
+		// update (ADR-0028 §2.3): the pre-assigned courier is the actor.
+		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive, models.JobStatusHistoryEntry{
+			Status:    models.JobStatusActive,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleEmployee,
+			ActorID:   req.EmployeeID,
+			Reason:    "direct assignment activated (cod)",
+		}); err != nil {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
 			return
 		}
@@ -650,7 +657,12 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		if rollbackErr != nil {
 			log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of deleting.", req.OwnerID, job.ID, rollbackErr)
 			note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", escrowAmount, rollbackErr)
-			if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), escrowAmount); recErr != nil {
+			if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), escrowAmount, models.JobStatusHistoryEntry{
+				Status:    models.JobStatusEscrowReconciliationRequired,
+				At:        time.Now().UTC(),
+				ActorRole: models.ActorRoleSystem,
+				Reason:    "escrow persist failed during booking; funds preserved for reconciliation",
+			}); recErr != nil {
 				log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
 			}
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -669,8 +681,15 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 	job.LockedEscrowAmount = escrowAmount
 
-	// Progress to active.
-	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive); err != nil {
+	// Progress to active. The activation entry rides the same atomic
+	// update (ADR-0028 §2.3).
+	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive, models.JobStatusHistoryEntry{
+		Status:    models.JobStatusActive,
+		At:        time.Now().UTC(),
+		ActorRole: models.ActorRoleEmployee,
+		ActorID:   req.EmployeeID,
+		Reason:    "direct assignment activated (escrow locked)",
+	}); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
 		return
 	}
@@ -787,6 +806,18 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ADR-0028: the completion actor for status_history. The requester is
+	// always the owner or the assigned employee (checked above); internal
+	// service-driven completions record as the system actor.
+	completionActorRole := models.ActorRoleOwner
+	if resolvedRequester == job.EmployeeID {
+		completionActorRole = models.ActorRoleEmployee
+	}
+	if isInternal {
+		completionActorRole = models.ActorRoleSystem
+		resolvedRequester = ""
+	}
+
 	// Recalculate the amount to release.
 	svc := u.store.GetServiceByID(ctx, job.ServiceID)
 	if svc == nil {
@@ -856,7 +887,13 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			handlerutil.ShipSecurityEvent(ctx, "TRACKED_DISTANCE_MISMATCH", "user-service", resolvedRequester, job.OwnerID, fmt.Sprintf("tracked distance mismatch for job %s: actual %.2f km vs booked %.2f km", job.ID, actualDist, bookedDist), handlerutil.GetClientIP(r))
 
 			note := fmt.Sprintf("tracked_distance_mismatch: actual %.2f km vs booked %.2f km", actualDist, bookedDist)
-			if recErr := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusEscrowReconciliationRequired, note, "under_distance_mismatch", job.LockedEscrowAmount); recErr != nil {
+			if recErr := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusEscrowReconciliationRequired, note, "under_distance_mismatch", job.LockedEscrowAmount, models.JobStatusHistoryEntry{
+				Status:    models.JobStatusEscrowReconciliationRequired,
+				At:        time.Now().UTC(),
+				ActorRole: completionActorRole,
+				ActorID:   resolvedRequester,
+				Reason:    "tracked distance under 70% of booked (ADR-0007); manual review required",
+			}); recErr != nil {
 				log.Printf("[ERROR] failed to update reconciliation status for job %s: %v", job.ID, recErr)
 				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to flag job for reconciliation", recErr)
 				return
@@ -898,7 +935,17 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 			cashAmount = math.Round(req.ActualCashAmount*100) / 100
 		}
 
-		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount, distanceReview); err != nil {
+		completeReason := "COD job completed"
+		if distanceReview != nil {
+			completeReason = "COD job completed; under-distance review flagged (ADR-0007)"
+		}
+		if err := u.store.CompleteCODJob(ctx, job.ID, cashAmount, distanceReview, models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCompleted,
+			At:        time.Now().UTC(),
+			ActorRole: completionActorRole,
+			ActorID:   resolvedRequester,
+			Reason:    completeReason,
+		}); err != nil {
 			if strings.Contains(err.Error(), "not active") {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": "job already completed or not active: " + err.Error()})
 				return
@@ -936,8 +983,16 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	// jobs' escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
 	amount = job.LockedEscrowAmount
 
-	// Release escrow with profit splitting (Non-COD flow)
-	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
+	// Release escrow with profit splitting (Non-COD flow). The completion
+	// entry rides the same atomic update as the status flip (ADR-0028 §2.3);
+	// the redundant UpdateJobStatus(completed) below is entry-free.
+	if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount, models.JobStatusHistoryEntry{
+		Status:    models.JobStatusCompleted,
+		At:        time.Now().UTC(),
+		ActorRole: completionActorRole,
+		ActorID:   resolvedRequester,
+		Reason:    "job completed; escrow released",
+	}); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow release failed", err)
 		return
 	}
@@ -2129,7 +2184,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	// Deterministic boundary check: accept after expiry fails and cascades
 	if job.OfferExpiresAt != nil && !now.Before(*job.OfferExpiresAt) {
-		_ = u.advanceCascade(ctx, job)
+		_ = u.advanceCascade(ctx, job, "offer expired; re-offering to next courier", models.ActorRoleSystem, "")
 		writeJSON(w, http.StatusConflict, map[string]string{
 			"error":   "offer_expired",
 			"message": "the 60-second offer window has expired",
@@ -2139,7 +2194,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 
 	empLoc, err := u.store.GetEmployeeLocation(ctx, job.OwnerID, callerID)
 	if err != nil || empLoc == nil || now.Sub(empLoc.UpdatedAt) > EmployeeLocationFreshnessWindow {
-		_ = u.advanceCascade(ctx, job)
+		_ = u.advanceCascade(ctx, job, "courier location stale; re-offering to next courier", models.ActorRoleSystem, "")
 		writeJSON(w, http.StatusConflict, map[string]string{
 			"error":   "location_stale",
 			"message": "courier location is stale (> 5 minutes without a ping); offer invalidated",
@@ -2151,7 +2206,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		for _, ej := range existingJobs {
 			if ej.ID != job.ID && (ej.Status == models.JobStatusActive || ej.Status == models.JobStatusAwaitingPriceResponse || ej.Status == models.JobStatusEscrowReconciliationRequired) {
-				_ = u.advanceCascade(ctx, job)
+				_ = u.advanceCascade(ctx, job, "courier busy with another job; re-offering", models.ActorRoleSystem, "")
 				writeJSON(w, http.StatusConflict, map[string]string{
 					"error":   "courier_busy",
 					"message": "courier already has an active job; offer invalidated",
@@ -2168,7 +2223,7 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !acquired {
-		_ = u.advanceCascade(ctx, job)
+		_ = u.advanceCascade(ctx, job, "courier busy; re-offering", models.ActorRoleSystem, "")
 		writeJSON(w, http.StatusConflict, map[string]string{
 			"error":   "courier_busy",
 			"message": "courier already has an active job; offer invalidated",
@@ -2209,7 +2264,12 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[USER] Escrow lock failed on accept for job %s: %v", job.ID, err)
 			_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
 			// F-05: Atomically cancel job and notify customer to stop cascade
-			_ = u.store.CancelJobOnEscrowFailure(ctx, job.ID, "owner_escrow_lock_failed")
+			_ = u.store.CancelJobOnEscrowFailure(ctx, job.ID, "owner_escrow_lock_failed", models.JobStatusHistoryEntry{
+				Status:    models.JobStatusCancelled,
+				At:        now,
+				ActorRole: models.ActorRoleSystem,
+				Reason:    "escrow lock failed on accept; job cancelled and cascade stopped",
+			})
 			job.Status = models.JobStatusCancelled
 			job.CancellationReason = "owner_escrow_lock_failed"
 			job.CurrentOfferedEmployeeID = ""
@@ -2228,7 +2288,18 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		u.acceptJobOfferBeforeCommitHook(ctx, job.ID)
 	}
 
-	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock); err != nil {
+	// The acceptance entry rides the same atomic claim update (ADR-0028 §2.3).
+	acceptEntry := models.JobStatusHistoryEntry{
+		Status:    nextStatus,
+		At:        now,
+		ActorRole: models.ActorRoleEmployee,
+		ActorID:   callerID,
+		Reason:    "offer accepted",
+	}
+	if isTransport {
+		acceptEntry.Reason = "offer accepted; awaiting price agreement"
+	}
+	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock, acceptEntry); err != nil {
 		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
 		if escrowToLock > 0 {
 			_ = u.performRollbackEscrow(context.Background(), job.OwnerID, escrowToLock)
@@ -2352,7 +2423,7 @@ func (u *UserService) DeclineJobOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := u.advanceCascade(ctx, job); err != nil {
+	if err := u.advanceCascade(ctx, job, "offer declined; re-offering to next courier", models.ActorRoleEmployee, callerID); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to advance cascade", err)
 		return
 	}
@@ -2675,7 +2746,12 @@ func (u *UserService) notifyCustomerEscrowLockFailed(job *models.Job) {
 	}()
 }
 
-func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error {
+// advanceCascade re-offers a pending_dispatch job to the next candidate or
+// exhausts into unavailable. reason/actorRole/actorID describe WHY the
+// cascade advanced and are recorded as a status_history entry on whichever
+// atomic update (AdvanceJobOffer or SetJobUnavailable) succeeds —
+// ADR-0028 §2.3.
+func (u *UserService) advanceCascade(ctx context.Context, job *models.Job, reason string, actorRole string, actorID string) error {
 	if job == nil || job.Status != models.JobStatusPendingDispatch {
 		return nil
 	}
@@ -2695,9 +2771,24 @@ func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error
 		offeredList = append(offeredList, oldOfferedID)
 	}
 
+	advanceEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusPendingDispatch,
+		At:        time.Now().UTC(),
+		ActorRole: actorRole,
+		ActorID:   actorID,
+		Reason:    reason,
+	}
+	unavailableEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusUnavailable,
+		At:        time.Now().UTC(),
+		ActorRole: actorRole,
+		ActorID:   actorID,
+		Reason:    reason,
+	}
+
 	nextCandidate, err := u.findNextAvailableEmployee(ctx, job.OwnerID, job.Location, offeredList)
 	if err != nil || nextCandidate == nil {
-		if err := u.store.SetJobUnavailable(ctx, job.ID, oldOfferedID, offeredList); err != nil {
+		if err := u.store.SetJobUnavailable(ctx, job.ID, oldOfferedID, offeredList, unavailableEntry); err != nil {
 			return fmt.Errorf("failed to set job unavailable: %w", err)
 		}
 		job.Status = models.JobStatusUnavailable
@@ -2711,7 +2802,7 @@ func (u *UserService) advanceCascade(ctx context.Context, job *models.Job) error
 
 	newExpiry := time.Now().UTC().Add(60 * time.Second)
 	newOfferedList := append(offeredList, nextCandidate.EmployeeID)
-	if err := u.store.AdvanceJobOffer(ctx, job.ID, oldOfferedID, nextCandidate.EmployeeID, &newExpiry, newOfferedList); err != nil {
+	if err := u.store.AdvanceJobOffer(ctx, job.ID, oldOfferedID, nextCandidate.EmployeeID, &newExpiry, newOfferedList, advanceEntry); err != nil {
 		return fmt.Errorf("failed to advance job offer: %w", err)
 	}
 
@@ -2731,14 +2822,14 @@ func (u *UserService) checkCascadeOfferExpiry(ctx context.Context, job *models.J
 
 	now := time.Now().UTC()
 	if job.OfferExpiresAt != nil && !now.Before(*job.OfferExpiresAt) {
-		_ = u.advanceCascade(ctx, job)
+		_ = u.advanceCascade(ctx, job, "offer expired; re-offering to next courier", models.ActorRoleSystem, "")
 		return true
 	}
 
 	if job.CurrentOfferedEmployeeID != "" {
 		empLoc, err := u.store.GetEmployeeLocation(ctx, job.OwnerID, job.CurrentOfferedEmployeeID)
 		if err != nil || empLoc == nil || now.Sub(empLoc.UpdatedAt) > EmployeeLocationFreshnessWindow {
-			_ = u.advanceCascade(ctx, job)
+			_ = u.advanceCascade(ctx, job, "courier location stale; re-offering to next courier", models.ActorRoleSystem, "")
 			return true
 		}
 	}
@@ -2773,7 +2864,7 @@ func (u *UserService) sweepExpiredOffers() {
 	}
 
 	for _, job := range expiredJobs {
-		_ = u.advanceCascade(ctx, job)
+		_ = u.advanceCascade(ctx, job, "offer expired; re-offering to next courier", models.ActorRoleSystem, "")
 	}
 }
 
@@ -2895,6 +2986,18 @@ func (u *UserService) executeJobCancellation(ctx context.Context, job *models.Jo
 		// Both owner and customer can cancel pending or pending_dispatch jobs.
 	}
 
+	// ADR-0028 §2.3: the cancelling actor rides the same atomic update as the
+	// cancel transition (RefundEscrow's status flip or CancelJob directly).
+	cancelActorRole := models.ActorRoleCustomer
+	if isOwner {
+		cancelActorRole = models.ActorRoleOwner
+	}
+	histActorID := actorID
+	if actorID == "" || actorID == "internal_service" {
+		cancelActorRole = models.ActorRoleSystem
+		histActorID = ""
+	}
+
 	// Refund escrow if not COD and not pending_dispatch (escrow is not locked for pending_dispatch jobs until courier acceptance)
 	if job.Status != models.JobStatusPendingDispatch && job.PaymentMethod != "cod" {
 		svc := u.store.GetServiceByID(ctx, job.ServiceID)
@@ -2926,7 +3029,13 @@ func (u *UserService) executeJobCancellation(ctx context.Context, job *models.Jo
 		// escrow (ADR-0002 wallet isolation) and eliminates stranded funds.
 		amount = job.LockedEscrowAmount
 
-		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+		if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount, models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCancelled,
+			At:        time.Now().UTC(),
+			ActorRole: cancelActorRole,
+			ActorID:   histActorID,
+			Reason:    "job cancelled; escrow refunded",
+		}); err != nil {
 			return &cancelExecError{status: http.StatusInternalServerError, body: map[string]string{"error": "failed to refund escrow: " + err.Error()}}
 		}
 	}
@@ -2934,7 +3043,13 @@ func (u *UserService) executeJobCancellation(ctx context.Context, job *models.Jo
 	if job.PaymentMethod == "cod" || job.Status == models.JobStatusPendingDispatch {
 		// COD jobs hold no escrow, and pending_dispatch jobs have not locked escrow yet;
 		// the non-money cancel applies directly.
-		if err := u.store.CancelJob(ctx, job.ID, reason); err != nil {
+		if err := u.store.CancelJob(ctx, job.ID, reason, models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCancelled,
+			At:        time.Now().UTC(),
+			ActorRole: cancelActorRole,
+			ActorID:   histActorID,
+			Reason:    reason,
+		}); err != nil {
 			if strings.Contains(err.Error(), "not in a cancellable state") {
 				return &cancelExecError{status: http.StatusConflict, body: map[string]string{"error": err.Error()}}
 			}
@@ -3146,7 +3261,12 @@ func (u *UserService) checkLazyCancellationRequestExpiry(ctx context.Context, jo
 		excluded = append(excluded, departedID)
 	}
 
-	if err := u.store.ExpireCancellationRequest(ctx, job.ID, excluded); err != nil {
+	if err := u.store.ExpireCancellationRequest(ctx, job.ID, excluded, models.JobStatusHistoryEntry{
+		Status:    models.JobStatusPendingDispatch,
+		At:        time.Now().UTC(),
+		ActorRole: models.ActorRoleSystem,
+		Reason:    "cancellation request expired; courier unassigned and re-dispatched",
+	}); err != nil {
 		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
 			// Lost a race with an owner response (or a concurrent expiry):
 			// the job already moved — caller must refresh, nothing to apply.
@@ -3179,7 +3299,7 @@ func (u *UserService) checkLazyCancellationRequestExpiry(ctx context.Context, jo
 
 	// Re-dispatch through the REAL cascade (finds the next candidate or
 	// marks unavailable when exhausted — both handled inside).
-	if err := u.advanceCascade(ctx, job); err != nil {
+	if err := u.advanceCascade(ctx, job, "cancellation request expired; re-dispatching after courier unassignment", models.ActorRoleSystem, ""); err != nil {
 		// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
 		log.Printf("[ERROR] Failed to re-dispatch job %s after cancellation-request expiry: %v", job.ID, err)
 	}
@@ -3410,7 +3530,20 @@ func (u *UserService) RequestCancellation(w http.ResponseWriter, r *http.Request
 	}
 
 	now := time.Now().UTC()
-	if err := u.store.SubmitCancellationRequest(ctx, job.ID, req.Reason, now); err != nil {
+	// The request event is status-agnostic (the job keeps its live status
+	// when a request is submitted) — recorded with a "$status" pipeline ref
+	// (ADR-0028 §2.3).
+	submitReason := "cancellation request submitted"
+	if strings.TrimSpace(req.Reason) != "" {
+		submitReason = "cancellation request submitted; reason: " + strings.TrimSpace(req.Reason)
+	}
+	if err := u.store.SubmitCancellationRequest(ctx, job.ID, req.Reason, now, models.JobStatusHistoryEntry{
+		Status:    "",
+		At:        now,
+		ActorRole: models.ActorRoleEmployee,
+		ActorID:   resolvedRequester,
+		Reason:    submitReason,
+	}); err != nil {
 		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
 			// Lost a race: re-read to tell already-pending apart from moved state.
 			if refreshed := u.store.GetJob(ctx, job.ID); refreshed != nil {
@@ -3556,12 +3689,26 @@ func (u *UserService) RespondCancellation(w http.ResponseWriter, r *http.Request
 	}
 
 	// CAS gate on pending: a late response landing after lazy expiry (or a
-	// racing second response) misses instead of re-applying.
+	// racing second response) misses instead of re-applying. A rejection is
+	// status-agnostic (job status unchanged) — "$status" ref entry; an
+	// approval carries no entry here because executeJobCancellation's atomic
+	// cancel update contributes the real cancelled entry (no double entries).
 	newStatus := "rejected"
 	if decision == "accept" {
 		newStatus = "approved"
 	}
-	if err := u.store.CASCancellationRequestStatus(ctx, job.ID, newStatus); err != nil {
+	var respondEntry []models.JobStatusHistoryEntry
+	if decision != "accept" {
+		rejectEntry := models.JobStatusHistoryEntry{
+			Status:    "", // "$status" ref: request rejection leaves the status unchanged
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleOwner,
+			ActorID:   resolvedRequester,
+			Reason:    "cancellation request rejected; courier stays assigned",
+		}
+		respondEntry = []models.JobStatusHistoryEntry{rejectEntry}
+	}
+	if err := u.store.CASCancellationRequestStatus(ctx, job.ID, newStatus, respondEntry...); err != nil {
 		if strings.Contains(err.Error(), "cancellation_request_state_changed") {
 			if refreshed := u.store.GetJob(ctx, job.ID); refreshed != nil {
 				if refreshed.CancellationRequestStatus == "expired" {
@@ -3630,7 +3777,12 @@ func (u *UserService) checkLazyPriceProposalExpiry(ctx context.Context, job *mod
 		job.Status = models.JobStatusCancelled
 		job.CancellationReason = "price_proposal_expired"
 		job.UpdatedAt = time.Now().UTC()
-		if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_proposal_expired"); err != nil {
+		if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_proposal_expired", models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCancelled,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleSystem,
+			Reason:    "price proposal expired",
+		}); err != nil {
 			// #nosec G706 //nolint:gosec -- job.ID is system-generated UUID, log injection not possible
 			log.Printf("[ERROR] Failed to persist lazy price proposal cancellation for job %s: %v", job.ID, err)
 		}
@@ -3783,7 +3935,13 @@ func (u *UserService) ProposePrice(w http.ResponseWriter, r *http.Request) {
 	job.PriceProposalExpiresAt = &exp
 	job.UpdatedAt = now
 
-	if err := u.store.UpdateJobPriceProposal(ctx, job.ID, &req.ProposedPrice, proposerRole, &exp); err != nil {
+	if err := u.store.UpdateJobPriceProposal(ctx, job.ID, &req.ProposedPrice, proposerRole, &exp, models.JobStatusHistoryEntry{
+		Status:    models.JobStatusAwaitingPriceResponse,
+		At:        now,
+		ActorRole: proposerRole,
+		ActorID:   resolvedRequester,
+		Reason:    fmt.Sprintf("price proposed: %.2f", req.ProposedPrice),
+	}); err != nil {
 		if strings.Contains(err.Error(), "job_state_changed") {
 			writeJSON(w, http.StatusConflict, map[string]string{
 				"error":   "job_state_changed",
@@ -3912,6 +4070,14 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ADR-0028: the responding side (customer vs employee) becomes the
+	// status_history actor for accept/decline transitions.
+	responderRole := models.ActorRoleCustomer
+	responderID := resolvedRequester
+	if resolvedRequester == job.EmployeeID {
+		responderRole = models.ActorRoleEmployee
+	}
+
 	if job.Status != models.JobStatusAwaitingPriceResponse {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "invalid_job_status",
@@ -3976,7 +4142,12 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 				if rollbackErr != nil {
 					log.Printf("[CRITICAL ERROR] failed to rollback escrow lock for owner %s (job %s): %v. Marking job for reconciliation instead of completing.", job.OwnerID, job.ID, rollbackErr)
 					note := fmt.Sprintf("Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
-					if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+					if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice, models.JobStatusHistoryEntry{
+						Status:    models.JobStatusEscrowReconciliationRequired,
+						At:        time.Now().UTC(),
+						ActorRole: models.ActorRoleSystem,
+						Reason:    "escrow rollback persistence failed during price agreement; flagged for reconciliation",
+					}); recErr != nil {
 						log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
 					}
 					writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -4001,7 +4172,13 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 			u.updateJobAgreedPriceBeforeWriteHook(ctx)
 		}
 
-		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive); err != nil {
+		if err := u.store.UpdateJobAgreedPrice(ctx, job.ID, &activePrice, models.JobStatusActive, models.JobStatusHistoryEntry{
+			Status:    models.JobStatusActive,
+			At:        now,
+			ActorRole: responderRole,
+			ActorID:   responderID,
+			Reason:    "price agreed",
+		}); err != nil {
 			if strings.Contains(err.Error(), "job_state_changed") {
 				if job.PaymentMethod != "cod" {
 					log.Printf("[USER] Job state changed concurrently for job %s during RespondPrice accept. Rolling back escrow lock.", job.ID)
@@ -4013,7 +4190,12 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 					if rollbackErr != nil {
 						log.Printf("[CRITICAL ERROR] failed to rollback escrow lock on job_state_changed for owner %s (job %s): %v. Marking job for reconciliation.", job.OwnerID, job.ID, rollbackErr)
 						note := fmt.Sprintf("Job state changed concurrently during RespondPrice accept. Locked escrow amount: %.2f. Escrow lock rollback failed: %v", activePrice, rollbackErr)
-						if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice); recErr != nil {
+						if recErr := u.store.UpdateJobReconciliation(context.Background(), job.ID, models.JobStatusEscrowReconciliationRequired, note, rollbackErr.Error(), activePrice, models.JobStatusHistoryEntry{
+							Status:    models.JobStatusEscrowReconciliationRequired,
+							At:        time.Now().UTC(),
+							ActorRole: models.ActorRoleSystem,
+							Reason:    "escrow rollback persistence failed during price agreement; flagged for reconciliation",
+						}); recErr != nil {
 							log.Printf("[CRITICAL ERROR] failed to set reconciliation status on job %s: %v", job.ID, recErr)
 						}
 					}
@@ -4039,7 +4221,13 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 	job.CancellationReason = "price_disagreement"
 	job.UpdatedAt = now
 
-	if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_disagreement"); err != nil {
+	if err := u.store.UpdateJobCancellation(ctx, job.ID, models.JobStatusCancelled, "price_disagreement", models.JobStatusHistoryEntry{
+		Status:    models.JobStatusCancelled,
+		At:        now,
+		ActorRole: responderRole,
+		ActorID:   responderID,
+		Reason:    "price declined",
+	}); err != nil {
 		if strings.Contains(err.Error(), "job_state_changed") {
 			writeJSON(w, http.StatusConflict, map[string]string{
 				"error":   "job_state_changed",

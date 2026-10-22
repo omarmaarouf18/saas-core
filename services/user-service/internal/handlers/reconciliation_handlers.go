@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
@@ -193,19 +194,41 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 
 	switch req.Decision {
 	case "release_to_employee":
+		// ADR-0028 §2.3: the owner-resolved completion entry rides the money/
+		// status-flip call; the follow-up note restamp (which no-ops onto the
+		// already-terminal job) is entry-free to avoid duplicates.
+		releaseEntry := models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCompleted,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleOwner,
+			ActorID:   resolvedOwnerID,
+			Reason:    "reconciliation resolved: release_to_employee",
+		}
+		completedViaMoney := false
 		if job.PaymentMethod == "cod" {
-			if err := u.store.CompleteCODJob(ctx, job.ID, 0, nil); err != nil && !strings.Contains(err.Error(), "not active") {
+			if err := u.store.CompleteCODJob(ctx, job.ID, 0, nil, releaseEntry); err != nil && !strings.Contains(err.Error(), "not active") {
 				log.Printf("[ERROR] Failed to complete COD job on reconciliation release for job %s: %v", job.ID, err)
+			} else if err == nil {
+				completedViaMoney = true
 			}
 		} else if amount > 0 {
-			if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if err := u.store.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount, releaseEntry); err != nil {
 				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow release failed", err)
 				return
 			}
+			completedViaMoney = true
 		}
 
 		note := fmt.Sprintf("reconciliation_resolved: release_to_employee by owner %s", resolvedOwnerID)
-		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0); err != nil {
+		var noteHist []models.JobStatusHistoryEntry
+		if !completedViaMoney {
+			// Zero-escrow non-COD path: this note update IS the recon→completed
+			// transition and must carry the entry.
+			noteEntry := releaseEntry
+			noteEntry.At = time.Now().UTC()
+			noteHist = []models.JobStatusHistoryEntry{noteEntry}
+		}
+		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", 0, noteHist...); err != nil {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update job reconciliation status", err)
 			return
 		}
@@ -225,15 +248,34 @@ func (u *UserService) ResolveReconciliation(w http.ResponseWriter, r *http.Reque
 		})
 
 	case "refund_to_customer":
+		// Same scheme as the release branch: the money call carries the entry,
+		// the note restamp only carries one when IT is the cancel transition
+		// (COD jobs skip RefundEscrow entirely — the note update is then the
+		// actual recon→cancelled flip).
+		refundEntry := models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCancelled,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleOwner,
+			ActorID:   resolvedOwnerID,
+			Reason:    "reconciliation resolved: refund_to_customer",
+		}
+		refundedViaMoney := false
 		if job.PaymentMethod != "cod" && amount > 0 {
-			if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if err := u.store.RefundEscrow(ctx, job.OwnerID, job.ID, amount, refundEntry); err != nil {
 				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "escrow refund failed", err)
 				return
 			}
+			refundedViaMoney = true
 		}
 
 		note := fmt.Sprintf("reconciliation_resolved: refund_to_customer by owner %s", resolvedOwnerID)
-		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
+		var noteHist []models.JobStatusHistoryEntry
+		if !refundedViaMoney {
+			noteEntry := refundEntry
+			noteEntry.At = time.Now().UTC()
+			noteHist = []models.JobStatusHistoryEntry{noteEntry}
+		}
+		if err := u.store.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0, noteHist...); err != nil {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update job reconciliation status", err)
 			return
 		}
