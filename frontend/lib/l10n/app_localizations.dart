@@ -7778,6 +7778,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 h ago} other{{count} h ago}}'**
   String ownAgoHours(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get ownNotNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get ownRefresh;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref}'**
+  String ownOrderTitle(String ref);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get ownOrderFallbackTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This order isn\'t in your list anymore.'**
+  String get ownOrderMissing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to cancel this order'**
+  String ownCancelReqTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'“{reason}”'**
+  String ownCancelReqQuote(String reason);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No reason given'**
+  String get ownCancelReqNoReason;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked {ago}'**
+  String ownCancelReqSince(String ago);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order going'**
+  String get ownCancelReqKeep;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve cancellation'**
+  String get ownCancelReqApprove;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the cancellation?'**
+  String get ownCancelReqApproveTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The order will be cancelled and the customer will be told.'**
+  String get ownCancelReqApproveBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order going?'**
+  String get ownCancelReqKeepTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} stays on the order and has to finish it.'**
+  String ownCancelReqKeepBody(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation approved. The order is cancelled.'**
+  String get ownCancelReqApproved;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Request declined. The courier keeps the order.'**
+  String get ownCancelReqDeclined;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This request already changed, it may have run out. The order was refreshed.'**
+  String get ownCancelReqConflict;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance looked short, review'**
+  String get ownDistanceReviewTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip tracked {actual} km of the {booked} km booked. The cash was still recorded.'**
+  String ownDistanceReviewBody(String actual, String booked);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'See on the map'**
+  String get ownSeeOnMap;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get ownRowCustomer;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account {id}'**
+  String ownCustomerRef(String id);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier'**
+  String get ownRowCourier;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not assigned yet'**
+  String get ownCourierNone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get ownRowPayment;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · {amount}'**
+  String ownPayCash(String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · price not set yet'**
+  String get ownPayCashNoPrice;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{method} · {amount}'**
+  String ownPayOther(String method, String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash recorded'**
+  String get ownRowCashRecorded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get ownRowOrdered;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get ownRowCancelReason;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get ownCancelOrder;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order'**
+  String get ownCancelKeep;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this order?'**
+  String get ownCancelSheetTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer and the courier will be told. Write why you\'re cancelling.'**
+  String get ownCancelSheetCod;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The {amount} held for this order goes back to the customer. Write why you\'re cancelling.'**
+  String ownCancelSheetHeld(String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get ownCancelReasonLabel;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled.'**
+  String get ownCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled. The held amount went back to the customer.'**
+  String get ownCancelledRefunded;
 }
 
 class _AppLocalizationsDelegate

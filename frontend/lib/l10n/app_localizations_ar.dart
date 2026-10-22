@@ -4255,4 +4255,145 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get ownNotNow => 'مش دلوقتي';
+
+  @override
+  String get ownRefresh => 'حدّث';
+
+  @override
+  String ownOrderTitle(String ref) {
+    return 'طلب $ref';
+  }
+
+  @override
+  String get ownOrderFallbackTitle => 'طلب';
+
+  @override
+  String get ownOrderMissing => 'الطلب ده مش في قايمتك دلوقتي.';
+
+  @override
+  String ownCancelReqTitle(String name) {
+    return '$name طالب يلغي المهمة';
+  }
+
+  @override
+  String ownCancelReqQuote(String reason) {
+    return '«$reason»';
+  }
+
+  @override
+  String get ownCancelReqNoReason => 'مكتبش سبب';
+
+  @override
+  String ownCancelReqSince(String ago) {
+    return 'اتطلب $ago';
+  }
+
+  @override
+  String get ownCancelReqKeep => 'يكمّل المهمة';
+
+  @override
+  String get ownCancelReqApprove => 'وافق على الإلغاء';
+
+  @override
+  String get ownCancelReqApproveTitle => 'توافق على الإلغاء؟';
+
+  @override
+  String get ownCancelReqApproveBody => 'الطلب هيتلغي والعميل هيعرف.';
+
+  @override
+  String get ownCancelReqKeepTitle => 'المهمة تكمّل؟';
+
+  @override
+  String ownCancelReqKeepBody(String name) {
+    return '$name هيفضل على الطلب ولازم يخلّصه.';
+  }
+
+  @override
+  String get ownCancelReqApproved => 'وافقت على الإلغاء والطلب اتلغى.';
+
+  @override
+  String get ownCancelReqDeclined => 'رفضت الطلب والمندوب مكمّل.';
+
+  @override
+  String get ownCancelReqConflict =>
+      'الطلب ده اتغيّر خلاص، ممكن وقته يكون خلص. حدّثنا الطلب.';
+
+  @override
+  String get ownDistanceReviewTitle => 'المسافة باينة قصيرة، راجعها';
+
+  @override
+  String ownDistanceReviewBody(String actual, String booked) {
+    return 'الرحلة اتسجّل فيها $actual كم من $booked كم في الحجز. الكاش اتسجّل عادي.';
+  }
+
+  @override
+  String get ownSeeOnMap => 'شوف على الخريطة';
+
+  @override
+  String get ownRowCustomer => 'العميل';
+
+  @override
+  String ownCustomerRef(String id) {
+    return 'حساب $id';
+  }
+
+  @override
+  String get ownRowCourier => 'المندوب';
+
+  @override
+  String get ownCourierNone => 'لسه محدش استلمه';
+
+  @override
+  String get ownRowPayment => 'الدفع';
+
+  @override
+  String ownPayCash(String amount) {
+    return 'كاش · $amount';
+  }
+
+  @override
+  String get ownPayCashNoPrice => 'كاش · السعر لسه متحددش';
+
+  @override
+  String ownPayOther(String method, String amount) {
+    return '$method · $amount';
+  }
+
+  @override
+  String get ownRowCashRecorded => 'الكاش المتسجّل';
+
+  @override
+  String get ownRowOrdered => 'اتطلب';
+
+  @override
+  String get ownRowCancelReason => 'سبب الإلغاء';
+
+  @override
+  String get ownCancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get ownCancelKeep => 'خلّي الطلب';
+
+  @override
+  String get ownCancelSheetTitle => 'تلغي الطلب ده؟';
+
+  @override
+  String get ownCancelSheetCod => 'العميل والمندوب هيعرفوا. اكتب سبب الإلغاء.';
+
+  @override
+  String ownCancelSheetHeld(String amount) {
+    return 'الـ $amount المحجوزين للطلب هيرجعوا للعميل. اكتب سبب الإلغاء.';
+  }
+
+  @override
+  String get ownCancelReasonLabel => 'السبب';
+
+  @override
+  String get ownCancelled => 'الطلب اتلغى.';
+
+  @override
+  String get ownCancelledRefunded => 'الطلب اتلغى والمبلغ المحجوز رجع للعميل.';
 }

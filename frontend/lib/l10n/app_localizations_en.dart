@@ -4321,4 +4321,150 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get ownNotNow => 'Not now';
+
+  @override
+  String get ownRefresh => 'Refresh';
+
+  @override
+  String ownOrderTitle(String ref) {
+    return 'Order $ref';
+  }
+
+  @override
+  String get ownOrderFallbackTitle => 'Order';
+
+  @override
+  String get ownOrderMissing => 'This order isn\'t in your list anymore.';
+
+  @override
+  String ownCancelReqTitle(String name) {
+    return '$name wants to cancel this order';
+  }
+
+  @override
+  String ownCancelReqQuote(String reason) {
+    return '“$reason”';
+  }
+
+  @override
+  String get ownCancelReqNoReason => 'No reason given';
+
+  @override
+  String ownCancelReqSince(String ago) {
+    return 'Asked $ago';
+  }
+
+  @override
+  String get ownCancelReqKeep => 'Keep the order going';
+
+  @override
+  String get ownCancelReqApprove => 'Approve cancellation';
+
+  @override
+  String get ownCancelReqApproveTitle => 'Approve the cancellation?';
+
+  @override
+  String get ownCancelReqApproveBody =>
+      'The order will be cancelled and the customer will be told.';
+
+  @override
+  String get ownCancelReqKeepTitle => 'Keep the order going?';
+
+  @override
+  String ownCancelReqKeepBody(String name) {
+    return '$name stays on the order and has to finish it.';
+  }
+
+  @override
+  String get ownCancelReqApproved =>
+      'Cancellation approved. The order is cancelled.';
+
+  @override
+  String get ownCancelReqDeclined =>
+      'Request declined. The courier keeps the order.';
+
+  @override
+  String get ownCancelReqConflict =>
+      'This request already changed, it may have run out. The order was refreshed.';
+
+  @override
+  String get ownDistanceReviewTitle => 'Distance looked short, review';
+
+  @override
+  String ownDistanceReviewBody(String actual, String booked) {
+    return 'The trip tracked $actual km of the $booked km booked. The cash was still recorded.';
+  }
+
+  @override
+  String get ownSeeOnMap => 'See on the map';
+
+  @override
+  String get ownRowCustomer => 'Customer';
+
+  @override
+  String ownCustomerRef(String id) {
+    return 'Account $id';
+  }
+
+  @override
+  String get ownRowCourier => 'Courier';
+
+  @override
+  String get ownCourierNone => 'Not assigned yet';
+
+  @override
+  String get ownRowPayment => 'Payment';
+
+  @override
+  String ownPayCash(String amount) {
+    return 'Cash · $amount';
+  }
+
+  @override
+  String get ownPayCashNoPrice => 'Cash · price not set yet';
+
+  @override
+  String ownPayOther(String method, String amount) {
+    return '$method · $amount';
+  }
+
+  @override
+  String get ownRowCashRecorded => 'Cash recorded';
+
+  @override
+  String get ownRowOrdered => 'Ordered';
+
+  @override
+  String get ownRowCancelReason => 'Cancellation reason';
+
+  @override
+  String get ownCancelOrder => 'Cancel order';
+
+  @override
+  String get ownCancelKeep => 'Keep the order';
+
+  @override
+  String get ownCancelSheetTitle => 'Cancel this order?';
+
+  @override
+  String get ownCancelSheetCod =>
+      'The customer and the courier will be told. Write why you\'re cancelling.';
+
+  @override
+  String ownCancelSheetHeld(String amount) {
+    return 'The $amount held for this order goes back to the customer. Write why you\'re cancelling.';
+  }
+
+  @override
+  String get ownCancelReasonLabel => 'Reason';
+
+  @override
+  String get ownCancelled => 'Order cancelled.';
+
+  @override
+  String get ownCancelledRefunded =>
+      'Order cancelled. The held amount went back to the customer.';
 }

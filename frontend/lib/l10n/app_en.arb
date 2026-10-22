@@ -3301,5 +3301,221 @@
         "type": "int"
       }
     }
+  },
+  "ownNotNow": "Not now",
+  "@ownNotNow": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRefresh": "Refresh",
+  "@ownRefresh": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrderTitle": "Order {ref}",
+  "@ownOrderTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ownOrderFallbackTitle": "Order",
+  "@ownOrderFallbackTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrderMissing": "This order isn't in your list anymore.",
+  "@ownOrderMissing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqTitle": "{name} wants to cancel this order",
+  "@ownCancelReqTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownCancelReqQuote": "“{reason}”",
+  "@ownCancelReqQuote": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ownCancelReqNoReason": "No reason given",
+  "@ownCancelReqNoReason": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqSince": "Asked {ago}",
+  "@ownCancelReqSince": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "ownCancelReqKeep": "Keep the order going",
+  "@ownCancelReqKeep": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqApprove": "Approve cancellation",
+  "@ownCancelReqApprove": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqApproveTitle": "Approve the cancellation?",
+  "@ownCancelReqApproveTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqApproveBody": "The order will be cancelled and the customer will be told.",
+  "@ownCancelReqApproveBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqKeepTitle": "Keep the order going?",
+  "@ownCancelReqKeepTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqKeepBody": "{name} stays on the order and has to finish it.",
+  "@ownCancelReqKeepBody": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownCancelReqApproved": "Cancellation approved. The order is cancelled.",
+  "@ownCancelReqApproved": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqDeclined": "Request declined. The courier keeps the order.",
+  "@ownCancelReqDeclined": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelReqConflict": "This request already changed, it may have run out. The order was refreshed.",
+  "@ownCancelReqConflict": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownDistanceReviewTitle": "Distance looked short, review",
+  "@ownDistanceReviewTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownDistanceReviewBody": "The trip tracked {actual} km of the {booked} km booked. The cash was still recorded.",
+  "@ownDistanceReviewBody": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "booked": {
+        "type": "String"
+      }
+    }
+  },
+  "ownSeeOnMap": "See on the map",
+  "@ownSeeOnMap": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRowCustomer": "Customer",
+  "@ownRowCustomer": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCustomerRef": "Account {id}",
+  "@ownCustomerRef": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "ownRowCourier": "Courier",
+  "@ownRowCourier": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCourierNone": "Not assigned yet",
+  "@ownCourierNone": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRowPayment": "Payment",
+  "@ownRowPayment": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownPayCash": "Cash · {amount}",
+  "@ownPayCash": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPayCashNoPrice": "Cash · price not set yet",
+  "@ownPayCashNoPrice": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownPayOther": "{method} · {amount}",
+  "@ownPayOther": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownRowCashRecorded": "Cash recorded",
+  "@ownRowCashRecorded": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRowOrdered": "Ordered",
+  "@ownRowOrdered": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRowCancelReason": "Cancellation reason",
+  "@ownRowCancelReason": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelOrder": "Cancel order",
+  "@ownCancelOrder": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelKeep": "Keep the order",
+  "@ownCancelKeep": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelSheetTitle": "Cancel this order?",
+  "@ownCancelSheetTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelSheetCod": "The customer and the courier will be told. Write why you're cancelling.",
+  "@ownCancelSheetCod": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelSheetHeld": "The {amount} held for this order goes back to the customer. Write why you're cancelling.",
+  "@ownCancelSheetHeld": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownCancelReasonLabel": "Reason",
+  "@ownCancelReasonLabel": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelled": "Order cancelled.",
+  "@ownCancelled": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownCancelledRefunded": "Order cancelled. The held amount went back to the customer.",
+  "@ownCancelledRefunded": {
+    "description": "FE-OWNER-1 redesigned owner screens."
   }
 }
