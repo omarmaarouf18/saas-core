@@ -19,7 +19,10 @@ void main() {
     expect(find.text('2'), findsOneWidget); // saved addresses
     expect(find.text('Same as the phone'), findsOneWidget); // language
     expect(find.text('Light'), findsOneWidget); // theme
-    expect(find.text('Soon'), findsOneWidget); // wallet
+    // FE-OWNER-1 item 0: no wallet "coming soon" row for customers.
+    expect(find.byKey(const Key('account_wallet')), findsNothing);
+    expect(find.text('Soon'), findsNothing);
+    expect(find.text('Wallet'), findsNothing);
     expect(find.byKey(const Key('account_suspended')), findsNothing);
   });
 
