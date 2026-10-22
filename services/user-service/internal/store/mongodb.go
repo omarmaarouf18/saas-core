@@ -136,6 +136,24 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("jobs status_offer_expires_at index: %w", err)
 	}
+	// ADR-0028 §4.2 v2 list-query indexes: customer + owner dashboards page
+	// by status ordered newest-first; the courier board filters active
+	// states by (status, sub_status).
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "status", Value: 1}, {Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("jobs user_id_status_created_at index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "employee_id", Value: 1}, {Key: "status", Value: 1}, {Key: "sub_status", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs employee_id_status_sub_status index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "owner_id", Value: 1}, {Key: "status", Value: 1}, {Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("jobs owner_id_status_created_at index: %w", err)
+	}
 	if _, err := s.wallets.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "tenant_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	}); err != nil {
