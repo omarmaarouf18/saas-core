@@ -192,6 +192,9 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 	if accepted.SubStatus != models.SubStatusHeadingToPickup {
 		t.Fatalf("expected sub_status heading_to_pickup after accept, got %q", accepted.SubStatus)
 	}
+	if accepted.EstimatedDurationMinutes == nil || *accepted.EstimatedDurationMinutes <= 0 {
+		t.Fatalf("expected ETA snapshot after accept, got %+v", accepted.EstimatedDurationMinutes)
+	}
 
 	// Courier confirms the physical pickup.
 	pickBody, _ := json.Marshal(map[string]any{"job_id": jobID, "requester_token": tokenEmp})
@@ -205,6 +208,9 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 	pickedUpRec := s.GetJob(ctx, jobID)
 	if pickedUpRec.SubStatus != models.SubStatusPickedUp {
 		t.Fatalf("expected sub_status picked_up after pickup, got %q", pickedUpRec.SubStatus)
+	}
+	if pickedUpRec.EstimatedDurationMinutes == nil || *pickedUpRec.EstimatedDurationMinutes <= 0 {
+		t.Fatalf("expected pickup ETA snapshot, got %+v", pickedUpRec.EstimatedDurationMinutes)
 	}
 	v2CheckHistoryLen(t, s, ctx, jobID, 3)
 	v2CheckEntry(t, s, ctx, jobID, 2, models.JobStatusActive, "employee", empID, "package picked up; heading to destination")

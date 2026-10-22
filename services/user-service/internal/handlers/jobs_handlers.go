@@ -2306,7 +2306,10 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 		// Delivery activation carries the heading sub_status (ADR-0028 §2.9).
 		acceptEntry.SubStatus = models.SubStatusHeadingToPickup
 	}
-	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock, acceptEntry); err != nil {
+	// ADR-0028 §2.10: server-side ETA snapshot for the courier -> pickup leg.
+	etaToPickup := models.EstimateDurationMinutes(
+		haversineKm(empLoc.Latitude, empLoc.Longitude, job.Location.Latitude, job.Location.Longitude))
+	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock, etaToPickup, acceptEntry); err != nil {
 		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
 		if escrowToLock > 0 {
 			_ = u.performRollbackEscrow(context.Background(), job.OwnerID, escrowToLock)
@@ -2417,7 +2420,10 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		SubStatus: models.SubStatusPickedUp,
 		Reason:    "package picked up; heading to destination",
 	}
-	if err := u.store.PickupJob(ctx, job.ID, courierID, pickupEntry); err != nil {
+	// The pickup ETA re-snapshots for the remaining pickup -> destination
+	// leg (ADR-0028 §2.10).
+	etaAfterPickup := models.EstimateDurationMinutes(job.BookedDistance)
+	if err := u.store.PickupJob(ctx, job.ID, courierID, etaAfterPickup, pickupEntry); err != nil {
 		msg := err.Error()
 		switch {
 		case strings.Contains(msg, "already_picked_up"):

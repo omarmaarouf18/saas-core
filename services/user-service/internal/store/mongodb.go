@@ -990,7 +990,7 @@ func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID 
 }
 
 // AcceptJobOffer atomically claims a pending_dispatch offer using CAS.
-func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, nextStatus models.JobStatus, bookedDist float64, empLoc *models.Location, suggestedPrice *float64, lockedEscrow float64, hist ...models.JobStatusHistoryEntry) error {
+func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, nextStatus models.JobStatus, bookedDist float64, empLoc *models.Location, suggestedPrice *float64, lockedEscrow float64, etaMinutes int, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":                         jobID,
 		"status":                      models.JobStatusPendingDispatch,
@@ -1010,6 +1010,10 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 	}
 	if lockedEscrow > 0 {
 		setDoc["locked_escrow_amount"] = lockedEscrow
+	}
+	// ADR-0028 §2.9: the accept-time ETA snapshot (courier -> pickup).
+	if etaMinutes > 0 {
+		setDoc["estimated_duration_minutes"] = etaMinutes
 	}
 	// ADR-0028 §2.9: entering active carries heading_to_pickup from the
 	// acceptance entry (delivery); transport activates later via the price
@@ -1036,7 +1040,7 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 // CAS from {active, heading_to_pickup} to {active, picked_up}. The courier
 // must still be the assigned employee. Returns a job_state_changed error
 // when the job is no longer in the heading_to_pickup window.
-func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, hist ...models.JobStatusHistoryEntry) error {
+func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, etaMinutes int, hist ...models.JobStatusHistoryEntry) error {
 	res, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id":         jobID,
@@ -1045,7 +1049,7 @@ func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, hist .
 			"employee_id": courierID,
 		},
 		withHistory(
-			bson.M{"$set": bson.M{"sub_status": models.SubStatusPickedUp, "updated_at": time.Now().UTC()}},
+			bson.M{"$set": v2PickupSetDoc(etaMinutes)},
 			historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: pickup job: %w", err)
@@ -1064,6 +1068,16 @@ func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, hist .
 		return fmt.Errorf("job_state_changed: job %q is not in the heading_to_pickup window (status %s, sub_status %s)", jobID, job.Status, job.SubStatus)
 	}
 	return nil
+}
+
+// v2PickupSetDoc is the pickup CAS $set: sub_status advances to picked_up
+// and the ETA re-snapshots for the remaining leg (ADR-0028 §2.10).
+func v2PickupSetDoc(etaMinutes int) bson.M {
+	set := bson.M{"sub_status": models.SubStatusPickedUp, "updated_at": time.Now().UTC()}
+	if etaMinutes > 0 {
+		set["estimated_duration_minutes"] = etaMinutes
+	}
+	return set
 }
 
 // CancelJobOnEscrowFailure atomically transitions a job from pending_dispatch to cancelled
