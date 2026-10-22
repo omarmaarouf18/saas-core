@@ -4853,4 +4853,144 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownNavAccount => 'حسابي';
+
+  @override
+  String get ownSvcTitle => 'إعداد الخدمة';
+
+  @override
+  String get ownSvcSectionBusiness => 'الخدمة';
+
+  @override
+  String get ownSvcPhotoNote =>
+      'العملا هيشوفوا أول حرف من اسم الخدمة دلوقتي. رفع الصورة جاي قريب.';
+
+  @override
+  String get ownSvcName => 'اسم الخدمة زي ما العميل هيشوفه';
+
+  @override
+  String get ownSvcNameRequired => 'اكتب اسم الخدمة';
+
+  @override
+  String get ownSvcKind => 'النوع';
+
+  @override
+  String get ownSvcKindDelivery => 'توصيل';
+
+  @override
+  String get ownSvcKindTransport => 'مشاوير';
+
+  @override
+  String get ownSvcKindShipping => 'شحن';
+
+  @override
+  String get ownSvcSectionPlace => 'المكان والتغطية';
+
+  @override
+  String get ownSvcPlace => 'مكان الشركة على الخريطة';
+
+  @override
+  String get ownSvcPlaceMissing => 'لازم تحدده';
+
+  @override
+  String get ownSvcPlaceSet => 'متحدد على الخريطة';
+
+  @override
+  String get ownSvcPickerTitle => 'مكان الشركة';
+
+  @override
+  String get ownSvcAddress => 'العنوان مكتوب';
+
+  @override
+  String get ownSvcAddressShort => 'اكتب 3 حروف على الأقل أو سيبه فاضي';
+
+  @override
+  String get ownSvcRadius => 'بتخدم لحد كام كيلو؟';
+
+  @override
+  String get ownSvcKm => 'كم';
+
+  @override
+  String get ownSvcRadiusInvalid => 'اكتب مسافة أكبر من صفر';
+
+  @override
+  String get ownSvcSectionHours => 'المواعيد';
+
+  @override
+  String get ownSvcHoursNone => 'مفيش مواعيد: العملا هيشوفوك فاتح على طول.';
+
+  @override
+  String get ownSvcHoursSet => 'حدد المواعيد';
+
+  @override
+  String get ownSvcHoursSame => 'نفس الميعاد كل يوم';
+
+  @override
+  String get ownSvcHoursPerDay => 'كل يوم لوحده';
+
+  @override
+  String get ownSvcOpens => 'بيفتح';
+
+  @override
+  String get ownSvcCloses => 'بيقفل';
+
+  @override
+  String get ownSvcDayOff => 'إجازة';
+
+  @override
+  String get ownSvcHoursRemove => 'شيل المواعيد';
+
+  @override
+  String get ownSvcHoursSameTime => 'ميعاد الفتح والقفل مينفعش يبقوا واحد';
+
+  @override
+  String get ownSvcHoursMissing => 'اختار الميعادين';
+
+  @override
+  String get ownSvcSectionPricing => 'التسعير';
+
+  @override
+  String get ownSvcBaseFee => 'فتح الطلب';
+
+  @override
+  String get ownSvcPerKm => 'لكل كيلو';
+
+  @override
+  String get ownSvcPriceInvalid => 'اكتب صفر أو أكتر';
+
+  @override
+  String ownSvcExample(int km, String price) {
+    return 'مثال: مشوار $km كم هيتعرض للعميل بـ $price.';
+  }
+
+  @override
+  String get ownSvcExampleEmpty => 'اكتب السعرين عشان تشوف العميل هيدفع كام.';
+
+  @override
+  String get ownSvcSave => 'احفظ';
+
+  @override
+  String get ownSvcSaved => 'الخدمة اتحفظت';
+
+  @override
+  String get ownSvcFixErrors => 'راجع الخانات اللي باللون الأحمر';
+
+  @override
+  String get ownSvcLoadError => 'معرفناش نحمّل خدمتك';
+
+  @override
+  String get ownSvcErrKyb =>
+      'لازم أوراق الشغل يتوافق عليها الأول قبل ما تحفظ الخدمة.';
+
+  @override
+  String get ownSvcErrPlan => 'حفظ الخدمة محتاج باقة شغالة.';
+
+  @override
+  String get ownSvcErrUnavailable => 'ده مش متاح دلوقتي. جرّب كمان شوية.';
+
+  @override
+  String get ownSvcErrPartial =>
+      'الخدمة اتعملت بس شوية تفاصيل متحفظتش. دوس احفظ تاني.';
+
+  @override
+  String get ownSvcCurrency => 'ج.م';
 }

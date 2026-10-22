@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/kyc_document_upload_screen.dart';
 import '../../screens/notifications_screen.dart';
-import '../../screens/owner_configuration_screen.dart';
 import '../../screens/owner_fleet_map_screen.dart';
 import '../../screens/owner_history_screen.dart';
 import '../../screens/subscription_screen.dart';
 import '../../screens/wallet_screen.dart';
 import '../../ui/qd_ui.dart';
 import 'owner_controller.dart';
+import 'service_setup_page.dart';
 
 /// Navigation for the redesigned owner pages (FE-OWNER-1).
 ///
@@ -52,8 +52,9 @@ class OwnerNav {
     );
   }
 
+  /// Service setup (O-Service).
   Future<void> openServiceSetup(BuildContext context) =>
-      _old(context, const OwnerConfigurationScreen());
+      OwnerServicePage.open(context);
 
   Future<void> openWallet(BuildContext context) =>
       _old(context, const WalletScreen());

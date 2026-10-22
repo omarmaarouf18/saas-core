@@ -221,6 +221,110 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
     return {'message': 'updated'};
   }
 
+  // FE-OWNER-2: services (service setup).
+  @override
+  List<dynamic> services = [];
+
+  @override
+  String? servicesError;
+
+  List<dynamic> nextServices = [];
+  String? nextServicesError;
+  Completer<void>? servicesGate;
+  int serviceCalls = 0;
+
+  @override
+  Future<void> fetchServices() async {
+    serviceCalls++;
+    if (servicesGate != null) await servicesGate!.future;
+    if (nextServicesError != null) {
+      servicesError = error = nextServicesError;
+    } else {
+      services = List.of(nextServices);
+      servicesError = error = null;
+    }
+    notifyListeners();
+  }
+
+  final List<Map<String, dynamic>> createCalls = [];
+  Object? nextCreateError;
+  Map<String, dynamic> nextCreateResponse = {
+    'message': 'service created',
+    'service': {'id': 'svc-new'},
+  };
+
+  @override
+  Future<Map<String, dynamic>> createService({
+    required String name,
+    required String category,
+    required double tenantBasePrice,
+    required double tenantPricePerKM,
+    required double latitude,
+    required double longitude,
+    required String ownerId,
+  }) async {
+    createCalls.add({
+      'name': name,
+      'category': category,
+      'tenant_base_price': tenantBasePrice,
+      'tenant_price_per_km': tenantPricePerKM,
+      'latitude': latitude,
+      'longitude': longitude,
+      'owner_id': ownerId,
+    });
+    if (nextCreateError != null) throw nextCreateError!;
+    return nextCreateResponse;
+  }
+
+  final List<Map<String, dynamic>> updateCalls = [];
+  Object? nextUpdateError;
+  Completer<void>? updateGate;
+
+  @override
+  Future<Map<String, dynamic>> updateOwnerServiceConfig({
+    required String serviceId,
+    required String ownerId,
+    String? name,
+    String? category,
+    double? tenantBasePrice,
+    double? tenantPricePerKM,
+    String? photoUrl,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+    double? latitude,
+    double? longitude,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
+  }) async {
+    final call = <String, dynamic>{
+      'service_id': serviceId,
+      'owner_id': ownerId,
+      'name': name,
+      'category': category,
+      'tenant_base_price': tenantBasePrice,
+      'tenant_price_per_km': tenantPricePerKM,
+      'photo_url': photoUrl,
+      'address': address,
+      'working_hours': workingHours,
+      'coverage_radius_km': coverageRadiusKm,
+      'latitude': latitude,
+      'longitude': longitude,
+      'schedule_mode': scheduleMode,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'per_day_schedule': perDaySchedule,
+      'timezone': timezone,
+    }..removeWhere((_, v) => v == null);
+    updateCalls.add(call);
+    if (updateGate != null) await updateGate!.future;
+    if (nextUpdateError != null) throw nextUpdateError!;
+    return {'message': 'service updated'};
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

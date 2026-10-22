@@ -268,6 +268,11 @@ class OwnerProvider extends ChangeNotifier {
   List<dynamic> _services = [];
   List<dynamic> get services => _services;
 
+  /// FE-OWNER-2: the error of the last [fetchServices] call alone (null
+  /// after a success); see [ownerJobsError]. The list is kept on a failure.
+  String? _servicesError;
+  String? get servicesError => _servicesError;
+
   // ---------------------------------------------------------------------------
   // API Call: Fetch All Services
   // ---------------------------------------------------------------------------
@@ -279,9 +284,11 @@ class OwnerProvider extends ChangeNotifier {
     try {
       final res = await apiClient.get('/users/services');
       _services = res['services'] as List<dynamic>? ?? [];
+      _servicesError = null;
     } catch (e) {
       debugPrint('Error fetching services: $e');
       _error = friendlyErrorMessage(e);
+      _servicesError = _error;
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -28,6 +28,7 @@ class QdTextField extends StatefulWidget {
     this.enabled = true,
     this.focusNode,
     this.maxLines = 1,
+    this.suffixText,
   });
 
   final String label;
@@ -46,6 +47,9 @@ class QdTextField extends StatefulWidget {
   final bool enabled;
   final FocusNode? focusNode;
   final int maxLines;
+
+  /// Unit shown inside the field at its end ("km").
+  final String? suffixText;
 
   @override
   State<QdTextField> createState() => _QdTextFieldState();
@@ -138,6 +142,9 @@ class _QdTextFieldState extends State<QdTextField> {
                 vertical: 15,
               ),
               suffixIcon: toggle,
+              suffixText: widget.suffixText,
+              suffixStyle:
+                  QdText.body.copyWith(fontSize: 15, color: c.textSecondary),
               border: border(c.borderInput),
               enabledBorder: border(hasError ? c.danger : c.borderInput),
               disabledBorder: border(c.border),

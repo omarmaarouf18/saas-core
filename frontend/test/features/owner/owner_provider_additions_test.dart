@@ -107,4 +107,33 @@ void main() {
     expect(p.employeesError, isNull);
     expect(p.employees.single['username'], 'Karim');
   });
+
+  // FE-OWNER-2 additions.
+
+  test('fetchServices records its own error and keeps the last list', () async {
+    var fail = false;
+    installMockHttp((req) {
+      expect(req.uri.path, endsWith('/users/services'));
+      return fail
+          ? MockHttpResponse(500, jsonBody: {'error': 'boom'})
+          : MockHttpResponse(200, jsonBody: {
+              'services': [
+                {'id': 'svc-1', 'tenant_id': 'owner-1'}
+              ]
+            });
+    });
+    final p = provider();
+    await p.fetchServices();
+    expect(p.servicesError, isNull);
+    expect(p.services, hasLength(1));
+
+    fail = true;
+    await p.fetchServices();
+    expect(p.servicesError, isNotNull);
+    expect(p.services, hasLength(1));
+
+    fail = false;
+    await p.fetchServices();
+    expect(p.servicesError, isNull);
+  });
 }
