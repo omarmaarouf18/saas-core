@@ -136,6 +136,24 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 	}); err != nil {
 		return fmt.Errorf("jobs status_offer_expires_at index: %w", err)
 	}
+	// ADR-0028 §4.2 v2 list-query indexes: customer + owner dashboards page
+	// by status ordered newest-first; the courier board filters active
+	// states by (status, sub_status).
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "status", Value: 1}, {Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("jobs user_id_status_created_at index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "employee_id", Value: 1}, {Key: "status", Value: 1}, {Key: "sub_status", Value: 1}},
+	}); err != nil {
+		return fmt.Errorf("jobs employee_id_status_sub_status index: %w", err)
+	}
+	if _, err := s.jobs.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "owner_id", Value: 1}, {Key: "status", Value: 1}, {Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("jobs owner_id_status_created_at index: %w", err)
+	}
 	if _, err := s.wallets.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "tenant_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	}); err != nil {
@@ -434,6 +452,52 @@ func (s *MongoDB) CreateJob(ctx context.Context, job *models.Job) error {
 	return nil
 }
 
+// ---------------------------------------------------------------------------
+// ADR-0028 status_history plumbing
+// ---------------------------------------------------------------------------
+
+// historyPushDoc flattens one status_history entry into its BSON shape
+// (empty optional fields omitted, mirroring the model's json omitempty).
+func historyPushDoc(e models.JobStatusHistoryEntry) bson.M {
+	doc := bson.M{"status": e.Status, "at": e.At, "actor_role": e.ActorRole}
+	if e.SubStatus != "" {
+		doc["sub_status"] = e.SubStatus
+	}
+	if e.ActorID != "" {
+		doc["actor_id"] = e.ActorID
+	}
+	if e.Reason != "" {
+		doc["reason"] = e.Reason
+	}
+	return doc
+}
+
+// withHistory merges an optional ADR-0028 status_history $push into an
+// operator update so the entry is appended atomically inside the very same
+// CAS update as the transition. push == nil (no entry supplied) changes
+// nothing — existing callers keep their exact behavior.
+func withHistory(update, push bson.M) bson.M {
+	if push == nil {
+		return update
+	}
+	for k, v := range push {
+		update[k] = v
+	}
+	return update
+}
+
+// historyPush builds the $push fragment for caller-provided entries.
+// The zero entry is rejected here (Status must be known): operator updates
+// cannot reference fields, so dynamic "$status" entries are only legal in
+// the dedicated pipeline updates (SubmitCancellationRequest and
+// CASCancellationRequestStatus).
+func historyPush(hist ...models.JobStatusHistoryEntry) bson.M {
+	if len(hist) == 0 || hist[0].Status == "" {
+		return nil
+	}
+	return bson.M{"$push": bson.M{"status_history": historyPushDoc(hist[0])}}
+}
+
 func (s *MongoDB) GetJob(ctx context.Context, id string) *models.Job {
 	var job models.Job
 	if err := s.jobs.FindOne(ctx, bson.M{"_id": id}).Decode(&job); err != nil {
@@ -508,7 +572,7 @@ func (s *MongoDB) GetJobsByCustomer(ctx context.Context, customerID string) ([]*
 	return jobs, nil
 }
 
-func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.JobStatus) error {
+func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.JobStatus, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{"_id": id}
 	switch status {
 	case models.JobStatusCompleted:
@@ -534,8 +598,9 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 		}}
 	}
 
-	res, err := s.jobs.UpdateOne(ctx, filter,
-		bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().UTC()}})
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
+		bson.M{"$set": v2StatusSetDoc(status, hist)},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job: %w", err)
 	}
@@ -543,6 +608,27 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 		return fmt.Errorf("job_state_changed: job %q not found or invalid status transition to %s", id, status)
 	}
 	return nil
+}
+
+// v2StatusSetDoc implements the ADR-0028 §2.9 sub_status column rule for
+// $set-based status writes: sub_status exists ONLY while the job status is
+// active — leaving active clears it. Entering active carries the
+// accepted-entry sub_status (heading_to_pickup) when the provided history
+// entries declare one; an entry-less active transition leaves the column
+// untouched.
+func v2StatusSetDoc(status models.JobStatus, hist []models.JobStatusHistoryEntry) bson.M {
+	set := bson.M{"status": status, "updated_at": time.Now().UTC()}
+	if status != models.JobStatusActive {
+		set["sub_status"] = ""
+		return set
+	}
+	for _, e := range hist {
+		if e.SubStatus != "" {
+			set["sub_status"] = e.SubStatus
+			break
+		}
+	}
+	return set
 }
 
 func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount float64) error {
@@ -557,7 +643,7 @@ func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount f
 	return nil
 }
 
-func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status models.JobStatus, note string, failureReason string, lockedEscrow float64) error {
+func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status models.JobStatus, note string, failureReason string, lockedEscrow float64, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{"_id": id}
 	switch status {
 	case models.JobStatusCompleted:
@@ -579,14 +665,16 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 		}}
 	}
 
-	res, err := s.jobs.UpdateOne(ctx, filter,
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":                status,
+			"sub_status":            "",
 			"reconciliation_note":   note,
 			"escrow_failure_reason": failureReason,
 			"locked_escrow_amount":  lockedEscrow,
 			"updated_at":            time.Now().UTC(),
-		}})
+		}},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job reconciliation: %w", err)
 	}
@@ -596,7 +684,7 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 	return nil
 }
 
-func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, proposedPrice *float64, proposedBy string, expiresAt *time.Time) error {
+func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, proposedPrice *float64, proposedBy string, expiresAt *time.Time, hist ...models.JobStatusHistoryEntry) error {
 	var priceMatch any = nil
 	if proposedPrice != nil {
 		priceMatch = bson.M{"$in": []any{nil, *proposedPrice}}
@@ -606,13 +694,14 @@ func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, propose
 		"status":         models.JobStatusAwaitingPriceResponse,
 		"proposed_price": priceMatch,
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter,
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"proposed_price":            proposedPrice,
 			"proposed_by":               proposedBy,
 			"price_proposal_expires_at": expiresAt,
 			"updated_at":                time.Now().UTC(),
-		}})
+		}},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job price proposal: %w", err)
 	}
@@ -626,7 +715,12 @@ func (s *MongoDB) UpdateJobPriceProposal(ctx context.Context, id string, propose
 // CAS: exactly one live ("pending") request may exist. The filter pins both
 // the assignable statuses and the not-pending precondition, so concurrent
 // double-submits collapse to a single winner.
-func (s *MongoDB) SubmitCancellationRequest(ctx context.Context, id, reason string, requestedAt time.Time) error {
+//
+// The optional status_history entry (ADR-0028 §2.3) is appended in the same
+// update. An entry with empty Status records a status-UNCHANGED request
+// event: the update becomes a pipeline so "status" can reference the
+// document's live "$status" instead of a stale pre-read.
+func (s *MongoDB) SubmitCancellationRequest(ctx context.Context, id, reason string, requestedAt time.Time, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    id,
 		"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusAwaitingPriceResponse}},
@@ -635,13 +729,19 @@ func (s *MongoDB) SubmitCancellationRequest(ctx context.Context, id, reason stri
 			{"cancellation_request_status": bson.M{"$ne": "pending"}},
 		},
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter,
-		bson.M{"$set": bson.M{
-			"cancellation_request_reason": reason,
-			"cancellation_requested_at":   requestedAt,
-			"cancellation_request_status": "pending",
-			"updated_at":                  time.Now().UTC(),
-		}})
+	set := bson.M{
+		"cancellation_request_reason": reason,
+		"cancellation_requested_at":   requestedAt,
+		"cancellation_request_status": "pending",
+		"updated_at":                  time.Now().UTC(),
+	}
+	var update any
+	if push := historyPushPipeline(hist...); push != nil {
+		update = []bson.M{{"$set": set}, push}
+	} else {
+		update = bson.M{"$set": set}
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("store: submit cancellation request: %w", err)
 	}
@@ -651,21 +751,63 @@ func (s *MongoDB) SubmitCancellationRequest(ctx context.Context, id, reason stri
 	return nil
 }
 
+// historyPushPipeline builds a status-UNION-agnostic history APPEND as a
+// pipeline $set stage for event entries. An entry with empty Status
+// references the document's live "$status" (pipeline updates only). $push
+// is an update operator, NOT a pipeline stage — inside an update pipeline
+// an array appends via $set + $concatArrays over the null-safe current
+// array. Returns nil when no entry is provided.
+func historyPushPipeline(hist ...models.JobStatusHistoryEntry) bson.M {
+	if len(hist) == 0 {
+		return nil
+	}
+	e := hist[0]
+	status := any(e.Status)
+	if e.Status == "" {
+		status = "$status"
+	}
+	doc := bson.M{"status": status, "at": e.At, "actor_role": e.ActorRole}
+	if e.SubStatus != "" {
+		doc["sub_status"] = e.SubStatus
+	}
+	if e.ActorID != "" {
+		doc["actor_id"] = e.ActorID
+	}
+	if e.Reason != "" {
+		doc["reason"] = e.Reason
+	}
+	return bson.M{"$set": bson.M{"status_history": bson.M{"$concatArrays": bson.A{
+		bson.M{"$ifNull": bson.A{"$status_history", bson.A{}}},
+		bson.A{doc},
+	}}}}
+}
+
 // CASCancellationRequestStatus flips a pending request to a terminal state
 // ("approved", "rejected") or to "expired". The filter carries the expected
 // pre-state so a late owner response landing after lazy expiry (or a racing
 // second response) misses instead of re-applying — the UpdateJobPriceProposal
 // job_state_changed pattern.
-func (s *MongoDB) CASCancellationRequestStatus(ctx context.Context, id, newStatus string) error {
+//
+// Like SubmitCancellationRequest, an entry with empty Status appends a
+// status-unchanged request event referencing the live "$status" in a
+// pipeline update.
+func (s *MongoDB) CASCancellationRequestStatus(ctx context.Context, id, newStatus string, hist ...models.JobStatusHistoryEntry) error {
+	set := bson.M{
+		"cancellation_request_status": newStatus,
+		"updated_at":                  time.Now().UTC(),
+	}
+	var update any
+	if push := historyPushPipeline(hist...); push != nil {
+		update = []bson.M{{"$set": set}, push}
+	} else {
+		update = bson.M{"$set": set}
+	}
 	res, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id":                         id,
 			"cancellation_request_status": "pending",
 		},
-		bson.M{"$set": bson.M{
-			"cancellation_request_status": newStatus,
-			"updated_at":                  time.Now().UTC(),
-		}})
+		update)
 	if err != nil {
 		return fmt.Errorf("store: resolve cancellation request: %w", err)
 	}
@@ -723,15 +865,16 @@ func (s *MongoDB) ClearCancellationRequest(ctx context.Context, id string) error
 // recomputes suggested price and re-locks escrow but never overwrites a
 // stale agreed_price), locked escrow zeroed (the wallet leg already ran via
 // RollbackEscrow), and the request marked expired with its reason kept.
-func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excludedOfferedIDs []string) error {
+func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excludedOfferedIDs []string, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":                         id,
 		"status":                      bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusAwaitingPriceResponse}},
 		"cancellation_request_status": "pending",
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter,
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":                      models.JobStatusPendingDispatch,
+			"sub_status":                  "",
 			"employee_id":                 "",
 			"current_offered_employee_id": "",
 			"offer_expires_at":            nil,
@@ -744,7 +887,8 @@ func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excl
 			"locked_escrow_amount":        0,
 			"cancellation_request_status": "expired",
 			"updated_at":                  time.Now().UTC(),
-		}})
+		}},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: expire cancellation request: %w", err)
 	}
@@ -754,17 +898,29 @@ func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excl
 	return nil
 }
 
-func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPrice *float64, status models.JobStatus) error {
+func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPrice *float64, status models.JobStatus, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    id,
 		"status": models.JobStatusAwaitingPriceResponse,
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter,
-		bson.M{"$set": bson.M{
-			"agreed_price": agreedPrice,
-			"status":       status,
-			"updated_at":   time.Now().UTC(),
-		}})
+	setDoc := bson.M{
+		"agreed_price": agreedPrice,
+		"status":       status,
+		"updated_at":   time.Now().UTC(),
+	}
+	// ADR-0028 §2.9: the transport job's price agreement activates the job —
+	// the agreeing entry carries heading_to_pickup into the column.
+	if status == models.JobStatusActive {
+		for _, e := range hist {
+			if e.SubStatus != "" {
+				setDoc["sub_status"] = e.SubStatus
+				break
+			}
+		}
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
+		bson.M{"$set": setDoc},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job agreed price: %w", err)
 	}
@@ -774,17 +930,19 @@ func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPri
 	return nil
 }
 
-func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status models.JobStatus, reason string) error {
+func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status models.JobStatus, reason string, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    id,
 		"status": models.JobStatusAwaitingPriceResponse,
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter,
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":              status,
+			"sub_status":          "",
 			"cancellation_reason": reason,
 			"updated_at":          time.Now().UTC(),
-		}})
+		}},
+		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job cancellation: %w", err)
 	}
@@ -795,7 +953,7 @@ func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status m
 }
 
 // AdvanceJobOffer atomically updates the offered employee on a pending_dispatch job using CAS.
-func (s *MongoDB) AdvanceJobOffer(ctx context.Context, jobID, oldOfferedEmpID, newOfferedEmpID string, newExpiry *time.Time, newOfferedIDs []string) error {
+func (s *MongoDB) AdvanceJobOffer(ctx context.Context, jobID, oldOfferedEmpID, newOfferedEmpID string, newExpiry *time.Time, newOfferedIDs []string, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    jobID,
 		"status": models.JobStatusPendingDispatch,
@@ -811,7 +969,7 @@ func (s *MongoDB) AdvanceJobOffer(ctx context.Context, jobID, oldOfferedEmpID, n
 			"updated_at":                  time.Now().UTC(),
 		},
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(update, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: advance job offer: %w", err)
 	}
@@ -822,7 +980,7 @@ func (s *MongoDB) AdvanceJobOffer(ctx context.Context, jobID, oldOfferedEmpID, n
 }
 
 // SetJobUnavailable transitions a pending_dispatch job to unavailable when the cascade is exhausted.
-func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID string, offeredIDs []string) error {
+func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID string, offeredIDs []string, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    jobID,
 		"status": models.JobStatusPendingDispatch,
@@ -839,7 +997,7 @@ func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID 
 			"updated_at":                  time.Now().UTC(),
 		},
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(update, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: set job unavailable: %w", err)
 	}
@@ -850,7 +1008,7 @@ func (s *MongoDB) SetJobUnavailable(ctx context.Context, jobID, oldOfferedEmpID 
 }
 
 // AcceptJobOffer atomically claims a pending_dispatch offer using CAS.
-func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, nextStatus models.JobStatus, bookedDist float64, empLoc *models.Location, suggestedPrice *float64, lockedEscrow float64) error {
+func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, nextStatus models.JobStatus, bookedDist float64, empLoc *models.Location, suggestedPrice *float64, lockedEscrow float64, etaMinutes int, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":                         jobID,
 		"status":                      models.JobStatusPendingDispatch,
@@ -871,7 +1029,22 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 	if lockedEscrow > 0 {
 		setDoc["locked_escrow_amount"] = lockedEscrow
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter, bson.M{"$set": setDoc})
+	// ADR-0028 §2.9: the accept-time ETA snapshot (courier -> pickup).
+	if etaMinutes > 0 {
+		setDoc["estimated_duration_minutes"] = etaMinutes
+	}
+	// ADR-0028 §2.9: entering active carries heading_to_pickup from the
+	// acceptance entry (delivery); transport activates later via the price
+	// agreement, so awaiting_price_response gets no sub_status.
+	if nextStatus == models.JobStatusActive {
+		for _, e := range hist {
+			if e.SubStatus != "" {
+				setDoc["sub_status"] = e.SubStatus
+				break
+			}
+		}
+	}
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(bson.M{"$set": setDoc}, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: accept job offer: %w", err)
 	}
@@ -881,9 +1054,53 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 	return nil
 }
 
+// PickupJob records the courier's physical pickup mid-job (ADR-0028 §2.9):
+// CAS from {active, heading_to_pickup} to {active, picked_up}. The courier
+// must still be the assigned employee. Returns a job_state_changed error
+// when the job is no longer in the heading_to_pickup window.
+func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, etaMinutes int, hist ...models.JobStatusHistoryEntry) error {
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id":         jobID,
+			"status":      models.JobStatusActive,
+			"sub_status":  models.SubStatusHeadingToPickup,
+			"employee_id": courierID,
+		},
+		withHistory(
+			bson.M{"$set": v2PickupSetDoc(etaMinutes)},
+			historyPush(hist...)))
+	if err != nil {
+		return fmt.Errorf("store: pickup job: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		job := s.GetJob(ctx, jobID)
+		if job == nil {
+			return fmt.Errorf("job_not_found: job %q not found", jobID)
+		}
+		if job.EmployeeID != courierID {
+			return fmt.Errorf("access_denied: courier %s is not the assigned employee", courierID)
+		}
+		if job.SubStatus == models.SubStatusPickedUp {
+			return fmt.Errorf("already_picked_up: job %q was already picked up", jobID)
+		}
+		return fmt.Errorf("job_state_changed: job %q is not in the heading_to_pickup window (status %s, sub_status %s)", jobID, job.Status, job.SubStatus)
+	}
+	return nil
+}
+
+// v2PickupSetDoc is the pickup CAS $set: sub_status advances to picked_up
+// and the ETA re-snapshots for the remaining leg (ADR-0028 §2.10).
+func v2PickupSetDoc(etaMinutes int) bson.M {
+	set := bson.M{"sub_status": models.SubStatusPickedUp, "updated_at": time.Now().UTC()}
+	if etaMinutes > 0 {
+		set["estimated_duration_minutes"] = etaMinutes
+	}
+	return set
+}
+
 // CancelJobOnEscrowFailure atomically transitions a job from pending_dispatch to cancelled
 // when escrow locking fails (e.g. owner insolvent) so the cascade is stopped immediately (F-05).
-func (s *MongoDB) CancelJobOnEscrowFailure(ctx context.Context, jobID, reason string) error {
+func (s *MongoDB) CancelJobOnEscrowFailure(ctx context.Context, jobID, reason string, hist ...models.JobStatusHistoryEntry) error {
 	filter := bson.M{
 		"_id":    jobID,
 		"status": models.JobStatusPendingDispatch,
@@ -897,7 +1114,7 @@ func (s *MongoDB) CancelJobOnEscrowFailure(ctx context.Context, jobID, reason st
 			"updated_at":                  time.Now().UTC(),
 		},
 	}
-	res, err := s.jobs.UpdateOne(ctx, filter, update)
+	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(update, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: cancel job on escrow failure: %w", err)
 	}
@@ -1055,9 +1272,18 @@ func (s *MongoDB) LockEscrow(ctx context.Context, tenantID, jobID string, amount
 }
 
 // ReleaseEscrowWithSplit handles job completion for electronic payments: releases 100% of escrow to owner withdrawable_balance (0% platform commission per ADR-0017).
-func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID string, amount float64) error {
+func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID string, amount float64, hist ...models.JobStatusHistoryEntry) error {
 	netAmount := amount
 	now := time.Now().UTC()
+
+	// ADR-0028: the completion history entry rides the job-status update of
+	// the release, not the wallet/ledger steps, and stays out of the revert
+	// closures (entries are informational; the fallback revert path is the
+	// pre-existing rare-failure mode).
+	var push bson.M
+	if len(hist) > 0 && hist[0].Status != "" {
+		push = historyPush(hist...)
+	}
 
 	runTx := func(sc context.Context, isFallback bool) error {
 		if isFallback {
@@ -1072,10 +1298,11 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 				"locked_escrow_amount": bson.M{"$gte": amount},
 			},
-			bson.M{
-				"$inc": bson.M{"locked_escrow_amount": -amount},
-				"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": now},
-			})
+			withHistory(
+				bson.M{
+					"$inc": bson.M{"locked_escrow_amount": -amount},
+					"$set": bson.M{"status": models.JobStatusCompleted, "sub_status": "", "updated_at": now},
+				}, push))
 		if err != nil {
 			return fmt.Errorf("failed to update job escrow/status: %w", err)
 		}
@@ -1171,8 +1398,8 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 // the same atomic status flip so the collection record can never diverge from
 // the completion event. A non-nil review (ADR-0007 under-distance flag,
 // FIX-COD-RECON) is written in the same update.
-func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64, review *models.DistanceReview) error {
-	set := bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()}
+func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64, review *models.DistanceReview, hist ...models.JobStatusHistoryEntry) error {
+	set := bson.M{"status": models.JobStatusCompleted, "sub_status": "", "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()}
 	if review != nil {
 		set["distance_review"] = review
 	}
@@ -1181,7 +1408,7 @@ func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount f
 			"_id":    jobID,
 			"status": bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusEscrowReconciliationRequired}},
 		},
-		bson.M{"$set": set})
+		withHistory(bson.M{"$set": set}, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("failed to update COD job status: %w", err)
 	}
@@ -1695,7 +1922,7 @@ func (s *MongoDB) UpdateJobLocation(ctx context.Context, id string, lat, lon flo
 // transition), and reconciliation-flagged jobs must exit through their
 // dedicated resolution path. Including those states in this filter previously
 // let a direct call strand locked funds permanently (QA audit Q5).
-func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error {
+func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string, hist ...models.JobStatusHistoryEntry) error {
 	res, err := s.jobs.UpdateOne(ctx,
 		bson.M{
 			"_id": id,
@@ -1706,13 +1933,16 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string) error
 				models.JobStatusAwaitingPriceResponse,
 			}},
 		},
-		bson.M{"$set": bson.M{
-			"status":                      models.JobStatusCancelled,
-			"current_offered_employee_id": "",
-			"offer_expires_at":            nil,
-			"cancellation_reason":         reason,
-			"updated_at":                  time.Now().UTC(),
-		}})
+		withHistory(
+			bson.M{"$set": bson.M{
+				"status":                      models.JobStatusCancelled,
+				"sub_status":                  "",
+				"current_offered_employee_id": "",
+				"offer_expires_at":            nil,
+				"cancellation_reason":         reason,
+				"updated_at":                  time.Now().UTC(),
+			}},
+			historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: cancel job: %w", err)
 	}
@@ -1751,13 +1981,20 @@ func (s *MongoDB) SetCancellationReason(ctx context.Context, id string, reason s
 }
 
 // RefundEscrow returns locked escrow back to WithdrawableBalance.
-func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amount float64) error {
+func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amount float64, hist ...models.JobStatusHistoryEntry) error {
 	w, err := s.GetOrCreateWallet(ctx, tenantID)
 	if err != nil {
 		return err
 	}
 	if w.EscrowBalance < amount {
 		return fmt.Errorf("insufficient escrow balance to refund: have %.2f, need %.2f", w.EscrowBalance, amount)
+	}
+
+	// The cancellation history entry rides the job-status update of the
+	// refund; wallet/ledger steps are untouched (ADR-0028 §2.3).
+	var push bson.M
+	if len(hist) > 0 && hist[0].Status != "" {
+		push = historyPush(hist...)
 	}
 
 	runTx := func(sc context.Context, isFallback bool) error {
@@ -1790,10 +2027,11 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 				"status":               bson.M{"$in": []models.JobStatus{models.JobStatusActive, models.JobStatusPending, models.JobStatusEscrowReconciliationRequired}},
 				"locked_escrow_amount": bson.M{"$gte": amount},
 			},
-			bson.M{
-				"$inc": bson.M{"locked_escrow_amount": -amount},
-				"$set": bson.M{"status": models.JobStatusCancelled, "updated_at": time.Now().UTC()},
-			})
+			withHistory(
+				bson.M{
+					"$inc": bson.M{"locked_escrow_amount": -amount},
+					"$set": bson.M{"status": models.JobStatusCancelled, "sub_status": "", "updated_at": time.Now().UTC()},
+				}, push))
 		if err != nil {
 			return fmt.Errorf("failed to update job escrow/status: %w", err)
 		}
@@ -2224,17 +2462,29 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 
 	switch decision {
 	case "release_to_employee":
+		// The completion entry rides the same CAS update as the status flip
+		// (ADR-0028 §2.3); admin resolutions are always reviewer-attributed.
+		releaseEntry := models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCompleted,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleAdmin,
+			ActorID:   reviewerID,
+			Reason:    fmt.Sprintf("reconciliation resolved: release_to_employee (%s)", reason),
+		}
+
 		note := fmt.Sprintf("admin_reconciliation_resolved: release_to_employee by reviewer %s - reason: %s", reviewerID, reason)
 
 		if job.PaymentMethod == "cod" {
 			// CAS transition for COD job
 			res := s.jobs.FindOneAndUpdate(ctx,
 				bson.M{"_id": jobID, "status": models.JobStatusEscrowReconciliationRequired},
-				bson.M{"$set": bson.M{
-					"status":              models.JobStatusCompleted,
-					"reconciliation_note": note,
-					"updated_at":          time.Now().UTC(),
-				}},
+				withHistory(
+					bson.M{"$set": bson.M{
+						"status":              models.JobStatusCompleted,
+						"reconciliation_note": note,
+						"updated_at":          time.Now().UTC(),
+					}},
+					historyPush(releaseEntry)),
 				options.FindOneAndUpdate().SetReturnDocument(options.After),
 			)
 			if res.Err() != nil {
@@ -2253,7 +2503,7 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 		if amount > 0 {
 			// ReleaseEscrowWithSplit executes the atomic CAS on job status (EscrowReconciliationRequired -> Completed)
 			// and releases 100% escrow to the tenant wallet.
-			if err := s.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if err := s.ReleaseEscrowWithSplit(ctx, job.OwnerID, job.ID, amount, releaseEntry); err != nil {
 				if strings.Contains(err.Error(), "not active") || strings.Contains(err.Error(), "insufficient") {
 					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
 				}
@@ -2261,8 +2511,14 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 			}
 		}
 
-		// Update note with reviewer details
-		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", amount); err != nil {
+		// Update note with reviewer details. With escrow already released the
+		// note update is a no-op on status; with zero locked escrow this call
+		// IS the recon->completed transition and must carry the entry.
+		var noteEntry []models.JobStatusHistoryEntry
+		if amount == 0 {
+			noteEntry = []models.JobStatusHistoryEntry{releaseEntry}
+		}
+		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCompleted, note, "", amount, noteEntry...); err != nil {
 			log.Printf("[ERROR] failed to update reconciliation note for job %s: %v", job.ID, err)
 		}
 
@@ -2273,17 +2529,29 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 		return updatedJob, nil
 
 	case "refund_to_customer":
+		// Symmetric to the release case: the cancellation entry rides the
+		// same CAS update as the status flip.
+		refundEntry := models.JobStatusHistoryEntry{
+			Status:    models.JobStatusCancelled,
+			At:        time.Now().UTC(),
+			ActorRole: models.ActorRoleAdmin,
+			ActorID:   reviewerID,
+			Reason:    fmt.Sprintf("reconciliation resolved: refund_to_customer (%s)", reason),
+		}
+
 		note := fmt.Sprintf("admin_reconciliation_resolved: refund_to_customer by reviewer %s - reason: %s", reviewerID, reason)
 
 		if job.PaymentMethod == "cod" {
 			// CAS transition for COD job refund/cancellation
 			res := s.jobs.FindOneAndUpdate(ctx,
 				bson.M{"_id": jobID, "status": models.JobStatusEscrowReconciliationRequired},
-				bson.M{"$set": bson.M{
-					"status":              models.JobStatusCancelled,
-					"reconciliation_note": note,
-					"updated_at":          time.Now().UTC(),
-				}},
+				withHistory(
+					bson.M{"$set": bson.M{
+						"status":              models.JobStatusCancelled,
+						"reconciliation_note": note,
+						"updated_at":          time.Now().UTC(),
+					}},
+					historyPush(refundEntry)),
 				options.FindOneAndUpdate().SetReturnDocument(options.After),
 			)
 			if res.Err() != nil {
@@ -2302,7 +2570,7 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 		if amount > 0 {
 			// RefundEscrow executes the atomic CAS on job status (EscrowReconciliationRequired -> Cancelled)
 			// and restores escrow to the tenant wallet.
-			if err := s.RefundEscrow(ctx, job.OwnerID, job.ID, amount); err != nil {
+			if err := s.RefundEscrow(ctx, job.OwnerID, job.ID, amount, refundEntry); err != nil {
 				if strings.Contains(err.Error(), "not active") || strings.Contains(err.Error(), "insufficient") {
 					return nil, fmt.Errorf("job %s is no longer pending reconciliation or was concurrently modified", jobID)
 				}
@@ -2310,8 +2578,13 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 			}
 		}
 
-		// Update note with reviewer details
-		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0); err != nil {
+		// Update note with reviewer details; carries the entry only when the
+		// zero-escrow path is the actual recon->cancelled transition.
+		var noteEntry []models.JobStatusHistoryEntry
+		if amount == 0 {
+			noteEntry = []models.JobStatusHistoryEntry{refundEntry}
+		}
+		if err := s.UpdateJobReconciliation(ctx, job.ID, models.JobStatusCancelled, note, "", 0, noteEntry...); err != nil {
 			log.Printf("[ERROR] failed to update reconciliation note for job %s: %v", job.ID, err)
 		}
 

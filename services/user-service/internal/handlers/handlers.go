@@ -298,6 +298,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
 	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
+	mux.HandleFunc("/users/jobs/pickup", u.PickupJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
 	mux.HandleFunc("/users/jobs/request-cancellation", u.RequestCancellation)
 	mux.HandleFunc("/users/jobs/respond-cancellation", u.RespondCancellation)
@@ -592,6 +593,40 @@ func (u *UserService) checkKYC(ownerID string) (string, error) {
 	}
 
 	return user.KYCStatus, nil
+}
+
+// fetchUserPhone reads a user's phone number from the auth service's
+// internal user endpoint (GET /auth/user?id= + X-Internal-Token — the same
+// S2S shape verifyEmployeeAssignment uses). It feeds the ADR-0028 §2.11
+// contact windows: CourierPhone overlays on owner/customer DTOs only while
+// the job is active; any transport failure returns "" and the DTO's
+// omitempty drops the field.
+func (u *UserService) fetchUserPhone(ctx context.Context, userID string) string {
+	if userID == "" || u.authServiceURL == "" || u.internalServiceToken == "" {
+		return ""
+	}
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	var user struct {
+		Phone string `json:"phone"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(user.Phone)
 }
 
 func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {
