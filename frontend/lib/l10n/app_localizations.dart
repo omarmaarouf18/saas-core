@@ -8786,6 +8786,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload again'**
   String get ownKybUploadAgain;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownNavToday;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ownNavOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get ownNavTeam;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get ownNavAccount;
 }
 
 class _AppLocalizationsDelegate

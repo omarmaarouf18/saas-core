@@ -4134,5 +4134,21 @@
   "ownKybUploadAgain": "Upload again",
   "@ownKybUploadAgain": {
     "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNavToday": "Today",
+  "@ownNavToday": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNavOrders": "Orders",
+  "@ownNavOrders": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNavTeam": "Team",
+  "@ownNavTeam": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNavAccount": "Account",
+  "@ownNavAccount": {
+    "description": "FE-OWNER-1 redesigned owner screens."
   }
 }

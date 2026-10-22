@@ -4841,4 +4841,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownKybUploadAgain => 'ارفعها تاني';
+
+  @override
+  String get ownNavToday => 'النهارده';
+
+  @override
+  String get ownNavOrders => 'الطلبات';
+
+  @override
+  String get ownNavTeam => 'الفريق';
+
+  @override
+  String get ownNavAccount => 'حسابي';
 }

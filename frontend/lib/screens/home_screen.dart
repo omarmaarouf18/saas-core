@@ -36,6 +36,7 @@ import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
 import '../features/auth/auth_nav.dart';
 import '../features/customer/customer_shell.dart';
+import '../features/owner/owner_shell.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import 'owner_fleet_map_screen.dart';
 
@@ -224,7 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return _buildNonOwnerShell(user, l10n);
     }
 
-    return _buildOwnerShell(user, l10n);
+    // FE-OWNER-1: redesigned owner shell behind QD_REDESIGN_OWNER.
+    return ownerRootScreen(legacy: () => _buildOwnerShell(user, l10n));
   }
 
   Widget _buildOwnerShell(UserProfile user, AppLocalizations l10n) {

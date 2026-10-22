@@ -16,3 +16,12 @@ const bool kRedesignCustomer =
 /// [kRedesignCustomer].
 const bool kRedesignAuth =
     bool.fromEnvironment('QD_REDESIGN_AUTH', defaultValue: false);
+
+/// FE-OWNER-1: the redesigned owner app (redesign A): Today, Orders, Team
+/// and the order / courier / payment-review pages. Off by default, so a
+/// plain build is the existing owner dashboard; turn it on with
+/// `--dart-define=QD_REDESIGN_OWNER=true`. Service setup, fleet map,
+/// wallet, subscription, activity log, KYB upload and owner settings are
+/// still the existing screens (FE-OWNER-2).
+const bool kRedesignOwner =
+    bool.fromEnvironment('QD_REDESIGN_OWNER', defaultValue: false);

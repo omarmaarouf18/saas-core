@@ -1694,5 +1694,9 @@
   "ownKybView": "شوف المستندات",
   "ownKybRejectedTitle": "مستنداتك اترفضت",
   "ownKybRejectedBody": "ارفعها تاني عشان تبدأ تستقبل طلبات.",
-  "ownKybUploadAgain": "ارفعها تاني"
+  "ownKybUploadAgain": "ارفعها تاني",
+  "ownNavToday": "النهارده",
+  "ownNavOrders": "الطلبات",
+  "ownNavTeam": "الفريق",
+  "ownNavAccount": "حسابي"
 }

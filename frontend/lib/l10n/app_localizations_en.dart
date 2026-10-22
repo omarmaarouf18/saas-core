@@ -4911,4 +4911,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownKybUploadAgain => 'Upload again';
+
+  @override
+  String get ownNavToday => 'Today';
+
+  @override
+  String get ownNavOrders => 'Orders';
+
+  @override
+  String get ownNavTeam => 'Team';
+
+  @override
+  String get ownNavAccount => 'Account';
 }
