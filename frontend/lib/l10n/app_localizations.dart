@@ -7754,6 +7754,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link copied. Open it in your browser to install the new version.'**
   String get updCopied;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier {id}'**
+  String ownCourierUnknown(String id);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get ownAgoNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String ownAgoMinutes(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 h ago} other{{count} h ago}}'**
+  String ownAgoHours(int count);
 }
 
 class _AppLocalizationsDelegate

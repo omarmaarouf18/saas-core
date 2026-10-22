@@ -3270,5 +3270,36 @@
   "updCopied": "Link copied. Open it in your browser to install the new version.",
   "@updCopied": {
     "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
+  },
+  "ownCourierUnknown": "Courier {id}",
+  "@ownCourierUnknown": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "ownAgoNow": "just now",
+  "@ownAgoNow": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAgoMinutes": "{count, plural, =1{1 min ago} other{{count} min ago}}",
+  "@ownAgoMinutes": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ownAgoHours": "{count, plural, =1{1 h ago} other{{count} h ago}}",
+  "@ownAgoHours": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

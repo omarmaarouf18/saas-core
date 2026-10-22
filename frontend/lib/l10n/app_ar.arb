@@ -1522,5 +1522,9 @@
   "updLatest": "أحدث نسخة",
   "updLinkLabel": "لينك التحميل",
   "updCopy": "انسخ لينك التحميل",
-  "updCopied": "اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة."
+  "updCopied": "اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة.",
+  "ownCourierUnknown": "مندوب {id}",
+  "ownAgoNow": "دلوقتي",
+  "ownAgoMinutes": "{count, plural, =1{من دقيقة} =2{من دقيقتين} few{من {count} دقايق} other{من {count} دقيقة}}",
+  "ownAgoHours": "{count, plural, =1{من ساعة} =2{من ساعتين} few{من {count} ساعات} other{من {count} ساعة}}"
 }

@@ -42,6 +42,24 @@ class OwnerProvider extends ChangeNotifier {
   bool get isDashboardHydrated => _dashboardHydrated;
   bool get digitalPaymentsEnabled => _digitalPaymentsEnabled;
 
+  /// FE-OWNER-1: raw JSON of the jobs from the last successful
+  /// [fetchOwnerJobs], by job id. The shared [Job] model drops owner-only
+  /// fields (`actual_cash_amount`, `distance_review`); the redesigned owner
+  /// pages read them from here.
+  Map<String, Map<String, dynamic>> _ownerJobsJson = {};
+  Map<String, dynamic>? ownerJobJson(String jobId) => _ownerJobsJson[jobId];
+
+  /// FE-OWNER-1: the error of the last [fetchOwnerJobs] call alone (null
+  /// after a success). [error] is shared by every call of this provider, so
+  /// another call can clear it before a page reads it.
+  String? _ownerJobsError;
+  String? get ownerJobsError => _ownerJobsError;
+
+  /// FE-OWNER-1: the error of the last [fetchEmployees] call alone (null
+  /// after a success); see [ownerJobsError].
+  String? _employeesError;
+  String? get employeesError => _employeesError;
+
   OwnerProvider(this.apiClient);
 
   Future<void> fetchDashboardData(String tenantId) async {
@@ -205,10 +223,12 @@ class OwnerProvider extends ChangeNotifier {
       } else {
         _employees = [];
       }
+      _employeesError = null;
       return _employees;
     } catch (e) {
       debugPrint('Error fetching employees list: $e');
       _error = friendlyErrorMessage(e);
+      _employeesError = _error;
       _employees = [];
       return [];
     } finally {
@@ -421,12 +441,19 @@ class OwnerProvider extends ChangeNotifier {
       if (res is List) {
         _ownerJobs =
             res.map((j) => Job.fromJson(j as Map<String, dynamic>)).toList();
+        _ownerJobsJson = {
+          for (final j in res)
+            if (j is Map<String, dynamic>) '${j['id'] ?? ''}': j,
+        };
       } else {
         _ownerJobs = [];
+        _ownerJobsJson = {};
       }
+      _ownerJobsError = null;
     } catch (e) {
       debugPrint('Error fetching owner jobs: $e');
       _error = friendlyErrorMessage(e);
+      _ownerJobsError = _error;
     } finally {
       _isLoading = false;
       notifyListeners();

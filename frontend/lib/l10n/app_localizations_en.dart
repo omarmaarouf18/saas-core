@@ -4291,4 +4291,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updCopied =>
       'Link copied. Open it in your browser to install the new version.';
+
+  @override
+  String ownCourierUnknown(String id) {
+    return 'Courier $id';
+  }
+
+  @override
+  String get ownAgoNow => 'just now';
+
+  @override
+  String ownAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ownAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count h ago',
+      one: '1 h ago',
+    );
+    return '$_temp0';
+  }
 }

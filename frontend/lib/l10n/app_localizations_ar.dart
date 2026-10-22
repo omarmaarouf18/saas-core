@@ -4221,4 +4221,38 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get updCopied =>
       'اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة.';
+
+  @override
+  String ownCourierUnknown(String id) {
+    return 'مندوب $id';
+  }
+
+  @override
+  String get ownAgoNow => 'دلوقتي';
+
+  @override
+  String ownAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'من $count دقيقة',
+      few: 'من $count دقايق',
+      two: 'من دقيقتين',
+      one: 'من دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ownAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'من $count ساعة',
+      few: 'من $count ساعات',
+      two: 'من ساعتين',
+      one: 'من ساعة',
+    );
+    return '$_temp0';
+  }
 }
