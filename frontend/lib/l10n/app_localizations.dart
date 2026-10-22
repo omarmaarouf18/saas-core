@@ -8018,6 +8018,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order cancelled. The held amount went back to the customer.'**
   String get ownCancelledRefunded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ownOrdersTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number or courier name'**
+  String get ownOrdersSearchHint;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get ownClearSearch;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order status'**
+  String get ownOrdersKind;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing · {count}'**
+  String ownTabOngoing(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get ownTabDone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get ownTabCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your orders.'**
+  String get ownOrdersLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. You\'re seeing the last list we loaded.'**
+  String get ownRefreshFailed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No order matches your search'**
+  String get ownOrdersNoMatch;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ongoing orders'**
+  String get ownNoOngoing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished orders yet'**
+  String get ownNoDone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No cancelled orders'**
+  String get ownNoCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders customers book with you show up here.'**
+  String get ownOrdersEmptyBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price offer: {proposed} instead of {price}'**
+  String ownProposalLine(String proposed, String price);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price offer: {proposed}'**
+  String ownProposalOnly(String proposed);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered to {name}'**
+  String ownOfferedTo(String name);
 }
 
 class _AppLocalizationsDelegate

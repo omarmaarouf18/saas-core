@@ -4467,4 +4467,65 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ownCancelledRefunded =>
       'Order cancelled. The held amount went back to the customer.';
+
+  @override
+  String get ownOrdersTitle => 'Orders';
+
+  @override
+  String get ownOrdersSearchHint => 'Order number or courier name';
+
+  @override
+  String get ownClearSearch => 'Clear search';
+
+  @override
+  String get ownOrdersKind => 'Order status';
+
+  @override
+  String ownTabOngoing(int count) {
+    return 'Ongoing · $count';
+  }
+
+  @override
+  String get ownTabDone => 'Done';
+
+  @override
+  String get ownTabCancelled => 'Cancelled';
+
+  @override
+  String get ownOrdersLoadError => 'Couldn\'t load your orders.';
+
+  @override
+  String get ownRefreshFailed =>
+      'Couldn\'t refresh. You\'re seeing the last list we loaded.';
+
+  @override
+  String get ownOrdersNoMatch => 'No order matches your search';
+
+  @override
+  String get ownNoOngoing => 'No ongoing orders';
+
+  @override
+  String get ownNoDone => 'No finished orders yet';
+
+  @override
+  String get ownNoCancelled => 'No cancelled orders';
+
+  @override
+  String get ownOrdersEmptyBody =>
+      'Orders customers book with you show up here.';
+
+  @override
+  String ownProposalLine(String proposed, String price) {
+    return 'Price offer: $proposed instead of $price';
+  }
+
+  @override
+  String ownProposalOnly(String proposed) {
+    return 'Price offer: $proposed';
+  }
+
+  @override
+  String ownOfferedTo(String name) {
+    return 'Offered to $name';
+  }
 }

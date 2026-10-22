@@ -4396,4 +4396,64 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownCancelledRefunded => 'الطلب اتلغى والمبلغ المحجوز رجع للعميل.';
+
+  @override
+  String get ownOrdersTitle => 'الطلبات';
+
+  @override
+  String get ownOrdersSearchHint => 'رقم الطلب أو اسم المندوب';
+
+  @override
+  String get ownClearSearch => 'امسح البحث';
+
+  @override
+  String get ownOrdersKind => 'حالة الطلبات';
+
+  @override
+  String ownTabOngoing(int count) {
+    return 'جارية · $count';
+  }
+
+  @override
+  String get ownTabDone => 'خلصت';
+
+  @override
+  String get ownTabCancelled => 'اتلغت';
+
+  @override
+  String get ownOrdersLoadError => 'مقدرناش نحمّل الطلبات.';
+
+  @override
+  String get ownRefreshFailed => 'مقدرناش نحدّث. ده آخر اللي اتحمّل.';
+
+  @override
+  String get ownOrdersNoMatch => 'مفيش طلب زي اللي بتدوّر عليه';
+
+  @override
+  String get ownNoOngoing => 'مفيش طلبات جارية';
+
+  @override
+  String get ownNoDone => 'لسه مفيش طلبات خلصت';
+
+  @override
+  String get ownNoCancelled => 'مفيش طلبات اتلغت';
+
+  @override
+  String get ownOrdersEmptyBody =>
+      'الطلبات اللي العملاء بيطلبوها منك هتظهر هنا.';
+
+  @override
+  String ownProposalLine(String proposed, String price) {
+    return 'عرض سعر: $proposed بدل $price';
+  }
+
+  @override
+  String ownProposalOnly(String proposed) {
+    return 'عرض سعر: $proposed';
+  }
+
+  @override
+  String ownOfferedTo(String name) {
+    return 'معروض على $name';
+  }
 }

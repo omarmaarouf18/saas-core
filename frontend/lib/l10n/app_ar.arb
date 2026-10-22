@@ -1566,5 +1566,22 @@
   "ownCancelSheetHeld": "الـ {amount} المحجوزين للطلب هيرجعوا للعميل. اكتب سبب الإلغاء.",
   "ownCancelReasonLabel": "السبب",
   "ownCancelled": "الطلب اتلغى.",
-  "ownCancelledRefunded": "الطلب اتلغى والمبلغ المحجوز رجع للعميل."
+  "ownCancelledRefunded": "الطلب اتلغى والمبلغ المحجوز رجع للعميل.",
+  "ownOrdersTitle": "الطلبات",
+  "ownOrdersSearchHint": "رقم الطلب أو اسم المندوب",
+  "ownClearSearch": "امسح البحث",
+  "ownOrdersKind": "حالة الطلبات",
+  "ownTabOngoing": "جارية · {count}",
+  "ownTabDone": "خلصت",
+  "ownTabCancelled": "اتلغت",
+  "ownOrdersLoadError": "مقدرناش نحمّل الطلبات.",
+  "ownRefreshFailed": "مقدرناش نحدّث. ده آخر اللي اتحمّل.",
+  "ownOrdersNoMatch": "مفيش طلب زي اللي بتدوّر عليه",
+  "ownNoOngoing": "مفيش طلبات جارية",
+  "ownNoDone": "لسه مفيش طلبات خلصت",
+  "ownNoCancelled": "مفيش طلبات اتلغت",
+  "ownOrdersEmptyBody": "الطلبات اللي العملاء بيطلبوها منك هتظهر هنا.",
+  "ownProposalLine": "عرض سعر: {proposed} بدل {price}",
+  "ownProposalOnly": "عرض سعر: {proposed}",
+  "ownOfferedTo": "معروض على {name}"
 }

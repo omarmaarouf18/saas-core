@@ -3517,5 +3517,96 @@
   "ownCancelledRefunded": "Order cancelled. The held amount went back to the customer.",
   "@ownCancelledRefunded": {
     "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersTitle": "Orders",
+  "@ownOrdersTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersSearchHint": "Order number or courier name",
+  "@ownOrdersSearchHint": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownClearSearch": "Clear search",
+  "@ownClearSearch": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersKind": "Order status",
+  "@ownOrdersKind": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTabOngoing": "Ongoing · {count}",
+  "@ownTabOngoing": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ownTabDone": "Done",
+  "@ownTabDone": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTabCancelled": "Cancelled",
+  "@ownTabCancelled": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersLoadError": "Couldn't load your orders.",
+  "@ownOrdersLoadError": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRefreshFailed": "Couldn't refresh. You're seeing the last list we loaded.",
+  "@ownRefreshFailed": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersNoMatch": "No order matches your search",
+  "@ownOrdersNoMatch": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNoOngoing": "No ongoing orders",
+  "@ownNoOngoing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNoDone": "No finished orders yet",
+  "@ownNoDone": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNoCancelled": "No cancelled orders",
+  "@ownNoCancelled": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOrdersEmptyBody": "Orders customers book with you show up here.",
+  "@ownOrdersEmptyBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownProposalLine": "Price offer: {proposed} instead of {price}",
+  "@ownProposalLine": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ownProposalOnly": "Price offer: {proposed}",
+  "@ownProposalOnly": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      }
+    }
+  },
+  "ownOfferedTo": "Offered to {name}",
+  "@ownOfferedTo": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
