@@ -1,7 +1,13 @@
 // Package models defines data types for the user-service.
 package models
 
-import "time"
+import (
+	"math"
+	"regexp"
+	"strings"
+	"time"
+	"unicode"
+)
 
 // ---------------------------------------------------------------------------
 // GeoJSON — for MongoDB 2dsphere spatial indexing
@@ -126,6 +132,11 @@ func ValidPriceProposal(suggested, proposed float64) bool {
 type Location struct {
 	Latitude  float64 `json:"latitude"  bson:"latitude"`
 	Longitude float64 `json:"longitude" bson:"longitude"`
+	// Address is structured free text (street, area, building) typed or
+	// selected by the customer at booking time (ADR-0028 §2.2). Snapshotted
+	// into the job; later profile edits never cascade back into it. No paid
+	// geocoding: it is stored exactly as provided, trimmed and sanitized.
+	Address string `json:"address,omitempty" bson:"address,omitempty"`
 	// AddressNote is an optional customer/owner-typed landmark description
 	// (e.g. "beside Ahmed's kiosk") helping the courier find the pin.
 	// Free text, never validated as an address; length-capped at creation.
@@ -134,6 +145,134 @@ type Location struct {
 
 // MaxAddressNoteLength caps the free-text landmark note (Option C).
 const MaxAddressNoteLength = 500
+
+// ADR-0028 field caps and enum tokens. All v2 booking fields are optional;
+// when a value IS provided it must satisfy these bounds.
+const (
+	MaxAddressLength       = 250 // location.address / destination.address runes
+	MaxRecipientNameLength = 100 // recipient.name runes
+	MaxRecipientPhoneLen   = 20  // recipient.phone chars (E.164 headroom)
+	MaxRecipientNotesLen   = 200 // recipient.notes runes
+	MaxPackageNotesLen     = 200 // package_details.notes runes
+)
+
+// Sub-status tokens under status == "active" (ADR-0028 §2.4). sub_status
+// is defined ONLY while the job is active and is cleared on every exit.
+const (
+	SubStatusHeadingToPickup = "heading_to_pickup"
+	SubStatusPickedUp        = "picked_up"
+)
+
+// Allowed package sizes (ADR-0028 §2.7). Informational capacity signal
+// only: no pricing effect, backend default is empty/unset.
+const (
+	PackageSizeSmall  = "small"
+	PackageSizeMedium = "medium"
+	PackageSizeLarge  = "large"
+)
+
+// Actor roles recorded in status_history entries (ADR-0028 §2.3). Admin
+// and system actors are sanitized out of the customer/employee DTOs.
+const (
+	ActorRoleCustomer = "customer"
+	ActorRoleEmployee = "employee"
+	ActorRoleOwner    = "owner"
+	ActorRoleSystem   = "system"
+	ActorRoleAdmin    = "admin"
+)
+
+// JobRecipient identifies the dropoff recipient when different from the
+// booking customer (ADR-0028 §2.1). Written once at booking; never
+// client-editable afterwards. Phone exposure on the employee DTO follows
+// the acceptance→terminal redaction window (see NewEmployeeJobResponse).
+type JobRecipient struct {
+	Name  string `json:"name,omitempty"  bson:"name,omitempty"`
+	Phone string `json:"phone,omitempty" bson:"phone,omitempty"`
+	Notes string `json:"notes,omitempty" bson:"notes,omitempty"`
+}
+
+// PackageDetails is an informational capacity descriptor captured at
+// booking time (ADR-0028 §2.7). Size never affects pricing.
+type PackageDetails struct {
+	Size  string `json:"size,omitempty"  bson:"size,omitempty"`
+	Notes string `json:"notes,omitempty" bson:"notes,omitempty"`
+}
+
+// JobStatusHistoryEntry is one append-only timeline record for a job
+// state transition (ADR-0028 §2.3). Server-generated only — never taken
+// from client input.
+type JobStatusHistoryEntry struct {
+	Status    JobStatus `json:"status"               bson:"status"`
+	SubStatus string    `json:"sub_status,omitempty" bson:"sub_status,omitempty"`
+	At        time.Time `json:"at"                   bson:"at"`
+	ActorRole string    `json:"actor_role"           bson:"actor_role"`
+	ActorID   string    `json:"actor_id,omitempty"   bson:"actor_id,omitempty"`
+	Reason    string    `json:"reason,omitempty"     bson:"reason,omitempty"`
+}
+
+// ValidPackageSize reports whether s is an allowed package size token.
+// An empty string means "not specified" and is valid.
+func ValidPackageSize(s string) bool {
+	switch s {
+	case "", PackageSizeSmall, PackageSizeMedium, PackageSizeLarge:
+		return true
+	}
+	return false
+}
+
+var (
+	// Egyptian mobile numbers: optional +20 / leading 0 trunk prefix,
+	// then the 1[0,1,2,5] operator prefix and 8 digits (ADR-0028 §2.1).
+	egyptianMobilePattern = regexp.MustCompile(`^(?:\+20|0)?1[0125][0-9]{8}$`)
+	// Generic E.164: literal +, nonzero country code, 7–14 further digits.
+	e164Pattern = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)
+)
+
+// ValidRecipientPhone reports whether s is an acceptable recipient phone:
+// either an Egyptian mobile (with or without country/trunk prefix) or a
+// generic E.164 number. Length is additionally capped at
+// MaxRecipientPhoneLen before these shapes apply.
+func ValidRecipientPhone(s string) bool {
+	if len(s) == 0 || len(s) > MaxRecipientPhoneLen {
+		return false
+	}
+	return egyptianMobilePattern.MatchString(s) || e164Pattern.MatchString(s)
+}
+
+// etaSpeedKmh is the assumed average urban motorcycle speed used for the
+// server-side straight-line ETA snapshot, and etaBufferMin the fixed
+// parked/traffic buffer added on top (ADR-0028 §2.5). Named constants so
+// the formula stays auditable; no paid routing API backs this estimate.
+const (
+	etaSpeedKmh  = 20.0
+	etaBufferMin = 3
+)
+
+// EstimateDurationMinutes maps a straight-line distance (km) to a
+// minimum-integer duration estimate: ceil(D / 20 km/h · 60) + 3 min
+// buffer. Zero and negative distances still cost the buffer, so a
+// co-located courier never yields 0 minutes.
+func EstimateDurationMinutes(d float64) int {
+	minutes := int(math.Ceil(d / etaSpeedKmh * 60))
+	return minutes + etaBufferMin
+}
+
+// SanitizeAddressText trims surrounding whitespace and strips control
+// characters, leaving the visible text intact for storage/on-read use
+// (ADR-0028 §2.2 validation pipeline).
+func SanitizeAddressText(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return ""
+	}
+	clean := make([]rune, 0, len(trimmed))
+	for _, r := range trimmed {
+		if !unicode.IsControl(r) {
+			clean = append(clean, r)
+		}
+	}
+	return string(clean)
+}
 
 // Job represents a trackable unit of work linking an owner, employee, and service.
 type Job struct {
@@ -175,6 +314,27 @@ type Job struct {
 	// DistanceReview is set on a COD delivery/shipping job completed with a
 	// tracked GPS distance under the ADR-0007 threshold (FIX-COD-RECON).
 	DistanceReview *DistanceReview `json:"distance_review,omitempty" bson:"distance_review,omitempty"`
+	// --- Job Model v2 (ADR-0028) ---------------------------------------
+	// Recipient, package details, and address text are snapshotted at
+	// booking time only; they are never client-editable afterwards.
+	Recipient *JobRecipient `json:"recipient,omitempty" bson:"recipient,omitempty"`
+	// PackageDetails is informational (capacity signal); size has no
+	// pricing effect and defaults to unset (ADR-0028 §2.7).
+	PackageDetails *PackageDetails `json:"package_details,omitempty" bson:"package_details,omitempty"`
+	// SubStatus refines status == "active" (heading_to_pickup |
+	// picked_up). It is set ONLY while the job is active and cleared on
+	// every transition out of active; legacy rows simply omit it
+	// (ADR-0028 §2.4).
+	SubStatus string `json:"sub_status,omitempty" bson:"sub_status,omitempty"`
+	// StatusHistory is the append-only transition timeline. Appended
+	// server-side in the same MongoDB update as each transition via $push;
+	// never synthesized for legacy rows (lazy on-read) (ADR-0028 §2.3).
+	StatusHistory []JobStatusHistoryEntry `json:"status_history,omitempty" bson:"status_history,omitempty"`
+	// EstimatedDurationMinutes is the server-side straight-line ETA
+	// snapshot taken at acceptance (courier→pickup) and again at pickup
+	// (courier→destination); nil when no fresh courier location exists
+	// (ADR-0028 §2.5).
+	EstimatedDurationMinutes *int `json:"estimated_duration_minutes,omitempty" bson:"estimated_duration_minutes,omitempty"`
 }
 
 // DistanceReview is an owner-facing review flag for a cash-on-delivery job
@@ -230,6 +390,17 @@ type OwnerJobResponse struct {
 	// DistanceReview is the owner-only COD under-distance review flag
 	// (FIX-COD-RECON); omitted when the job was not flagged.
 	DistanceReview *DistanceReview `json:"distance_review,omitempty"`
+	// --- Job Model v2 (ADR-0028 §3.4) ----------------------------------
+	// Recipient/package/address/eta/history are pure projections of the
+	// stored job. CourierPhone is NOT filled by this constructor: it
+	// requires a live auth-service lookup, so handlers overlay it for
+	// eligible roles (empty ⇒ omitted ⇒ redacted).
+	Recipient                *JobRecipient           `json:"recipient,omitempty"`
+	PackageDetails           *PackageDetails         `json:"package_details,omitempty"`
+	SubStatus                string                  `json:"sub_status,omitempty"`
+	StatusHistory            []JobStatusHistoryEntry `json:"status_history,omitempty"`
+	EstimatedDurationMinutes *int                    `json:"estimated_duration_minutes,omitempty"`
+	CourierPhone             string                  `json:"courier_phone,omitempty"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -267,6 +438,11 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		CreatedAt:                 j.CreatedAt,
 		UpdatedAt:                 j.UpdatedAt,
 		DistanceReview:            j.DistanceReview,
+		Recipient:                 j.Recipient,
+		PackageDetails:            j.PackageDetails,
+		SubStatus:                 v2SubStatusForDTO(j),
+		StatusHistory:             j.StatusHistory,
+		EstimatedDurationMinutes:  j.EstimatedDurationMinutes,
 	}
 }
 
@@ -288,6 +464,16 @@ type CustomerJobResponse struct {
 	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
+	// --- Job Model v2 (ADR-0028 §3.4) ----------------------------------
+	// Recipient is the booking customer's data and is always exposed to
+	// them. CourierPhone is overlaid by handlers during the active window
+	// only (S2S auth-service fetch); empty here ⇒ omitted ⇒ redacted.
+	Recipient                *JobRecipient           `json:"recipient,omitempty"`
+	PackageDetails           *PackageDetails         `json:"package_details,omitempty"`
+	SubStatus                string                  `json:"sub_status,omitempty"`
+	StatusHistory            []JobStatusHistoryEntry `json:"status_history,omitempty"`
+	EstimatedDurationMinutes *int                    `json:"estimated_duration_minutes,omitempty"`
+	CourierPhone             string                  `json:"courier_phone,omitempty"`
 }
 
 // NewCustomerJobResponse maps a Job struct to a CustomerJobResponse DTO.
@@ -296,22 +482,27 @@ func NewCustomerJobResponse(j *Job) CustomerJobResponse {
 		return CustomerJobResponse{}
 	}
 	return CustomerJobResponse{
-		ID:                     j.ID,
-		ServiceID:              j.ServiceID,
-		EmployeeID:             j.EmployeeID,
-		Status:                 j.Status,
-		Location:               j.Location,
-		Destination:            j.Destination,
-		CurrentLocation:        j.CurrentLocation,
-		PaymentMethod:          j.PaymentMethod,
-		CancellationReason:     j.CancellationReason,
-		SuggestedPrice:         j.SuggestedPrice,
-		ProposedPrice:          j.ProposedPrice,
-		ProposedBy:             j.ProposedBy,
-		AgreedPrice:            j.AgreedPrice,
-		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
-		CreatedAt:              j.CreatedAt,
-		UpdatedAt:              j.UpdatedAt,
+		ID:                       j.ID,
+		ServiceID:                j.ServiceID,
+		EmployeeID:               j.EmployeeID,
+		Status:                   j.Status,
+		Location:                 j.Location,
+		Destination:              j.Destination,
+		CurrentLocation:          j.CurrentLocation,
+		PaymentMethod:            j.PaymentMethod,
+		CancellationReason:       j.CancellationReason,
+		SuggestedPrice:           j.SuggestedPrice,
+		ProposedPrice:            j.ProposedPrice,
+		ProposedBy:               j.ProposedBy,
+		AgreedPrice:              j.AgreedPrice,
+		PriceProposalExpiresAt:   j.PriceProposalExpiresAt,
+		CreatedAt:                j.CreatedAt,
+		UpdatedAt:                j.UpdatedAt,
+		Recipient:                j.Recipient,
+		PackageDetails:           j.PackageDetails,
+		SubStatus:                v2SubStatusForDTO(j),
+		StatusHistory:            SanitizeStatusHistoryForParticipant(j.StatusHistory),
+		EstimatedDurationMinutes: j.EstimatedDurationMinutes,
 	}
 }
 
@@ -343,6 +534,15 @@ type EmployeeJobResponse struct {
 	PriceProposalExpiresAt *time.Time `json:"price_proposal_expires_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
+	// --- Job Model v2 (ADR-0028 §3.4) ----------------------------------
+	// Recipient name/notes stay visible, but the phone follows the
+	// acceptance→terminal redaction window (see the constructor). No
+	// courier_phone here — the employee IS the courier (N/A self).
+	Recipient                *JobRecipient           `json:"recipient,omitempty"`
+	PackageDetails           *PackageDetails         `json:"package_details,omitempty"`
+	SubStatus                string                  `json:"sub_status,omitempty"`
+	StatusHistory            []JobStatusHistoryEntry `json:"status_history,omitempty"`
+	EstimatedDurationMinutes *int                    `json:"estimated_duration_minutes,omitempty"`
 }
 
 // NewEmployeeJobResponse maps a Job struct to an EmployeeJobResponse DTO,
@@ -371,19 +571,71 @@ func NewEmployeeJobResponse(j *Job, requesterEmployeeID string) EmployeeJobRespo
 		CancellationRequestStatus: j.CancellationRequestStatus,
 		// A6: ActualCashAmount is owner/reconciliation-only (Flutter
 		// employee screens never read it) — excluded from the employee DTO.
-		SuggestedPrice:         j.SuggestedPrice,
-		ProposedPrice:          j.ProposedPrice,
-		ProposedBy:             j.ProposedBy,
-		AgreedPrice:            j.AgreedPrice,
-		PriceProposalExpiresAt: j.PriceProposalExpiresAt,
-		CreatedAt:              j.CreatedAt,
-		UpdatedAt:              j.UpdatedAt,
+		SuggestedPrice:           j.SuggestedPrice,
+		ProposedPrice:            j.ProposedPrice,
+		ProposedBy:               j.ProposedBy,
+		AgreedPrice:              j.AgreedPrice,
+		PriceProposalExpiresAt:   j.PriceProposalExpiresAt,
+		CreatedAt:                j.CreatedAt,
+		UpdatedAt:                j.UpdatedAt,
+		Recipient:                v2RecipientForEmployee(j),
+		PackageDetails:           j.PackageDetails,
+		SubStatus:                v2SubStatusForDTO(j),
+		StatusHistory:            SanitizeStatusHistoryForParticipant(j.StatusHistory),
+		EstimatedDurationMinutes: j.EstimatedDurationMinutes,
 	}
 	if j.CurrentOfferedEmployeeID != "" && j.CurrentOfferedEmployeeID == requesterEmployeeID {
 		resp.CurrentOfferedEmployeeID = j.CurrentOfferedEmployeeID
 		resp.OfferExpiresAt = j.OfferExpiresAt
 	}
 	return resp
+}
+
+// v2SubStatusForDTO projects SubStatus only for active jobs. sub_status is
+// defined strictly under status == "active" (ADR-0028 §2.4); a defensive
+// clear here keeps terminal rows from ever echoing a stale phase even if
+// data were written before the guard shipped.
+func v2SubStatusForDTO(j *Job) string {
+	if j.Status != JobStatusActive {
+		return ""
+	}
+	return j.SubStatus
+}
+
+// v2RecipientForEmployee applies the employee-side recipient redaction
+// window (ADR-0028 §2.1/§2.9): while the job is active the courier sees
+// the full recipient (on-trip contact need). Once the job leaves active
+// — completed, cancelled, unavailable, reconciliation review — the phone
+// is redacted while name/notes survive for record-keeping. Jobs without
+// a recipient (legacy bookings) pass through as nil.
+func v2RecipientForEmployee(j *Job) *JobRecipient {
+	if j.Recipient == nil {
+		return nil
+	}
+	redacted := *j.Recipient
+	if j.Status != JobStatusActive {
+		redacted.Phone = ""
+	}
+	return &redacted
+}
+
+// SanitizeStatusHistoryForParticipant strips audit actor IDs from timeline
+// entries whose actor is an internal operator (admin reviewer) or an
+// automated backend process (system), for the customer/employee DTOs
+// (ADR-0028 §2.3 privacy note). Owner/admin views keep full IDs.
+func SanitizeStatusHistoryForParticipant(h []JobStatusHistoryEntry) []JobStatusHistoryEntry {
+	if h == nil {
+		return nil
+	}
+	out := make([]JobStatusHistoryEntry, len(h))
+	copy(out, h)
+	for i := range out {
+		switch out[i].ActorRole {
+		case ActorRoleAdmin, ActorRoleSystem:
+			out[i].ActorID = ""
+		}
+	}
+	return out
 }
 
 // ---------------------------------------------------------------------------
