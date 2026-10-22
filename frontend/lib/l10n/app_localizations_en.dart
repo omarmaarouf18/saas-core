@@ -4358,10 +4358,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get ownCancelReqKeep => 'Keep the order going';
+  String get ownCancelReqKeep => 'Keep order';
 
   @override
-  String get ownCancelReqApprove => 'Approve cancellation';
+  String get ownCancelReqApprove => 'Approve';
 
   @override
   String get ownCancelReqApproveTitle => 'Approve the cancellation?';

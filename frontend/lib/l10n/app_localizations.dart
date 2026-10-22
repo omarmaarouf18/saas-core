@@ -7836,13 +7836,13 @@ abstract class AppLocalizations {
   /// FE-OWNER-1 redesigned owner screens.
   ///
   /// In en, this message translates to:
-  /// **'Keep the order going'**
+  /// **'Keep order'**
   String get ownCancelReqKeep;
 
   /// FE-OWNER-1 redesigned owner screens.
   ///
   /// In en, this message translates to:
-  /// **'Approve cancellation'**
+  /// **'Approve'**
   String get ownCancelReqApprove;
 
   /// FE-OWNER-1 redesigned owner screens.
