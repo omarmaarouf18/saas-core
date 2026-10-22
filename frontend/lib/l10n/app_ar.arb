@@ -1743,5 +1743,22 @@
   "ownSvcErrPlan": "حفظ الخدمة محتاج باقة شغالة.",
   "ownSvcErrUnavailable": "ده مش متاح دلوقتي. جرّب كمان شوية.",
   "ownSvcErrPartial": "الخدمة اتعملت بس شوية تفاصيل متحفظتش. دوس احفظ تاني.",
-  "ownSvcCurrency": "ج.م"
+  "ownSvcCurrency": "ج.م",
+  "ownFleetMapLabel": "خريطة أماكن المندوبين",
+  "ownFleetFilterLabel": "فلتر",
+  "ownFleetAll": "الكل",
+  "ownFleetFree": "فاضيين",
+  "ownFleetDenied": "مش مسموحلك تشوف خريطة الفريق ده.",
+  "ownFleetLoadError": "أماكن المندوبين ماتحمّلتش.",
+  "ownFleetReconnecting": "بنرجّع الاتصال بالأماكن المباشرة…",
+  "ownFleetNobody": "مفيش مندوب بيشارك مكانه دلوقتي.",
+  "ownFleetRefresh": "حدّث",
+  "ownFleetSummary": "على الخريطة: {total} · في مهمة: {onJob}",
+  "ownFleetSummaryNone": "المندوبين بيظهروا هنا وهم بيشاركوا مكانهم.",
+  "ownFleetTapHint": "دوس على مندوب عشان تشوف طلبه.",
+  "ownFleetLastUpdate": "آخر تحديث {ago}",
+  "ownFleetClose": "اقفل",
+  "ownFleetOrderRef": "طلب {ref}",
+  "ownFleetOrderTo": "طلب {ref} · إلى {place}",
+  "ownFleetCourierPage": "صفحة المندوب"
 }

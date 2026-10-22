@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
+import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/features/owner/owner_controller.dart';
 import 'package:frontend/features/owner/owner_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
+import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
@@ -19,6 +22,8 @@ import 'package:frontend/providers/reconciliation_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
+
+import '../customer/customer_harness.dart' show BlankTileProvider;
 
 export '../customer/customer_harness.dart'
     show ar, en, bothLocales, fixedNow, usePhone, loadPlexFont;
@@ -407,6 +412,90 @@ class FakeRecon extends ChangeNotifier implements ReconciliationProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Fleet map fake (FE-OWNER-2): tests set markers and connection state;
+/// hydrations, subscriptions, name lookups and disconnects are recorded.
+class FakeOwnerMap extends ChangeNotifier implements MapTrackingProvider {
+  @override
+  List<EmployeeMarkerData> markersList = [];
+
+  @override
+  bool isLoading = false;
+
+  @override
+  bool isConnected = true;
+
+  @override
+  String? error;
+
+  @override
+  String? subscriptionError;
+
+  final List<String> hydrateCalls = [];
+  final List<String> subscribeCalls = [];
+  Map<String, String> names = const {};
+  int disconnects = 0;
+
+  /// What the next hydration loads.
+  List<EmployeeMarkerData>? nextMarkers;
+  String? nextError;
+
+  @override
+  Future<void> hydrateOwnerFleet(String ownerToken) async {
+    hydrateCalls.add(ownerToken);
+    if (nextError != null) {
+      error = nextError;
+    } else {
+      error = null;
+      if (nextMarkers != null) markersList = List.of(nextMarkers!);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribe(String channel, String token,
+      {Object? customChannel}) {
+    subscribeCalls.add(channel);
+  }
+
+  @override
+  void setEmployeeNameLookup(Map<String, String> lookup) {
+    names = Map.of(lookup);
+    markersList = [
+      for (final m in markersList)
+        EmployeeMarkerData(
+          employeeId: m.employeeId,
+          employeeName: lookup[m.employeeId],
+          jobId: m.jobId,
+          latitude: m.latitude,
+          longitude: m.longitude,
+          updatedAt: m.updatedAt,
+        ),
+    ];
+    notifyListeners();
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+EmployeeMarkerData courierAt(String id,
+        {String? jobId,
+        double lat = 30.05,
+        double lon = 31.24,
+        DateTime? updatedAt}) =>
+    EmployeeMarkerData(
+      employeeId: id,
+      jobId: jobId,
+      latitude: lat,
+      longitude: lon,
+      updatedAt: updatedAt ?? ownerNow.subtract(const Duration(minutes: 3)),
+    );
+
 class FakeOwnerNotifications extends ChangeNotifier
     implements NotificationsProvider {
   @override
@@ -437,9 +526,14 @@ class RecordingOwnerNav extends OwnerNav {
   @override
   Future<void> openKyb(BuildContext context) async => opened.add('kyb');
 
+  /// The courier the last fleet map hand-off focused.
+  String? fleetFocus;
+
   @override
-  Future<void> openFleetMap(BuildContext context) async =>
-      opened.add('fleet_map');
+  Future<void> openFleetMap(BuildContext context, {String? employeeId}) async {
+    opened.add('fleet_map');
+    fleetFocus = employeeId;
+  }
 
   @override
   Future<void> openServiceSetup(BuildContext context) async =>
@@ -464,7 +558,9 @@ class OwnerTestDeps {
     FakeRecon? recon,
     FakeOwnerNotifications? notifications,
     RecordingOwnerNav? nav,
+    FakeOwnerMap? map,
   })  : auth = auth ?? FakeOwnerAuth(),
+        map = map ?? FakeOwnerMap(),
         owner = owner ?? FakeOwner(),
         ratings = ratings ?? FakeRatings(),
         recon = recon ?? FakeRecon(),
@@ -477,6 +573,7 @@ class OwnerTestDeps {
   final FakeRecon recon;
   final FakeOwnerNotifications notifications;
   final RecordingOwnerNav nav;
+  final FakeOwnerMap map;
 
   late final OwnerDataController data =
       OwnerDataController(owner, auth, now: () => ownerNow);
@@ -500,6 +597,7 @@ Widget ownerApp(
       ChangeNotifierProvider<ReconciliationProvider>.value(value: deps.recon),
       ChangeNotifierProvider<NotificationsProvider>.value(
           value: deps.notifications),
+      ChangeNotifierProvider<MapTrackingProvider>.value(value: deps.map),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => _FakeTheme()),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       if (withData)
@@ -507,15 +605,18 @@ Widget ownerApp(
     ],
     child: OwnerNavScope(
       nav: deps.nav,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: quickDeliveryTheme,
-        darkTheme: quickDeliveryDarkTheme,
-        themeMode: ThemeMode.light,
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: QdThemeScope(child: home),
+      child: CustomerMapTilesScope(
+        tileProvider: BlankTileProvider(),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: quickDeliveryTheme,
+          darkTheme: quickDeliveryDarkTheme,
+          themeMode: ThemeMode.light,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QdThemeScope(child: home),
+        ),
       ),
     ),
   );

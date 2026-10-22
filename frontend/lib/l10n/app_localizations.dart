@@ -9080,6 +9080,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'EGP'**
   String get ownSvcCurrency;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Map of your couriers'**
+  String get ownFleetMapLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get ownFleetFilterLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownFleetAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get ownFleetFree;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have access to this team map.'**
+  String get ownFleetDenied;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your couriers\' locations didn\'t load.'**
+  String get ownFleetLoadError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to live locations…'**
+  String get ownFleetReconnecting;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is sharing a location right now.'**
+  String get ownFleetNobody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get ownFleetRefresh;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'On the map: {total} · on a job: {onJob}'**
+  String ownFleetSummary(int total, int onJob);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couriers show up here while they share their location.'**
+  String get ownFleetSummaryNone;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a courier to see their order.'**
+  String get ownFleetTapHint;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Last update {ago}'**
+  String ownFleetLastUpdate(String ago);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get ownFleetClose;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref}'**
+  String ownFleetOrderRef(String ref);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref} · to {place}'**
+  String ownFleetOrderTo(String ref, String place);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier page'**
+  String get ownFleetCourierPage;
 }
 
 class _AppLocalizationsDelegate

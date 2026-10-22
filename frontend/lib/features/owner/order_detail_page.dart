@@ -190,8 +190,8 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
                       key: const Key('own_order_map'),
                       label: l10n.ownSeeOnMap,
                       small: true,
-                      onPressed: () =>
-                          OwnerNavScope.of(context).openFleetMap(context),
+                      onPressed: () => OwnerNavScope.of(context)
+                          .openFleetMap(context, employeeId: job.employeeId),
                     ),
                   ),
                 ],

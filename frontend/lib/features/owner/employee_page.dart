@@ -184,7 +184,8 @@ class _OwnerEmployeePageState extends State<OwnerEmployeePage> {
                 key: const Key('own_employee_map'),
                 title: l10n.ownEmpOnMap,
                 chevron: true,
-                onTap: () => OwnerNavScope.of(context).openFleetMap(context),
+                onTap: () => OwnerNavScope.of(context)
+                    .openFleetMap(context, employeeId: e.id),
               ),
             ]),
             const SizedBox(height: QdSpace.x6),

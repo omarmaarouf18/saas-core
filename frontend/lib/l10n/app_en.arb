@@ -4338,5 +4338,99 @@
   "ownSvcCurrency": "EGP",
   "@ownSvcCurrency": {
     "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetMapLabel": "Map of your couriers",
+  "@ownFleetMapLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetFilterLabel": "Show",
+  "@ownFleetFilterLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetAll": "All",
+  "@ownFleetAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetFree": "Free",
+  "@ownFleetFree": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetDenied": "You don't have access to this team map.",
+  "@ownFleetDenied": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetLoadError": "Your couriers' locations didn't load.",
+  "@ownFleetLoadError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetReconnecting": "Reconnecting to live locations…",
+  "@ownFleetReconnecting": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetNobody": "No courier is sharing a location right now.",
+  "@ownFleetNobody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetRefresh": "Refresh",
+  "@ownFleetRefresh": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetSummary": "On the map: {total} · on a job: {onJob}",
+  "@ownFleetSummary": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "onJob": {
+        "type": "int"
+      }
+    }
+  },
+  "ownFleetSummaryNone": "Couriers show up here while they share their location.",
+  "@ownFleetSummaryNone": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetTapHint": "Tap a courier to see their order.",
+  "@ownFleetTapHint": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetLastUpdate": "Last update {ago}",
+  "@ownFleetLastUpdate": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetClose": "Close",
+  "@ownFleetClose": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetOrderRef": "Order {ref}",
+  "@ownFleetOrderRef": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetOrderTo": "Order {ref} · to {place}",
+  "@ownFleetOrderTo": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetCourierPage": "Courier page",
+  "@ownFleetCourierPage": {
+    "description": "FE-OWNER-2 redesigned owner screens."
   }
 }

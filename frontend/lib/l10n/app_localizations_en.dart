@@ -5068,4 +5068,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownSvcCurrency => 'EGP';
+
+  @override
+  String get ownFleetMapLabel => 'Map of your couriers';
+
+  @override
+  String get ownFleetFilterLabel => 'Show';
+
+  @override
+  String get ownFleetAll => 'All';
+
+  @override
+  String get ownFleetFree => 'Free';
+
+  @override
+  String get ownFleetDenied => 'You don\'t have access to this team map.';
+
+  @override
+  String get ownFleetLoadError => 'Your couriers\' locations didn\'t load.';
+
+  @override
+  String get ownFleetReconnecting => 'Reconnecting to live locations…';
+
+  @override
+  String get ownFleetNobody => 'No courier is sharing a location right now.';
+
+  @override
+  String get ownFleetRefresh => 'Refresh';
+
+  @override
+  String ownFleetSummary(int total, int onJob) {
+    return 'On the map: $total · on a job: $onJob';
+  }
+
+  @override
+  String get ownFleetSummaryNone =>
+      'Couriers show up here while they share their location.';
+
+  @override
+  String get ownFleetTapHint => 'Tap a courier to see their order.';
+
+  @override
+  String ownFleetLastUpdate(String ago) {
+    return 'Last update $ago';
+  }
+
+  @override
+  String get ownFleetClose => 'Close';
+
+  @override
+  String ownFleetOrderRef(String ref) {
+    return 'Order $ref';
+  }
+
+  @override
+  String ownFleetOrderTo(String ref, String place) {
+    return 'Order $ref · to $place';
+  }
+
+  @override
+  String get ownFleetCourierPage => 'Courier page';
 }

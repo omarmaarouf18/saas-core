@@ -4993,4 +4993,64 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownSvcCurrency => 'ج.م';
+
+  @override
+  String get ownFleetMapLabel => 'خريطة أماكن المندوبين';
+
+  @override
+  String get ownFleetFilterLabel => 'فلتر';
+
+  @override
+  String get ownFleetAll => 'الكل';
+
+  @override
+  String get ownFleetFree => 'فاضيين';
+
+  @override
+  String get ownFleetDenied => 'مش مسموحلك تشوف خريطة الفريق ده.';
+
+  @override
+  String get ownFleetLoadError => 'أماكن المندوبين ماتحمّلتش.';
+
+  @override
+  String get ownFleetReconnecting => 'بنرجّع الاتصال بالأماكن المباشرة…';
+
+  @override
+  String get ownFleetNobody => 'مفيش مندوب بيشارك مكانه دلوقتي.';
+
+  @override
+  String get ownFleetRefresh => 'حدّث';
+
+  @override
+  String ownFleetSummary(int total, int onJob) {
+    return 'على الخريطة: $total · في مهمة: $onJob';
+  }
+
+  @override
+  String get ownFleetSummaryNone =>
+      'المندوبين بيظهروا هنا وهم بيشاركوا مكانهم.';
+
+  @override
+  String get ownFleetTapHint => 'دوس على مندوب عشان تشوف طلبه.';
+
+  @override
+  String ownFleetLastUpdate(String ago) {
+    return 'آخر تحديث $ago';
+  }
+
+  @override
+  String get ownFleetClose => 'اقفل';
+
+  @override
+  String ownFleetOrderRef(String ref) {
+    return 'طلب $ref';
+  }
+
+  @override
+  String ownFleetOrderTo(String ref, String place) {
+    return 'طلب $ref · إلى $place';
+  }
+
+  @override
+  String get ownFleetCourierPage => 'صفحة المندوب';
 }
