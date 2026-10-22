@@ -10,7 +10,7 @@ import (
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,11 @@ func (u *UserService) RateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.store.CreateRating(ctx, rating); err != nil {
-		if mongo.IsDuplicateKeyError(err) || strings.Contains(err.Error(), "11000") || strings.Contains(err.Error(), "duplicate key") {
+		// Typed duplicate detection: the store is a v2 database, so the v1
+		// string fallbacks ("11000"/"duplicate key") are gone —
+		// mongo.IsDuplicateKeyError covers codes 11000/11001/12582 and the
+		// 16460 E11000 message shape (ADR-0028 item 8).
+		if mongo.IsDuplicateKeyError(err) {
 			writeJSON(w, http.StatusConflict, map[string]string{
 				"error":   "conflict",
 				"message": "you have already rated this job",
