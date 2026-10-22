@@ -581,7 +581,7 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 	}
 
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
-		bson.M{"$set": bson.M{"status": status, "updated_at": time.Now().UTC()}},
+		bson.M{"$set": v2StatusSetDoc(status, hist)},
 		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job: %w", err)
@@ -590,6 +590,27 @@ func (s *MongoDB) UpdateJobStatus(ctx context.Context, id string, status models.
 		return fmt.Errorf("job_state_changed: job %q not found or invalid status transition to %s", id, status)
 	}
 	return nil
+}
+
+// v2StatusSetDoc implements the ADR-0028 §2.9 sub_status column rule for
+// $set-based status writes: sub_status exists ONLY while the job status is
+// active — leaving active clears it. Entering active carries the
+// accepted-entry sub_status (heading_to_pickup) when the provided history
+// entries declare one; an entry-less active transition leaves the column
+// untouched.
+func v2StatusSetDoc(status models.JobStatus, hist []models.JobStatusHistoryEntry) bson.M {
+	set := bson.M{"status": status, "updated_at": time.Now().UTC()}
+	if status != models.JobStatusActive {
+		set["sub_status"] = ""
+		return set
+	}
+	for _, e := range hist {
+		if e.SubStatus != "" {
+			set["sub_status"] = e.SubStatus
+			break
+		}
+	}
+	return set
 }
 
 func (s *MongoDB) UpdateJobLockedEscrow(ctx context.Context, id string, amount float64) error {
@@ -629,6 +650,7 @@ func (s *MongoDB) UpdateJobReconciliation(ctx context.Context, id string, status
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":                status,
+			"sub_status":            "",
 			"reconciliation_note":   note,
 			"escrow_failure_reason": failureReason,
 			"locked_escrow_amount":  lockedEscrow,
@@ -834,6 +856,7 @@ func (s *MongoDB) ExpireCancellationRequest(ctx context.Context, id string, excl
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":                      models.JobStatusPendingDispatch,
+			"sub_status":                  "",
 			"employee_id":                 "",
 			"current_offered_employee_id": "",
 			"offer_expires_at":            nil,
@@ -862,12 +885,23 @@ func (s *MongoDB) UpdateJobAgreedPrice(ctx context.Context, id string, agreedPri
 		"_id":    id,
 		"status": models.JobStatusAwaitingPriceResponse,
 	}
+	setDoc := bson.M{
+		"agreed_price": agreedPrice,
+		"status":       status,
+		"updated_at":   time.Now().UTC(),
+	}
+	// ADR-0028 §2.9: the transport job's price agreement activates the job —
+	// the agreeing entry carries heading_to_pickup into the column.
+	if status == models.JobStatusActive {
+		for _, e := range hist {
+			if e.SubStatus != "" {
+				setDoc["sub_status"] = e.SubStatus
+				break
+			}
+		}
+	}
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
-		bson.M{"$set": bson.M{
-			"agreed_price": agreedPrice,
-			"status":       status,
-			"updated_at":   time.Now().UTC(),
-		}},
+		bson.M{"$set": setDoc},
 		historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: update job agreed price: %w", err)
@@ -886,6 +920,7 @@ func (s *MongoDB) UpdateJobCancellation(ctx context.Context, id string, status m
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(
 		bson.M{"$set": bson.M{
 			"status":              status,
+			"sub_status":          "",
 			"cancellation_reason": reason,
 			"updated_at":          time.Now().UTC(),
 		}},
@@ -976,12 +1011,57 @@ func (s *MongoDB) AcceptJobOffer(ctx context.Context, jobID, employeeID string, 
 	if lockedEscrow > 0 {
 		setDoc["locked_escrow_amount"] = lockedEscrow
 	}
+	// ADR-0028 §2.9: entering active carries heading_to_pickup from the
+	// acceptance entry (delivery); transport activates later via the price
+	// agreement, so awaiting_price_response gets no sub_status.
+	if nextStatus == models.JobStatusActive {
+		for _, e := range hist {
+			if e.SubStatus != "" {
+				setDoc["sub_status"] = e.SubStatus
+				break
+			}
+		}
+	}
 	res, err := s.jobs.UpdateOne(ctx, filter, withHistory(bson.M{"$set": setDoc}, historyPush(hist...)))
 	if err != nil {
 		return fmt.Errorf("store: accept job offer: %w", err)
 	}
 	if res.MatchedCount == 0 {
 		return fmt.Errorf("job_state_changed: offer for job %q is no longer valid for employee %s", jobID, employeeID)
+	}
+	return nil
+}
+
+// PickupJob records the courier's physical pickup mid-job (ADR-0028 §2.9):
+// CAS from {active, heading_to_pickup} to {active, picked_up}. The courier
+// must still be the assigned employee. Returns a job_state_changed error
+// when the job is no longer in the heading_to_pickup window.
+func (s *MongoDB) PickupJob(ctx context.Context, jobID, courierID string, hist ...models.JobStatusHistoryEntry) error {
+	res, err := s.jobs.UpdateOne(ctx,
+		bson.M{
+			"_id":         jobID,
+			"status":      models.JobStatusActive,
+			"sub_status":  models.SubStatusHeadingToPickup,
+			"employee_id": courierID,
+		},
+		withHistory(
+			bson.M{"$set": bson.M{"sub_status": models.SubStatusPickedUp, "updated_at": time.Now().UTC()}},
+			historyPush(hist...)))
+	if err != nil {
+		return fmt.Errorf("store: pickup job: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		job := s.GetJob(ctx, jobID)
+		if job == nil {
+			return fmt.Errorf("job_not_found: job %q not found", jobID)
+		}
+		if job.EmployeeID != courierID {
+			return fmt.Errorf("access_denied: courier %s is not the assigned employee", courierID)
+		}
+		if job.SubStatus == models.SubStatusPickedUp {
+			return fmt.Errorf("already_picked_up: job %q was already picked up", jobID)
+		}
+		return fmt.Errorf("job_state_changed: job %q is not in the heading_to_pickup window (status %s, sub_status %s)", jobID, job.Status, job.SubStatus)
 	}
 	return nil
 }
@@ -1189,7 +1269,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 			withHistory(
 				bson.M{
 					"$inc": bson.M{"locked_escrow_amount": -amount},
-					"$set": bson.M{"status": models.JobStatusCompleted, "updated_at": now},
+					"$set": bson.M{"status": models.JobStatusCompleted, "sub_status": "", "updated_at": now},
 				}, push))
 		if err != nil {
 			return fmt.Errorf("failed to update job escrow/status: %w", err)
@@ -1287,7 +1367,7 @@ func (s *MongoDB) ReleaseEscrowWithSplit(ctx context.Context, tenantID, jobID st
 // the completion event. A non-nil review (ADR-0007 under-distance flag,
 // FIX-COD-RECON) is written in the same update.
 func (s *MongoDB) CompleteCODJob(ctx context.Context, jobID string, cashAmount float64, review *models.DistanceReview, hist ...models.JobStatusHistoryEntry) error {
-	set := bson.M{"status": models.JobStatusCompleted, "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()}
+	set := bson.M{"status": models.JobStatusCompleted, "sub_status": "", "actual_cash_amount": cashAmount, "updated_at": time.Now().UTC()}
 	if review != nil {
 		set["distance_review"] = review
 	}
@@ -1824,6 +1904,7 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string, hist 
 		withHistory(
 			bson.M{"$set": bson.M{
 				"status":                      models.JobStatusCancelled,
+				"sub_status":                  "",
 				"current_offered_employee_id": "",
 				"offer_expires_at":            nil,
 				"cancellation_reason":         reason,
@@ -1917,7 +1998,7 @@ func (s *MongoDB) RefundEscrow(ctx context.Context, tenantID, jobID string, amou
 			withHistory(
 				bson.M{
 					"$inc": bson.M{"locked_escrow_amount": -amount},
-					"$set": bson.M{"status": models.JobStatusCancelled, "updated_at": time.Now().UTC()},
+					"$set": bson.M{"status": models.JobStatusCancelled, "sub_status": "", "updated_at": time.Now().UTC()},
 				}, push))
 		if err != nil {
 			return fmt.Errorf("failed to update job escrow/status: %w", err)

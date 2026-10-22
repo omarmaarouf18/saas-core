@@ -600,12 +600,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	if req.PaymentMethod == "cod" {
 		log.Printf("[USER] Job %s created (COD payment method)", job.ID)
 		// Progress to active. The activation entry rides the same atomic
-		// update (ADR-0028 §2.3): the pre-assigned courier is the actor.
+		// update (ADR-0028 §2.3): the pre-assigned courier is the actor and
+		// heads to the pickup point immediately (§2.9 sub_status).
 		if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive, models.JobStatusHistoryEntry{
 			Status:    models.JobStatusActive,
 			At:        time.Now().UTC(),
 			ActorRole: models.ActorRoleEmployee,
 			ActorID:   req.EmployeeID,
+			SubStatus: models.SubStatusHeadingToPickup,
 			Reason:    "direct assignment activated (cod)",
 		}); err != nil {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
@@ -682,12 +684,14 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	job.LockedEscrowAmount = escrowAmount
 
 	// Progress to active. The activation entry rides the same atomic
-	// update (ADR-0028 §2.3).
+	// update (ADR-0028 §2.3); the accepted courier heads to the pickup
+	// point immediately (§2.9 sub_status).
 	if err := u.store.UpdateJobStatus(ctx, job.ID, models.JobStatusActive, models.JobStatusHistoryEntry{
 		Status:    models.JobStatusActive,
 		At:        time.Now().UTC(),
 		ActorRole: models.ActorRoleEmployee,
 		ActorID:   req.EmployeeID,
+		SubStatus: models.SubStatusHeadingToPickup,
 		Reason:    "direct assignment activated (escrow locked)",
 	}); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to activate job", err)
@@ -2298,6 +2302,9 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	}
 	if isTransport {
 		acceptEntry.Reason = "offer accepted; awaiting price agreement"
+	} else {
+		// Delivery activation carries the heading sub_status (ADR-0028 §2.9).
+		acceptEntry.SubStatus = models.SubStatusHeadingToPickup
 	}
 	if err := u.store.AcceptJobOffer(ctx, job.ID, callerID, nextStatus, dist, &assignedLoc, suggestedPrice, escrowToLock, acceptEntry); err != nil {
 		_ = u.store.ReleaseCourierLock(ctx, job.OwnerID, callerID, job.ID)
@@ -2330,6 +2337,115 @@ func (u *UserService) AcceptJobOffer(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "job offer accepted successfully",
 		"job":     job,
+	})
+}
+
+// POST /users/jobs/pickup (ADR-0028 §2.9): the assigned courier confirms
+// the physical pickup mid-job. Valid exactly in the active + heading_to_pickup
+// window; moves sub_status to picked_up on the same CAS update that appends
+// the $status-agnostic history event and notifies the customer.
+func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	var req struct {
+		JobID          string `json:"job_id"`
+		RequesterToken string `json:"requester_token,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
+		return
+	}
+	if req.JobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	requesterToken := r.Header.Get("Authorization")
+	if strings.HasPrefix(requesterToken, "Bearer ") || strings.HasPrefix(requesterToken, "bearer ") {
+		requesterToken = strings.TrimSpace(requesterToken[7:])
+	}
+	if requesterToken == "" {
+		requesterToken = r.URL.Query().Get("requester_token")
+	}
+	if requesterToken == "" {
+		requesterToken = req.RequesterToken
+	}
+	if requesterToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
+		return
+	}
+
+	courierID, err := resolveTokenWithRole(requesterToken, "employee")
+	if err != nil {
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
+		return
+	}
+
+	ctx := r.Context()
+	job := u.store.GetJob(ctx, req.JobID)
+	if job == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		return
+	}
+
+	if job.Status != models.JobStatusActive {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job is not active"})
+		return
+	}
+	if job.EmployeeID != courierID {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+		return
+	}
+	if job.SubStatus == models.SubStatusPickedUp {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+		return
+	}
+
+	now := time.Now().UTC()
+	pickupEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusActive,
+		At:        now,
+		ActorRole: models.ActorRoleEmployee,
+		ActorID:   courierID,
+		SubStatus: models.SubStatusPickedUp,
+		Reason:    "package picked up; heading to destination",
+	}
+	if err := u.store.PickupJob(ctx, job.ID, courierID, pickupEntry); err != nil {
+		msg := err.Error()
+		switch {
+		case strings.Contains(msg, "already_picked_up"):
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+		case strings.Contains(msg, "access_denied"):
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+		case strings.Contains(msg, "job_not_found"):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		default:
+			// Anything else (including losing the CAS race against an
+			// exit-from-active) is a concurrent-state conflict.
+			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "job state changed during pickup", err)
+		}
+		return
+	}
+
+	// Fire-and-forget customer notification reusing the shared job-party
+	// notification helper.
+	u.notifyCancellationParty(job, job.UserID, "user", "job_picked_up", "Courier Picked Up", "Your package was picked up and is heading to the destination.")
+
+	refreshed := u.store.GetJob(ctx, job.ID)
+	if refreshed == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"message": "pickup recorded"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "pickup recorded",
+		"job":     refreshed,
 	})
 }
 
@@ -4177,6 +4293,7 @@ func (u *UserService) RespondPrice(w http.ResponseWriter, r *http.Request) {
 			At:        now,
 			ActorRole: responderRole,
 			ActorID:   responderID,
+			SubStatus: models.SubStatusHeadingToPickup,
 			Reason:    "price agreed",
 		}); err != nil {
 			if strings.Contains(err.Error(), "job_state_changed") {

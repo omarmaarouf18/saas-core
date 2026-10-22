@@ -188,6 +188,35 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 	}
 	v2CheckHistoryLen(t, s, ctx, jobID, 2)
 	v2CheckEntry(t, s, ctx, jobID, 1, models.JobStatusActive, "employee", empID, "offer accepted")
+	accepted := s.GetJob(ctx, jobID)
+	if accepted.SubStatus != models.SubStatusHeadingToPickup {
+		t.Fatalf("expected sub_status heading_to_pickup after accept, got %q", accepted.SubStatus)
+	}
+
+	// Courier confirms the physical pickup.
+	pickBody, _ := json.Marshal(map[string]any{"job_id": jobID, "requester_token": tokenEmp})
+	pickReq := httptest.NewRequest("POST", "/users/jobs/pickup", strings.NewReader(string(pickBody)))
+	pickReq.Header.Set("Content-Type", "application/json")
+	pickRec := httptest.NewRecorder()
+	u.PickupJob(pickRec, pickReq)
+	if pickRec.Code != http.StatusOK {
+		t.Fatalf("pickup: expected 200, got %d: %s", pickRec.Code, pickRec.Body.String())
+	}
+	pickedUpRec := s.GetJob(ctx, jobID)
+	if pickedUpRec.SubStatus != models.SubStatusPickedUp {
+		t.Fatalf("expected sub_status picked_up after pickup, got %q", pickedUpRec.SubStatus)
+	}
+	v2CheckHistoryLen(t, s, ctx, jobID, 3)
+	v2CheckEntry(t, s, ctx, jobID, 2, models.JobStatusActive, "employee", empID, "package picked up; heading to destination")
+
+	// Double pickup is rejected with a stable conflict.
+	pickReq2 := httptest.NewRequest("POST", "/users/jobs/pickup", strings.NewReader(string(pickBody)))
+	pickReq2.Header.Set("Content-Type", "application/json")
+	pickRec2 := httptest.NewRecorder()
+	u.PickupJob(pickRec2, pickReq2)
+	if pickRec2.Code != http.StatusConflict {
+		t.Fatalf("double pickup: expected 409, got %d: %s", pickRec2.Code, pickRec2.Body.String())
+	}
 
 	// Courier completes the COD job.
 	compBody, _ := json.Marshal(map[string]any{"job_id": jobID, "cash_collected": true})
@@ -199,14 +228,20 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 	if compRec.Code != http.StatusOK {
 		t.Fatalf("complete: expected 200, got %d: %s", compRec.Code, compRec.Body.String())
 	}
-	entries := v2CheckHistoryLen(t, s, ctx, jobID, 3)
+	entries := v2CheckHistoryLen(t, s, ctx, jobID, 4)
 	// No waypoints were recorded on the walk, so ADR-0007's under-distance
 	// review fires and the completion reason carries the review flag.
-	v2CheckEntry(t, s, ctx, jobID, 2, models.JobStatusCompleted, "employee", empID, "COD job completed; under-distance review flagged (ADR-0007)")
+	v2CheckEntry(t, s, ctx, jobID, 3, models.JobStatusCompleted, "employee", empID, "COD job completed; under-distance review flagged (ADR-0007)")
 	if entries[0].Status != models.JobStatusPendingDispatch ||
 		entries[1].Status != models.JobStatusActive ||
-		entries[2].Status != models.JobStatusCompleted {
+		entries[2].Status != models.JobStatusActive ||
+		entries[3].Status != models.JobStatusCompleted {
 		t.Fatalf("unexpected final status walk: %+v", entries)
+	}
+	// ADR-0028 §2.9: sub_status is cleared on the exit from active.
+	fin := s.GetJob(ctx, jobID)
+	if fin.SubStatus != "" {
+		t.Fatalf("expected sub_status cleared on completion, got %q", fin.SubStatus)
 	}
 }
 
@@ -296,6 +331,10 @@ func TestV2StatusHistory_TransportPriceAndCancellationLifecycle(t *testing.T) {
 	}
 	v2CheckHistoryLen(t, s, ctx, jobID, 4)
 	v2CheckEntry(t, s, ctx, jobID, 3, models.JobStatusActive, "customer", custID, "price agreed")
+	agreed := s.GetJob(ctx, jobID)
+	if agreed.SubStatus != models.SubStatusHeadingToPickup {
+		t.Fatalf("expected sub_status heading_to_pickup after price agreement, got %q", agreed.SubStatus)
+	}
 
 	// Employee submits a cancellation request: status-UNION event with a
 	// "$status" ref, resolved to the live active status.

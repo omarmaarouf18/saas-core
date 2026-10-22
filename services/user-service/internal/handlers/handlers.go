@@ -298,6 +298,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/users/jobs/owner", u.GetOwnerJobs)
 	mux.HandleFunc("/users/jobs/mine", u.GetCustomerJobs)
 	mux.HandleFunc("/users/jobs/complete", u.CompleteJob)
+	mux.HandleFunc("/users/jobs/pickup", u.PickupJob)
 	mux.HandleFunc("/users/jobs/cancel", u.CancelJob)
 	mux.HandleFunc("/users/jobs/request-cancellation", u.RequestCancellation)
 	mux.HandleFunc("/users/jobs/respond-cancellation", u.RespondCancellation)
