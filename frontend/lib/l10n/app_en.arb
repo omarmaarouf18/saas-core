@@ -3608,5 +3608,108 @@
         "type": "String"
       }
     }
+  },
+  "ownReconTitle": "Payment review",
+  "@ownReconTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconIntro": "The money for these orders is held because something didn't add up. Decide who gets it.",
+  "@ownReconIntro": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconLoadError": "Couldn't load the orders to review.",
+  "@ownReconLoadError": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconEmpty": "Nothing to review",
+  "@ownReconEmpty": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconCodTitle": "With cash payment only",
+  "@ownReconCodTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconCodBody": "This screen will mostly stay empty until electronic payment starts.",
+  "@ownReconCodBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconHeld": "Amount held",
+  "@ownReconHeld": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconPay": "Pay the courier",
+  "@ownReconPay": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconRefund": "Refund the customer",
+  "@ownReconRefund": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconPayTitle": "Pay the courier?",
+  "@ownReconPayTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconRefundTitle": "Refund the customer?",
+  "@ownReconRefundTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconPayBody": "{amount} for order {ref} goes to {name}. This can't be undone.",
+  "@ownReconPayBody": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "ref": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownReconRefundBody": "{amount} for order {ref} goes back to the customer. This can't be undone.",
+  "@ownReconRefundBody": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ownReconTheCourier": "the courier",
+  "@ownReconTheCourier": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconPaid": "Paid to the courier.",
+  "@ownReconPaid": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconRefunded": "Refunded to the customer.",
+  "@ownReconRefunded": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReconFailed": "Couldn't settle this order. Try again.",
+  "@ownReconFailed": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReasonShortDistance": "Distance shorter than expected",
+  "@ownReasonShortDistance": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReasonSpeed": "Speed didn't add up",
+  "@ownReasonSpeed": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReasonUnrecorded": "Held amount not recorded",
+  "@ownReasonUnrecorded": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownReasonOther": "Needs a review",
+  "@ownReasonOther": {
+    "description": "FE-OWNER-1 redesigned owner screens."
   }
 }

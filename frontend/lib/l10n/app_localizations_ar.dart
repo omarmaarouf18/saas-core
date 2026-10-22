@@ -4456,4 +4456,73 @@ class AppLocalizationsAr extends AppLocalizations {
   String ownOfferedTo(String name) {
     return 'معروض على $name';
   }
+
+  @override
+  String get ownReconTitle => 'مراجعة الحسابات';
+
+  @override
+  String get ownReconIntro =>
+      'طلبات المبلغ فيها متحجوز لأن السيستم لقى حاجة مش منطقية. قرر الفلوس تروح لمين.';
+
+  @override
+  String get ownReconLoadError => 'مقدرناش نحمّل الطلبات اللي محتاجة مراجعة.';
+
+  @override
+  String get ownReconEmpty => 'مفيش حاجة محتاجة مراجعة';
+
+  @override
+  String get ownReconCodTitle => 'مع الدفع كاش بس';
+
+  @override
+  String get ownReconCodBody =>
+      'الشاشة دي هتفضل فاضية غالباً لحد ما الدفع الإلكتروني يشتغل.';
+
+  @override
+  String get ownReconHeld => 'المبلغ المحجوز';
+
+  @override
+  String get ownReconPay => 'ادفعها للمندوب';
+
+  @override
+  String get ownReconRefund => 'رجّعها للعميل';
+
+  @override
+  String get ownReconPayTitle => 'تدفعها للمندوب؟';
+
+  @override
+  String get ownReconRefundTitle => 'ترجّعها للعميل؟';
+
+  @override
+  String ownReconPayBody(String amount, String ref, String name) {
+    return '$amount بتوع طلب $ref هيروحوا لـ$name. مش هينفع ترجع فيها.';
+  }
+
+  @override
+  String ownReconRefundBody(String amount, String ref) {
+    return '$amount بتوع طلب $ref هيرجعوا للعميل. مش هينفع ترجع فيها.';
+  }
+
+  @override
+  String get ownReconTheCourier => 'المندوب';
+
+  @override
+  String get ownReconPaid => 'الفلوس اتدفعت للمندوب.';
+
+  @override
+  String get ownReconRefunded => 'الفلوس رجعت للعميل.';
+
+  @override
+  String get ownReconFailed => 'مقدرناش نخلّص الطلب ده. جرّب تاني.';
+
+  @override
+  String get ownReasonShortDistance => 'المسافة أقل من المتوقع';
+
+  @override
+  String get ownReasonSpeed => 'السرعة مش منطقية';
+
+  @override
+  String get ownReasonUnrecorded => 'المبلغ المحجوز مش متسجّل';
+
+  @override
+  String get ownReasonOther => 'محتاج مراجعة';
 }

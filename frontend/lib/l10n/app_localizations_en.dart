@@ -4528,4 +4528,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String ownOfferedTo(String name) {
     return 'Offered to $name';
   }
+
+  @override
+  String get ownReconTitle => 'Payment review';
+
+  @override
+  String get ownReconIntro =>
+      'The money for these orders is held because something didn\'t add up. Decide who gets it.';
+
+  @override
+  String get ownReconLoadError => 'Couldn\'t load the orders to review.';
+
+  @override
+  String get ownReconEmpty => 'Nothing to review';
+
+  @override
+  String get ownReconCodTitle => 'With cash payment only';
+
+  @override
+  String get ownReconCodBody =>
+      'This screen will mostly stay empty until electronic payment starts.';
+
+  @override
+  String get ownReconHeld => 'Amount held';
+
+  @override
+  String get ownReconPay => 'Pay the courier';
+
+  @override
+  String get ownReconRefund => 'Refund the customer';
+
+  @override
+  String get ownReconPayTitle => 'Pay the courier?';
+
+  @override
+  String get ownReconRefundTitle => 'Refund the customer?';
+
+  @override
+  String ownReconPayBody(String amount, String ref, String name) {
+    return '$amount for order $ref goes to $name. This can\'t be undone.';
+  }
+
+  @override
+  String ownReconRefundBody(String amount, String ref) {
+    return '$amount for order $ref goes back to the customer. This can\'t be undone.';
+  }
+
+  @override
+  String get ownReconTheCourier => 'the courier';
+
+  @override
+  String get ownReconPaid => 'Paid to the courier.';
+
+  @override
+  String get ownReconRefunded => 'Refunded to the customer.';
+
+  @override
+  String get ownReconFailed => 'Couldn\'t settle this order. Try again.';
+
+  @override
+  String get ownReasonShortDistance => 'Distance shorter than expected';
+
+  @override
+  String get ownReasonSpeed => 'Speed didn\'t add up';
+
+  @override
+  String get ownReasonUnrecorded => 'Held amount not recorded';
+
+  @override
+  String get ownReasonOther => 'Needs a review';
 }

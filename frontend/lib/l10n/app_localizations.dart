@@ -8120,6 +8120,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offered to {name}'**
   String ownOfferedTo(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment review'**
+  String get ownReconTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The money for these orders is held because something didn\'t add up. Decide who gets it.'**
+  String get ownReconIntro;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the orders to review.'**
+  String get ownReconLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to review'**
+  String get ownReconEmpty;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'With cash payment only'**
+  String get ownReconCodTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen will mostly stay empty until electronic payment starts.'**
+  String get ownReconCodBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount held'**
+  String get ownReconHeld;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the courier'**
+  String get ownReconPay;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund the customer'**
+  String get ownReconRefund;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the courier?'**
+  String get ownReconPayTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund the customer?'**
+  String get ownReconRefundTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} for order {ref} goes to {name}. This can\'t be undone.'**
+  String ownReconPayBody(String amount, String ref, String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} for order {ref} goes back to the customer. This can\'t be undone.'**
+  String ownReconRefundBody(String amount, String ref);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'the courier'**
+  String get ownReconTheCourier;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid to the courier.'**
+  String get ownReconPaid;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded to the customer.'**
+  String get ownReconRefunded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t settle this order. Try again.'**
+  String get ownReconFailed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance shorter than expected'**
+  String get ownReasonShortDistance;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed didn\'t add up'**
+  String get ownReasonSpeed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Held amount not recorded'**
+  String get ownReasonUnrecorded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a review'**
+  String get ownReasonOther;
 }
 
 class _AppLocalizationsDelegate
