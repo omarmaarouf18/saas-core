@@ -7754,6 +7754,1062 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link copied. Open it in your browser to install the new version.'**
   String get updCopied;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier {id}'**
+  String ownCourierUnknown(String id);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get ownAgoNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String ownAgoMinutes(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 h ago} other{{count} h ago}}'**
+  String ownAgoHours(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get ownNotNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get ownRefresh;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref}'**
+  String ownOrderTitle(String ref);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get ownOrderFallbackTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This order isn\'t in your list anymore.'**
+  String get ownOrderMissing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to cancel this order'**
+  String ownCancelReqTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'“{reason}”'**
+  String ownCancelReqQuote(String reason);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No reason given'**
+  String get ownCancelReqNoReason;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked {ago}'**
+  String ownCancelReqSince(String ago);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep order'**
+  String get ownCancelReqKeep;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get ownCancelReqApprove;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the cancellation?'**
+  String get ownCancelReqApproveTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The order will be cancelled and the customer will be told.'**
+  String get ownCancelReqApproveBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order going?'**
+  String get ownCancelReqKeepTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} stays on the order and has to finish it.'**
+  String ownCancelReqKeepBody(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation approved. The order is cancelled.'**
+  String get ownCancelReqApproved;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Request declined. The courier keeps the order.'**
+  String get ownCancelReqDeclined;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This request already changed, it may have run out. The order was refreshed.'**
+  String get ownCancelReqConflict;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance looked short, review'**
+  String get ownDistanceReviewTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip tracked {actual} km of the {booked} km booked. The cash was still recorded.'**
+  String ownDistanceReviewBody(String actual, String booked);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'See on the map'**
+  String get ownSeeOnMap;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get ownRowCustomer;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account {id}'**
+  String ownCustomerRef(String id);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier'**
+  String get ownRowCourier;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not assigned yet'**
+  String get ownCourierNone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get ownRowPayment;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · {amount}'**
+  String ownPayCash(String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash · price not set yet'**
+  String get ownPayCashNoPrice;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{method} · {amount}'**
+  String ownPayOther(String method, String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash recorded'**
+  String get ownRowCashRecorded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get ownRowOrdered;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get ownRowCancelReason;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get ownCancelOrder;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the order'**
+  String get ownCancelKeep;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this order?'**
+  String get ownCancelSheetTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer and the courier will be told. Write why you\'re cancelling.'**
+  String get ownCancelSheetCod;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The {amount} held for this order goes back to the customer. Write why you\'re cancelling.'**
+  String ownCancelSheetHeld(String amount);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get ownCancelReasonLabel;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled.'**
+  String get ownCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled. The held amount went back to the customer.'**
+  String get ownCancelledRefunded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ownOrdersTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number or courier name'**
+  String get ownOrdersSearchHint;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get ownClearSearch;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order status'**
+  String get ownOrdersKind;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing · {count}'**
+  String ownTabOngoing(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get ownTabDone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get ownTabCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your orders.'**
+  String get ownOrdersLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. You\'re seeing the last list we loaded.'**
+  String get ownRefreshFailed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No order matches your search'**
+  String get ownOrdersNoMatch;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ongoing orders'**
+  String get ownNoOngoing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished orders yet'**
+  String get ownNoDone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No cancelled orders'**
+  String get ownNoCancelled;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders customers book with you show up here.'**
+  String get ownOrdersEmptyBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price offer: {proposed} instead of {price}'**
+  String ownProposalLine(String proposed, String price);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price offer: {proposed}'**
+  String ownProposalOnly(String proposed);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered to {name}'**
+  String ownOfferedTo(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment review'**
+  String get ownReconTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The money for these orders is held because something didn\'t add up. Decide who gets it.'**
+  String get ownReconIntro;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the orders to review.'**
+  String get ownReconLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to review'**
+  String get ownReconEmpty;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'With cash payment only'**
+  String get ownReconCodTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen will mostly stay empty until electronic payment starts.'**
+  String get ownReconCodBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount held'**
+  String get ownReconHeld;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the courier'**
+  String get ownReconPay;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund the customer'**
+  String get ownReconRefund;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the courier?'**
+  String get ownReconPayTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund the customer?'**
+  String get ownReconRefundTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} for order {ref} goes to {name}. This can\'t be undone.'**
+  String ownReconPayBody(String amount, String ref, String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} for order {ref} goes back to the customer. This can\'t be undone.'**
+  String ownReconRefundBody(String amount, String ref);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'the courier'**
+  String get ownReconTheCourier;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid to the courier.'**
+  String get ownReconPaid;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded to the customer.'**
+  String get ownReconRefunded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t settle this order. Try again.'**
+  String get ownReconFailed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance shorter than expected'**
+  String get ownReasonShortDistance;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed didn\'t add up'**
+  String get ownReasonSpeed;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Held amount not recorded'**
+  String get ownReasonUnrecorded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a review'**
+  String get ownReasonOther;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get ownTeamTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'On the map'**
+  String get ownOnTheMap;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier status'**
+  String get ownTeamKind;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All · {count}'**
+  String ownTeamAll(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get ownTeamActive;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen'**
+  String get ownTeamFrozen;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your team.'**
+  String get ownTeamLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No couriers yet'**
+  String get ownTeamEmpty;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your couriers so they can sign in and take orders.'**
+  String get ownTeamEmptyBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No couriers here'**
+  String get ownTeamNoneHere;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Add courier'**
+  String get ownAddCourier;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'On a job'**
+  String get ownStateOnJob;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get ownStateFree;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen'**
+  String get ownStateFrozen;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'On a job · {ref}'**
+  String ownOnJobWith(String ref);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No order right now'**
+  String get ownNoOrderNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t sign in or get orders'**
+  String get ownFrozenSubtitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This courier isn\'t on your team anymore.'**
+  String get ownEmployeeMissing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ownEmpOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get ownEmpDelivered;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted from your latest orders in the app.'**
+  String get ownEmpCountsNote;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'ID check'**
+  String get ownEmpIdCheck;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get ownKyeApproved;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get ownKyePending;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get ownKyeRejected;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents missing'**
+  String get ownKyeMissing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Current order'**
+  String get ownEmpCurrentOrder;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get ownEmpNone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All their orders'**
+  String get ownEmpAllOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Where they are on the map'**
+  String get ownEmpOnMap;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze account'**
+  String get ownFreeze;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfreeze account'**
+  String get ownUnfreeze;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'re signed out at once and get no new orders. We\'ll ask for your password to confirm.'**
+  String get ownFreezeHint;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'They can sign in and get orders again. We\'ll ask for your password to confirm.'**
+  String get ownUnfreezeHint;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze {name}\'s account?'**
+  String ownFreezeTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfreeze {name}\'s account?'**
+  String ownUnfreezeTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'re signed out at once and get no new orders. Type your password to confirm.'**
+  String get ownFreezeBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'They can sign in and get orders again. Type your password to confirm.'**
+  String get ownUnfreezeBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password'**
+  String get ownYourPassword;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your password.'**
+  String get ownPasswordRequired;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'That password isn\'t right.'**
+  String get ownPasswordWrong;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business documents must be approved first.'**
+  String get ownToggleKybNeeded;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Managing couriers needs a paid plan.'**
+  String get ownTogglePaidPlan;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s account is frozen.'**
+  String ownFrozenDone(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s account is active again.'**
+  String ownUnfrozenDone(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a courier'**
+  String get ownAddTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'They sign in with this email and password.'**
+  String get ownAddBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get ownAddUsername;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get ownAddEmail;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get ownAddPassword;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters.'**
+  String get ownAddPasswordHelp;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Add courier'**
+  String get ownAddSubmit;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was added. They can sign in now.'**
+  String ownAdded(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownTodayTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ownNotifications;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load today\'s orders.'**
+  String get ownTodayLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing now'**
+  String get ownTileOngoing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered today'**
+  String get ownTileDelivered;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash recorded today'**
+  String get ownTileCash;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered and cash count the orders placed today.'**
+  String get ownTodayNote;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted from your latest {limit} orders, all from today. There may be more.'**
+  String ownTodayNoteTruncated(int limit);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get ownNeedsYou;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs you right now.'**
+  String get ownNeedsNothing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to cancel an order'**
+  String ownNeedsRequestTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ownNeedsReason(String reason);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Respond'**
+  String get ownNeedsRespond;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 order needs a payment review} other{{count} orders need a payment review}}'**
+  String ownNeedsReviewsTitle(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The distance or time didn\'t add up'**
+  String get ownNeedsReviewsBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get ownNeedsReview;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Team now'**
+  String get ownTeamNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownSeeAll;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No couriers yet. Add them from the Team tab.'**
+  String get ownTeamNowEmpty;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating'**
+  String get ownRatingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet'**
+  String get ownRatingNone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{average} · {count, plural, =1{1 rating} other{{count} ratings}}'**
+  String ownRatingValue(String average, int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business'**
+  String get ownYourBusiness;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All orders'**
+  String get ownLinkAllOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service setup'**
+  String get ownLinkServiceSetup;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get ownLinkWallet;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get ownLinkSubscription;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity and history'**
+  String get ownLinkHistory;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your business'**
+  String get ownKybMissingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your business documents to start taking orders.'**
+  String get ownKybMissingBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload documents'**
+  String get ownKybUpload;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents are under review'**
+  String get ownKybPendingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll let you know when they\'re approved.'**
+  String get ownKybPendingBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'View documents'**
+  String get ownKybView;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were rejected'**
+  String get ownKybRejectedTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload them again to start taking orders.'**
+  String get ownKybRejectedBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload again'**
+  String get ownKybUploadAgain;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownNavToday;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ownNavOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get ownNavTeam;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get ownNavAccount;
 }
 
 class _AppLocalizationsDelegate

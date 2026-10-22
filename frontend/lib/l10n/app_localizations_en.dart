@@ -4291,4 +4291,636 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updCopied =>
       'Link copied. Open it in your browser to install the new version.';
+
+  @override
+  String ownCourierUnknown(String id) {
+    return 'Courier $id';
+  }
+
+  @override
+  String get ownAgoNow => 'just now';
+
+  @override
+  String ownAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ownAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count h ago',
+      one: '1 h ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNotNow => 'Not now';
+
+  @override
+  String get ownRefresh => 'Refresh';
+
+  @override
+  String ownOrderTitle(String ref) {
+    return 'Order $ref';
+  }
+
+  @override
+  String get ownOrderFallbackTitle => 'Order';
+
+  @override
+  String get ownOrderMissing => 'This order isn\'t in your list anymore.';
+
+  @override
+  String ownCancelReqTitle(String name) {
+    return '$name wants to cancel this order';
+  }
+
+  @override
+  String ownCancelReqQuote(String reason) {
+    return '“$reason”';
+  }
+
+  @override
+  String get ownCancelReqNoReason => 'No reason given';
+
+  @override
+  String ownCancelReqSince(String ago) {
+    return 'Asked $ago';
+  }
+
+  @override
+  String get ownCancelReqKeep => 'Keep order';
+
+  @override
+  String get ownCancelReqApprove => 'Approve';
+
+  @override
+  String get ownCancelReqApproveTitle => 'Approve the cancellation?';
+
+  @override
+  String get ownCancelReqApproveBody =>
+      'The order will be cancelled and the customer will be told.';
+
+  @override
+  String get ownCancelReqKeepTitle => 'Keep the order going?';
+
+  @override
+  String ownCancelReqKeepBody(String name) {
+    return '$name stays on the order and has to finish it.';
+  }
+
+  @override
+  String get ownCancelReqApproved =>
+      'Cancellation approved. The order is cancelled.';
+
+  @override
+  String get ownCancelReqDeclined =>
+      'Request declined. The courier keeps the order.';
+
+  @override
+  String get ownCancelReqConflict =>
+      'This request already changed, it may have run out. The order was refreshed.';
+
+  @override
+  String get ownDistanceReviewTitle => 'Distance looked short, review';
+
+  @override
+  String ownDistanceReviewBody(String actual, String booked) {
+    return 'The trip tracked $actual km of the $booked km booked. The cash was still recorded.';
+  }
+
+  @override
+  String get ownSeeOnMap => 'See on the map';
+
+  @override
+  String get ownRowCustomer => 'Customer';
+
+  @override
+  String ownCustomerRef(String id) {
+    return 'Account $id';
+  }
+
+  @override
+  String get ownRowCourier => 'Courier';
+
+  @override
+  String get ownCourierNone => 'Not assigned yet';
+
+  @override
+  String get ownRowPayment => 'Payment';
+
+  @override
+  String ownPayCash(String amount) {
+    return 'Cash · $amount';
+  }
+
+  @override
+  String get ownPayCashNoPrice => 'Cash · price not set yet';
+
+  @override
+  String ownPayOther(String method, String amount) {
+    return '$method · $amount';
+  }
+
+  @override
+  String get ownRowCashRecorded => 'Cash recorded';
+
+  @override
+  String get ownRowOrdered => 'Ordered';
+
+  @override
+  String get ownRowCancelReason => 'Cancellation reason';
+
+  @override
+  String get ownCancelOrder => 'Cancel order';
+
+  @override
+  String get ownCancelKeep => 'Keep the order';
+
+  @override
+  String get ownCancelSheetTitle => 'Cancel this order?';
+
+  @override
+  String get ownCancelSheetCod =>
+      'The customer and the courier will be told. Write why you\'re cancelling.';
+
+  @override
+  String ownCancelSheetHeld(String amount) {
+    return 'The $amount held for this order goes back to the customer. Write why you\'re cancelling.';
+  }
+
+  @override
+  String get ownCancelReasonLabel => 'Reason';
+
+  @override
+  String get ownCancelled => 'Order cancelled.';
+
+  @override
+  String get ownCancelledRefunded =>
+      'Order cancelled. The held amount went back to the customer.';
+
+  @override
+  String get ownOrdersTitle => 'Orders';
+
+  @override
+  String get ownOrdersSearchHint => 'Order number or courier name';
+
+  @override
+  String get ownClearSearch => 'Clear search';
+
+  @override
+  String get ownOrdersKind => 'Order status';
+
+  @override
+  String ownTabOngoing(int count) {
+    return 'Ongoing · $count';
+  }
+
+  @override
+  String get ownTabDone => 'Done';
+
+  @override
+  String get ownTabCancelled => 'Cancelled';
+
+  @override
+  String get ownOrdersLoadError => 'Couldn\'t load your orders.';
+
+  @override
+  String get ownRefreshFailed =>
+      'Couldn\'t refresh. You\'re seeing the last list we loaded.';
+
+  @override
+  String get ownOrdersNoMatch => 'No order matches your search';
+
+  @override
+  String get ownNoOngoing => 'No ongoing orders';
+
+  @override
+  String get ownNoDone => 'No finished orders yet';
+
+  @override
+  String get ownNoCancelled => 'No cancelled orders';
+
+  @override
+  String get ownOrdersEmptyBody =>
+      'Orders customers book with you show up here.';
+
+  @override
+  String ownProposalLine(String proposed, String price) {
+    return 'Price offer: $proposed instead of $price';
+  }
+
+  @override
+  String ownProposalOnly(String proposed) {
+    return 'Price offer: $proposed';
+  }
+
+  @override
+  String ownOfferedTo(String name) {
+    return 'Offered to $name';
+  }
+
+  @override
+  String get ownReconTitle => 'Payment review';
+
+  @override
+  String get ownReconIntro =>
+      'The money for these orders is held because something didn\'t add up. Decide who gets it.';
+
+  @override
+  String get ownReconLoadError => 'Couldn\'t load the orders to review.';
+
+  @override
+  String get ownReconEmpty => 'Nothing to review';
+
+  @override
+  String get ownReconCodTitle => 'With cash payment only';
+
+  @override
+  String get ownReconCodBody =>
+      'This screen will mostly stay empty until electronic payment starts.';
+
+  @override
+  String get ownReconHeld => 'Amount held';
+
+  @override
+  String get ownReconPay => 'Pay the courier';
+
+  @override
+  String get ownReconRefund => 'Refund the customer';
+
+  @override
+  String get ownReconPayTitle => 'Pay the courier?';
+
+  @override
+  String get ownReconRefundTitle => 'Refund the customer?';
+
+  @override
+  String ownReconPayBody(String amount, String ref, String name) {
+    return '$amount for order $ref goes to $name. This can\'t be undone.';
+  }
+
+  @override
+  String ownReconRefundBody(String amount, String ref) {
+    return '$amount for order $ref goes back to the customer. This can\'t be undone.';
+  }
+
+  @override
+  String get ownReconTheCourier => 'the courier';
+
+  @override
+  String get ownReconPaid => 'Paid to the courier.';
+
+  @override
+  String get ownReconRefunded => 'Refunded to the customer.';
+
+  @override
+  String get ownReconFailed => 'Couldn\'t settle this order. Try again.';
+
+  @override
+  String get ownReasonShortDistance => 'Distance shorter than expected';
+
+  @override
+  String get ownReasonSpeed => 'Speed didn\'t add up';
+
+  @override
+  String get ownReasonUnrecorded => 'Held amount not recorded';
+
+  @override
+  String get ownReasonOther => 'Needs a review';
+
+  @override
+  String get ownTeamTitle => 'Team';
+
+  @override
+  String get ownOnTheMap => 'On the map';
+
+  @override
+  String get ownTeamKind => 'Courier status';
+
+  @override
+  String ownTeamAll(int count) {
+    return 'All · $count';
+  }
+
+  @override
+  String get ownTeamActive => 'Active';
+
+  @override
+  String get ownTeamFrozen => 'Frozen';
+
+  @override
+  String get ownTeamLoadError => 'Couldn\'t load your team.';
+
+  @override
+  String get ownTeamEmpty => 'No couriers yet';
+
+  @override
+  String get ownTeamEmptyBody =>
+      'Add your couriers so they can sign in and take orders.';
+
+  @override
+  String get ownTeamNoneHere => 'No couriers here';
+
+  @override
+  String get ownAddCourier => 'Add courier';
+
+  @override
+  String get ownStateOnJob => 'On a job';
+
+  @override
+  String get ownStateFree => 'Free';
+
+  @override
+  String get ownStateFrozen => 'Frozen';
+
+  @override
+  String ownOnJobWith(String ref) {
+    return 'On a job · $ref';
+  }
+
+  @override
+  String get ownNoOrderNow => 'No order right now';
+
+  @override
+  String get ownFrozenSubtitle => 'Can\'t sign in or get orders';
+
+  @override
+  String get ownEmployeeMissing => 'This courier isn\'t on your team anymore.';
+
+  @override
+  String get ownEmpOrders => 'Orders';
+
+  @override
+  String get ownEmpDelivered => 'Delivered';
+
+  @override
+  String get ownEmpCountsNote => 'Counted from your latest orders in the app.';
+
+  @override
+  String get ownEmpIdCheck => 'ID check';
+
+  @override
+  String get ownKyeApproved => 'Approved';
+
+  @override
+  String get ownKyePending => 'Under review';
+
+  @override
+  String get ownKyeRejected => 'Rejected';
+
+  @override
+  String get ownKyeMissing => 'Documents missing';
+
+  @override
+  String get ownEmpCurrentOrder => 'Current order';
+
+  @override
+  String get ownEmpNone => 'None';
+
+  @override
+  String get ownEmpAllOrders => 'All their orders';
+
+  @override
+  String get ownEmpOnMap => 'Where they are on the map';
+
+  @override
+  String get ownFreeze => 'Freeze account';
+
+  @override
+  String get ownUnfreeze => 'Unfreeze account';
+
+  @override
+  String get ownFreezeHint =>
+      'They\'re signed out at once and get no new orders. We\'ll ask for your password to confirm.';
+
+  @override
+  String get ownUnfreezeHint =>
+      'They can sign in and get orders again. We\'ll ask for your password to confirm.';
+
+  @override
+  String ownFreezeTitle(String name) {
+    return 'Freeze $name\'s account?';
+  }
+
+  @override
+  String ownUnfreezeTitle(String name) {
+    return 'Unfreeze $name\'s account?';
+  }
+
+  @override
+  String get ownFreezeBody =>
+      'They\'re signed out at once and get no new orders. Type your password to confirm.';
+
+  @override
+  String get ownUnfreezeBody =>
+      'They can sign in and get orders again. Type your password to confirm.';
+
+  @override
+  String get ownYourPassword => 'Your password';
+
+  @override
+  String get ownPasswordRequired => 'Type your password.';
+
+  @override
+  String get ownPasswordWrong => 'That password isn\'t right.';
+
+  @override
+  String get ownToggleKybNeeded =>
+      'Your business documents must be approved first.';
+
+  @override
+  String get ownTogglePaidPlan => 'Managing couriers needs a paid plan.';
+
+  @override
+  String ownFrozenDone(String name) {
+    return '$name\'s account is frozen.';
+  }
+
+  @override
+  String ownUnfrozenDone(String name) {
+    return '$name\'s account is active again.';
+  }
+
+  @override
+  String get ownAddTitle => 'Add a courier';
+
+  @override
+  String get ownAddBody => 'They sign in with this email and password.';
+
+  @override
+  String get ownAddUsername => 'Name';
+
+  @override
+  String get ownAddEmail => 'Email';
+
+  @override
+  String get ownAddPassword => 'Password';
+
+  @override
+  String get ownAddPasswordHelp => 'At least 8 characters.';
+
+  @override
+  String get ownAddSubmit => 'Add courier';
+
+  @override
+  String ownAdded(String name) {
+    return '$name was added. They can sign in now.';
+  }
+
+  @override
+  String get ownTodayTitle => 'Today';
+
+  @override
+  String get ownNotifications => 'Notifications';
+
+  @override
+  String get ownTodayLoadError => 'Couldn\'t load today\'s orders.';
+
+  @override
+  String get ownTileOngoing => 'Ongoing now';
+
+  @override
+  String get ownTileDelivered => 'Delivered today';
+
+  @override
+  String get ownTileCash => 'Cash recorded today';
+
+  @override
+  String get ownTodayNote =>
+      'Delivered and cash count the orders placed today.';
+
+  @override
+  String ownTodayNoteTruncated(int limit) {
+    return 'Counted from your latest $limit orders, all from today. There may be more.';
+  }
+
+  @override
+  String get ownNeedsYou => 'Needs you';
+
+  @override
+  String get ownNeedsNothing => 'Nothing needs you right now.';
+
+  @override
+  String ownNeedsRequestTitle(String name) {
+    return '$name wants to cancel an order';
+  }
+
+  @override
+  String ownNeedsReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ownNeedsRespond => 'Respond';
+
+  @override
+  String ownNeedsReviewsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders need a payment review',
+      one: '1 order needs a payment review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNeedsReviewsBody => 'The distance or time didn\'t add up';
+
+  @override
+  String get ownNeedsReview => 'Review';
+
+  @override
+  String get ownTeamNow => 'Team now';
+
+  @override
+  String get ownSeeAll => 'All';
+
+  @override
+  String get ownTeamNowEmpty => 'No couriers yet. Add them from the Team tab.';
+
+  @override
+  String get ownRatingTitle => 'Your rating';
+
+  @override
+  String get ownRatingNone => 'No ratings yet';
+
+  @override
+  String ownRatingValue(String average, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ratings',
+      one: '1 rating',
+    );
+    return '$average · $_temp0';
+  }
+
+  @override
+  String get ownYourBusiness => 'Your business';
+
+  @override
+  String get ownLinkAllOrders => 'All orders';
+
+  @override
+  String get ownLinkServiceSetup => 'Service setup';
+
+  @override
+  String get ownLinkWallet => 'Wallet';
+
+  @override
+  String get ownLinkSubscription => 'Subscription';
+
+  @override
+  String get ownLinkHistory => 'Activity and history';
+
+  @override
+  String get ownKybMissingTitle => 'Verify your business';
+
+  @override
+  String get ownKybMissingBody =>
+      'Upload your business documents to start taking orders.';
+
+  @override
+  String get ownKybUpload => 'Upload documents';
+
+  @override
+  String get ownKybPendingTitle => 'Your documents are under review';
+
+  @override
+  String get ownKybPendingBody => 'We\'ll let you know when they\'re approved.';
+
+  @override
+  String get ownKybView => 'View documents';
+
+  @override
+  String get ownKybRejectedTitle => 'Your documents were rejected';
+
+  @override
+  String get ownKybRejectedBody => 'Upload them again to start taking orders.';
+
+  @override
+  String get ownKybUploadAgain => 'Upload again';
+
+  @override
+  String get ownNavToday => 'Today';
+
+  @override
+  String get ownNavOrders => 'Orders';
+
+  @override
+  String get ownNavTeam => 'Team';
+
+  @override
+  String get ownNavAccount => 'Account';
 }

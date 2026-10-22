@@ -4221,4 +4221,636 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get updCopied =>
       'اللينك اتنسخ. افتحه في المتصفح ونزّل النسخة الجديدة.';
+
+  @override
+  String ownCourierUnknown(String id) {
+    return 'مندوب $id';
+  }
+
+  @override
+  String get ownAgoNow => 'دلوقتي';
+
+  @override
+  String ownAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'من $count دقيقة',
+      few: 'من $count دقايق',
+      two: 'من دقيقتين',
+      one: 'من دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String ownAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'من $count ساعة',
+      few: 'من $count ساعات',
+      two: 'من ساعتين',
+      one: 'من ساعة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNotNow => 'مش دلوقتي';
+
+  @override
+  String get ownRefresh => 'حدّث';
+
+  @override
+  String ownOrderTitle(String ref) {
+    return 'طلب $ref';
+  }
+
+  @override
+  String get ownOrderFallbackTitle => 'طلب';
+
+  @override
+  String get ownOrderMissing => 'الطلب ده مش في قايمتك دلوقتي.';
+
+  @override
+  String ownCancelReqTitle(String name) {
+    return '$name طالب يلغي المهمة';
+  }
+
+  @override
+  String ownCancelReqQuote(String reason) {
+    return '«$reason»';
+  }
+
+  @override
+  String get ownCancelReqNoReason => 'مكتبش سبب';
+
+  @override
+  String ownCancelReqSince(String ago) {
+    return 'اتطلب $ago';
+  }
+
+  @override
+  String get ownCancelReqKeep => 'يكمّل المهمة';
+
+  @override
+  String get ownCancelReqApprove => 'وافق على الإلغاء';
+
+  @override
+  String get ownCancelReqApproveTitle => 'توافق على الإلغاء؟';
+
+  @override
+  String get ownCancelReqApproveBody => 'الطلب هيتلغي والعميل هيعرف.';
+
+  @override
+  String get ownCancelReqKeepTitle => 'المهمة تكمّل؟';
+
+  @override
+  String ownCancelReqKeepBody(String name) {
+    return '$name هيفضل على الطلب ولازم يخلّصه.';
+  }
+
+  @override
+  String get ownCancelReqApproved => 'وافقت على الإلغاء والطلب اتلغى.';
+
+  @override
+  String get ownCancelReqDeclined => 'رفضت الطلب والمندوب مكمّل.';
+
+  @override
+  String get ownCancelReqConflict =>
+      'الطلب ده اتغيّر خلاص، ممكن وقته يكون خلص. حدّثنا الطلب.';
+
+  @override
+  String get ownDistanceReviewTitle => 'المسافة باينة قصيرة، راجعها';
+
+  @override
+  String ownDistanceReviewBody(String actual, String booked) {
+    return 'الرحلة اتسجّل فيها $actual كم من $booked كم في الحجز. الكاش اتسجّل عادي.';
+  }
+
+  @override
+  String get ownSeeOnMap => 'شوف على الخريطة';
+
+  @override
+  String get ownRowCustomer => 'العميل';
+
+  @override
+  String ownCustomerRef(String id) {
+    return 'حساب $id';
+  }
+
+  @override
+  String get ownRowCourier => 'المندوب';
+
+  @override
+  String get ownCourierNone => 'لسه محدش استلمه';
+
+  @override
+  String get ownRowPayment => 'الدفع';
+
+  @override
+  String ownPayCash(String amount) {
+    return 'كاش · $amount';
+  }
+
+  @override
+  String get ownPayCashNoPrice => 'كاش · السعر لسه متحددش';
+
+  @override
+  String ownPayOther(String method, String amount) {
+    return '$method · $amount';
+  }
+
+  @override
+  String get ownRowCashRecorded => 'الكاش المتسجّل';
+
+  @override
+  String get ownRowOrdered => 'اتطلب';
+
+  @override
+  String get ownRowCancelReason => 'سبب الإلغاء';
+
+  @override
+  String get ownCancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get ownCancelKeep => 'خلّي الطلب';
+
+  @override
+  String get ownCancelSheetTitle => 'تلغي الطلب ده؟';
+
+  @override
+  String get ownCancelSheetCod => 'العميل والمندوب هيعرفوا. اكتب سبب الإلغاء.';
+
+  @override
+  String ownCancelSheetHeld(String amount) {
+    return 'الـ $amount المحجوزين للطلب هيرجعوا للعميل. اكتب سبب الإلغاء.';
+  }
+
+  @override
+  String get ownCancelReasonLabel => 'السبب';
+
+  @override
+  String get ownCancelled => 'الطلب اتلغى.';
+
+  @override
+  String get ownCancelledRefunded => 'الطلب اتلغى والمبلغ المحجوز رجع للعميل.';
+
+  @override
+  String get ownOrdersTitle => 'الطلبات';
+
+  @override
+  String get ownOrdersSearchHint => 'رقم الطلب أو اسم المندوب';
+
+  @override
+  String get ownClearSearch => 'امسح البحث';
+
+  @override
+  String get ownOrdersKind => 'حالة الطلبات';
+
+  @override
+  String ownTabOngoing(int count) {
+    return 'جارية · $count';
+  }
+
+  @override
+  String get ownTabDone => 'خلصت';
+
+  @override
+  String get ownTabCancelled => 'اتلغت';
+
+  @override
+  String get ownOrdersLoadError => 'مقدرناش نحمّل الطلبات.';
+
+  @override
+  String get ownRefreshFailed => 'مقدرناش نحدّث. ده آخر اللي اتحمّل.';
+
+  @override
+  String get ownOrdersNoMatch => 'مفيش طلب زي اللي بتدوّر عليه';
+
+  @override
+  String get ownNoOngoing => 'مفيش طلبات جارية';
+
+  @override
+  String get ownNoDone => 'لسه مفيش طلبات خلصت';
+
+  @override
+  String get ownNoCancelled => 'مفيش طلبات اتلغت';
+
+  @override
+  String get ownOrdersEmptyBody =>
+      'الطلبات اللي العملاء بيطلبوها منك هتظهر هنا.';
+
+  @override
+  String ownProposalLine(String proposed, String price) {
+    return 'عرض سعر: $proposed بدل $price';
+  }
+
+  @override
+  String ownProposalOnly(String proposed) {
+    return 'عرض سعر: $proposed';
+  }
+
+  @override
+  String ownOfferedTo(String name) {
+    return 'معروض على $name';
+  }
+
+  @override
+  String get ownReconTitle => 'مراجعة الحسابات';
+
+  @override
+  String get ownReconIntro =>
+      'طلبات المبلغ فيها متحجوز لأن السيستم لقى حاجة مش منطقية. قرر الفلوس تروح لمين.';
+
+  @override
+  String get ownReconLoadError => 'مقدرناش نحمّل الطلبات اللي محتاجة مراجعة.';
+
+  @override
+  String get ownReconEmpty => 'مفيش حاجة محتاجة مراجعة';
+
+  @override
+  String get ownReconCodTitle => 'مع الدفع كاش بس';
+
+  @override
+  String get ownReconCodBody =>
+      'الشاشة دي هتفضل فاضية غالباً لحد ما الدفع الإلكتروني يشتغل.';
+
+  @override
+  String get ownReconHeld => 'المبلغ المحجوز';
+
+  @override
+  String get ownReconPay => 'ادفعها للمندوب';
+
+  @override
+  String get ownReconRefund => 'رجّعها للعميل';
+
+  @override
+  String get ownReconPayTitle => 'تدفعها للمندوب؟';
+
+  @override
+  String get ownReconRefundTitle => 'ترجّعها للعميل؟';
+
+  @override
+  String ownReconPayBody(String amount, String ref, String name) {
+    return '$amount بتوع طلب $ref هيروحوا لـ$name. مش هينفع ترجع فيها.';
+  }
+
+  @override
+  String ownReconRefundBody(String amount, String ref) {
+    return '$amount بتوع طلب $ref هيرجعوا للعميل. مش هينفع ترجع فيها.';
+  }
+
+  @override
+  String get ownReconTheCourier => 'المندوب';
+
+  @override
+  String get ownReconPaid => 'الفلوس اتدفعت للمندوب.';
+
+  @override
+  String get ownReconRefunded => 'الفلوس رجعت للعميل.';
+
+  @override
+  String get ownReconFailed => 'مقدرناش نخلّص الطلب ده. جرّب تاني.';
+
+  @override
+  String get ownReasonShortDistance => 'المسافة أقل من المتوقع';
+
+  @override
+  String get ownReasonSpeed => 'السرعة مش منطقية';
+
+  @override
+  String get ownReasonUnrecorded => 'المبلغ المحجوز مش متسجّل';
+
+  @override
+  String get ownReasonOther => 'محتاج مراجعة';
+
+  @override
+  String get ownTeamTitle => 'الفريق';
+
+  @override
+  String get ownOnTheMap => 'على الخريطة';
+
+  @override
+  String get ownTeamKind => 'حالة المندوبين';
+
+  @override
+  String ownTeamAll(int count) {
+    return 'الكل · $count';
+  }
+
+  @override
+  String get ownTeamActive => 'شغالين';
+
+  @override
+  String get ownTeamFrozen => 'متجمدين';
+
+  @override
+  String get ownTeamLoadError => 'مقدرناش نحمّل الفريق.';
+
+  @override
+  String get ownTeamEmpty => 'لسه مفيش مندوبين';
+
+  @override
+  String get ownTeamEmptyBody =>
+      'ضيف المندوبين بتوعك عشان يدخلوا ويستلموا طلبات.';
+
+  @override
+  String get ownTeamNoneHere => 'مفيش مندوبين هنا';
+
+  @override
+  String get ownAddCourier => 'إضافة مندوب';
+
+  @override
+  String get ownStateOnJob => 'في مهمة';
+
+  @override
+  String get ownStateFree => 'فاضي';
+
+  @override
+  String get ownStateFrozen => 'متجمد';
+
+  @override
+  String ownOnJobWith(String ref) {
+    return 'في مهمة · $ref';
+  }
+
+  @override
+  String get ownNoOrderNow => 'مفيش طلب دلوقتي';
+
+  @override
+  String get ownFrozenSubtitle => 'مش بيقدر يدخل ولا يستلم طلبات';
+
+  @override
+  String get ownEmployeeMissing => 'المندوب ده مش في فريقك دلوقتي.';
+
+  @override
+  String get ownEmpOrders => 'طلبات';
+
+  @override
+  String get ownEmpDelivered => 'اتسلمت';
+
+  @override
+  String get ownEmpCountsNote => 'محسوبة من آخر طلباتك اللي في التطبيق.';
+
+  @override
+  String get ownEmpIdCheck => 'التحقق من الهوية';
+
+  @override
+  String get ownKyeApproved => 'متراجع ومقبول';
+
+  @override
+  String get ownKyePending => 'بيتراجع';
+
+  @override
+  String get ownKyeRejected => 'مرفوض';
+
+  @override
+  String get ownKyeMissing => 'المستندات ناقصة';
+
+  @override
+  String get ownEmpCurrentOrder => 'المهمة الحالية';
+
+  @override
+  String get ownEmpNone => 'مفيش';
+
+  @override
+  String get ownEmpAllOrders => 'كل مهامه';
+
+  @override
+  String get ownEmpOnMap => 'مكانه على الخريطة';
+
+  @override
+  String get ownFreeze => 'تجميد الحساب';
+
+  @override
+  String get ownUnfreeze => 'فك تجميد الحساب';
+
+  @override
+  String get ownFreezeHint =>
+      'هيخرج من التطبيق فوراً ومش هيستقبل مهام. هنطلب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownUnfreezeHint =>
+      'هيقدر يدخل ويستلم مهام تاني. هنطلب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String ownFreezeTitle(String name) {
+    return 'تجمّد حساب $name؟';
+  }
+
+  @override
+  String ownUnfreezeTitle(String name) {
+    return 'تفك تجميد حساب $name؟';
+  }
+
+  @override
+  String get ownFreezeBody =>
+      'هيخرج من التطبيق فوراً ومش هيستقبل مهام. اكتب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownUnfreezeBody =>
+      'هيقدر يدخل ويستلم مهام تاني. اكتب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownYourPassword => 'كلمة السر بتاعتك';
+
+  @override
+  String get ownPasswordRequired => 'اكتب كلمة السر.';
+
+  @override
+  String get ownPasswordWrong => 'كلمة السر دي مش صح.';
+
+  @override
+  String get ownToggleKybNeeded => 'لازم مستندات شغلك تتقبل الأول.';
+
+  @override
+  String get ownTogglePaidPlan => 'إدارة المندوبين محتاجة باقة مدفوعة.';
+
+  @override
+  String ownFrozenDone(String name) {
+    return 'حساب $name اتجمد.';
+  }
+
+  @override
+  String ownUnfrozenDone(String name) {
+    return 'حساب $name رجع يشتغل.';
+  }
+
+  @override
+  String get ownAddTitle => 'إضافة مندوب';
+
+  @override
+  String get ownAddBody => 'هيدخل بالإيميل وكلمة السر دول.';
+
+  @override
+  String get ownAddUsername => 'الاسم';
+
+  @override
+  String get ownAddEmail => 'الإيميل';
+
+  @override
+  String get ownAddPassword => 'كلمة السر';
+
+  @override
+  String get ownAddPasswordHelp => '8 حروف على الأقل.';
+
+  @override
+  String get ownAddSubmit => 'ضيف المندوب';
+
+  @override
+  String ownAdded(String name) {
+    return '$name اتضاف ويقدر يدخل دلوقتي.';
+  }
+
+  @override
+  String get ownTodayTitle => 'النهارده';
+
+  @override
+  String get ownNotifications => 'الإشعارات';
+
+  @override
+  String get ownTodayLoadError => 'مقدرناش نحمّل طلبات النهارده.';
+
+  @override
+  String get ownTileOngoing => 'جارية دلوقتي';
+
+  @override
+  String get ownTileDelivered => 'اتسلمت النهارده';
+
+  @override
+  String get ownTileCash => 'كاش متسجّل النهارده';
+
+  @override
+  String get ownTodayNote =>
+      'اللي اتسلم والكاش محسوبين من الطلبات اللي اتطلبت النهارده.';
+
+  @override
+  String ownTodayNoteTruncated(int limit) {
+    return 'محسوبة من آخر $limit طلب، وكلهم من النهارده. ممكن يكون فيه أكتر.';
+  }
+
+  @override
+  String get ownNeedsYou => 'محتاج منك';
+
+  @override
+  String get ownNeedsNothing => 'مفيش حاجة محتاجاك دلوقتي.';
+
+  @override
+  String ownNeedsRequestTitle(String name) {
+    return '$name طالب يلغي مهمة';
+  }
+
+  @override
+  String ownNeedsReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ownNeedsRespond => 'رد عليه';
+
+  @override
+  String ownNeedsReviewsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count طلب محتاج مراجعة حسابات',
+      few: '$count طلبات محتاجة مراجعة حسابات',
+      two: 'طلبين محتاجين مراجعة حسابات',
+      one: 'طلب محتاج مراجعة حسابات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNeedsReviewsBody => 'المسافة أو الوقت مش منطقيين';
+
+  @override
+  String get ownNeedsReview => 'راجع';
+
+  @override
+  String get ownTeamNow => 'الفريق دلوقتي';
+
+  @override
+  String get ownSeeAll => 'الكل';
+
+  @override
+  String get ownTeamNowEmpty => 'لسه مفيش مندوبين. ضيفهم من تاب الفريق.';
+
+  @override
+  String get ownRatingTitle => 'تقييمك';
+
+  @override
+  String get ownRatingNone => 'لسه مفيش تقييمات';
+
+  @override
+  String ownRatingValue(String average, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تقييم',
+      few: '$count تقييمات',
+      two: 'تقييمين',
+      one: 'تقييم واحد',
+    );
+    return '$average · $_temp0';
+  }
+
+  @override
+  String get ownYourBusiness => 'شغلك';
+
+  @override
+  String get ownLinkAllOrders => 'كل الطلبات';
+
+  @override
+  String get ownLinkServiceSetup => 'إعداد الخدمة';
+
+  @override
+  String get ownLinkWallet => 'المحفظة';
+
+  @override
+  String get ownLinkSubscription => 'الاشتراك';
+
+  @override
+  String get ownLinkHistory => 'النشاط والسجل';
+
+  @override
+  String get ownKybMissingTitle => 'وثّق شغلك';
+
+  @override
+  String get ownKybMissingBody => 'ارفع مستندات شغلك عشان تبدأ تستقبل طلبات.';
+
+  @override
+  String get ownKybUpload => 'ارفع المستندات';
+
+  @override
+  String get ownKybPendingTitle => 'مستنداتك بتتراجع';
+
+  @override
+  String get ownKybPendingBody => 'هنبلغك أول ما تتقبل.';
+
+  @override
+  String get ownKybView => 'شوف المستندات';
+
+  @override
+  String get ownKybRejectedTitle => 'مستنداتك اترفضت';
+
+  @override
+  String get ownKybRejectedBody => 'ارفعها تاني عشان تبدأ تستقبل طلبات.';
+
+  @override
+  String get ownKybUploadAgain => 'ارفعها تاني';
+
+  @override
+  String get ownNavToday => 'النهارده';
+
+  @override
+  String get ownNavOrders => 'الطلبات';
+
+  @override
+  String get ownNavTeam => 'الفريق';
+
+  @override
+  String get ownNavAccount => 'حسابي';
 }

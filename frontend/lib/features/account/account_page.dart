@@ -195,14 +195,9 @@ class _AccountPageState extends State<AccountPage> {
                   onTap: () =>
                       nav.push<void>(context, (_) => const SecurityPage()),
                 ),
-                QdListTile(
-                  key: const Key('account_wallet'),
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: l10n.acctWallet,
-                  enabled: false,
-                  badge:
-                      QdStatusChip(label: l10n.acctSoon, tone: QdTone.neutral),
-                ),
+                // No wallet row: customers pay cash only, so the disabled
+                // "coming soon" wallet is not shown (owner decision,
+                // FE-OWNER-1 item 0).
               ]),
               const SizedBox(height: 18),
               QdSectionHeader(title: l10n.acctSectionApp, small: true),
