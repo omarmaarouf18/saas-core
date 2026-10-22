@@ -4776,4 +4776,139 @@ class AppLocalizationsEn extends AppLocalizations {
   String ownAdded(String name) {
     return '$name was added. They can sign in now.';
   }
+
+  @override
+  String get ownTodayTitle => 'Today';
+
+  @override
+  String get ownNotifications => 'Notifications';
+
+  @override
+  String get ownTodayLoadError => 'Couldn\'t load today\'s orders.';
+
+  @override
+  String get ownTileOngoing => 'Ongoing now';
+
+  @override
+  String get ownTileDelivered => 'Delivered today';
+
+  @override
+  String get ownTileCash => 'Cash recorded today';
+
+  @override
+  String get ownTodayNote =>
+      'Delivered and cash count the orders placed today.';
+
+  @override
+  String ownTodayNoteTruncated(int limit) {
+    return 'Counted from your latest $limit orders, all from today. There may be more.';
+  }
+
+  @override
+  String get ownNeedsYou => 'Needs you';
+
+  @override
+  String get ownNeedsNothing => 'Nothing needs you right now.';
+
+  @override
+  String ownNeedsRequestTitle(String name) {
+    return '$name wants to cancel an order';
+  }
+
+  @override
+  String ownNeedsReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ownNeedsRespond => 'Respond';
+
+  @override
+  String ownNeedsReviewsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders need a payment review',
+      one: '1 order needs a payment review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNeedsReviewsBody => 'The distance or time didn\'t add up';
+
+  @override
+  String get ownNeedsReview => 'Review';
+
+  @override
+  String get ownTeamNow => 'Team now';
+
+  @override
+  String get ownSeeAll => 'All';
+
+  @override
+  String get ownTeamNowEmpty => 'No couriers yet. Add them from the Team tab.';
+
+  @override
+  String get ownRatingTitle => 'Your rating';
+
+  @override
+  String get ownRatingNone => 'No ratings yet';
+
+  @override
+  String ownRatingValue(String average, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ratings',
+      one: '1 rating',
+    );
+    return '$average · $_temp0';
+  }
+
+  @override
+  String get ownYourBusiness => 'Your business';
+
+  @override
+  String get ownLinkAllOrders => 'All orders';
+
+  @override
+  String get ownLinkServiceSetup => 'Service setup';
+
+  @override
+  String get ownLinkWallet => 'Wallet';
+
+  @override
+  String get ownLinkSubscription => 'Subscription';
+
+  @override
+  String get ownLinkHistory => 'Activity and history';
+
+  @override
+  String get ownKybMissingTitle => 'Verify your business';
+
+  @override
+  String get ownKybMissingBody =>
+      'Upload your business documents to start taking orders.';
+
+  @override
+  String get ownKybUpload => 'Upload documents';
+
+  @override
+  String get ownKybPendingTitle => 'Your documents are under review';
+
+  @override
+  String get ownKybPendingBody => 'We\'ll let you know when they\'re approved.';
+
+  @override
+  String get ownKybView => 'View documents';
+
+  @override
+  String get ownKybRejectedTitle => 'Your documents were rejected';
+
+  @override
+  String get ownKybRejectedBody => 'Upload them again to start taking orders.';
+
+  @override
+  String get ownKybUploadAgain => 'Upload again';
 }

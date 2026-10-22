@@ -8564,6 +8564,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} was added. They can sign in now.'**
   String ownAdded(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownTodayTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get ownNotifications;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load today\'s orders.'**
+  String get ownTodayLoadError;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing now'**
+  String get ownTileOngoing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered today'**
+  String get ownTileDelivered;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash recorded today'**
+  String get ownTileCash;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered and cash count the orders placed today.'**
+  String get ownTodayNote;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted from your latest {limit} orders, all from today. There may be more.'**
+  String ownTodayNoteTruncated(int limit);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get ownNeedsYou;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs you right now.'**
+  String get ownNeedsNothing;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to cancel an order'**
+  String ownNeedsRequestTitle(String name);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ownNeedsReason(String reason);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Respond'**
+  String get ownNeedsRespond;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 order needs a payment review} other{{count} orders need a payment review}}'**
+  String ownNeedsReviewsTitle(int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The distance or time didn\'t add up'**
+  String get ownNeedsReviewsBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get ownNeedsReview;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Team now'**
+  String get ownTeamNow;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownSeeAll;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No couriers yet. Add them from the Team tab.'**
+  String get ownTeamNowEmpty;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating'**
+  String get ownRatingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet'**
+  String get ownRatingNone;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{average} · {count, plural, =1{1 rating} other{{count} ratings}}'**
+  String ownRatingValue(String average, int count);
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business'**
+  String get ownYourBusiness;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All orders'**
+  String get ownLinkAllOrders;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service setup'**
+  String get ownLinkServiceSetup;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get ownLinkWallet;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get ownLinkSubscription;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity and history'**
+  String get ownLinkHistory;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your business'**
+  String get ownKybMissingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your business documents to start taking orders.'**
+  String get ownKybMissingBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload documents'**
+  String get ownKybUpload;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents are under review'**
+  String get ownKybPendingTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll let you know when they\'re approved.'**
+  String get ownKybPendingBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'View documents'**
+  String get ownKybView;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were rejected'**
+  String get ownKybRejectedTitle;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload them again to start taking orders.'**
+  String get ownKybRejectedBody;
+
+  /// FE-OWNER-1 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload again'**
+  String get ownKybUploadAgain;
 }
 
 class _AppLocalizationsDelegate

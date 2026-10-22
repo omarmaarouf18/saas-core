@@ -3958,5 +3958,181 @@
         "type": "String"
       }
     }
+  },
+  "ownTodayTitle": "Today",
+  "@ownTodayTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNotifications": "Notifications",
+  "@ownNotifications": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTodayLoadError": "Couldn't load today's orders.",
+  "@ownTodayLoadError": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTileOngoing": "Ongoing now",
+  "@ownTileOngoing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTileDelivered": "Delivered today",
+  "@ownTileDelivered": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTileCash": "Cash recorded today",
+  "@ownTileCash": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTodayNote": "Delivered and cash count the orders placed today.",
+  "@ownTodayNote": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTodayNoteTruncated": "Counted from your latest {limit} orders, all from today. There may be more.",
+  "@ownTodayNoteTruncated": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "ownNeedsYou": "Needs you",
+  "@ownNeedsYou": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNeedsNothing": "Nothing needs you right now.",
+  "@ownNeedsNothing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNeedsRequestTitle": "{name} wants to cancel an order",
+  "@ownNeedsRequestTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownNeedsReason": "Reason: {reason}",
+  "@ownNeedsReason": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ownNeedsRespond": "Respond",
+  "@ownNeedsRespond": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNeedsReviewsTitle": "{count, plural, =1{1 order needs a payment review} other{{count} orders need a payment review}}",
+  "@ownNeedsReviewsTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ownNeedsReviewsBody": "The distance or time didn't add up",
+  "@ownNeedsReviewsBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownNeedsReview": "Review",
+  "@ownNeedsReview": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamNow": "Team now",
+  "@ownTeamNow": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownSeeAll": "All",
+  "@ownSeeAll": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamNowEmpty": "No couriers yet. Add them from the Team tab.",
+  "@ownTeamNowEmpty": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRatingTitle": "Your rating",
+  "@ownRatingTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRatingNone": "No ratings yet",
+  "@ownRatingNone": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownRatingValue": "{average} · {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@ownRatingValue": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "average": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ownYourBusiness": "Your business",
+  "@ownYourBusiness": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownLinkAllOrders": "All orders",
+  "@ownLinkAllOrders": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownLinkServiceSetup": "Service setup",
+  "@ownLinkServiceSetup": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownLinkWallet": "Wallet",
+  "@ownLinkWallet": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownLinkSubscription": "Subscription",
+  "@ownLinkSubscription": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownLinkHistory": "Activity and history",
+  "@ownLinkHistory": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybMissingTitle": "Verify your business",
+  "@ownKybMissingTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybMissingBody": "Upload your business documents to start taking orders.",
+  "@ownKybMissingBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybUpload": "Upload documents",
+  "@ownKybUpload": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybPendingTitle": "Your documents are under review",
+  "@ownKybPendingTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybPendingBody": "We'll let you know when they're approved.",
+  "@ownKybPendingBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybView": "View documents",
+  "@ownKybView": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybRejectedTitle": "Your documents were rejected",
+  "@ownKybRejectedTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybRejectedBody": "Upload them again to start taking orders.",
+  "@ownKybRejectedBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKybUploadAgain": "Upload again",
+  "@ownKybUploadAgain": {
+    "description": "FE-OWNER-1 redesigned owner screens."
   }
 }

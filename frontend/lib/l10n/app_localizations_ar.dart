@@ -4703,4 +4703,142 @@ class AppLocalizationsAr extends AppLocalizations {
   String ownAdded(String name) {
     return '$name اتضاف ويقدر يدخل دلوقتي.';
   }
+
+  @override
+  String get ownTodayTitle => 'النهارده';
+
+  @override
+  String get ownNotifications => 'الإشعارات';
+
+  @override
+  String get ownTodayLoadError => 'مقدرناش نحمّل طلبات النهارده.';
+
+  @override
+  String get ownTileOngoing => 'جارية دلوقتي';
+
+  @override
+  String get ownTileDelivered => 'اتسلمت النهارده';
+
+  @override
+  String get ownTileCash => 'كاش متسجّل النهارده';
+
+  @override
+  String get ownTodayNote =>
+      'اللي اتسلم والكاش محسوبين من الطلبات اللي اتطلبت النهارده.';
+
+  @override
+  String ownTodayNoteTruncated(int limit) {
+    return 'محسوبة من آخر $limit طلب، وكلهم من النهارده. ممكن يكون فيه أكتر.';
+  }
+
+  @override
+  String get ownNeedsYou => 'محتاج منك';
+
+  @override
+  String get ownNeedsNothing => 'مفيش حاجة محتاجاك دلوقتي.';
+
+  @override
+  String ownNeedsRequestTitle(String name) {
+    return '$name طالب يلغي مهمة';
+  }
+
+  @override
+  String ownNeedsReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ownNeedsRespond => 'رد عليه';
+
+  @override
+  String ownNeedsReviewsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count طلب محتاج مراجعة حسابات',
+      few: '$count طلبات محتاجة مراجعة حسابات',
+      two: 'طلبين محتاجين مراجعة حسابات',
+      one: 'طلب محتاج مراجعة حسابات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ownNeedsReviewsBody => 'المسافة أو الوقت مش منطقيين';
+
+  @override
+  String get ownNeedsReview => 'راجع';
+
+  @override
+  String get ownTeamNow => 'الفريق دلوقتي';
+
+  @override
+  String get ownSeeAll => 'الكل';
+
+  @override
+  String get ownTeamNowEmpty => 'لسه مفيش مندوبين. ضيفهم من تاب الفريق.';
+
+  @override
+  String get ownRatingTitle => 'تقييمك';
+
+  @override
+  String get ownRatingNone => 'لسه مفيش تقييمات';
+
+  @override
+  String ownRatingValue(String average, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تقييم',
+      few: '$count تقييمات',
+      two: 'تقييمين',
+      one: 'تقييم واحد',
+    );
+    return '$average · $_temp0';
+  }
+
+  @override
+  String get ownYourBusiness => 'شغلك';
+
+  @override
+  String get ownLinkAllOrders => 'كل الطلبات';
+
+  @override
+  String get ownLinkServiceSetup => 'إعداد الخدمة';
+
+  @override
+  String get ownLinkWallet => 'المحفظة';
+
+  @override
+  String get ownLinkSubscription => 'الاشتراك';
+
+  @override
+  String get ownLinkHistory => 'النشاط والسجل';
+
+  @override
+  String get ownKybMissingTitle => 'وثّق شغلك';
+
+  @override
+  String get ownKybMissingBody => 'ارفع مستندات شغلك عشان تبدأ تستقبل طلبات.';
+
+  @override
+  String get ownKybUpload => 'ارفع المستندات';
+
+  @override
+  String get ownKybPendingTitle => 'مستنداتك بتتراجع';
+
+  @override
+  String get ownKybPendingBody => 'هنبلغك أول ما تتقبل.';
+
+  @override
+  String get ownKybView => 'شوف المستندات';
+
+  @override
+  String get ownKybRejectedTitle => 'مستنداتك اترفضت';
+
+  @override
+  String get ownKybRejectedBody => 'ارفعها تاني عشان تبدأ تستقبل طلبات.';
+
+  @override
+  String get ownKybUploadAgain => 'ارفعها تاني';
 }
