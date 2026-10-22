@@ -102,7 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.fetchUserProfile();
     if (!mounted) return;
-    if (auth.user?.role == 'owner') {
+    // The redesigned owner shell loads its own data (FE-OWNER-2 item 0).
+    if (auth.user?.role == 'owner' && runLegacyOwnerDashboardFetch()) {
       final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
       await ownerProvider.fetchDashboardData(auth.token!);
       await ownerProvider.fetchOwnerJobs(auth.token!);

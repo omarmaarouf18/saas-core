@@ -320,6 +320,14 @@
     * `themed_section_header.dart`
     * `themed_success_banner.dart`
     * `themed_text_field.dart`
+ * **Features** (`frontend/lib/features/`, redesign A on `frontend/lib/ui/`; each area is behind a compile-time flag in `core/feature_flags.dart`, off by default, so a plain build is still the old screens; widget tests and goldens under `frontend/test/features/`; no device run against a backend yet):
+
+   | Area | Flag | Status | What it holds | Worklogs |
+   | :--- | :--- | :--- | :--- | :--- |
+   | `features/auth/` | `QD_REDESIGN_AUTH` | Done behind flag | Sign in, sign up, code entry, password reset, update required, auth gate | FE-AUTH-ACCOUNT, HOTFIX-LOGIN |
+   | `features/customer/` | `QD_REDESIGN_CUSTOMER` | Done behind flag | Customer shell, home, market, booking, place picker, orders, order detail (searching / proposal / active / completed / closed), chat, rating | FE-CUST-1, FE-CUST-2 |
+   | `features/account/` | `QD_REDESIGN_CUSTOMER` | Done behind flag | Account page, my details, saved addresses (customer only), security / 2FA, email change, notifications, support tickets | FE-AUTH-ACCOUNT, FE-OWNER-1 |
+   | `features/owner/` | `QD_REDESIGN_OWNER` | Done behind flag | Owner shell, Today, orders, order detail, payment review, team, courier page (service setup, fleet map, activity log, verification, wallet, plan and the owner account: FE-OWNER-2, in progress) | FE-OWNER-1 |
 
 ---
 

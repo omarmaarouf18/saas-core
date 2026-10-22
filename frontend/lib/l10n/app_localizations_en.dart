@@ -4406,7 +4406,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ownCustomerRef(String id) {
-    return 'Account $id';
+    return 'Customer $id';
   }
 
   @override

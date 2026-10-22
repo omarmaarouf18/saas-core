@@ -1549,7 +1549,7 @@
   "ownDistanceReviewBody": "الرحلة اتسجّل فيها {actual} كم من {booked} كم في الحجز. الكاش اتسجّل عادي.",
   "ownSeeOnMap": "شوف على الخريطة",
   "ownRowCustomer": "العميل",
-  "ownCustomerRef": "حساب {id}",
+  "ownCustomerRef": "عميل {id}",
   "ownRowCourier": "المندوب",
   "ownCourierNone": "لسه محدش استلمه",
   "ownRowPayment": "الدفع",

@@ -7914,7 +7914,7 @@ abstract class AppLocalizations {
   /// FE-OWNER-1 redesigned owner screens.
   ///
   /// In en, this message translates to:
-  /// **'Account {id}'**
+  /// **'Customer {id}'**
   String ownCustomerRef(String id);
 
   /// FE-OWNER-1 redesigned owner screens.

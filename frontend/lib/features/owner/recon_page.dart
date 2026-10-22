@@ -223,7 +223,7 @@ class _ReconCard extends StatelessWidget {
             ),
             OwnerInfoRow(
               label: l10n.ownRowCustomer,
-              value: l10n.ownCustomerRef(shortIdIsolated(job.userId)),
+              value: l10n.ownCustomerRef(shortRefIsolated(job.userId)),
             ),
           ]),
           if (note.isNotEmpty) ...[

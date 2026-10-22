@@ -4337,7 +4337,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String ownCustomerRef(String id) {
-    return 'حساب $id';
+    return 'عميل $id';
   }
 
   @override

@@ -38,6 +38,8 @@ void main() {
     expect(find.byKey(const Key('own_distance_review')), findsNothing);
     // No ETA / recipient / history rows (JOB-V2-BE).
     expect(find.textContaining('ETA'), findsNothing);
+    // The owner DTO has no customer name: "Customer #<short id>".
+    expect(find.text('Customer \u2066#cust-9\u2069'), findsOneWidget);
   });
 
   testWidgets('"see on the map" opens the old fleet map', (tester) async {

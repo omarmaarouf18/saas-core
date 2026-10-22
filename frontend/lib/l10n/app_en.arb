@@ -3423,7 +3423,7 @@
   "@ownRowCustomer": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
-  "ownCustomerRef": "Account {id}",
+  "ownCustomerRef": "Customer {id}",
   "@ownCustomerRef": {
     "description": "FE-OWNER-1 redesigned owner screens.",
     "placeholders": {
