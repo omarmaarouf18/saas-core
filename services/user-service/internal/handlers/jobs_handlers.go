@@ -31,6 +31,80 @@ var (
 )
 
 // ---------------------------------------------------------------------------
+// ADR-0028 v2 booking inputs: recipient, package details, address text
+// ---------------------------------------------------------------------------
+
+// validateV2BookingFields normalizes and validates the optional v2 booking
+// inputs (ADR-0028 §2.1/§2.2/§2.7). It mutates the request in place —
+// trimming, sanitizing, and dropping empty objects — and returns("" "") on
+// success, or a stable error code + client-safe message for a 400.
+func validateV2BookingFields(req *models.CreateJobRequest) (string, string) {
+	// Structured address text on both locations: trimmed, control
+	// characters stripped, capped at 250 runes (ADR-0028 §2.2). The caller
+	// guarantees req.Destination is non-nil (destination is required).
+	req.Location.Address = models.SanitizeAddressText(req.Location.Address)
+	if len([]rune(req.Location.Address)) > models.MaxAddressLength {
+		return "address_too_long", "location.address must be at most " +
+			fmt.Sprintf("%d", models.MaxAddressLength) + " characters"
+	}
+	req.Destination.Address = models.SanitizeAddressText(req.Destination.Address)
+	if len([]rune(req.Destination.Address)) > models.MaxAddressLength {
+		return "address_too_long", "destination.address must be at most " +
+			fmt.Sprintf("%d", models.MaxAddressLength) + " characters"
+	}
+
+	if req.Recipient != nil {
+		r := req.Recipient
+		r.Name = strings.TrimSpace(r.Name)
+		r.Phone = strings.TrimSpace(r.Phone)
+		r.Notes = strings.TrimSpace(r.Notes)
+		if len([]rune(r.Name)) > models.MaxRecipientNameLength {
+			return "recipient_name_too_long", fmt.Sprintf("recipient name must be at most %d characters", models.MaxRecipientNameLength)
+		}
+		if r.Phone != "" && !models.ValidRecipientPhone(r.Phone) {
+			return "recipient_phone_invalid", "recipient phone must be an Egyptian mobile or E.164 number"
+		}
+		if len([]rune(r.Notes)) > models.MaxRecipientNotesLen {
+			return "recipient_notes_too_long", fmt.Sprintf("recipient notes must be at most %d characters", models.MaxRecipientNotesLen)
+		}
+		// Whitespace-only recipient payloads normalize to absent.
+		if r.Name == "" && r.Phone == "" && r.Notes == "" {
+			req.Recipient = nil
+		}
+	}
+
+	if req.PackageDetails != nil {
+		p := req.PackageDetails
+		p.Size = strings.ToLower(strings.TrimSpace(p.Size))
+		p.Notes = strings.TrimSpace(p.Notes)
+		if !models.ValidPackageSize(p.Size) {
+			return "package_size_invalid", "package size, when provided, must be small, medium, or large"
+		}
+		if len([]rune(p.Notes)) > models.MaxPackageNotesLen {
+			return "package_notes_too_long", fmt.Sprintf("package notes must be at most %d characters", models.MaxPackageNotesLen)
+		}
+		if p.Size == "" && p.Notes == "" {
+			req.PackageDetails = nil
+		}
+	}
+
+	return "", ""
+}
+
+// v2InitialStatusHistory builds the first, server-generated status_history
+// entry recorded at booking creation (ADR-0028 §2.3): the job's initial
+// status, the customer actor, and a plain creation reason. Never accepted
+// from client input.
+func v2InitialStatusHistory(status models.JobStatus, at time.Time) []models.JobStatusHistoryEntry {
+	return []models.JobStatusHistoryEntry{{
+		Status:    status,
+		At:        at,
+		ActorRole: models.ActorRoleCustomer,
+		Reason:    "job created",
+	}}
+}
+
+// ---------------------------------------------------------------------------
 // POST /users/jobs/track — with escrow locking
 // ---------------------------------------------------------------------------
 
@@ -102,6 +176,15 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			"error":   "address_note_too_long",
 			"message": fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength),
 		})
+		return
+	}
+
+	// ADR-0028: structured address text, recipient, and package details.
+	// All optional; a present-but-invalid value fails fast with a stable
+	// field-specific error before any employee/KYC/escrow work, exactly
+	// like the address-note gate above.
+	if code, msg := validateV2BookingFields(&req); code != "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": code, "message": msg})
 		return
 	}
 
@@ -372,6 +455,9 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			CurrentOfferedEmployeeID: currentOfferedID,
 			OfferExpiresAt:           offerExpiresAt,
 			OfferedEmployeeIDs:       offeredIDs,
+			Recipient:                req.Recipient,
+			PackageDetails:           req.PackageDetails,
+			StatusHistory:            v2InitialStatusHistory(initialStatus, now),
 			CreatedAt:                now,
 			UpdatedAt:                now,
 		}
@@ -473,6 +559,9 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		PaymentMethod:            req.PaymentMethod,
 		BookedDistance:           dist,
 		AssignedEmployeeLocation: &assignedLoc,
+		Recipient:                req.Recipient,
+		PackageDetails:           req.PackageDetails,
+		StatusHistory:            v2InitialStatusHistory(initialStatus, now),
 		CreatedAt:                now,
 		UpdatedAt:                now,
 	}

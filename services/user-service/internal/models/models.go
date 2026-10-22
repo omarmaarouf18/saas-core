@@ -828,6 +828,10 @@ type CreateJobRequest struct {
 	UserToken      string    `json:"user_token,omitempty"`
 	IdempotencyKey string    `json:"idempotency_key,omitempty"`
 	ProposedPrice  *float64  `json:"proposed_price,omitempty"`
+	// ADR-0028 v2 booking inputs. Optional: absent stays absent. Once
+	// persisted they are snapshotted and never client-editable.
+	Recipient      *JobRecipient   `json:"recipient,omitempty"`
+	PackageDetails *PackageDetails `json:"package_details,omitempty"`
 }
 
 // DepositRequest is the expected JSON body for POST /users/wallet/deposit.
