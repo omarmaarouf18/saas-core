@@ -4525,4 +4525,182 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownReasonOther => 'محتاج مراجعة';
+
+  @override
+  String get ownTeamTitle => 'الفريق';
+
+  @override
+  String get ownOnTheMap => 'على الخريطة';
+
+  @override
+  String get ownTeamKind => 'حالة المندوبين';
+
+  @override
+  String ownTeamAll(int count) {
+    return 'الكل · $count';
+  }
+
+  @override
+  String get ownTeamActive => 'شغالين';
+
+  @override
+  String get ownTeamFrozen => 'متجمدين';
+
+  @override
+  String get ownTeamLoadError => 'مقدرناش نحمّل الفريق.';
+
+  @override
+  String get ownTeamEmpty => 'لسه مفيش مندوبين';
+
+  @override
+  String get ownTeamEmptyBody =>
+      'ضيف المندوبين بتوعك عشان يدخلوا ويستلموا طلبات.';
+
+  @override
+  String get ownTeamNoneHere => 'مفيش مندوبين هنا';
+
+  @override
+  String get ownAddCourier => 'إضافة مندوب';
+
+  @override
+  String get ownStateOnJob => 'في مهمة';
+
+  @override
+  String get ownStateFree => 'فاضي';
+
+  @override
+  String get ownStateFrozen => 'متجمد';
+
+  @override
+  String ownOnJobWith(String ref) {
+    return 'في مهمة · $ref';
+  }
+
+  @override
+  String get ownNoOrderNow => 'مفيش طلب دلوقتي';
+
+  @override
+  String get ownFrozenSubtitle => 'مش بيقدر يدخل ولا يستلم طلبات';
+
+  @override
+  String get ownEmployeeMissing => 'المندوب ده مش في فريقك دلوقتي.';
+
+  @override
+  String get ownEmpOrders => 'طلبات';
+
+  @override
+  String get ownEmpDelivered => 'اتسلمت';
+
+  @override
+  String get ownEmpCountsNote => 'محسوبة من آخر طلباتك اللي في التطبيق.';
+
+  @override
+  String get ownEmpIdCheck => 'التحقق من الهوية';
+
+  @override
+  String get ownKyeApproved => 'متراجع ومقبول';
+
+  @override
+  String get ownKyePending => 'بيتراجع';
+
+  @override
+  String get ownKyeRejected => 'مرفوض';
+
+  @override
+  String get ownKyeMissing => 'المستندات ناقصة';
+
+  @override
+  String get ownEmpCurrentOrder => 'المهمة الحالية';
+
+  @override
+  String get ownEmpNone => 'مفيش';
+
+  @override
+  String get ownEmpAllOrders => 'كل مهامه';
+
+  @override
+  String get ownEmpOnMap => 'مكانه على الخريطة';
+
+  @override
+  String get ownFreeze => 'تجميد الحساب';
+
+  @override
+  String get ownUnfreeze => 'فك تجميد الحساب';
+
+  @override
+  String get ownFreezeHint =>
+      'هيخرج من التطبيق فوراً ومش هيستقبل مهام. هنطلب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownUnfreezeHint =>
+      'هيقدر يدخل ويستلم مهام تاني. هنطلب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String ownFreezeTitle(String name) {
+    return 'تجمّد حساب $name؟';
+  }
+
+  @override
+  String ownUnfreezeTitle(String name) {
+    return 'تفك تجميد حساب $name؟';
+  }
+
+  @override
+  String get ownFreezeBody =>
+      'هيخرج من التطبيق فوراً ومش هيستقبل مهام. اكتب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownUnfreezeBody =>
+      'هيقدر يدخل ويستلم مهام تاني. اكتب كلمة السر بتاعتك للتأكيد.';
+
+  @override
+  String get ownYourPassword => 'كلمة السر بتاعتك';
+
+  @override
+  String get ownPasswordRequired => 'اكتب كلمة السر.';
+
+  @override
+  String get ownPasswordWrong => 'كلمة السر دي مش صح.';
+
+  @override
+  String get ownToggleKybNeeded => 'لازم مستندات شغلك تتقبل الأول.';
+
+  @override
+  String get ownTogglePaidPlan => 'إدارة المندوبين محتاجة باقة مدفوعة.';
+
+  @override
+  String ownFrozenDone(String name) {
+    return 'حساب $name اتجمد.';
+  }
+
+  @override
+  String ownUnfrozenDone(String name) {
+    return 'حساب $name رجع يشتغل.';
+  }
+
+  @override
+  String get ownAddTitle => 'إضافة مندوب';
+
+  @override
+  String get ownAddBody => 'هيدخل بالإيميل وكلمة السر دول.';
+
+  @override
+  String get ownAddUsername => 'الاسم';
+
+  @override
+  String get ownAddEmail => 'الإيميل';
+
+  @override
+  String get ownAddPassword => 'كلمة السر';
+
+  @override
+  String get ownAddPasswordHelp => '8 حروف على الأقل.';
+
+  @override
+  String get ownAddSubmit => 'ضيف المندوب';
+
+  @override
+  String ownAdded(String name) {
+    return '$name اتضاف ويقدر يدخل دلوقتي.';
+  }
 }

@@ -4597,4 +4597,183 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownReasonOther => 'Needs a review';
+
+  @override
+  String get ownTeamTitle => 'Team';
+
+  @override
+  String get ownOnTheMap => 'On the map';
+
+  @override
+  String get ownTeamKind => 'Courier status';
+
+  @override
+  String ownTeamAll(int count) {
+    return 'All · $count';
+  }
+
+  @override
+  String get ownTeamActive => 'Active';
+
+  @override
+  String get ownTeamFrozen => 'Frozen';
+
+  @override
+  String get ownTeamLoadError => 'Couldn\'t load your team.';
+
+  @override
+  String get ownTeamEmpty => 'No couriers yet';
+
+  @override
+  String get ownTeamEmptyBody =>
+      'Add your couriers so they can sign in and take orders.';
+
+  @override
+  String get ownTeamNoneHere => 'No couriers here';
+
+  @override
+  String get ownAddCourier => 'Add courier';
+
+  @override
+  String get ownStateOnJob => 'On a job';
+
+  @override
+  String get ownStateFree => 'Free';
+
+  @override
+  String get ownStateFrozen => 'Frozen';
+
+  @override
+  String ownOnJobWith(String ref) {
+    return 'On a job · $ref';
+  }
+
+  @override
+  String get ownNoOrderNow => 'No order right now';
+
+  @override
+  String get ownFrozenSubtitle => 'Can\'t sign in or get orders';
+
+  @override
+  String get ownEmployeeMissing => 'This courier isn\'t on your team anymore.';
+
+  @override
+  String get ownEmpOrders => 'Orders';
+
+  @override
+  String get ownEmpDelivered => 'Delivered';
+
+  @override
+  String get ownEmpCountsNote => 'Counted from your latest orders in the app.';
+
+  @override
+  String get ownEmpIdCheck => 'ID check';
+
+  @override
+  String get ownKyeApproved => 'Approved';
+
+  @override
+  String get ownKyePending => 'Under review';
+
+  @override
+  String get ownKyeRejected => 'Rejected';
+
+  @override
+  String get ownKyeMissing => 'Documents missing';
+
+  @override
+  String get ownEmpCurrentOrder => 'Current order';
+
+  @override
+  String get ownEmpNone => 'None';
+
+  @override
+  String get ownEmpAllOrders => 'All their orders';
+
+  @override
+  String get ownEmpOnMap => 'Where they are on the map';
+
+  @override
+  String get ownFreeze => 'Freeze account';
+
+  @override
+  String get ownUnfreeze => 'Unfreeze account';
+
+  @override
+  String get ownFreezeHint =>
+      'They\'re signed out at once and get no new orders. We\'ll ask for your password to confirm.';
+
+  @override
+  String get ownUnfreezeHint =>
+      'They can sign in and get orders again. We\'ll ask for your password to confirm.';
+
+  @override
+  String ownFreezeTitle(String name) {
+    return 'Freeze $name\'s account?';
+  }
+
+  @override
+  String ownUnfreezeTitle(String name) {
+    return 'Unfreeze $name\'s account?';
+  }
+
+  @override
+  String get ownFreezeBody =>
+      'They\'re signed out at once and get no new orders. Type your password to confirm.';
+
+  @override
+  String get ownUnfreezeBody =>
+      'They can sign in and get orders again. Type your password to confirm.';
+
+  @override
+  String get ownYourPassword => 'Your password';
+
+  @override
+  String get ownPasswordRequired => 'Type your password.';
+
+  @override
+  String get ownPasswordWrong => 'That password isn\'t right.';
+
+  @override
+  String get ownToggleKybNeeded =>
+      'Your business documents must be approved first.';
+
+  @override
+  String get ownTogglePaidPlan => 'Managing couriers needs a paid plan.';
+
+  @override
+  String ownFrozenDone(String name) {
+    return '$name\'s account is frozen.';
+  }
+
+  @override
+  String ownUnfrozenDone(String name) {
+    return '$name\'s account is active again.';
+  }
+
+  @override
+  String get ownAddTitle => 'Add a courier';
+
+  @override
+  String get ownAddBody => 'They sign in with this email and password.';
+
+  @override
+  String get ownAddUsername => 'Name';
+
+  @override
+  String get ownAddEmail => 'Email';
+
+  @override
+  String get ownAddPassword => 'Password';
+
+  @override
+  String get ownAddPasswordHelp => 'At least 8 characters.';
+
+  @override
+  String get ownAddSubmit => 'Add courier';
+
+  @override
+  String ownAdded(String name) {
+    return '$name was added. They can sign in now.';
+  }
 }

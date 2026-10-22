@@ -3711,5 +3711,252 @@
   "ownReasonOther": "Needs a review",
   "@ownReasonOther": {
     "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamTitle": "Team",
+  "@ownTeamTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOnTheMap": "On the map",
+  "@ownOnTheMap": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamKind": "Courier status",
+  "@ownTeamKind": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamAll": "All · {count}",
+  "@ownTeamAll": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ownTeamActive": "Active",
+  "@ownTeamActive": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamFrozen": "Frozen",
+  "@ownTeamFrozen": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamLoadError": "Couldn't load your team.",
+  "@ownTeamLoadError": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamEmpty": "No couriers yet",
+  "@ownTeamEmpty": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamEmptyBody": "Add your couriers so they can sign in and take orders.",
+  "@ownTeamEmptyBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTeamNoneHere": "No couriers here",
+  "@ownTeamNoneHere": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddCourier": "Add courier",
+  "@ownAddCourier": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownStateOnJob": "On a job",
+  "@ownStateOnJob": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownStateFree": "Free",
+  "@ownStateFree": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownStateFrozen": "Frozen",
+  "@ownStateFrozen": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownOnJobWith": "On a job · {ref}",
+  "@ownOnJobWith": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ownNoOrderNow": "No order right now",
+  "@ownNoOrderNow": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownFrozenSubtitle": "Can't sign in or get orders",
+  "@ownFrozenSubtitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmployeeMissing": "This courier isn't on your team anymore.",
+  "@ownEmployeeMissing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpOrders": "Orders",
+  "@ownEmpOrders": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpDelivered": "Delivered",
+  "@ownEmpDelivered": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpCountsNote": "Counted from your latest orders in the app.",
+  "@ownEmpCountsNote": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpIdCheck": "ID check",
+  "@ownEmpIdCheck": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKyeApproved": "Approved",
+  "@ownKyeApproved": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKyePending": "Under review",
+  "@ownKyePending": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKyeRejected": "Rejected",
+  "@ownKyeRejected": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownKyeMissing": "Documents missing",
+  "@ownKyeMissing": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpCurrentOrder": "Current order",
+  "@ownEmpCurrentOrder": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpNone": "None",
+  "@ownEmpNone": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpAllOrders": "All their orders",
+  "@ownEmpAllOrders": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownEmpOnMap": "Where they are on the map",
+  "@ownEmpOnMap": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownFreeze": "Freeze account",
+  "@ownFreeze": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownUnfreeze": "Unfreeze account",
+  "@ownUnfreeze": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownFreezeHint": "They're signed out at once and get no new orders. We'll ask for your password to confirm.",
+  "@ownFreezeHint": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownUnfreezeHint": "They can sign in and get orders again. We'll ask for your password to confirm.",
+  "@ownUnfreezeHint": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownFreezeTitle": "Freeze {name}'s account?",
+  "@ownFreezeTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownUnfreezeTitle": "Unfreeze {name}'s account?",
+  "@ownUnfreezeTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFreezeBody": "They're signed out at once and get no new orders. Type your password to confirm.",
+  "@ownFreezeBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownUnfreezeBody": "They can sign in and get orders again. Type your password to confirm.",
+  "@ownUnfreezeBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownYourPassword": "Your password",
+  "@ownYourPassword": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownPasswordRequired": "Type your password.",
+  "@ownPasswordRequired": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownPasswordWrong": "That password isn't right.",
+  "@ownPasswordWrong": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownToggleKybNeeded": "Your business documents must be approved first.",
+  "@ownToggleKybNeeded": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownTogglePaidPlan": "Managing couriers needs a paid plan.",
+  "@ownTogglePaidPlan": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownFrozenDone": "{name}'s account is frozen.",
+  "@ownFrozenDone": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownUnfrozenDone": "{name}'s account is active again.",
+  "@ownUnfrozenDone": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownAddTitle": "Add a courier",
+  "@ownAddTitle": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddBody": "They sign in with this email and password.",
+  "@ownAddBody": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddUsername": "Name",
+  "@ownAddUsername": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddEmail": "Email",
+  "@ownAddEmail": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddPassword": "Password",
+  "@ownAddPassword": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddPasswordHelp": "At least 8 characters.",
+  "@ownAddPasswordHelp": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAddSubmit": "Add courier",
+  "@ownAddSubmit": {
+    "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownAdded": "{name} was added. They can sign in now.",
+  "@ownAdded": {
+    "description": "FE-OWNER-1 redesigned owner screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
