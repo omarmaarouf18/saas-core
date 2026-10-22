@@ -58,6 +58,9 @@ func v2UserServiceWithRoles(t *testing.T, s *store.MongoDB, ownerID string, empI
 			if id == e {
 				resp["role"] = "employee"
 				resp["tenant_id"] = ownerID
+				// ADR-0028 §2.11: couriers carry a phone for the contact
+				// window served to owner/customer while the job is active.
+				resp["phone"] = "+201099990000"
 			}
 		}
 		w.WriteHeader(http.StatusOK)
@@ -224,6 +227,23 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 		t.Fatalf("double pickup: expected 409, got %d: %s", pickRec2.Code, pickRec2.Body.String())
 	}
 
+	// ADR-0028 §2.11: while active, the customer's detail view carries the
+	// courier's phone; it must disappear after the terminal completion.
+	getReq := httptest.NewRequest("GET", fmt.Sprintf("/users/jobs/get?id=%s&requester_token=%s", jobID, tokenUser), nil)
+	getRec := httptest.NewRecorder()
+	u.GetJob(getRec, getReq)
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("customer get: expected 200, got %d: %s", getRec.Code, getRec.Body.String())
+	}
+	getResp := map[string]any{}
+	if err := json.Unmarshal(getRec.Body.Bytes(), &getResp); err != nil {
+		t.Fatalf("decode customer get: %v", err)
+	}
+	// GetJob returns the job DTO directly at the top level.
+	if p, _ := getResp["courier_phone"].(string); p != "+201099990000" {
+		t.Fatalf("expected courier_phone window while active, got %q (%s)", p, getRec.Body.String())
+	}
+
 	// Courier completes the COD job.
 	compBody, _ := json.Marshal(map[string]any{"job_id": jobID, "cash_collected": true})
 	compReq := httptest.NewRequest("POST", "/users/jobs/complete", strings.NewReader(string(compBody)))
@@ -248,6 +268,20 @@ func TestV2StatusHistory_CODDeliveryLifecycle(t *testing.T) {
 	fin := s.GetJob(ctx, jobID)
 	if fin.SubStatus != "" {
 		t.Fatalf("expected sub_status cleared on completion, got %q", fin.SubStatus)
+	}
+
+	// §2.11 post-terminal: the contact window is closed — courier_phone is
+	// omitted from the customer's detail view again.
+	getReq2 := httptest.NewRequest("GET", fmt.Sprintf("/users/jobs/get?id=%s&requester_token=%s", jobID, tokenUser), nil)
+	getRec2 := httptest.NewRecorder()
+	u.GetJob(getRec2, getReq2)
+	if getRec2.Code != http.StatusOK {
+		t.Fatalf("customer get post-completion: expected 200, got %d: %s", getRec2.Code, getRec2.Body.String())
+	}
+	getResp2 := map[string]any{}
+	_ = json.Unmarshal(getRec2.Body.Bytes(), &getResp2)
+	if _, present := getResp2["courier_phone"]; present {
+		t.Fatalf("courier_phone must be omitted after its contact window closes: %v", getResp2["courier_phone"])
 	}
 }
 

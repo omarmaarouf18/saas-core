@@ -1026,6 +1026,40 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// v2PhoneLookup memoizes per-request S2S phone reads for the ADR-0028
+// §2.11 contact fields of list rows.
+func (u *UserService) v2PhoneLookup(ctx context.Context, cache map[string]string, employeeID string) string {
+	if employeeID == "" {
+		return ""
+	}
+	if p, ok := cache[employeeID]; ok {
+		return p
+	}
+	p := u.fetchUserPhone(ctx, employeeID)
+	cache[employeeID] = p
+	return p
+}
+
+// v2OwnerDTOWithCourierPhone / v2CustomerDTOWithCourierPhone implement the
+// ADR-0028 §2.11 contact window for the job-detail endpoints: CourierPhone
+// (the assigned courier's phone via S2S) appears on owner/customer dtos
+// only while the job is active; the DTO's omitempty drops it otherwise.
+func v2OwnerDTOWithCourierPhone(u *UserService, ctx context.Context, j *models.Job) models.OwnerJobResponse {
+	dto := models.NewOwnerJobResponse(j)
+	if j.Status == models.JobStatusActive && j.EmployeeID != "" {
+		dto.CourierPhone = u.fetchUserPhone(ctx, j.EmployeeID)
+	}
+	return dto
+}
+
+func v2CustomerDTOWithCourierPhone(u *UserService, ctx context.Context, j *models.Job) models.CustomerJobResponse {
+	dto := models.NewCustomerJobResponse(j)
+	if j.Status == models.JobStatusActive && j.EmployeeID != "" {
+		dto.CourierPhone = u.fetchUserPhone(ctx, j.EmployeeID)
+	}
+	return dto
+}
+
 // ---------------------------------------------------------------------------
 // GET /users/jobs/get?id=xxx
 // ---------------------------------------------------------------------------
@@ -1168,11 +1202,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requesterRole == "owner" && resolvedRequester == job.OwnerID {
-		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		writeJSON(w, http.StatusOK, v2OwnerDTOWithCourierPhone(u, ctx, job))
 		return
 	}
 	if (requesterRole == "user" || requesterRole == "customer") && resolvedRequester == job.UserID {
-		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		writeJSON(w, http.StatusOK, v2CustomerDTOWithCourierPhone(u, ctx, job))
 		return
 	}
 	if requesterRole == "employee" && ((job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier) {
@@ -1182,11 +1216,11 @@ func (u *UserService) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	// Fallback to relationship matching if token role did not strictly disambiguate
 	if resolvedRequester == job.OwnerID {
-		writeJSON(w, http.StatusOK, models.NewOwnerJobResponse(job))
+		writeJSON(w, http.StatusOK, v2OwnerDTOWithCourierPhone(u, ctx, job))
 		return
 	}
 	if resolvedRequester == job.UserID {
-		writeJSON(w, http.StatusOK, models.NewCustomerJobResponse(job))
+		writeJSON(w, http.StatusOK, v2CustomerDTOWithCourierPhone(u, ctx, job))
 		return
 	}
 	if (job.EmployeeID != "" && resolvedRequester == job.EmployeeID) || isOfferedCourier {
@@ -1270,6 +1304,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 	activeOnly := r.URL.Query().Get("active_only") == "true" || r.URL.Query().Get("filter") == "active"
 	resps := make([]models.OwnerJobResponse, 0, len(jobs))
 	now := time.Now()
+	phoneCache := map[string]string{}
 	for _, j := range jobs {
 		if activeOnly {
 			isActiveStatus := j.Status == models.JobStatusActive
@@ -1278,7 +1313,11 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 		}
-		resps = append(resps, models.NewOwnerJobResponse(j))
+		dto := models.NewOwnerJobResponse(j)
+		if j.Status == models.JobStatusActive && j.EmployeeID != "" {
+			dto.CourierPhone = u.v2PhoneLookup(r.Context(), phoneCache, j.EmployeeID)
+		}
+		resps = append(resps, dto)
 	}
 	writeJSON(w, http.StatusOK, resps)
 }
@@ -1360,8 +1399,13 @@ func (u *UserService) GetCustomerJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resps := make([]models.CustomerJobResponse, 0, len(jobs))
+	phoneCache := map[string]string{}
 	for _, j := range jobs {
-		resps = append(resps, models.NewCustomerJobResponse(j))
+		dto := models.NewCustomerJobResponse(j)
+		if j.Status == models.JobStatusActive && j.EmployeeID != "" {
+			dto.CourierPhone = u.v2PhoneLookup(r.Context(), phoneCache, j.EmployeeID)
+		}
+		resps = append(resps, dto)
 	}
 	writeJSON(w, http.StatusOK, resps)
 }
