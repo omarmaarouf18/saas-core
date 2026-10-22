@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../screens/kyc_document_upload_screen.dart';
 import '../../screens/notifications_screen.dart';
-import '../../screens/owner_history_screen.dart';
 import '../../screens/subscription_screen.dart';
 import '../../screens/wallet_screen.dart';
 import '../../ui/qd_ui.dart';
+import 'activity_log_page.dart';
 import 'fleet_map_page.dart';
 import 'owner_controller.dart';
 import 'service_setup_page.dart';
@@ -57,9 +57,9 @@ class OwnerNav {
   Future<void> openSubscription(BuildContext context) =>
       _old(context, const SubscriptionScreen());
 
-  /// Activity log, finished jobs and ledger (the old History tab).
+  /// Activity log: activity and money (replaces the old History tab).
   Future<void> openHistory(BuildContext context) =>
-      _old(context, const OwnerHistoryScreen());
+      OwnerActivityPage.open(context);
 }
 
 class OwnerNavScope extends InheritedWidget {

@@ -9182,6 +9182,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Courier page'**
   String get ownFleetCourierPage;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity log'**
+  String get ownLogTitle;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get ownLogTabActivity;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get ownLogTabMoney;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get ownLogPeriodLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownLogPeriodAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownLogPeriodToday;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get ownLogPeriodWeek;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get ownLogActivityEmpty;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier actions and account changes show up here.'**
+  String get ownLogActivityEmptyBody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No money movements yet'**
+  String get ownLogMoneyEmpty;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders are paid in cash for now, so this stays empty until online payments start.'**
+  String get ownLogMoneyEmptyBody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in this period'**
+  String get ownLogNoneInPeriod;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get ownLogShowAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the activity'**
+  String get ownLogActivityError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the money movements'**
+  String get ownLogMoneyError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. This is the last list we loaded.'**
+  String get ownLogStale;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get ownLogYou;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'balance after {amount}'**
+  String ownLogBalanceAfter(String amount);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money in, {amount}'**
+  String ownLogMoneyIn(String amount);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money out, {amount}'**
+  String ownLogMoneyOut(String amount);
 }
 
 class _AppLocalizationsDelegate

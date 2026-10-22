@@ -5053,4 +5053,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownFleetCourierPage => 'صفحة المندوب';
+
+  @override
+  String get ownLogTitle => 'سجل النشاط';
+
+  @override
+  String get ownLogTabActivity => 'النشاط';
+
+  @override
+  String get ownLogTabMoney => 'الفلوس';
+
+  @override
+  String get ownLogPeriodLabel => 'الفترة';
+
+  @override
+  String get ownLogPeriodAll => 'الكل';
+
+  @override
+  String get ownLogPeriodToday => 'النهارده';
+
+  @override
+  String get ownLogPeriodWeek => 'آخر 7 أيام';
+
+  @override
+  String get ownLogActivityEmpty => 'مفيش نشاط لسه';
+
+  @override
+  String get ownLogActivityEmptyBody =>
+      'حركات المندوبين وتغييرات الحساب بتظهر هنا.';
+
+  @override
+  String get ownLogMoneyEmpty => 'مفيش حركات فلوس لسه';
+
+  @override
+  String get ownLogMoneyEmptyBody =>
+      'الطلبات بتتدفع كاش دلوقتي، فهنا هيفضل فاضي لحد ما الدفع الإلكتروني يبدأ.';
+
+  @override
+  String get ownLogNoneInPeriod => 'مفيش حاجة في الفترة دي';
+
+  @override
+  String get ownLogShowAll => 'اعرض الكل';
+
+  @override
+  String get ownLogActivityError => 'معرفناش نحمّل النشاط';
+
+  @override
+  String get ownLogMoneyError => 'معرفناش نحمّل حركات الفلوس';
+
+  @override
+  String get ownLogStale => 'معرفناش نحدّث. دي آخر قايمة اتحمّلت.';
+
+  @override
+  String get ownLogYou => 'إنت';
+
+  @override
+  String ownLogBalanceAfter(String amount) {
+    return 'الرصيد بعدها $amount';
+  }
+
+  @override
+  String ownLogMoneyIn(String amount) {
+    return 'دخل $amount';
+  }
+
+  @override
+  String ownLogMoneyOut(String amount) {
+    return 'خرج $amount';
+  }
 }

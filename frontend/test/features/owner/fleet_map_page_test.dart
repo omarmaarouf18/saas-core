@@ -66,8 +66,7 @@ void main() {
       expect(find.byKey(const Key('own_fleet_reconnecting')), findsNothing);
     });
 
-    testWidgets('the socket is torn down when the page closes',
-        (tester) async {
+    testWidgets('the socket is torn down when the page closes', (tester) async {
       usePhone(tester);
       final deps = fleetDeps();
       await pumpMap(tester, deps);

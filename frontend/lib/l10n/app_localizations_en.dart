@@ -5128,4 +5128,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownFleetCourierPage => 'Courier page';
+
+  @override
+  String get ownLogTitle => 'Activity log';
+
+  @override
+  String get ownLogTabActivity => 'Activity';
+
+  @override
+  String get ownLogTabMoney => 'Money';
+
+  @override
+  String get ownLogPeriodLabel => 'Period';
+
+  @override
+  String get ownLogPeriodAll => 'All';
+
+  @override
+  String get ownLogPeriodToday => 'Today';
+
+  @override
+  String get ownLogPeriodWeek => '7 days';
+
+  @override
+  String get ownLogActivityEmpty => 'No activity yet';
+
+  @override
+  String get ownLogActivityEmptyBody =>
+      'Courier actions and account changes show up here.';
+
+  @override
+  String get ownLogMoneyEmpty => 'No money movements yet';
+
+  @override
+  String get ownLogMoneyEmptyBody =>
+      'Orders are paid in cash for now, so this stays empty until online payments start.';
+
+  @override
+  String get ownLogNoneInPeriod => 'Nothing in this period';
+
+  @override
+  String get ownLogShowAll => 'Show all';
+
+  @override
+  String get ownLogActivityError => 'We couldn\'t load the activity';
+
+  @override
+  String get ownLogMoneyError => 'We couldn\'t load the money movements';
+
+  @override
+  String get ownLogStale =>
+      'Couldn\'t refresh. This is the last list we loaded.';
+
+  @override
+  String get ownLogYou => 'You';
+
+  @override
+  String ownLogBalanceAfter(String amount) {
+    return 'balance after $amount';
+  }
+
+  @override
+  String ownLogMoneyIn(String amount) {
+    return 'Money in, $amount';
+  }
+
+  @override
+  String ownLogMoneyOut(String amount) {
+    return 'Money out, $amount';
+  }
 }

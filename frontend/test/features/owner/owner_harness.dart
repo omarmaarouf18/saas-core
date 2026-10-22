@@ -226,6 +226,84 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
     return {'message': 'updated'};
   }
 
+  // FE-OWNER-2: audit log (activity log).
+  @override
+  List<dynamic> auditLogEntries = [];
+
+  @override
+  String? auditLogError;
+
+  List<dynamic> nextAudit = [];
+  String? nextAuditError;
+  Completer<void>? auditGate;
+  final List<Map<String, String>> auditCalls = [];
+
+  @override
+  Future<void> fetchAuditLog({
+    required String tenantId,
+    required String requesterToken,
+  }) async {
+    auditCalls.add({'tenantId': tenantId, 'token': requesterToken});
+    if (auditGate != null) await auditGate!.future;
+    if (nextAuditError != null) {
+      auditLogError = error = nextAuditError;
+    } else {
+      auditLogEntries = List.of(nextAudit);
+      auditLogError = error = null;
+    }
+    notifyListeners();
+  }
+
+  // FE-OWNER-2: wallet, subscription and ledger (fetchDashboardData).
+  @override
+  double walletBalance = 0;
+
+  @override
+  double escrowBalance = 0;
+
+  @override
+  double withdrawableBalance = 0;
+
+  @override
+  String subscriptionTier = 'free';
+
+  @override
+  List<dynamic> ledgerEntries = [];
+
+  @override
+  String? dashboardError;
+
+  @override
+  bool isDashboardHydrated = false;
+
+  /// What the next fetchDashboardData loads (null keeps the values).
+  ({double total, double escrow, double withdrawable, String tier})? nextWallet;
+  List<dynamic> nextLedger = [];
+  String? nextDashboardError;
+  Completer<void>? dashboardGate;
+  final List<String> dashboardCalls = [];
+
+  @override
+  Future<void> fetchDashboardData(String tenantId) async {
+    dashboardCalls.add(tenantId);
+    if (dashboardGate != null) await dashboardGate!.future;
+    if (nextDashboardError != null) {
+      dashboardError = error = nextDashboardError;
+    } else {
+      final w = nextWallet;
+      if (w != null) {
+        walletBalance = w.total;
+        escrowBalance = w.escrow;
+        withdrawableBalance = w.withdrawable;
+        subscriptionTier = w.tier;
+      }
+      ledgerEntries = List.of(nextLedger);
+      isDashboardHydrated = true;
+      dashboardError = error = null;
+    }
+    notifyListeners();
+  }
+
   // FE-OWNER-2: services (service setup).
   @override
   List<dynamic> services = [];

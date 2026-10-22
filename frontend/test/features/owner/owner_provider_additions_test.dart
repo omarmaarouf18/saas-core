@@ -136,4 +136,67 @@ void main() {
     await p.fetchServices();
     expect(p.servicesError, isNull);
   });
+
+  test('fetchAuditLog records its own error and keeps the entries', () async {
+    var fail = false;
+    installMockHttp((req) {
+      expect(req.uri.path, endsWith('/auth/audit-log'));
+      expect(req.uri.queryParameters['tenant_id'], 'owner-1');
+      return fail
+          ? MockHttpResponse(500, jsonBody: {'error': 'boom'})
+          : MockHttpResponse(200, jsonBody: {
+              'entries': [
+                {'id': 'a1', 'action': 'KYC_REVIEWED'}
+              ]
+            });
+    });
+    final p = provider();
+    await p.fetchAuditLog(tenantId: 'owner-1', requesterToken: 'jwt');
+    expect(p.auditLogError, isNull);
+    fail = true;
+    await p.fetchAuditLog(tenantId: 'owner-1', requesterToken: 'jwt');
+    expect(p.auditLogError, isNotNull);
+    expect(p.auditLogEntries, hasLength(1));
+    fail = false;
+    await p.fetchAuditLog(tenantId: 'owner-1', requesterToken: 'jwt');
+    expect(p.auditLogError, isNull);
+  });
+
+  test('fetchDashboardData records its own error and keeps the values',
+      () async {
+    var failLedger = false;
+    installMockHttp((req) {
+      final path = req.uri.path;
+      if (path.endsWith('/users/wallet')) {
+        return MockHttpResponse(200, jsonBody: {
+          'total_balance': 500,
+          'escrow_balance': 120,
+          'withdrawable_balance': 380,
+        });
+      }
+      if (path.endsWith('/users/subscription')) {
+        return MockHttpResponse(200, jsonBody: {'tier': 'paid'});
+      }
+      if (failLedger) return MockHttpResponse(500, jsonBody: {'error': 'x'});
+      return MockHttpResponse(200, jsonBody: {
+        'entries': [
+          {'id': 'l1', 'type': 'deposit', 'amount': 10}
+        ]
+      });
+    });
+    final p = provider();
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.dashboardError, isNull);
+    expect(p.withdrawableBalance, 380);
+    expect(p.ledgerEntries, hasLength(1));
+
+    failLedger = true;
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.dashboardError, isNotNull);
+    expect(p.ledgerEntries, hasLength(1));
+
+    failLedger = false;
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.dashboardError, isNull);
+  });
 }

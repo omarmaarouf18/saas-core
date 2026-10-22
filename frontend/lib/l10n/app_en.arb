@@ -4432,5 +4432,100 @@
   "ownFleetCourierPage": "Courier page",
   "@ownFleetCourierPage": {
     "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTitle": "Activity log",
+  "@ownLogTitle": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTabActivity": "Activity",
+  "@ownLogTabActivity": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTabMoney": "Money",
+  "@ownLogTabMoney": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodLabel": "Period",
+  "@ownLogPeriodLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodAll": "All",
+  "@ownLogPeriodAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodToday": "Today",
+  "@ownLogPeriodToday": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodWeek": "7 days",
+  "@ownLogPeriodWeek": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityEmpty": "No activity yet",
+  "@ownLogActivityEmpty": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityEmptyBody": "Courier actions and account changes show up here.",
+  "@ownLogActivityEmptyBody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyEmpty": "No money movements yet",
+  "@ownLogMoneyEmpty": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyEmptyBody": "Orders are paid in cash for now, so this stays empty until online payments start.",
+  "@ownLogMoneyEmptyBody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogNoneInPeriod": "Nothing in this period",
+  "@ownLogNoneInPeriod": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogShowAll": "Show all",
+  "@ownLogShowAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityError": "We couldn't load the activity",
+  "@ownLogActivityError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyError": "We couldn't load the money movements",
+  "@ownLogMoneyError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogStale": "Couldn't refresh. This is the last list we loaded.",
+  "@ownLogStale": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogYou": "You",
+  "@ownLogYou": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogBalanceAfter": "balance after {amount}",
+  "@ownLogBalanceAfter": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownLogMoneyIn": "Money in, {amount}",
+  "@ownLogMoneyIn": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownLogMoneyOut": "Money out, {amount}",
+  "@ownLogMoneyOut": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }
