@@ -24,7 +24,10 @@ import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/fake_launcher.dart';
 import '../customer/customer_harness.dart' show BlankTileProvider;
+
+export '../../helpers/fake_launcher.dart';
 
 export '../customer/customer_harness.dart'
     show ar, en, bothLocales, fixedNow, usePhone, loadPlexFont;
@@ -729,7 +732,9 @@ class OwnerTestDeps {
     FakeOwnerNotifications? notifications,
     RecordingOwnerNav? nav,
     FakeOwnerMap? map,
+    FakeLauncher? launcher,
   })  : auth = auth ?? FakeOwnerAuth(),
+        launcher = launcher ?? FakeLauncher(),
         map = map ?? FakeOwnerMap(),
         owner = owner ?? FakeOwner(),
         ratings = ratings ?? FakeRatings(),
@@ -744,6 +749,7 @@ class OwnerTestDeps {
   final FakeOwnerNotifications notifications;
   final RecordingOwnerNav nav;
   final FakeOwnerMap map;
+  final FakeLauncher launcher;
 
   late final OwnerDataController data =
       OwnerDataController(owner, auth, now: () => ownerNow);
@@ -777,15 +783,18 @@ Widget ownerApp(
       nav: deps.nav,
       child: CustomerMapTilesScope(
         tileProvider: BlankTileProvider(),
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: quickDeliveryTheme,
-          darkTheme: quickDeliveryDarkTheme,
-          themeMode: ThemeMode.light,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: QdThemeScope(child: home),
+        child: QdLauncherScope(
+          launcher: deps.launcher,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: quickDeliveryTheme,
+            darkTheme: quickDeliveryDarkTheme,
+            themeMode: ThemeMode.light,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: QdThemeScope(child: home),
+          ),
         ),
       ),
     ),
@@ -843,18 +852,39 @@ Job ownerJob({
   String? offeredTo,
   String? cancelReason,
   String userId = 'cust-9f8e7d',
+  String? subStatus,
+  List<JobStatusHistoryEntry> history = const [],
+  int? etaMinutes,
+  JobRecipient? recipient,
+  JobPackageDetails? package,
+  String? courierPhone,
+  String? pickupAddress,
+  String? dropAddress,
+  String serviceId = 'svc-1',
 }) =>
     Job(
       id: id,
       ownerId: 'owner-1',
       employeeId: employeeId,
       userId: userId,
-      serviceId: 'svc-1',
+      serviceId: serviceId,
       status: status,
+      subStatus: subStatus,
+      statusHistory: history,
+      estimatedDurationMinutes: etaMinutes,
+      recipient: recipient,
+      packageDetails: package,
+      courierPhone: courierPhone,
       location: JobLocation(
-          latitude: 30.05, longitude: 31.24, addressNote: pickupNote),
-      destination:
-          JobLocation(latitude: 30.06, longitude: 31.22, addressNote: dropNote),
+          latitude: 30.05,
+          longitude: 31.24,
+          addressNote: pickupNote,
+          address: pickupAddress),
+      destination: JobLocation(
+          latitude: 30.06,
+          longitude: 31.22,
+          addressNote: dropNote,
+          address: dropAddress),
       paymentMethod: payment,
       suggestedPrice: price,
       agreedPrice: agreed,

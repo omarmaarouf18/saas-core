@@ -68,34 +68,65 @@ class OwnerBorderedColumn extends StatelessWidget {
 }
 
 class OwnerInfoRow extends StatelessWidget {
-  const OwnerInfoRow({super.key, required this.label, required this.value});
+  const OwnerInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.note,
+    this.trailing,
+  });
 
   final String label;
   final String value;
 
+  /// Second line under the value (recipient / package notes).
+  final String? note;
+
+  /// After the value (a call button).
+  final Widget? trailing;
+
   @override
   Widget build(BuildContext context) {
     final c = QdColors.of(context);
-    return MergeSemantics(
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: 14, vertical: QdSpace.x3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: QdText.body.copyWith(color: c.textSecondary)),
-            const SizedBox(width: QdSpace.x3),
-            Expanded(
-              child: Text(
-                value,
-                textAlign: TextAlign.end,
-                style: QdText.body.copyWith(
-                    color: c.textPrimary, fontWeight: FontWeight.w500),
-              ),
+    final text = MergeSemantics(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: QdText.body.copyWith(color: c.textSecondary)),
+          const SizedBox(width: QdSpace.x3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: QdText.body.copyWith(
+                      color: c.textPrimary, fontWeight: FontWeight.w500),
+                ),
+                if (note != null)
+                  Text(note!,
+                      textAlign: TextAlign.end,
+                      style: QdText.caption.copyWith(color: c.textSecondary)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+    return Padding(
+      padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: 14, vertical: QdSpace.x3),
+      // The trailing button stays its own semantics node.
+      child: trailing == null
+          ? text
+          : Row(
+              children: [
+                Expanded(child: text),
+                const SizedBox(width: QdSpace.x2),
+                trailing!,
+              ],
+            ),
     );
   }
 }

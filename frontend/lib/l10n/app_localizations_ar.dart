@@ -6141,4 +6141,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ordCallCourier => 'اتصل بالمندوب';
+
+  @override
+  String get ownTodayNoteDelivered =>
+      'التسليم والكاش بيعدّوا الطلبات اللي اتسلمت النهارده.';
+
+  @override
+  String get ownTodayNoteMixed =>
+      'التسليم والكاش بيعدّوا الطلبات اللي اتسلمت النهارده. الطلبات القديمة اللي من غير وقت تسليم بتتحسب بيوم ما اتطلبت.';
+
+  @override
+  String get ownRowDelivered => 'اتسلم';
+
+  @override
+  String get ownRowEta => 'الوقت المتوقع';
+
+  @override
+  String get ownCallRecipient => 'اتصل بالمستلم';
+
+  @override
+  String get ownCallCourier => 'اتصل بالمندوب';
+
+  @override
+  String get ownTimelineTitle => 'خطوات الطلب';
 }

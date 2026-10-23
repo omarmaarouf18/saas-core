@@ -8,6 +8,9 @@ import '../../models/job.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
 import '../../ui/qd_ui.dart';
+import '../customer/booking_rules.dart';
+import '../customer/order/job_timeline.dart';
+import '../customer/order/job_v2_sections.dart';
 import 'owner_controller.dart';
 import 'owner_format.dart';
 import 'owner_nav.dart';
@@ -16,8 +19,11 @@ import 'owner_sheets.dart';
 import 'owner_widgets.dart';
 
 /// Owner order detail (O-Order). Reads the job from the loaded owner jobs,
-/// so it follows every refresh. Shows only what the owner DTO carries: no
-/// customer name, ETA, recipient or per-status history (JOB-V2-BE).
+/// so it follows every refresh. Shows only what the owner DTO carries (no
+/// customer name); job model v2 (FE-V2-CONSUME): the phase chip, address
+/// text, recipient and package with call buttons, the courier's phone, the
+/// ETA, the delivery time and the timeline from `status_history` (legacy
+/// jobs keep the "ordered" row only).
 class OwnerOrderDetailPage extends StatefulWidget {
   const OwnerOrderDetailPage({super.key, required this.jobId});
 
@@ -134,13 +140,33 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
 
     final extras = data.extrasOf(job.id);
     final status = QdJobStatus.fromBackend(job.status);
+    final now = data.now();
+    final ride = ownerJobIsRide(context.watch<OwnerProvider>().services, job);
+    final phase = jobPhaseChip(l10n, job, ride: ride);
+    final eta = jobEtaText(context, job, now: now, ride: ride);
+    final delivered = jobCompletedAt(job);
+    final courier = courierNameOf(l10n, data, job.employeeId);
+    void notice(String m) => showOwnerNotice(context, m);
+    final timeline = jobHistoryTimeline(context, job,
+        key: const Key('own_order_timeline'),
+        now: now,
+        ride: ride,
+        owner: true,
+        courierName: courier);
+    final r = job.recipient;
+    final p = ride ? null : job.packageDetails;
     return Scaffold(
       key: const Key('own_order_page'),
       backgroundColor: c.surface,
       appBar: ownerAppBar(
         context,
         title: l10n.ownOrderTitle(jobRefIsolated(job)),
-        trailing: QdStatusChip(label: status.label(l10n), tone: status.tone),
+        trailing: phase == null
+            ? QdStatusChip(label: status.label(l10n), tone: status.tone)
+            : QdStatusChip(
+                key: const Key('own_order_phase'),
+                label: phase,
+                tone: status.tone),
       ),
       body: RefreshIndicator(
         onRefresh: data.refreshJobs,
@@ -181,8 +207,9 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
                 children: [
                   QdRouteLines(
                     compact: true,
-                    pickup: jobPlaceLabel(l10n, job.location),
-                    dropoff: jobPlaceLabel(l10n, job.destination),
+                    pickup: jobPlaceLabel(l10n, job.location, withNote: true),
+                    dropoff:
+                        jobPlaceLabel(l10n, job.destination, withNote: true),
                   ),
                   Align(
                     alignment: AlignmentDirectional.centerStart,
@@ -197,6 +224,38 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
                 ],
               ),
             ),
+            if (r != null || p != null) ...[
+              const SizedBox(height: QdSpace.x4),
+              OwnerInfoGroup(rows: [
+                if (r != null)
+                  OwnerInfoRow(
+                    key: const Key('own_order_recipient'),
+                    label: ride ? l10n.ordPassenger : l10n.ordRecipient,
+                    value: [
+                      if (r.name != null) r.name!,
+                      if (r.phone != null) '\u2066${r.phone!}\u2069',
+                    ].join(' · '),
+                    note: r.notes,
+                    trailing: r.phone == null
+                        ? null
+                        : QdIconButton(
+                            key: const Key('own_call_recipient'),
+                            icon: Icons.phone_outlined,
+                            label: l10n.ownCallRecipient,
+                            round: true,
+                            onPressed: () =>
+                                callPhone(context, r.phone!, notice: notice),
+                          ),
+                  ),
+                if (p != null)
+                  OwnerInfoRow(
+                    key: const Key('own_order_package'),
+                    label: l10n.ordPackage,
+                    value: packageSizeLabel(l10n, p.size),
+                    note: p.notes,
+                  ),
+              ]),
+            ],
             const SizedBox(height: QdSpace.x4),
             OwnerInfoGroup(rows: [
               OwnerInfoRow(
@@ -205,9 +264,23 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
               ),
               OwnerInfoRow(
                 label: l10n.ownRowCourier,
-                value: courierNameOf(l10n, data, job.employeeId) ??
-                    l10n.ownCourierNone,
+                value: courier ?? l10n.ownCourierNone,
+                trailing: job.courierPhone == null
+                    ? null
+                    : QdIconButton(
+                        key: const Key('own_call_courier'),
+                        icon: Icons.phone_outlined,
+                        label: l10n.ownCallCourier,
+                        round: true,
+                        onPressed: () => callPhone(context, job.courierPhone!,
+                            notice: notice),
+                      ),
               ),
+              if (eta != null)
+                OwnerInfoRow(
+                    key: const Key('own_order_eta'),
+                    label: l10n.ownRowEta,
+                    value: eta),
               OwnerInfoRow(
                   label: l10n.ownRowPayment, value: _payment(l10n, job)),
               if (extras.actualCashAmount != null)
@@ -218,7 +291,13 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
               if (job.createdAt != null)
                 OwnerInfoRow(
                   label: l10n.ownRowOrdered,
-                  value: formatWhen(context, job.createdAt!, now: data.now()),
+                  value: formatWhen(context, job.createdAt!, now: now),
+                ),
+              if (delivered != null)
+                OwnerInfoRow(
+                  key: const Key('own_order_delivered'),
+                  label: l10n.ownRowDelivered,
+                  value: formatWhen(context, delivered, now: now),
                 ),
               if ((job.cancellationReason ?? '').trim().isNotEmpty)
                 OwnerInfoRow(
@@ -226,6 +305,16 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
                   value: job.cancellationReason!.trim(),
                 ),
             ]),
+            if (timeline != null) ...[
+              const SizedBox(height: QdSpace.x5),
+              Semantics(
+                header: true,
+                child: Text(l10n.ownTimelineTitle,
+                    style: QdText.rowTitleSm.copyWith(color: c.textPrimary)),
+              ),
+              const SizedBox(height: QdSpace.x3),
+              timeline,
+            ],
             if (ownerCanCancel(job)) ...[
               const SizedBox(height: QdSpace.x5),
               QdButton.destructive(

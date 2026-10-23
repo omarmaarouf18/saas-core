@@ -1,6 +1,7 @@
 import '../../core/api_client.dart';
 import '../../core/job_rules.dart';
 import '../../models/job.dart';
+import '../customer/order/job_timeline.dart';
 
 /// Rules for the redesigned owner pages (FE-OWNER-1). Every number here is
 /// computed from data the app already loads: the owner jobs list
@@ -193,9 +194,24 @@ bool _sameLocalDay(DateTime a, DateTime b) {
   return x.year == y.year && x.month == y.month && x.day == y.day;
 }
 
-/// The Today tiles. "Today" is the device's calendar day of `created_at`
-/// (the only fixed timestamp on a job; `updated_at` moves with every
-/// change), so delivered and cash count today's orders only.
+/// Which day "delivered today" counts a completed order on.
+enum DeliveredDayBasis {
+  /// Every completed order has its delivery time (`status_history`).
+  deliveryTime,
+
+  /// No completed order has one (legacy, or none loaded): the day it was
+  /// placed.
+  orderDay,
+
+  /// Some have, some not: delivery time where known, else the order day.
+  mixed,
+}
+
+/// The Today tiles. A completed order counts on the device's calendar day
+/// it was delivered (its `completed` history entry, job model v2); an older
+/// order without a history counts on the day of `created_at` (the only
+/// other fixed timestamp; `updated_at` moves with every change).
+/// [deliveredBasis] says which rule the loaded orders needed.
 class TodaySummary {
   const TodaySummary({
     required this.ongoingNow,
@@ -203,18 +219,22 @@ class TodaySummary {
     required this.deliveredToday,
     required this.cashToday,
     required this.truncated,
+    this.deliveredBasis = DeliveredDayBasis.orderDay,
   });
 
   /// Ongoing orders among the loaded ones, whatever their day.
   final int ongoingNow;
   final int ordersToday;
 
-  /// Orders created today that are completed.
+  /// Completed orders delivered today (see the class comment).
   final int deliveredToday;
 
-  /// Cash recorded on today's completed COD orders; null when one of them
-  /// has no recorded amount (the sum would be wrong, so it is not shown).
+  /// Cash recorded on the COD orders of [deliveredToday]; null when one of
+  /// them has no recorded amount (the sum would be wrong, so it is not
+  /// shown).
   final double? cashToday;
+
+  final DeliveredDayBasis deliveredBasis;
 
   /// Every loaded order is from today and the server limit was reached, so
   /// there may be more: the counts are a lower bound.
@@ -226,7 +246,12 @@ TodaySummary todaySummary(List<Job> jobs,
   final today = jobs
       .where((j) => j.createdAt != null && _sameLocalDay(j.createdAt!, now))
       .toList();
-  final delivered = today.where(isCompleted).toList();
+  final completed = jobs.where(isCompleted).toList();
+  final withTime = completed.where((j) => jobCompletedAt(j) != null).length;
+  final delivered = completed.where((j) {
+    final day = jobCompletedAt(j) ?? j.createdAt;
+    return day != null && _sameLocalDay(day, now);
+  }).toList();
   double? cash = 0;
   for (final j in delivered.where(isCod)) {
     final amount = extrasOf(j.id).actualCashAmount;
@@ -243,8 +268,22 @@ TodaySummary todaySummary(List<Job> jobs,
     cashToday: cash,
     truncated:
         jobs.length >= kOwnerJobsServerLimit && today.length == jobs.length,
+    // No completed order loaded: nothing to say, keep the order-day note.
+    deliveredBasis: withTime == 0
+        ? DeliveredDayBasis.orderDay
+        : withTime == completed.length
+            ? DeliveredDayBasis.deliveryTime
+            : DeliveredDayBasis.mixed,
   );
 }
+
+/// Whether [job] was booked on one of the owner's ride (`transport`)
+/// services, when the services list is loaded; false otherwise (delivery
+/// wording).
+bool ownerJobIsRide(List<dynamic> services, Job job) => services.any((s) =>
+    s is Map &&
+    (s['id'] ?? s['service_id']) == job.serviceId &&
+    (s['category'] as String?)?.trim().toLowerCase() == 'transport');
 
 /// Search by order id (with or without the "#QD-" prefix) or courier name.
 bool orderMatchesQuery(Job job, String query, String? courierName) {

@@ -11120,6 +11120,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call the courier'**
   String get ordCallCourier;
+
+  /// FE-V2-CONSUME owner Today: every completed order has a delivery time (status_history).
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered and cash count the orders delivered today.'**
+  String get ownTodayNoteDelivered;
+
+  /// FE-V2-CONSUME owner Today: some completed orders have no delivery time (legacy).
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered and cash count the orders delivered today. Older orders without a delivery time count on the day they were placed.'**
+  String get ownTodayNoteMixed;
+
+  /// FE-V2-CONSUME owner order detail: delivery time row.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get ownRowDelivered;
+
+  /// FE-V2-CONSUME owner order detail: ETA row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get ownRowEta;
+
+  /// FE-V2-CONSUME owner order detail: call the recipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the recipient'**
+  String get ownCallRecipient;
+
+  /// FE-V2-CONSUME owner order detail: call the courier.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the courier'**
+  String get ownCallCourier;
+
+  /// FE-V2-CONSUME owner order detail: timeline section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Order steps'**
+  String get ownTimelineTitle;
 }
 
 class _AppLocalizationsDelegate

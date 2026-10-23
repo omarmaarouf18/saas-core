@@ -2173,5 +2173,12 @@
   "ordRecipient": "المستلم",
   "ordPassenger": "الراكب",
   "ordPackage": "الشحنة",
-  "ordCallCourier": "اتصل بالمندوب"
+  "ordCallCourier": "اتصل بالمندوب",
+  "ownTodayNoteDelivered": "التسليم والكاش بيعدّوا الطلبات اللي اتسلمت النهارده.",
+  "ownTodayNoteMixed": "التسليم والكاش بيعدّوا الطلبات اللي اتسلمت النهارده. الطلبات القديمة اللي من غير وقت تسليم بتتحسب بيوم ما اتطلبت.",
+  "ownRowDelivered": "اتسلم",
+  "ownRowEta": "الوقت المتوقع",
+  "ownCallRecipient": "اتصل بالمستلم",
+  "ownCallCourier": "اتصل بالمندوب",
+  "ownTimelineTitle": "خطوات الطلب"
 }

@@ -5963,5 +5963,33 @@
   "ordCallCourier": "Call the courier",
   "@ordCallCourier": {
     "description": "FE-V2-CONSUME customer: call button on the courier card."
+  },
+  "ownTodayNoteDelivered": "Delivered and cash count the orders delivered today.",
+  "@ownTodayNoteDelivered": {
+    "description": "FE-V2-CONSUME owner Today: every completed order has a delivery time (status_history)."
+  },
+  "ownTodayNoteMixed": "Delivered and cash count the orders delivered today. Older orders without a delivery time count on the day they were placed.",
+  "@ownTodayNoteMixed": {
+    "description": "FE-V2-CONSUME owner Today: some completed orders have no delivery time (legacy)."
+  },
+  "ownRowDelivered": "Delivered",
+  "@ownRowDelivered": {
+    "description": "FE-V2-CONSUME owner order detail: delivery time row."
+  },
+  "ownRowEta": "Estimate",
+  "@ownRowEta": {
+    "description": "FE-V2-CONSUME owner order detail: ETA row label."
+  },
+  "ownCallRecipient": "Call the recipient",
+  "@ownCallRecipient": {
+    "description": "FE-V2-CONSUME owner order detail: call the recipient."
+  },
+  "ownCallCourier": "Call the courier",
+  "@ownCallCourier": {
+    "description": "FE-V2-CONSUME owner order detail: call the courier."
+  },
+  "ownTimelineTitle": "Order steps",
+  "@ownTimelineTitle": {
+    "description": "FE-V2-CONSUME owner order detail: timeline section title."
   }
 }

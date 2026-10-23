@@ -342,7 +342,11 @@ class _SummaryTiles extends StatelessWidget {
         Text(
           summary.truncated
               ? l10n.ownTodayNoteTruncated(kOwnerJobsServerLimit)
-              : l10n.ownTodayNote,
+              : switch (summary.deliveredBasis) {
+                  DeliveredDayBasis.deliveryTime => l10n.ownTodayNoteDelivered,
+                  DeliveredDayBasis.orderDay => l10n.ownTodayNote,
+                  DeliveredDayBasis.mixed => l10n.ownTodayNoteMixed,
+                },
           key: const Key('own_today_note'),
           style: QdText.caption.copyWith(color: c.textSecondary),
         ),

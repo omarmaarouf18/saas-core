@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/job_rules.dart';
 import '../../l10n/l10n.dart';
 import '../../models/job.dart';
+import '../../providers/owner_provider.dart';
 import '../../ui/qd_ui.dart';
+import '../customer/order/job_v2_sections.dart';
 import 'order_detail_page.dart';
 import 'owner_controller.dart';
 import 'owner_format.dart';
@@ -231,7 +233,8 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
 }
 
 /// One O-Orders row: reference · courier, a one-line state summary and the
-/// status chips (with "cancellation requested"). A row with a pending
+/// status chips (with "cancellation requested"; the phase, e.g. "Picked
+/// up", instead of "Active" when the job has one). A row with a pending
 /// request is tinted.
 class OwnerOrderRow extends StatelessWidget {
   const OwnerOrderRow({super.key, required this.job});
@@ -248,6 +251,8 @@ class OwnerOrderRow extends StatelessWidget {
         ? jobRefIsolated(job)
         : '${jobRefIsolated(job)} · $courier';
     final requested = hasPendingCancellationRequest(job);
+    final phase = jobPhaseChip(l10n, job,
+        ride: ownerJobIsRide(context.watch<OwnerProvider>().services, job));
     return Material(
       color: requested ? c.fillSubtle : c.surface,
       child: InkWell(
@@ -290,7 +295,11 @@ class OwnerOrderRow extends StatelessWidget {
                           label: QdJobStatus.cancellationRequested.label(l10n),
                           tone: QdJobStatus.cancellationRequested.tone,
                         )
-                      : QdJobStatusChips(status: job.status),
+                      : phase != null
+                          ? QdStatusChip(
+                              label: phase,
+                              tone: QdJobStatus.fromBackend(job.status).tone)
+                          : QdJobStatusChips(status: job.status),
                 ),
               ],
             ),

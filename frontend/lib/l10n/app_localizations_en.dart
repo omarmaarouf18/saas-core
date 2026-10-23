@@ -6236,4 +6236,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordCallCourier => 'Call the courier';
+
+  @override
+  String get ownTodayNoteDelivered =>
+      'Delivered and cash count the orders delivered today.';
+
+  @override
+  String get ownTodayNoteMixed =>
+      'Delivered and cash count the orders delivered today. Older orders without a delivery time count on the day they were placed.';
+
+  @override
+  String get ownRowDelivered => 'Delivered';
+
+  @override
+  String get ownRowEta => 'Estimate';
+
+  @override
+  String get ownCallRecipient => 'Call the recipient';
+
+  @override
+  String get ownCallCourier => 'Call the courier';
+
+  @override
+  String get ownTimelineTitle => 'Order steps';
 }
