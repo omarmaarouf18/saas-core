@@ -25,3 +25,11 @@ const bool kRedesignAuth =
 /// still the existing screens (FE-OWNER-2).
 const bool kRedesignOwner =
     bool.fromEnvironment('QD_REDESIGN_OWNER', defaultValue: false);
+
+/// FE-COURIER: the redesigned courier app (redesign A): the offer, the
+/// current job, my jobs and the account page, plus the verification banner
+/// and the suspended-account screen. Off by default, so a plain build is the
+/// existing courier app; turn it on with
+/// `--dart-define=QD_REDESIGN_COURIER=true`.
+const bool kRedesignCourier =
+    bool.fromEnvironment('QD_REDESIGN_COURIER', defaultValue: false);

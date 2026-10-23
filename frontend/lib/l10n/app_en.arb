@@ -4150,5 +4150,102 @@
   "ownNavAccount": "Account",
   "@ownNavAccount": {
     "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "courNavTask": "Task",
+  "@courNavTask": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNavJobs": "My jobs",
+  "@courNavJobs": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNavAccount": "Account",
+  "@courNavAccount": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeMissing": "Upload your documents so your account can be verified.",
+  "@courKyeMissing": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyePending": "Your documents are waiting for review.",
+  "@courKyePending": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeRejected": "Your documents were not accepted: {reason}",
+  "@courKyeRejected": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "courKyeRejectedNoReason": "Your documents were not accepted. Upload them again.",
+  "@courKyeRejectedNoReason": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeUpload": "Upload documents",
+  "@courKyeUpload": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeView": "View documents",
+  "@courKyeView": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeReupload": "Upload again",
+  "@courKyeReupload": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedTitle": "You can't take orders right now",
+  "@courBlockedTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedSuspended": "Your account was suspended, so no orders will reach you.",
+  "@courBlockedSuspended": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedPaused": "Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.",
+  "@courBlockedPaused": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedReason": "Reason",
+  "@courBlockedReason": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedWhat": "Talk to your company owner, or contact support if you think this is a mistake.",
+  "@courBlockedWhat": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedCheck": "Check again",
+  "@courBlockedCheck": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courLoadError": "Couldn't load your jobs.",
+  "@courLoadError": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courRefresh": "Refresh",
+  "@courRefresh": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOnlineTitle": "No task right now",
+  "@courIdleOnlineTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOnlineBody": "You're available. New orders show up here.",
+  "@courIdleOnlineBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOfflineTitle": "You're not available",
+  "@courIdleOfflineTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOfflineBody": "Turn on availability to get new orders.",
+  "@courIdleOfflineBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courGoOnline": "Make me available",
+  "@courGoOnline": {
+    "description": "FE-COURIER redesigned courier screens."
   }
 }

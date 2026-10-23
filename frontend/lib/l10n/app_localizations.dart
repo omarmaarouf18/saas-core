@@ -8810,6 +8810,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get ownNavAccount;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get courNavTask;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'My jobs'**
+  String get courNavJobs;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get courNavAccount;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your documents so your account can be verified.'**
+  String get courKyeMissing;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents are waiting for review.'**
+  String get courKyePending;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were not accepted: {reason}'**
+  String courKyeRejected(String reason);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were not accepted. Upload them again.'**
+  String get courKyeRejectedNoReason;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload documents'**
+  String get courKyeUpload;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'View documents'**
+  String get courKyeView;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload again'**
+  String get courKyeReupload;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t take orders right now'**
+  String get courBlockedTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was suspended, so no orders will reach you.'**
+  String get courBlockedSuspended;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.'**
+  String get courBlockedPaused;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get courBlockedReason;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to your company owner, or contact support if you think this is a mistake.'**
+  String get courBlockedWhat;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get courBlockedCheck;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your jobs.'**
+  String get courLoadError;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get courRefresh;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No task right now'**
+  String get courIdleOnlineTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re available. New orders show up here.'**
+  String get courIdleOnlineBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re not available'**
+  String get courIdleOfflineTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on availability to get new orders.'**
+  String get courIdleOfflineBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Make me available'**
+  String get courGoOnline;
 }
 
 class _AppLocalizationsDelegate

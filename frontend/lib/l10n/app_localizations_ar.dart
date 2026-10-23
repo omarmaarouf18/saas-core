@@ -4853,4 +4853,77 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownNavAccount => 'حسابي';
+
+  @override
+  String get courNavTask => 'المهمة';
+
+  @override
+  String get courNavJobs => 'مهامي';
+
+  @override
+  String get courNavAccount => 'حسابي';
+
+  @override
+  String get courKyeMissing => 'ارفع مستنداتك علشان حسابك يتراجع.';
+
+  @override
+  String get courKyePending => 'حسابك مستني مراجعة المستندات.';
+
+  @override
+  String courKyeRejected(String reason) {
+    return 'المستندات ما اتقبلتش: $reason';
+  }
+
+  @override
+  String get courKyeRejectedNoReason => 'المستندات ما اتقبلتش. ارفعها تاني.';
+
+  @override
+  String get courKyeUpload => 'كمّل الرفع';
+
+  @override
+  String get courKyeView => 'شوف المستندات';
+
+  @override
+  String get courKyeReupload => 'ارفع تاني';
+
+  @override
+  String get courBlockedTitle => 'مش هتقدر تاخد مهام دلوقتي';
+
+  @override
+  String get courBlockedSuspended => 'حسابك اتوقف، فمش هتوصلك مهام.';
+
+  @override
+  String get courBlockedPaused =>
+      'حسابك متوقف مؤقتاً، فمش هتوصلك مهام. الشركة أو Quick Delivery يقدروا يرجّعوه.';
+
+  @override
+  String get courBlockedReason => 'السبب';
+
+  @override
+  String get courBlockedWhat =>
+      'كلّم صاحب الشغل، أو كلّم الدعم لو شايف إن ده غلط.';
+
+  @override
+  String get courBlockedCheck => 'اتأكد تاني';
+
+  @override
+  String get courLoadError => 'ما قدرناش نحمّل مهامك.';
+
+  @override
+  String get courRefresh => 'حدّث';
+
+  @override
+  String get courIdleOnlineTitle => 'مفيش مهمة دلوقتي';
+
+  @override
+  String get courIdleOnlineBody => 'إنت متاح. المهام الجديدة هتظهر هنا.';
+
+  @override
+  String get courIdleOfflineTitle => 'إنت مش متاح';
+
+  @override
+  String get courIdleOfflineBody => 'خلّي نفسك متاح علشان توصلك مهام.';
+
+  @override
+  String get courGoOnline => 'خلّيني متاح';
 }

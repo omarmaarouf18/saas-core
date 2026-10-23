@@ -4923,4 +4923,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownNavAccount => 'Account';
+
+  @override
+  String get courNavTask => 'Task';
+
+  @override
+  String get courNavJobs => 'My jobs';
+
+  @override
+  String get courNavAccount => 'Account';
+
+  @override
+  String get courKyeMissing =>
+      'Upload your documents so your account can be verified.';
+
+  @override
+  String get courKyePending => 'Your documents are waiting for review.';
+
+  @override
+  String courKyeRejected(String reason) {
+    return 'Your documents were not accepted: $reason';
+  }
+
+  @override
+  String get courKyeRejectedNoReason =>
+      'Your documents were not accepted. Upload them again.';
+
+  @override
+  String get courKyeUpload => 'Upload documents';
+
+  @override
+  String get courKyeView => 'View documents';
+
+  @override
+  String get courKyeReupload => 'Upload again';
+
+  @override
+  String get courBlockedTitle => 'You can\'t take orders right now';
+
+  @override
+  String get courBlockedSuspended =>
+      'Your account was suspended, so no orders will reach you.';
+
+  @override
+  String get courBlockedPaused =>
+      'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.';
+
+  @override
+  String get courBlockedReason => 'Reason';
+
+  @override
+  String get courBlockedWhat =>
+      'Talk to your company owner, or contact support if you think this is a mistake.';
+
+  @override
+  String get courBlockedCheck => 'Check again';
+
+  @override
+  String get courLoadError => 'Couldn\'t load your jobs.';
+
+  @override
+  String get courRefresh => 'Refresh';
+
+  @override
+  String get courIdleOnlineTitle => 'No task right now';
+
+  @override
+  String get courIdleOnlineBody =>
+      'You\'re available. New orders show up here.';
+
+  @override
+  String get courIdleOfflineTitle => 'You\'re not available';
+
+  @override
+  String get courIdleOfflineBody => 'Turn on availability to get new orders.';
+
+  @override
+  String get courGoOnline => 'Make me available';
 }
