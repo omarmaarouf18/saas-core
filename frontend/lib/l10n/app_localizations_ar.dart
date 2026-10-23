@@ -5252,4 +5252,54 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courPriceExpired => 'وقت عرض السعر خلص.';
+
+  @override
+  String get courAvailableOn => 'متاح لاستقبال مهام';
+
+  @override
+  String get courAvailableOff => 'مش متاح';
+
+  @override
+  String get courAvailableOnBody => 'بنبعت مكانك لصاحب الشغل كل دقيقة.';
+
+  @override
+  String get courAvailableOffBody => 'مش هتوصلك مهام جديدة.';
+
+  @override
+  String get courAvailableLocked => 'مقفول طول ما عندك مهمة شغالة.';
+
+  @override
+  String get courTodayDone => 'مهام خلصت النهارده';
+
+  @override
+  String get courTodayCash => 'كاش النهارده بسعر الطلب';
+
+  @override
+  String get courTodayCashNote =>
+      'الكاش محسوب بسعر طلبات الكاش اللي اتسلّمت النهارده، والشركة بتشوف المبلغ اللي أكدته.';
+
+  @override
+  String get courTodayByCreation =>
+      'الطلبات القديمة مالهاش وقت خلصان، فبتتحسب بيوم إنشائها.';
+
+  @override
+  String get courFinishedHeader => 'اللي خلص';
+
+  @override
+  String courToPlace(String place) {
+    return 'إلى $place';
+  }
+
+  @override
+  String get courPayCash => 'كاش';
+
+  @override
+  String get courNoFinishedTitle => 'لسه مفيش مهام خلصت';
+
+  @override
+  String get courNoFinishedBody =>
+      'المهام اللي بتسلّمها، واللي بتتلغي، هتظهر هنا.';
+
+  @override
+  String get courReasonPriceDisagreement => 'ما اتفقناش على السعر';
 }

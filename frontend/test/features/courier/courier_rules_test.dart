@@ -110,4 +110,99 @@ void main() {
       expect(isBlocked(null), isFalse);
     });
   });
+
+  group('my jobs', () {
+    JobStatusHistoryEntry at(String status, DateTime t) =>
+        JobStatusHistoryEntry(status: status, at: t);
+    Job done(String id,
+            {String status = 'completed',
+            DateTime? finished,
+            DateTime? created,
+            double? price = 40,
+            String payment = 'cod'}) =>
+        Job(
+          id: id,
+          ownerId: 'o',
+          userId: 'u',
+          serviceId: 's',
+          status: status,
+          location: JobLocation(latitude: 30, longitude: 31),
+          paymentMethod: payment,
+          suggestedPrice: price,
+          createdAt: created ?? now.subtract(const Duration(days: 3)),
+          statusHistory: finished == null ? const [] : [at(status, finished)],
+        );
+
+    test('today counts by completion time, cash at order price', () {
+      final s = todayStats([
+        done('a', finished: now.subtract(const Duration(hours: 2))),
+        done('b', finished: now.subtract(const Duration(hours: 1)), price: 25),
+        // Finished yesterday although created today: not counted.
+        done('c',
+            finished: now.subtract(const Duration(days: 1)), created: now),
+        // Not cash: counted, no cash.
+        done('d',
+            finished: now.subtract(const Duration(minutes: 5)),
+            payment: 'wallet'),
+        done('e', status: 'cancelled', finished: now),
+      ], now);
+      expect(s.completed, 3);
+      expect(s.cash, 65);
+      expect(s.estimated, isFalse);
+    });
+
+    test('older jobs without a timeline count by creation day', () {
+      final s = todayStats([
+        done('old', created: now.subtract(const Duration(hours: 3))),
+        done('older', created: now.subtract(const Duration(days: 2))),
+      ], now);
+      expect(s.completed, 1);
+      expect(s.cash, 40);
+      expect(s.estimated, isTrue);
+    });
+
+    test('finished list: newest end first, running jobs left out', () {
+      final list = finishedJobs([
+        done('mid', finished: now.subtract(const Duration(hours: 2))),
+        _job('run', 'active'),
+        done('new', status: 'cancelled', finished: now),
+        done('review',
+            status: 'escrow_reconciliation_required',
+            finished: now.subtract(const Duration(hours: 5))),
+      ]);
+      expect(list.map((j) => j.id), ['new', 'mid', 'review']);
+      expect(finishedAt(list.first), now);
+      expect(finishedAt(_job('x', 'completed')), isNull);
+    });
+  });
+
+  group('current job action', () {
+    Job active(String? sub, {String status = 'active'}) => Job(
+          id: 'j',
+          ownerId: 'o',
+          userId: 'u',
+          serviceId: 's',
+          status: status,
+          subStatus: sub,
+          location: JobLocation(latitude: 1, longitude: 2),
+          destination: JobLocation(latitude: 3, longitude: 4),
+          paymentMethod: 'cod',
+        );
+
+    test('pickup, then deliver; older jobs deliver', () {
+      expect(
+          primaryActionFor(active('heading_to_pickup')), CourierAction.pickup);
+      expect(primaryActionFor(active('picked_up')), CourierAction.deliver);
+      expect(primaryActionFor(active(null)), CourierAction.deliver);
+      expect(primaryActionFor(active(null, status: 'awaiting_price_response')),
+          CourierAction.none);
+      expect(navigationTarget(active('heading_to_pickup')).latitude, 1);
+      expect(navigationTarget(active('picked_up')).latitude, 3);
+    });
+
+    test('cancellation can be requested unless one is pending', () {
+      expect(canRequestCancellation(active('picked_up')), isTrue);
+      expect(canRequestCancellation(_job('1', 'completed')), isFalse);
+    });
+  });
 }

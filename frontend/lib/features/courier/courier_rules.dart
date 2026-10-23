@@ -122,3 +122,74 @@ JobLocation navigationTarget(Job job) =>
 /// pending (the old rule).
 bool canRequestCancellation(Job job) =>
     isCurrent(job) && _norm(job.cancellationRequestStatus) != 'pending';
+
+const Set<String> _endStatuses = {
+  'completed',
+  'cancelled',
+  'canceled',
+  'unavailable',
+  'escrow_reconciliation_required',
+  'reconciliation_required',
+};
+
+/// When the job ended, from the server timeline (job model v2): the time
+/// of the last entry with an end status. Null for older jobs with no
+/// timeline.
+DateTime? finishedAt(Job job) {
+  for (final e in job.statusHistory.reversed) {
+    if (_endStatuses.contains(_norm(e.status))) return e.at;
+  }
+  return null;
+}
+
+/// My jobs list: finished jobs, newest first (end time, else last update,
+/// else creation).
+List<Job> finishedJobs(Iterable<Job> jobs) {
+  final old = DateTime.utc(1970);
+  DateTime key(Job j) => finishedAt(j) ?? j.updatedAt ?? j.createdAt ?? old;
+  return jobs.where(isCourierFinished).toList()
+    ..sort((a, b) => key(b).compareTo(key(a)));
+}
+
+/// Today's completed jobs and the cash at their order price.
+class CourierDayStats {
+  const CourierDayStats(
+      {required this.completed, required this.cash, required this.estimated});
+
+  final int completed;
+
+  /// Sum of the agreed (else suggested) price of today's completed cash
+  /// orders. The amount actually collected is not sent to couriers.
+  final double cash;
+
+  /// True when a completed job has no completion time on its timeline
+  /// (jobs from before job model v2), so it was counted by its creation
+  /// day instead.
+  final bool estimated;
+}
+
+bool _sameLocalDay(DateTime a, DateTime b) {
+  final x = a.toLocal();
+  final y = b.toLocal();
+  return x.year == y.year && x.month == y.month && x.day == y.day;
+}
+
+CourierDayStats todayStats(Iterable<Job> jobs, DateTime now) {
+  var count = 0;
+  var cash = 0.0;
+  var estimated = false;
+  for (final j in jobs) {
+    if (_norm(j.status) != 'completed') continue;
+    var when = j.historyTimeOf('completed');
+    if (when == null) {
+      estimated = true;
+      when = j.createdAt;
+    }
+    if (when == null || !_sameLocalDay(when, now)) continue;
+    count++;
+    if (_norm(j.paymentMethod) == 'cod') {
+      cash += j.agreedPrice ?? j.suggestedPrice ?? 0;
+    }
+  }
+  return CourierDayStats(completed: count, cash: cash, estimated: estimated);
+}

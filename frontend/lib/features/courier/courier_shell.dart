@@ -13,6 +13,7 @@ import 'blocked_page.dart';
 import 'courier_controller.dart';
 import 'courier_rules.dart';
 import 'courier_widgets.dart';
+import 'jobs_page.dart';
 import 'task_page.dart';
 
 /// The courier's root screen: the redesigned [CourierShell] when [redesign]
@@ -122,7 +123,7 @@ class _CourierShellState extends State<CourierShell> {
                     index: _index,
                     children: [
                       lazy(0, () => const CourierTaskPage()),
-                      lazy(1, () => const SizedBox.shrink()),
+                      lazy(1, () => const CourierJobsPage()),
                       lazy(2, () => const AccountPage()),
                     ],
                   ),

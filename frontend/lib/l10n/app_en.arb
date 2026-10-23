@@ -4723,5 +4723,70 @@
   "courPriceExpired": "The price offer ran out of time.",
   "@courPriceExpired": {
     "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOn": "Available for tasks",
+  "@courAvailableOn": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOff": "Not available",
+  "@courAvailableOff": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOnBody": "We send your location to your company every minute.",
+  "@courAvailableOnBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOffBody": "You won't get new orders.",
+  "@courAvailableOffBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableLocked": "Locked while a task is in progress.",
+  "@courAvailableLocked": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayDone": "Tasks finished today",
+  "@courTodayDone": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayCash": "Cash today, at order price",
+  "@courTodayCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayCashNote": "Cash is the price of today's delivered cash orders; your company sees the amount you confirmed.",
+  "@courTodayCashNote": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayByCreation": "Older orders have no finish time, so they count by the day they were created.",
+  "@courTodayByCreation": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courFinishedHeader": "Finished",
+  "@courFinishedHeader": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courToPlace": "To {place}",
+  "@courToPlace": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "courPayCash": "Cash",
+  "@courPayCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoFinishedTitle": "No finished tasks yet",
+  "@courNoFinishedTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoFinishedBody": "Tasks you deliver, and ones that get cancelled, show up here.",
+  "@courNoFinishedBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courReasonPriceDisagreement": "No agreement on the price",
+  "@courReasonPriceDisagreement": {
+    "description": "FE-COURIER redesigned courier screens."
   }
 }

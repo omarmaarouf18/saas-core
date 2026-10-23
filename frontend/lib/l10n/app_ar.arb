@@ -1813,5 +1813,20 @@
   "courPriceWaitingTitle": "مستني الاتفاق على السعر",
   "courPriceProposeLabel": "سعرك",
   "courPriceBounds": "من {min} لـ {max}",
-  "courPriceExpired": "وقت عرض السعر خلص."
+  "courPriceExpired": "وقت عرض السعر خلص.",
+  "courAvailableOn": "متاح لاستقبال مهام",
+  "courAvailableOff": "مش متاح",
+  "courAvailableOnBody": "بنبعت مكانك لصاحب الشغل كل دقيقة.",
+  "courAvailableOffBody": "مش هتوصلك مهام جديدة.",
+  "courAvailableLocked": "مقفول طول ما عندك مهمة شغالة.",
+  "courTodayDone": "مهام خلصت النهارده",
+  "courTodayCash": "كاش النهارده بسعر الطلب",
+  "courTodayCashNote": "الكاش محسوب بسعر طلبات الكاش اللي اتسلّمت النهارده، والشركة بتشوف المبلغ اللي أكدته.",
+  "courTodayByCreation": "الطلبات القديمة مالهاش وقت خلصان، فبتتحسب بيوم إنشائها.",
+  "courFinishedHeader": "اللي خلص",
+  "courToPlace": "إلى {place}",
+  "courPayCash": "كاش",
+  "courNoFinishedTitle": "لسه مفيش مهام خلصت",
+  "courNoFinishedBody": "المهام اللي بتسلّمها، واللي بتتلغي، هتظهر هنا.",
+  "courReasonPriceDisagreement": "ما اتفقناش على السعر"
 }

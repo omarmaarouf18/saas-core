@@ -5330,4 +5330,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courPriceExpired => 'The price offer ran out of time.';
+
+  @override
+  String get courAvailableOn => 'Available for tasks';
+
+  @override
+  String get courAvailableOff => 'Not available';
+
+  @override
+  String get courAvailableOnBody =>
+      'We send your location to your company every minute.';
+
+  @override
+  String get courAvailableOffBody => 'You won\'t get new orders.';
+
+  @override
+  String get courAvailableLocked => 'Locked while a task is in progress.';
+
+  @override
+  String get courTodayDone => 'Tasks finished today';
+
+  @override
+  String get courTodayCash => 'Cash today, at order price';
+
+  @override
+  String get courTodayCashNote =>
+      'Cash is the price of today\'s delivered cash orders; your company sees the amount you confirmed.';
+
+  @override
+  String get courTodayByCreation =>
+      'Older orders have no finish time, so they count by the day they were created.';
+
+  @override
+  String get courFinishedHeader => 'Finished';
+
+  @override
+  String courToPlace(String place) {
+    return 'To $place';
+  }
+
+  @override
+  String get courPayCash => 'Cash';
+
+  @override
+  String get courNoFinishedTitle => 'No finished tasks yet';
+
+  @override
+  String get courNoFinishedBody =>
+      'Tasks you deliver, and ones that get cancelled, show up here.';
+
+  @override
+  String get courReasonPriceDisagreement => 'No agreement on the price';
 }

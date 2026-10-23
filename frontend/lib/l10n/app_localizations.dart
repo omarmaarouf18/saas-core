@@ -9500,6 +9500,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The price offer ran out of time.'**
   String get courPriceExpired;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Available for tasks'**
+  String get courAvailableOn;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get courAvailableOff;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We send your location to your company every minute.'**
+  String get courAvailableOnBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t get new orders.'**
+  String get courAvailableOffBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked while a task is in progress.'**
+  String get courAvailableLocked;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks finished today'**
+  String get courTodayDone;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash today, at order price'**
+  String get courTodayCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash is the price of today\'s delivered cash orders; your company sees the amount you confirmed.'**
+  String get courTodayCashNote;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Older orders have no finish time, so they count by the day they were created.'**
+  String get courTodayByCreation;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get courFinishedHeader;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'To {place}'**
+  String courToPlace(String place);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get courPayCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished tasks yet'**
+  String get courNoFinishedTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks you deliver, and ones that get cancelled, show up here.'**
+  String get courNoFinishedBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No agreement on the price'**
+  String get courReasonPriceDisagreement;
 }
 
 class _AppLocalizationsDelegate
