@@ -6046,4 +6046,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownPlanDowngraded => 'You\'re on the free plan now.';
+
+  @override
+  String lnchMapsCopied(String coords) {
+    return 'Couldn\'t open a maps app. Location copied: $coords.';
+  }
+
+  @override
+  String lnchPhoneCopied(String phone) {
+    return 'Couldn\'t open the phone app. Number copied: $phone.';
+  }
+
+  @override
+  String get courCallRecipient => 'Call the recipient';
 }

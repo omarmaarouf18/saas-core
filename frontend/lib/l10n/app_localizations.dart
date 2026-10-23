@@ -10778,6 +10778,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re on the free plan now.'**
   String get ownPlanDowngraded;
+
+  /// FE-V2-CONSUME: no maps app opened, the coordinates were copied instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open a maps app. Location copied: {coords}.'**
+  String lnchMapsCopied(String coords);
+
+  /// FE-V2-CONSUME: the dialer did not open, the number was copied instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the phone app. Number copied: {phone}.'**
+  String lnchPhoneCopied(String phone);
+
+  /// FE-V2-CONSUME courier: call button on the recipient card.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the recipient'**
+  String get courCallRecipient;
 }
 
 class _AppLocalizationsDelegate

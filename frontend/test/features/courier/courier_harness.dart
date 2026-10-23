@@ -21,7 +21,10 @@ import 'package:frontend/ui/qd_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/fake_launcher.dart';
 import '../customer/customer_harness.dart' show BlankTileProvider, en;
+
+export '../../helpers/fake_launcher.dart';
 
 export '../customer/customer_harness.dart'
     show ar, en, bothLocales, usePhone, loadPlexFont;
@@ -354,7 +357,9 @@ class CourierTestDeps {
     FakeCourierLocation? location,
     FakeCourierNotifications? notifications,
     RecordingCourierNav? nav,
+    FakeLauncher? launcher,
   })  : auth = auth ?? FakeCourierAuth(),
+        launcher = launcher ?? FakeLauncher(),
         jobs = jobs ?? FakeEmployeeJobs(),
         location = location ?? FakeCourierLocation(),
         notifications = notifications ?? FakeCourierNotifications(),
@@ -365,6 +370,7 @@ class CourierTestDeps {
   final FakeCourierLocation location;
   final FakeCourierNotifications notifications;
   final RecordingCourierNav nav;
+  final FakeLauncher launcher;
 
   /// The controller's clock; tests move it to cross an expiry.
   DateTime clock = courierNow;
@@ -404,15 +410,18 @@ Widget courierApp(
       nav: deps.nav,
       child: CustomerMapTilesScope(
         tileProvider: BlankTileProvider(),
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: quickDeliveryTheme,
-          darkTheme: quickDeliveryDarkTheme,
-          themeMode: ThemeMode.light,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: QdThemeScope(child: home),
+        child: QdLauncherScope(
+          launcher: deps.launcher,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: quickDeliveryTheme,
+            darkTheme: quickDeliveryDarkTheme,
+            themeMode: ThemeMode.light,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: QdThemeScope(child: home),
+          ),
         ),
       ),
     ),

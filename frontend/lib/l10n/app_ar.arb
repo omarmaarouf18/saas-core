@@ -2116,5 +2116,8 @@
   "ownPlanDowngradeTitle": "تحوّل للباقة المجانية؟",
   "ownPlanDowngradeBodyPaid": "العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا لحد ما ترجع للباقة المدفوعة.",
   "ownPlanDowngradeBodyPending": "ده هيلغي طلب الترقية.",
-  "ownPlanDowngraded": "انت دلوقتي على الباقة المجانية."
+  "ownPlanDowngraded": "انت دلوقتي على الباقة المجانية.",
+  "lnchMapsCopied": "مقدرناش نفتح تطبيق خرايط. اتنسخ المكان: {coords}.",
+  "lnchPhoneCopied": "مقدرناش نفتح تطبيق الاتصال. اتنسخ الرقم: {phone}.",
+  "courCallRecipient": "اتصل بالمستلم"
 }

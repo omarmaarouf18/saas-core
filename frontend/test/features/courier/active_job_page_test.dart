@@ -225,7 +225,8 @@ void main() {
   });
 
   group('recipient and map', () {
-    testWidgets('recipient with phone: copy number and chat', (tester) async {
+    testWidgets('recipient with phone: call, copy when no phone app, chat',
+        (tester) async {
       final copied = _mockClipboard(tester);
       final deps = await _pump(
           tester,
@@ -239,8 +240,19 @@ void main() {
       expect(find.text('+201012345678'), findsOneWidget);
       await _tapVisible(
           tester, find.byKey(const Key('courier_recipient_call')));
+      expect(deps.launcher.tried, [Uri.parse('tel:+201012345678')]);
       expect(copied, ['+201012345678']);
       expect(find.byKey(const Key('courier_phone_copied')), findsOneWidget);
+      expect(
+          find.text("Couldn't open the phone app. "
+              'Number copied: +201012345678.'),
+          findsOneWidget);
+
+      // The phone app opens: nothing is copied.
+      deps.launcher.opens = (_) => true;
+      await _tapVisible(
+          tester, find.byKey(const Key('courier_recipient_call')));
+      expect(copied, ['+201012345678']);
       await _tapVisible(
           tester, find.byKey(const Key('courier_recipient_chat')));
       expect(deps.nav.opened, ['chat:a1b2c3d4e5f6']);
@@ -252,12 +264,29 @@ void main() {
       expect(find.text('Customer'), findsOneWidget);
     });
 
-    testWidgets('open in maps copies the next stop', (tester) async {
+    testWidgets('open in maps: a maps app opens the next stop', (tester) async {
       final copied = _mockClipboard(tester);
-      await _pump(tester, courierJob(subStatus: 'heading_to_pickup'));
+      final deps = CourierTestDeps(launcher: FakeLauncher(opens: (_) => true));
+      await _pump(tester, courierJob(subStatus: 'heading_to_pickup'),
+          deps: deps);
       await tester.tap(find.byKey(const Key('courier_open_maps')));
       await tester.pumpAndSettle();
-      expect(copied, ['30.044400,31.235700']);
+      expect(deps.launcher.tried, hasLength(1));
+      expect(deps.launcher.tried.single.toString(),
+          contains('30.044400,31.235700'));
+      expect(copied, isEmpty);
+      expect(find.byKey(const Key('courier_coords_copied')), findsNothing);
+    });
+
+    testWidgets('open in maps: no maps app, the next stop is copied',
+        (tester) async {
+      final copied = _mockClipboard(tester);
+      final deps = await _pump(tester, courierJob(subStatus: 'picked_up'));
+      await tester.tap(find.byKey(const Key('courier_open_maps')));
+      await tester.pumpAndSettle();
+      expect(deps.launcher.tried, isNotEmpty);
+      expect(copied, ['30.060000,31.220000']);
+      expect(find.byKey(const Key('courier_coords_copied')), findsOneWidget);
     });
 
     testWidgets('customer sees your location while the job is tracked',

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -94,16 +93,23 @@ class _CourierActiveJobPageState extends State<CourierActiveJobPage> {
     }
   }
 
+  /// Opens the next stop in a maps app; copies its coordinates when none
+  /// opens.
   Future<void> _openInMaps() async {
     final l10n = context.l10n;
     final t = navigationTarget(job);
-    final coords =
-        '${t.latitude.toStringAsFixed(6)},${t.longitude.toStringAsFixed(6)}';
-    await Clipboard.setData(ClipboardData(text: coords));
-    if (mounted) {
-      showCourierNotice(context, l10n.courCoordsCopied(coords),
-          key: const Key('courier_coords_copied'));
-    }
+    final coords = coordsText(t.latitude, t.longitude);
+    await openOrCopy(
+      context,
+      mapsUris(t.latitude, t.longitude),
+      copyText: coords,
+      onCopied: () {
+        if (mounted) {
+          showCourierNotice(context, l10n.lnchMapsCopied(coords),
+              key: const Key('courier_coords_copied'));
+        }
+      },
+    );
   }
 
   Future<void> _pickRunning(List<Job> running) async {
@@ -498,13 +504,21 @@ class _RecipientCard extends StatelessWidget {
 
   final Job job;
 
-  Future<void> _copyPhone(BuildContext context, String phone) async {
+  /// Dials the recipient; copies the number when the phone app does not
+  /// open.
+  Future<void> _call(BuildContext context, String phone) async {
     final l10n = context.l10n;
-    await Clipboard.setData(ClipboardData(text: phone));
-    if (context.mounted) {
-      showCourierNotice(context, l10n.courPhoneCopied(phone),
-          key: const Key('courier_phone_copied'));
-    }
+    await openOrCopy(
+      context,
+      [phoneCallUri(phone)],
+      copyText: phone,
+      onCopied: () {
+        if (context.mounted) {
+          showCourierNotice(context, l10n.lnchPhoneCopied(phone),
+              key: const Key('courier_phone_copied'));
+        }
+      },
+    );
   }
 
   @override
@@ -561,9 +575,9 @@ class _RecipientCard extends StatelessWidget {
                 QdIconButton(
                   key: const Key('courier_recipient_call'),
                   icon: Icons.phone_outlined,
-                  label: l10n.courCopyPhone,
+                  label: l10n.courCallRecipient,
                   round: true,
-                  onPressed: () => _copyPhone(context, phone),
+                  onPressed: () => _call(context, phone),
                 ),
               const SizedBox(width: QdSpace.x1),
               QdIconButton(

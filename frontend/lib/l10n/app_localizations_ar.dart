@@ -5953,4 +5953,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownPlanDowngraded => 'انت دلوقتي على الباقة المجانية.';
+
+  @override
+  String lnchMapsCopied(String coords) {
+    return 'مقدرناش نفتح تطبيق خرايط. اتنسخ المكان: $coords.';
+  }
+
+  @override
+  String lnchPhoneCopied(String phone) {
+    return 'مقدرناش نفتح تطبيق الاتصال. اتنسخ الرقم: $phone.';
+  }
+
+  @override
+  String get courCallRecipient => 'اتصل بالمستلم';
 }

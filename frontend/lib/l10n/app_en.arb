@@ -5695,5 +5695,27 @@
   "ownPlanDowngraded": "You're on the free plan now.",
   "@ownPlanDowngraded": {
     "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "lnchMapsCopied": "Couldn't open a maps app. Location copied: {coords}.",
+  "@lnchMapsCopied": {
+    "description": "FE-V2-CONSUME: no maps app opened, the coordinates were copied instead.",
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "lnchPhoneCopied": "Couldn't open the phone app. Number copied: {phone}.",
+  "@lnchPhoneCopied": {
+    "description": "FE-V2-CONSUME: the dialer did not open, the number was copied instead.",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "courCallRecipient": "Call the recipient",
+  "@courCallRecipient": {
+    "description": "FE-V2-CONSUME courier: call button on the recipient card."
   }
 }
