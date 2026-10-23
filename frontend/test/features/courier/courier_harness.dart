@@ -326,6 +326,10 @@ class RecordingCourierNav extends CourierNav {
       opened.add('notifications');
 
   @override
+  Future<void> openChat(BuildContext context, Job job) async =>
+      opened.add('chat:${job.id}');
+
+  @override
   Future<void> openSupport(BuildContext context) async => opened.add('support');
 
   @override
@@ -351,11 +355,14 @@ class CourierTestDeps {
   final FakeCourierNotifications notifications;
   final RecordingCourierNav nav;
 
+  /// The controller's clock; tests move it to cross an expiry.
+  DateTime clock = courierNow;
+
   late final CourierController controller = CourierController(
     jobsProvider: jobs,
     location: location,
     auth: auth,
-    now: () => courierNow,
+    now: () => clock,
   );
 }
 

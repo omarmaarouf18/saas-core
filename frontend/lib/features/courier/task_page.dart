@@ -6,6 +6,7 @@ import '../../models/job.dart';
 import '../../ui/qd_ui.dart';
 import 'courier_controller.dart';
 import 'courier_widgets.dart';
+import 'offer_page.dart';
 
 /// The Task tab (المهمة): the open offer when there is one (C-Offer), else
 /// the current job (A-Courier), else a waiting state that says whether the
@@ -20,7 +21,9 @@ class CourierTaskPage extends StatelessWidget {
       return const _Loading();
     }
     final offer = ctl.offer;
-    if (offer != null) return _JobSummary(job: offer);
+    if (offer != null) {
+      return CourierOfferPage(key: ValueKey('offer_${offer.id}'), job: offer);
+    }
     final current = ctl.current;
     if (current != null) return _JobSummary(job: current);
     return const _IdleView();
@@ -40,7 +43,7 @@ class _Loading extends StatelessWidget {
   }
 }
 
-/// Temporary until the offer and current-job pages land (items 3 and 4).
+/// Temporary until the current-job page lands (item 4).
 class _JobSummary extends StatelessWidget {
   const _JobSummary({required this.job});
 

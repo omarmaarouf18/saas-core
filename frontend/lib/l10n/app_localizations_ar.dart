@@ -4926,4 +4926,81 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courGoOnline => 'خلّيني متاح';
+
+  @override
+  String courKm(String km) {
+    return '$km كم';
+  }
+
+  @override
+  String get courPriceNotSet => 'لسه ما اتحددش';
+
+  @override
+  String get courPackageSmall => 'صغير';
+
+  @override
+  String get courPackageMedium => 'متوسط';
+
+  @override
+  String get courPackageLarge => 'كبير';
+
+  @override
+  String courPackage(String details) {
+    return 'الطلب: $details';
+  }
+
+  @override
+  String get courMapLabel => 'خريطة المسار ومكانك';
+
+  @override
+  String get courNoDestination => 'مكان التسليم لسه ما اتحددش';
+
+  @override
+  String get courChatTitle => 'العميل';
+
+  @override
+  String get courChatEmpty => 'رسايلك مع العميل عن الطلب ده هتظهر هنا.';
+
+  @override
+  String get courOfferSubtitle => 'مهمة جديدة ليك';
+
+  @override
+  String get courOfferTitle => 'طلب جديد';
+
+  @override
+  String get courOfferExpired => 'العرض ده خلص.';
+
+  @override
+  String courPickupFromYou(String distance) {
+    return 'استلام · $distance منك';
+  }
+
+  @override
+  String courDropoffTrip(String distance) {
+    return 'تسليم · المشوار $distance';
+  }
+
+  @override
+  String get courCashToCollect => 'هتحصّل كاش';
+
+  @override
+  String get courOrderPrice => 'سعر الطلب';
+
+  @override
+  String get courAskCustomer => 'اسأل العميل';
+
+  @override
+  String get courDecline => 'رفض';
+
+  @override
+  String get courAccept => 'قبول المهمة';
+
+  @override
+  String get courOfferAccepted => 'قبلت المهمة';
+
+  @override
+  String get courOfferDeclined => 'رفضت العرض';
+
+  @override
+  String get courOfferGone => 'العرض ده مبقاش متاح.';
 }

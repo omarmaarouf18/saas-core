@@ -8948,6 +8948,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Make me available'**
   String get courGoOnline;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String courKm(String km);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set yet'**
+  String get courPriceNotSet;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get courPackageSmall;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get courPackageMedium;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get courPackageLarge;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Package: {details}'**
+  String courPackage(String details);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Map of the route and your location'**
+  String get courMapLabel;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off not set yet'**
+  String get courNoDestination;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get courChatTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages with the customer about this order show here.'**
+  String get courChatEmpty;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'A new task for you'**
+  String get courOfferSubtitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'New order'**
+  String get courOfferTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer has ended.'**
+  String get courOfferExpired;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup · {distance} from you'**
+  String courPickupFromYou(String distance);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off · trip {distance}'**
+  String courDropoffTrip(String distance);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll collect cash'**
+  String get courCashToCollect;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order price'**
+  String get courOrderPrice;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the customer'**
+  String get courAskCustomer;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get courDecline;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept the task'**
+  String get courAccept;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Task accepted'**
+  String get courOfferAccepted;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer declined'**
+  String get courOfferDeclined;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer is no longer available.'**
+  String get courOfferGone;
 }
 
 class _AppLocalizationsDelegate

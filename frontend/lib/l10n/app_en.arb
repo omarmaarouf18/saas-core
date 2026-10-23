@@ -4247,5 +4247,117 @@
   "courGoOnline": "Make me available",
   "@courGoOnline": {
     "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKm": "{km} km",
+  "@courKm": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceNotSet": "Not set yet",
+  "@courPriceNotSet": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageSmall": "Small",
+  "@courPackageSmall": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageMedium": "Medium",
+  "@courPackageMedium": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageLarge": "Large",
+  "@courPackageLarge": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackage": "Package: {details}",
+  "@courPackage": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "courMapLabel": "Map of the route and your location",
+  "@courMapLabel": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoDestination": "Drop-off not set yet",
+  "@courNoDestination": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courChatTitle": "Customer",
+  "@courChatTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courChatEmpty": "Messages with the customer about this order show here.",
+  "@courChatEmpty": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferSubtitle": "A new task for you",
+  "@courOfferSubtitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferTitle": "New order",
+  "@courOfferTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferExpired": "This offer has ended.",
+  "@courOfferExpired": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPickupFromYou": "Pickup · {distance} from you",
+  "@courPickupFromYou": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "courDropoffTrip": "Drop-off · trip {distance}",
+  "@courDropoffTrip": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "courCashToCollect": "You'll collect cash",
+  "@courCashToCollect": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOrderPrice": "Order price",
+  "@courOrderPrice": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAskCustomer": "Ask the customer",
+  "@courAskCustomer": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courDecline": "Decline",
+  "@courDecline": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAccept": "Accept the task",
+  "@courAccept": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferAccepted": "Task accepted",
+  "@courOfferAccepted": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferDeclined": "Offer declined",
+  "@courOfferDeclined": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferGone": "This offer is no longer available.",
+  "@courOfferGone": {
+    "description": "FE-COURIER redesigned courier screens."
   }
 }

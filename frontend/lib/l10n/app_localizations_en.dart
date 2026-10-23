@@ -5000,4 +5000,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courGoOnline => 'Make me available';
+
+  @override
+  String courKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get courPriceNotSet => 'Not set yet';
+
+  @override
+  String get courPackageSmall => 'Small';
+
+  @override
+  String get courPackageMedium => 'Medium';
+
+  @override
+  String get courPackageLarge => 'Large';
+
+  @override
+  String courPackage(String details) {
+    return 'Package: $details';
+  }
+
+  @override
+  String get courMapLabel => 'Map of the route and your location';
+
+  @override
+  String get courNoDestination => 'Drop-off not set yet';
+
+  @override
+  String get courChatTitle => 'Customer';
+
+  @override
+  String get courChatEmpty =>
+      'Messages with the customer about this order show here.';
+
+  @override
+  String get courOfferSubtitle => 'A new task for you';
+
+  @override
+  String get courOfferTitle => 'New order';
+
+  @override
+  String get courOfferExpired => 'This offer has ended.';
+
+  @override
+  String courPickupFromYou(String distance) {
+    return 'Pickup · $distance from you';
+  }
+
+  @override
+  String courDropoffTrip(String distance) {
+    return 'Drop-off · trip $distance';
+  }
+
+  @override
+  String get courCashToCollect => 'You\'ll collect cash';
+
+  @override
+  String get courOrderPrice => 'Order price';
+
+  @override
+  String get courAskCustomer => 'Ask the customer';
+
+  @override
+  String get courDecline => 'Decline';
+
+  @override
+  String get courAccept => 'Accept the task';
+
+  @override
+  String get courOfferAccepted => 'Task accepted';
+
+  @override
+  String get courOfferDeclined => 'Offer declined';
+
+  @override
+  String get courOfferGone => 'This offer is no longer available.';
 }

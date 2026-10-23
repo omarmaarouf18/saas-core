@@ -60,6 +60,13 @@ class CourierController extends ChangeNotifier {
     await syncTracking();
   }
 
+  /// A fresh refresh after an action: waits for one already in flight
+  /// (it may have started before the action), then starts a new one.
+  Future<void> reload() async {
+    await _inFlight;
+    await refresh();
+  }
+
   /// Same rule as the old screen's `_refreshJobs`.
   Future<void> syncTracking() async {
     final token = auth.token;
@@ -78,6 +85,25 @@ class CourierController extends ChangeNotifier {
   Future<void> setOnline(bool online) async {
     if (activeJobLock) return;
     await location.setAvailableOnline(online, userToken: auth.token);
+  }
+
+  // --- Offer (C-Offer). Each action refetches afterwards, success or not,
+  // as the old screen did; errors are rethrown for the page's notice. ---
+
+  Future<void> accept(Job job) async {
+    try {
+      await jobsProvider.acceptJobOffer(job.id);
+    } finally {
+      await reload();
+    }
+  }
+
+  Future<void> decline(Job job) async {
+    try {
+      await jobsProvider.declineJobOffer(job.id);
+    } finally {
+      await reload();
+    }
   }
 
   @override
