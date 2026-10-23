@@ -199,4 +199,66 @@ void main() {
     await p.fetchDashboardData('owner-jwt');
     expect(p.dashboardError, isNull);
   });
+
+  // FE-OWNER-2b additions.
+  test('fetchDashboardData reads the subscription expiry', () async {
+    Object? expires = '2026-11-30T00:00:00Z';
+    installMockHttp((req) {
+      final path = req.uri.path;
+      if (path.endsWith('/users/subscription')) {
+        return MockHttpResponse(200,
+            jsonBody: {'tier': 'paid', 'expires_at': expires});
+      }
+      if (path.endsWith('/users/ledger')) {
+        return MockHttpResponse(200, jsonBody: {'entries': []});
+      }
+      return MockHttpResponse(200, jsonBody: {'total_balance': 0});
+    });
+    final p = provider();
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.subscriptionTier, 'paid');
+    expect(p.subscriptionExpiresAt, DateTime.utc(2026, 11, 30));
+
+    // Go's zero time and a missing field both mean "no expiry".
+    expires = '0001-01-01T00:00:00Z';
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.subscriptionExpiresAt, isNull);
+    expires = null;
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.subscriptionExpiresAt, isNull);
+    expires = 'garbage';
+    await p.fetchDashboardData('owner-jwt');
+    expect(p.subscriptionExpiresAt, isNull);
+  });
+
+  test('fetchPayoutRequests records its own error and keeps the list',
+      () async {
+    var fail = false;
+    installMockHttp((req) {
+      expect(req.uri.path, endsWith('/users/wallet/payout/requests'));
+      if (fail) return MockHttpResponse(500, jsonBody: {'error': 'x'});
+      return MockHttpResponse.list([
+        {
+          'id': 'p1',
+          'amount': 200,
+          'status': 'paid',
+          'payout_method': 'instapay',
+          'created_at': '2026-10-01T10:00:00Z',
+        }
+      ]);
+    });
+    final p = provider();
+    await p.fetchPayoutRequests();
+    expect(p.payoutRequestsError, isNull);
+    expect(p.payoutRequests.single.id, 'p1');
+
+    fail = true;
+    await p.fetchPayoutRequests();
+    expect(p.payoutRequestsError, isNotNull);
+    expect(p.payoutRequests.single.id, 'p1');
+
+    fail = false;
+    await p.fetchPayoutRequests();
+    expect(p.payoutRequestsError, isNull);
+  });
 }

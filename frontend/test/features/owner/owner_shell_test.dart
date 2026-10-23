@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/feature_flags.dart';
+import 'package:frontend/features/account/account_page.dart';
 import 'package:frontend/features/owner/owner_shell.dart';
+import 'package:frontend/features/verification/verification_page.dart';
 import 'package:frontend/screens/settings_screen.dart';
 
 import 'owner_harness.dart';
@@ -122,16 +124,32 @@ void main() {
       expect(find.byKey(const Key('own_cancel_request')), findsOneWidget);
     });
 
-    testWidgets('Account is the existing SettingsScreen', (tester) async {
+    testWidgets('Account is the account page with the owner rows',
+        (tester) async {
       usePhone(tester);
       final deps = deps0();
       await pumpShell(tester, deps);
-      expect(find.byType(SettingsScreen), findsNothing); // built lazily
+      expect(find.byType(AccountPage), findsNothing); // built lazily
       await tester.tap(find.descendant(
           of: find.byKey(const Key('owner_shell_nav')),
           matching: find.text('Account')));
-      await tester.pump();
-      expect(find.byType(SettingsScreen), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountPage), findsOneWidget);
+      expect(find.byType(SettingsScreen), findsNothing);
+      for (final (row, opened) in [
+        ('account_service_setup', 'service_setup'),
+        ('account_plan', 'subscription'),
+        ('account_wallet', 'wallet'),
+        ('account_activity', 'history'),
+      ]) {
+        await tester.tap(find.byKey(Key(row)));
+        await tester.pumpAndSettle();
+        expect(deps.nav.opened.last, opened, reason: row);
+      }
+      // Verification opens the shared page.
+      await tester.tap(find.byKey(const Key('account_verification')));
+      await tester.pumpAndSettle();
+      expect(find.byType(VerificationPage), findsOneWidget);
     });
 
     testWidgets('bell opens the existing notifications screen', (tester) async {

@@ -5185,5 +5185,515 @@
   "acctKyeMissing": "Not uploaded",
   "@acctKyeMissing": {
     "description": "FE-COURIER redesigned courier screens."
+  },
+  "vrfTitleOwner": "Business verification",
+  "@vrfTitleOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfTitleCourier": "ID verification",
+  "@vrfTitleCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfLoadError": "Couldn't refresh your verification status.",
+  "@vrfLoadError": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateMissingTitle": "Upload your documents",
+  "@vrfStateMissingTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateMissingOwner": "Upload all {total} documents so we can verify your business and you can start taking orders.",
+  "@vrfStateMissingOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateMissingCourier": "Upload all {total} documents so we can confirm who you are.",
+  "@vrfStateMissingCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteTitle": "{done} of {total} documents uploaded",
+  "@vrfStateIncompleteTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteBody": "Review starts once every document is uploaded.",
+  "@vrfStateIncompleteBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStatePendingTitle": "Your documents are under review",
+  "@vrfStatePendingTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStatePendingBody": "We'll let you know when the review is done. You can still replace a document.",
+  "@vrfStatePendingBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateApprovedTitle": "Verified",
+  "@vrfStateApprovedTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateApprovedBody": "Your documents were accepted. They're locked now.",
+  "@vrfStateApprovedBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateRejectedTitle": "Your documents weren't accepted",
+  "@vrfStateRejectedTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRejectedReason": "Reviewer's note: {reason}",
+  "@vrfRejectedReason": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfRejectedNoReason": "No reason was given. Contact support if you're not sure what to change.",
+  "@vrfRejectedNoReason": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRejectedHint": "Replace the documents that need fixing. They go back to review as soon as you upload one.",
+  "@vrfRejectedHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfDocsHeader": "Documents",
+  "@vrfDocsHeader": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfDocsCount": "{done} of {total} uploaded",
+  "@vrfDocsCount": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfSlotIdFront": "ID card, front",
+  "@vrfSlotIdFront": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdFrontHint": "A clear photo of the front of your national ID or passport.",
+  "@vrfSlotIdFrontHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdBack": "ID card, back",
+  "@vrfSlotIdBack": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdBackHint": "A clear photo of the back of your national ID.",
+  "@vrfSlotIdBackHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotSelfie": "Selfie with your ID",
+  "@vrfSlotSelfie": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotSelfieHint": "Hold your ID card next to your face.",
+  "@vrfSlotSelfieHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotBusiness": "Commercial register",
+  "@vrfSlotBusiness": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotBusinessHint": "Commercial register or tax card. A photo or a PDF.",
+  "@vrfSlotBusinessHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotNeeded": "Needed",
+  "@vrfSlotNeeded": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotUploaded": "Uploaded",
+  "@vrfSlotUploaded": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotInReview": "Under review",
+  "@vrfSlotInReview": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotAccepted": "Accepted",
+  "@vrfSlotAccepted": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotNotAccepted": "Not accepted",
+  "@vrfSlotNotAccepted": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotUploading": "Uploading",
+  "@vrfSlotUploading": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfOnFilePhoto": "Photo on file",
+  "@vrfOnFilePhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfOnFilePdf": "PDF on file",
+  "@vrfOnFilePdf": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfUpload": "Upload",
+  "@vrfUpload": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfReplace": "Replace",
+  "@vrfReplace": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfChooseAnother": "Choose another file",
+  "@vrfChooseAnother": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfUploadingFile": "Uploading {name}…",
+  "@vrfUploadingFile": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfUploadedNotice": "{slot} uploaded.",
+  "@vrfUploadedNotice": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSentForReview": "All documents uploaded. They're under review now.",
+  "@vrfSentForReview": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrTooLarge": "This file is {size} MB. The limit is 10 MB.",
+  "@vrfErrTooLarge": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfErrEmpty": "This file is empty. Choose another one.",
+  "@vrfErrEmpty": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrFormatPhoto": "Use a JPG or PNG photo.",
+  "@vrfErrFormatPhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrFormatDoc": "Use a JPG or PNG photo, or a PDF.",
+  "@vrfErrFormatDoc": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrNotAllowed": "This account can't upload these documents.",
+  "@vrfErrNotAllowed": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrPicker": "Couldn't open that. Try another option.",
+  "@vrfErrPicker": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrUpload": "Couldn't upload the file. Check your connection and try again.",
+  "@vrfErrUpload": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceTitle": "Add: {slot}",
+  "@vrfSourceTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSourceCamera": "Take a photo",
+  "@vrfSourceCamera": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceGallery": "Choose from photos",
+  "@vrfSourceGallery": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFile": "Choose a file",
+  "@vrfSourceFile": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFileHintPdf": "JPG, PNG or PDF, up to 10 MB",
+  "@vrfSourceFileHintPdf": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFileHintPhoto": "JPG or PNG, up to 10 MB",
+  "@vrfSourceFileHintPhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRulesOwner": "Photos must be JPG or PNG, up to 10 MB each. The commercial register can also be a PDF.",
+  "@vrfRulesOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRulesCourier": "Photos must be JPG or PNG, up to 10 MB each.",
+  "@vrfRulesCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfLocked": "Accepted documents can't be changed.",
+  "@vrfLocked": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "acctSectionBusiness": "Your business",
+  "@acctSectionBusiness": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctServiceSetup": "Service setup",
+  "@acctServiceSetup": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctPlan": "Plan",
+  "@acctPlan": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctActivityLog": "Activity log",
+  "@acctActivityLog": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "ownWalletTitle": "Wallet",
+  "@ownWalletTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletAvailable": "Available to withdraw",
+  "@ownWalletAvailable": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletTotal": "Total balance",
+  "@ownWalletTotal": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletHeld": "Held for orders",
+  "@ownWalletHeld": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletAddMoney": "Add money",
+  "@ownWalletAddMoney": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletWithdraw": "Withdraw",
+  "@ownWalletWithdraw": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletLoadError": "Couldn't load your wallet.",
+  "@ownWalletLoadError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletStale": "Couldn't refresh. These are the last balances we loaded.",
+  "@ownWalletStale": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayouts": "Withdrawals",
+  "@ownWalletPayouts": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutsEmpty": "No withdrawals yet.",
+  "@ownWalletPayoutsEmpty": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutsError": "Couldn't load your withdrawals.",
+  "@ownWalletPayoutsError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutReason": "Reason: {reason}",
+  "@ownWalletPayoutReason": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPayoutRequested": "Requested",
+  "@ownPayoutRequested": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutApproved": "Approved",
+  "@ownPayoutApproved": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutPaid": "Paid",
+  "@ownPayoutPaid": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutRejected": "Rejected",
+  "@ownPayoutRejected": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutUnknown": "Unknown status",
+  "@ownPayoutUnknown": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletRecent": "Recent money movements",
+  "@ownWalletRecent": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletSeeAll": "See all",
+  "@ownWalletSeeAll": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletRecentEmpty": "No money movements yet.",
+  "@ownWalletRecentEmpty": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanTitle": "Plan",
+  "@ownPlanTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanYours": "Your plan",
+  "@ownPlanYours": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFree": "Free",
+  "@ownPlanFree": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPaid": "Paid",
+  "@ownPlanPaid": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPending": "Under review",
+  "@ownPlanPending": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanCancelled": "Cancelled",
+  "@ownPlanCancelled": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanUnknown": "Unknown",
+  "@ownPlanUnknown": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanOpen": "Customers can find and book your business.",
+  "@ownPlanOpen": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanOpenUntil": "Customers can find and book your business. Active until {date}.",
+  "@ownPlanOpenUntil": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanExpired": "Ended on {date}. Customers can't find or book your business until it's renewed.",
+  "@ownPlanExpired": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanClosed": "Customers can't find or book your business on this plan.",
+  "@ownPlanClosed": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPendingNote": "We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.",
+  "@ownPlanPendingNote": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanIncludes": "What the paid plan includes",
+  "@ownPlanIncludes": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureListed": "Your business shows up for customers and takes bookings",
+  "@ownPlanFeatureListed": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureService": "Set up and change your service",
+  "@ownPlanFeatureService": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureTracking": "Live courier location on your orders",
+  "@ownPlanFeatureTracking": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureNoCommission": "No commission on your orders",
+  "@ownPlanFeatureNoCommission": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanChangeTitle": "Changing your plan",
+  "@ownPlanChangeTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanChangeBody": "Ask for the paid plan here. Quick Delivery reviews each request and contacts you.",
+  "@ownPlanChangeBody": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanContactSupport": "Contact support",
+  "@ownPlanContactSupport": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanLoadError": "Couldn't load your plan.",
+  "@ownPlanLoadError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanRequestUpgrade": "Request upgrade",
+  "@ownPlanRequestUpgrade": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeTitle": "Request the paid plan?",
+  "@ownPlanUpgradeTitle": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeBody": "Quick Delivery will review your request and contact you.",
+  "@ownPlanUpgradeBody": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeSend": "Send request",
+  "@ownPlanUpgradeSend": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeSent": "Request sent. Your plan is under review.",
+  "@ownPlanUpgradeSent": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngrade": "Switch to free",
+  "@ownPlanDowngrade": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeTitle": "Switch to the free plan?",
+  "@ownPlanDowngradeTitle": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeBodyPaid": "Customers won't be able to find or book your business until you're on the paid plan again.",
+  "@ownPlanDowngradeBodyPaid": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeBodyPending": "This cancels your upgrade request.",
+  "@ownPlanDowngradeBodyPending": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngraded": "You're on the free plan now.",
+  "@ownPlanDowngraded": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
   }
 }

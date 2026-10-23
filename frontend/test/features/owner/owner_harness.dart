@@ -10,6 +10,7 @@ import 'package:frontend/features/owner/owner_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
+import 'package:frontend/models/payout_request.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -297,12 +298,100 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
         withdrawableBalance = w.withdrawable;
         subscriptionTier = w.tier;
       }
+      subscriptionExpiresAt = nextExpiresAt;
       ledgerEntries = List.of(nextLedger);
       isDashboardHydrated = true;
       dashboardError = error = null;
     }
     notifyListeners();
   }
+
+  // FE-OWNER-2b: subscription expiry, withdrawals, and the money calls the
+  // read-only pages must never make.
+  @override
+  DateTime? subscriptionExpiresAt;
+
+  /// What the next successful fetchDashboardData sets as the expiry.
+  DateTime? nextExpiresAt;
+
+  @override
+  List<PayoutRequest> payoutRequests = [];
+
+  @override
+  String? payoutRequestsError;
+
+  List<PayoutRequest> nextPayouts = [];
+  String? nextPayoutsError;
+  int payoutCalls = 0;
+
+  @override
+  Future<List<PayoutRequest>> fetchPayoutRequests() async {
+    payoutCalls++;
+    if (nextPayoutsError != null) {
+      payoutRequestsError = error = nextPayoutsError;
+    } else {
+      payoutRequests = List.of(nextPayouts);
+      payoutRequestsError = error = null;
+    }
+    notifyListeners();
+    return payoutRequests;
+  }
+
+  /// Calls that move money (must stay empty).
+  final List<String> moneyCalls = [];
+
+  @override
+  Future<void> deposit(String token, double amount) async =>
+      moneyCalls.add('deposit');
+
+  @override
+  Future<PayoutRequest> requestPayout({
+    required double amount,
+    required String payoutMethod,
+    required String accountDetails,
+  }) async {
+    moneyCalls.add('requestPayout');
+    throw UnimplementedError();
+  }
+
+  /// Plan change requests (tenant token, tier), like the server: `paid`
+  /// becomes `pending_payment`, `free` applies at once.
+  final List<String> subscriptionCalls = [];
+  Object? nextSubscriptionError;
+  Completer<void>? subscriptionGate;
+
+  @override
+  Future<Map<String, dynamic>> updateSubscription({
+    required String tenantId,
+    required String tier,
+  }) async {
+    subscriptionCalls.add('$tenantId:$tier');
+    if (subscriptionGate != null) await subscriptionGate!.future;
+    final e = nextSubscriptionError;
+    if (e != null) {
+      nextSubscriptionError = null;
+      throw e;
+    }
+    subscriptionTier = tier == 'paid' ? 'pending_payment' : 'free';
+    final w = nextWallet;
+    if (w != null) {
+      nextWallet = (
+        total: w.total,
+        escrow: w.escrow,
+        withdrawable: w.withdrawable,
+        tier: subscriptionTier
+      );
+    }
+    if (tier == 'free') nextExpiresAt = null;
+    notifyListeners();
+    return tier == 'paid'
+        ? {'status': 'pending_payment', 'message': 'manual activation'}
+        : {'tier': 'free'};
+  }
+
+  @override
+  Future<void> fetchPaymentAvailability() async =>
+      moneyCalls.add('fetchPaymentAvailability');
 
   // FE-OWNER-2: services (service setup).
   @override
@@ -626,6 +715,9 @@ class RecordingOwnerNav extends OwnerNav {
 
   @override
   Future<void> openHistory(BuildContext context) async => opened.add('history');
+
+  @override
+  Future<void> openSupport(BuildContext context) async => opened.add('support');
 }
 
 class OwnerTestDeps {

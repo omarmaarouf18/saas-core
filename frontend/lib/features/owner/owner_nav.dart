@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../screens/kyc_document_upload_screen.dart';
 import '../../screens/notifications_screen.dart';
-import '../../screens/subscription_screen.dart';
-import '../../screens/wallet_screen.dart';
 import '../../ui/qd_ui.dart';
+import '../account/support/tickets_page.dart';
+import '../verification/verification_page.dart';
 import 'activity_log_page.dart';
 import 'fleet_map_page.dart';
 import 'owner_controller.dart';
+import 'plan_page.dart';
 import 'service_setup_page.dart';
+import 'wallet_page.dart';
 
 /// Navigation for the redesigned owner pages (FE-OWNER-1).
 ///
@@ -38,9 +39,8 @@ class OwnerNav {
   Future<void> openNotifications(BuildContext context) =>
       _old(context, const NotificationsScreen());
 
-  /// The existing KYB document upload screen.
-  Future<void> openKyb(BuildContext context) =>
-      _old(context, const KycDocumentUploadScreen());
+  /// Verification (KYB): the page shared with the courier app.
+  Future<void> openKyb(BuildContext context) => VerificationPage.open(context);
 
   /// Team map (O-Fleet), with [employeeId]'s courier selected if given.
   Future<void> openFleetMap(BuildContext context, {String? employeeId}) =>
@@ -51,11 +51,16 @@ class OwnerNav {
   Future<void> openServiceSetup(BuildContext context) =>
       OwnerServicePage.open(context);
 
+  /// Wallet, read-only (FE-OWNER-2b).
   Future<void> openWallet(BuildContext context) =>
-      _old(context, const WalletScreen());
+      OwnerWalletPage.open(context);
 
+  /// Plan, read-only (FE-OWNER-2b).
   Future<void> openSubscription(BuildContext context) =>
-      _old(context, const SubscriptionScreen());
+      OwnerPlanPage.open(context);
+
+  /// Support tickets (the account page's support list).
+  Future<void> openSupport(BuildContext context) => TicketsPage.open(context);
 
   /// Activity log: activity and money (replaces the old History tab).
   Future<void> openHistory(BuildContext context) =>

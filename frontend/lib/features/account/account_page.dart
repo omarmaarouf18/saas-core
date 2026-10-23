@@ -25,8 +25,17 @@ import 'security_page.dart';
 /// verification (document status, opens the upload), my details, security,
 /// language, theme, support and sign out. Saved addresses and the
 /// notifications row are customer-only (the courier shell has a bell).
+///
+/// FE-OWNER-2b: a business owner (role `owner`, with [owner] links from
+/// the owner shell) sees "Your business" first: verification (KYB status
+/// value), service setup, plan, wallet and activity log; then my details,
+/// security, language, theme, support and sign out, like the courier.
 class AccountPage extends StatefulWidget {
-  const AccountPage({super.key});
+  const AccountPage({super.key, this.owner});
+
+  /// The owner rows' destinations; the owner shell fills them in, so this
+  /// page does not depend on the owner pages.
+  final OwnerAccountLinks? owner;
 
   @override
   State<AccountPage> createState() => _AccountPageState();
@@ -135,6 +144,10 @@ class _AccountPageState extends State<AccountPage> {
       _ => l10n.acctPhoneSetting,
     };
     final isCourier = user?.role == 'employee';
+    final owner = user?.role == 'owner' ? widget.owner : null;
+    // Couriers and owners: no saved addresses, no notifications row (their
+    // shells have a bell).
+    final isCustomer = !isCourier && user?.role != 'owner';
     final themeValue = switch (themeMode) {
       ThemeMode.light => l10n.acctThemeLight,
       ThemeMode.dark => l10n.acctThemeDark,
@@ -167,6 +180,50 @@ class _AccountPageState extends State<AccountPage> {
                 const SizedBox(height: QdSpace.x3),
                 SuspendedBanner(user: user!),
               ],
+              if (owner != null) ...[
+                const SizedBox(height: QdSpace.x5),
+                QdSectionHeader(title: l10n.acctSectionBusiness, small: true),
+                const SizedBox(height: 6),
+                QdListGroup(children: [
+                  QdListTile(
+                    key: const Key('account_verification'),
+                    icon: Icons.verified_user_outlined,
+                    title: l10n.acctVerification,
+                    value: _verificationLabel(l10n, user?.effectiveKycStatus),
+                    chevron: true,
+                    onTap: () => nav.openVerification(context),
+                  ),
+                  QdListTile(
+                    key: const Key('account_service_setup'),
+                    icon: Icons.storefront_outlined,
+                    title: l10n.acctServiceSetup,
+                    chevron: true,
+                    onTap: () => owner.openServiceSetup(context),
+                  ),
+                  QdListTile(
+                    key: const Key('account_plan'),
+                    icon: Icons.workspace_premium_outlined,
+                    title: l10n.acctPlan,
+                    value: owner.planValue,
+                    chevron: true,
+                    onTap: () => owner.openPlan(context),
+                  ),
+                  QdListTile(
+                    key: const Key('account_wallet'),
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: l10n.acctWallet,
+                    chevron: true,
+                    onTap: () => owner.openWallet(context),
+                  ),
+                  QdListTile(
+                    key: const Key('account_activity'),
+                    icon: Icons.history,
+                    title: l10n.acctActivityLog,
+                    chevron: true,
+                    onTap: () => owner.openActivity(context),
+                  ),
+                ]),
+              ],
               const SizedBox(height: QdSpace.x5),
               QdSectionHeader(title: l10n.acctSectionAccount, small: true),
               const SizedBox(height: 6),
@@ -176,7 +233,7 @@ class _AccountPageState extends State<AccountPage> {
                     key: const Key('account_verification'),
                     icon: Icons.badge_outlined,
                     title: l10n.acctVerification,
-                    value: _kyeLabel(l10n, user?.kyeStatus),
+                    value: _verificationLabel(l10n, user?.kyeStatus),
                     chevron: true,
                     onTap: () => nav.openVerification(context),
                   ),
@@ -188,7 +245,7 @@ class _AccountPageState extends State<AccountPage> {
                   onTap: () =>
                       nav.push<void>(context, (_) => const MyDetailsPage()),
                 ),
-                if (!isCourier)
+                if (isCustomer)
                   QdListTile(
                     key: const Key('account_addresses'),
                     icon: Icons.location_on_outlined,
@@ -235,7 +292,7 @@ class _AccountPageState extends State<AccountPage> {
                   chevron: true,
                   onTap: _pickTheme,
                 ),
-                if (!isCourier)
+                if (isCustomer)
                   QdListTile(
                     key: const Key('account_notifications'),
                     icon: Icons.notifications_outlined,
@@ -274,8 +331,8 @@ class _AccountPageState extends State<AccountPage> {
   }
 }
 
-/// The courier's document (KYE) status as a row value.
-String _kyeLabel(AppLocalizations l10n, String? status) =>
+/// The courier's (KYE) or owner's (KYB) document status as a row value.
+String _verificationLabel(AppLocalizations l10n, String? status) =>
     switch (status?.trim().toLowerCase()) {
       'approved' => l10n.acctKyeApproved,
       'rejected' => l10n.acctKyeRejected,
@@ -348,4 +405,22 @@ class SuspendedBanner extends StatelessWidget {
           : l10n.acctSuspendedDefault,
     );
   }
+}
+
+/// Where the owner rows go (FE-OWNER-2b), and the plan row's value when
+/// it is known.
+class OwnerAccountLinks {
+  const OwnerAccountLinks({
+    required this.openServiceSetup,
+    required this.openPlan,
+    required this.openWallet,
+    required this.openActivity,
+    this.planValue,
+  });
+
+  final void Function(BuildContext) openServiceSetup;
+  final void Function(BuildContext) openPlan;
+  final void Function(BuildContext) openWallet;
+  final void Function(BuildContext) openActivity;
+  final String? planValue;
 }

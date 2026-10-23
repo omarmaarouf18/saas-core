@@ -5585,4 +5585,372 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get acctKyeMissing => 'ما اترفعتش';
+
+  @override
+  String get vrfTitleOwner => 'توثيق الشغل';
+
+  @override
+  String get vrfTitleCourier => 'توثيق الهوية';
+
+  @override
+  String get vrfLoadError => 'مقدرناش نحدّث حالة التوثيق.';
+
+  @override
+  String get vrfStateMissingTitle => 'ارفع مستنداتك';
+
+  @override
+  String vrfStateMissingOwner(int total) {
+    return 'ارفع الـ$total مستندات عشان نوثّق شغلك وتبدأ تستقبل طلبات.';
+  }
+
+  @override
+  String vrfStateMissingCourier(int total) {
+    return 'ارفع الـ$total مستندات عشان نتأكد من هويتك.';
+  }
+
+  @override
+  String vrfStateIncompleteTitle(int done, int total) {
+    return 'اترفع $done من $total مستندات';
+  }
+
+  @override
+  String get vrfStateIncompleteBody =>
+      'المراجعة بتبدأ أول ما كل المستندات تترفع.';
+
+  @override
+  String get vrfStatePendingTitle => 'مستنداتك بتتراجع';
+
+  @override
+  String get vrfStatePendingBody =>
+      'هنبلغك لما المراجعة تخلص. لسه تقدر تغيّر أي مستند.';
+
+  @override
+  String get vrfStateApprovedTitle => 'اتوثّقت';
+
+  @override
+  String get vrfStateApprovedBody => 'مستنداتك اتقبلت، ومقفولة دلوقتي.';
+
+  @override
+  String get vrfStateRejectedTitle => 'مستنداتك ما اتقبلتش';
+
+  @override
+  String vrfRejectedReason(String reason) {
+    return 'ملاحظة المراجع: $reason';
+  }
+
+  @override
+  String get vrfRejectedNoReason =>
+      'مفيش سبب مكتوب. كلّم الدعم لو مش متأكد تغيّر إيه.';
+
+  @override
+  String get vrfRejectedHint =>
+      'غيّر المستندات اللي محتاجة تتصلح. بترجع للمراجعة أول ما ترفع واحد.';
+
+  @override
+  String get vrfDocsHeader => 'المستندات';
+
+  @override
+  String vrfDocsCount(int done, int total) {
+    return 'اترفع $done من $total';
+  }
+
+  @override
+  String get vrfSlotIdFront => 'البطاقة، الوش';
+
+  @override
+  String get vrfSlotIdFrontHint => 'صورة واضحة لوش البطاقة أو الباسبور.';
+
+  @override
+  String get vrfSlotIdBack => 'البطاقة، الضهر';
+
+  @override
+  String get vrfSlotIdBackHint => 'صورة واضحة لضهر البطاقة.';
+
+  @override
+  String get vrfSlotSelfie => 'سيلفي بالبطاقة';
+
+  @override
+  String get vrfSlotSelfieHint => 'امسك البطاقة جنب وشك.';
+
+  @override
+  String get vrfSlotBusiness => 'السجل التجاري';
+
+  @override
+  String get vrfSlotBusinessHint =>
+      'السجل التجاري أو البطاقة الضريبية. صورة أو PDF.';
+
+  @override
+  String get vrfSlotNeeded => 'مطلوب';
+
+  @override
+  String get vrfSlotUploaded => 'اترفع';
+
+  @override
+  String get vrfSlotInReview => 'بيتراجع';
+
+  @override
+  String get vrfSlotAccepted => 'اتقبل';
+
+  @override
+  String get vrfSlotNotAccepted => 'ما اتقبلش';
+
+  @override
+  String get vrfSlotUploading => 'بيترفع';
+
+  @override
+  String get vrfOnFilePhoto => 'فيه صورة مترفوعة';
+
+  @override
+  String get vrfOnFilePdf => 'فيه PDF مترفوع';
+
+  @override
+  String get vrfUpload => 'ارفع';
+
+  @override
+  String get vrfReplace => 'غيّر';
+
+  @override
+  String get vrfChooseAnother => 'اختار ملف تاني';
+
+  @override
+  String vrfUploadingFile(String name) {
+    return 'بنرفع $name…';
+  }
+
+  @override
+  String vrfUploadedNotice(String slot) {
+    return 'اترفع: $slot.';
+  }
+
+  @override
+  String get vrfSentForReview => 'كل المستندات اترفعت، وبتتراجع دلوقتي.';
+
+  @override
+  String vrfErrTooLarge(String size) {
+    return 'الملف ده $size ميجا. الحد 10 ميجا.';
+  }
+
+  @override
+  String get vrfErrEmpty => 'الملف ده فاضي. اختار ملف تاني.';
+
+  @override
+  String get vrfErrFormatPhoto => 'استخدم صورة JPG أو PNG.';
+
+  @override
+  String get vrfErrFormatDoc => 'استخدم صورة JPG أو PNG، أو ملف PDF.';
+
+  @override
+  String get vrfErrNotAllowed => 'الحساب ده مينفعش يرفع المستندات دي.';
+
+  @override
+  String get vrfErrPicker => 'مقدرناش نفتحه. جرّب اختيار تاني.';
+
+  @override
+  String get vrfErrUpload => 'مقدرناش نرفع الملف. اتأكد من النت وجرّب تاني.';
+
+  @override
+  String vrfSourceTitle(String slot) {
+    return 'إضافة: $slot';
+  }
+
+  @override
+  String get vrfSourceCamera => 'صوّر';
+
+  @override
+  String get vrfSourceGallery => 'اختار من الصور';
+
+  @override
+  String get vrfSourceFile => 'اختار ملف';
+
+  @override
+  String get vrfSourceFileHintPdf => 'JPG أو PNG أو PDF، لحد 10 ميجا';
+
+  @override
+  String get vrfSourceFileHintPhoto => 'JPG أو PNG، لحد 10 ميجا';
+
+  @override
+  String get vrfRulesOwner =>
+      'الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة. السجل التجاري ممكن يكون PDF كمان.';
+
+  @override
+  String get vrfRulesCourier =>
+      'الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة.';
+
+  @override
+  String get vrfLocked => 'المستندات المقبولة مينفعش تتغيّر.';
+
+  @override
+  String get acctSectionBusiness => 'شغلك';
+
+  @override
+  String get acctServiceSetup => 'إعداد الخدمة';
+
+  @override
+  String get acctPlan => 'الباقة';
+
+  @override
+  String get acctActivityLog => 'سجل النشاط';
+
+  @override
+  String get ownWalletTitle => 'المحفظة';
+
+  @override
+  String get ownWalletAvailable => 'متاح للسحب';
+
+  @override
+  String get ownWalletTotal => 'الرصيد الكلي';
+
+  @override
+  String get ownWalletHeld => 'محجوز للطلبات';
+
+  @override
+  String get ownWalletAddMoney => 'اشحن';
+
+  @override
+  String get ownWalletWithdraw => 'اسحب';
+
+  @override
+  String get ownWalletLoadError => 'مقدرناش نحمّل المحفظة.';
+
+  @override
+  String get ownWalletStale => 'مقدرناش نحدّث. دي آخر أرصدة اتحمّلت.';
+
+  @override
+  String get ownWalletPayouts => 'السحوبات';
+
+  @override
+  String get ownWalletPayoutsEmpty => 'مفيش سحوبات لسه.';
+
+  @override
+  String get ownWalletPayoutsError => 'مقدرناش نحمّل السحوبات.';
+
+  @override
+  String ownWalletPayoutReason(String reason) {
+    return 'السبب: $reason';
+  }
+
+  @override
+  String get ownPayoutRequested => 'اتطلب';
+
+  @override
+  String get ownPayoutApproved => 'اتوافق عليه';
+
+  @override
+  String get ownPayoutPaid => 'اتدفع';
+
+  @override
+  String get ownPayoutRejected => 'اترفض';
+
+  @override
+  String get ownPayoutUnknown => 'حالة مش معروفة';
+
+  @override
+  String get ownWalletRecent => 'آخر حركات الفلوس';
+
+  @override
+  String get ownWalletSeeAll => 'شوف الكل';
+
+  @override
+  String get ownWalletRecentEmpty => 'مفيش حركات فلوس لسه.';
+
+  @override
+  String get ownPlanTitle => 'الباقة';
+
+  @override
+  String get ownPlanYours => 'باقتك';
+
+  @override
+  String get ownPlanFree => 'مجانية';
+
+  @override
+  String get ownPlanPaid => 'مدفوعة';
+
+  @override
+  String get ownPlanPending => 'بتتراجع';
+
+  @override
+  String get ownPlanCancelled => 'ملغية';
+
+  @override
+  String get ownPlanUnknown => 'مش معروفة';
+
+  @override
+  String get ownPlanOpen => 'العملاء يقدروا يلاقوا شغلك ويحجزوا.';
+
+  @override
+  String ownPlanOpenUntil(String date) {
+    return 'العملاء يقدروا يلاقوا شغلك ويحجزوا. شغالة لحد $date.';
+  }
+
+  @override
+  String ownPlanExpired(String date) {
+    return 'خلصت يوم $date. العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا لحد ما تتجدد.';
+  }
+
+  @override
+  String get ownPlanClosed =>
+      'العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا وانت على الباقة دي.';
+
+  @override
+  String get ownPlanPendingNote =>
+      'طلب الترقية وصلنا. Quick Delivery هتكلمك عشان تفعّل الباقة المدفوعة.';
+
+  @override
+  String get ownPlanIncludes => 'الباقة المدفوعة فيها إيه';
+
+  @override
+  String get ownPlanFeatureListed => 'شغلك بيظهر للعملاء وبيستقبل حجوزات';
+
+  @override
+  String get ownPlanFeatureService => 'تجهّز خدمتك وتغيّر فيها';
+
+  @override
+  String get ownPlanFeatureTracking => 'مكان المندوب مباشر على طلباتك';
+
+  @override
+  String get ownPlanFeatureNoCommission => 'من غير عمولة على طلباتك';
+
+  @override
+  String get ownPlanChangeTitle => 'تغيير الباقة';
+
+  @override
+  String get ownPlanChangeBody =>
+      'اطلب الباقة المدفوعة من هنا. Quick Delivery بتراجع كل طلب وبتكلمك.';
+
+  @override
+  String get ownPlanContactSupport => 'كلّم الدعم';
+
+  @override
+  String get ownPlanLoadError => 'مقدرناش نحمّل الباقة.';
+
+  @override
+  String get ownPlanRequestUpgrade => 'اطلب الترقية';
+
+  @override
+  String get ownPlanUpgradeTitle => 'تطلب الباقة المدفوعة؟';
+
+  @override
+  String get ownPlanUpgradeBody => 'Quick Delivery هتراجع طلبك وتكلمك.';
+
+  @override
+  String get ownPlanUpgradeSend => 'ابعت الطلب';
+
+  @override
+  String get ownPlanUpgradeSent => 'الطلب اتبعت. باقتك بتتراجع.';
+
+  @override
+  String get ownPlanDowngrade => 'حوّل للمجانية';
+
+  @override
+  String get ownPlanDowngradeTitle => 'تحوّل للباقة المجانية؟';
+
+  @override
+  String get ownPlanDowngradeBodyPaid =>
+      'العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا لحد ما ترجع للباقة المدفوعة.';
+
+  @override
+  String get ownPlanDowngradeBodyPending => 'ده هيلغي طلب الترقية.';
+
+  @override
+  String get ownPlanDowngraded => 'انت دلوقتي على الباقة المجانية.';
 }
