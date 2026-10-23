@@ -35,6 +35,7 @@ import 'owner_configuration_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
 import '../features/auth/auth_nav.dart';
+import '../features/courier/courier_shell.dart';
 import '../features/customer/customer_shell.dart';
 import '../features/owner/owner_shell.dart';
 import 'owner_reconciliation_queue_screen.dart';
@@ -216,7 +217,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (user.role == 'employee') {
-      return EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex);
+      // FE-COURIER: redesigned courier shell behind QD_REDESIGN_COURIER.
+      return courierRootScreen(
+        initialIndex: widget.initialTabIndex,
+        legacy: () =>
+            EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex),
+      );
     }
     if (user.role == 'user') {
       // FE-CUST-1: redesigned customer shell behind QD_REDESIGN_CUSTOMER.

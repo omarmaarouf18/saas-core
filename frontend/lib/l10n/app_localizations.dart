@@ -9302,6 +9302,816 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Money out, {amount}'**
   String ownLogMoneyOut(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get courNavTask;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'My jobs'**
+  String get courNavJobs;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get courNavAccount;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your documents so your account can be verified.'**
+  String get courKyeMissing;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents are waiting for review.'**
+  String get courKyePending;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were not accepted: {reason}'**
+  String courKyeRejected(String reason);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were not accepted. Upload them again.'**
+  String get courKyeRejectedNoReason;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload documents'**
+  String get courKyeUpload;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'View documents'**
+  String get courKyeView;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload again'**
+  String get courKyeReupload;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t take orders right now'**
+  String get courBlockedTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was suspended, so no orders will reach you.'**
+  String get courBlockedSuspended;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.'**
+  String get courBlockedPaused;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get courBlockedReason;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to your company owner, or contact support if you think this is a mistake.'**
+  String get courBlockedWhat;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get courBlockedCheck;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your jobs.'**
+  String get courLoadError;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get courRefresh;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No task right now'**
+  String get courIdleOnlineTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re available. New orders show up here.'**
+  String get courIdleOnlineBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re not available'**
+  String get courIdleOfflineTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on availability to get new orders.'**
+  String get courIdleOfflineBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Make me available'**
+  String get courGoOnline;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String courKm(String km);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set yet'**
+  String get courPriceNotSet;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get courPackageSmall;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get courPackageMedium;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get courPackageLarge;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Package: {details}'**
+  String courPackage(String details);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Map of the route and your location'**
+  String get courMapLabel;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off not set yet'**
+  String get courNoDestination;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get courChatTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages with the customer about this order show here.'**
+  String get courChatEmpty;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'A new task for you'**
+  String get courOfferSubtitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'New order'**
+  String get courOfferTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer has ended.'**
+  String get courOfferExpired;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup · {distance} from you'**
+  String courPickupFromYou(String distance);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off · trip {distance}'**
+  String courDropoffTrip(String distance);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll collect cash'**
+  String get courCashToCollect;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order price'**
+  String get courOrderPrice;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the customer'**
+  String get courAskCustomer;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get courDecline;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept the task'**
+  String get courAccept;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Task accepted'**
+  String get courOfferAccepted;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer declined'**
+  String get courOfferDeclined;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer is no longer available.'**
+  String get courOfferGone;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup recorded. Head to the drop-off.'**
+  String get courPickedUpDone;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This order is already marked as picked up.'**
+  String get courPickupAlready;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer assigned to you.'**
+  String get courNotYours;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order delivered. Well done!'**
+  String get courDelivered;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent to your company owner.'**
+  String get courCancelSent;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Location copied: {coords}. Paste it into your maps app.'**
+  String courCoordsCopied(String coords);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your running tasks'**
+  String get courOtherJobsTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You have 1 more running task.} other{You have {count} more running tasks.}}'**
+  String courOtherJobs(int count);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get courOtherJobsShow;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I picked up the order'**
+  String get courPickedUp;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered, collected {amount}'**
+  String courDeliveredCollected(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered and collected the cash'**
+  String get courDeliveredCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get courDeliveredPlain;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in maps'**
+  String get courOpenInMaps;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Current task'**
+  String get courCurrentTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You asked to cancel. Waiting for your company owner.'**
+  String get courCancelPending;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your company owner said no to cancelling. The task is still yours.'**
+  String get courCancelRejected;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t finish? Request cancellation'**
+  String get courRequestCancel;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate: about {minutes} min to the pickup'**
+  String courEtaPickup(int minutes);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate: about {minutes} min to the drop-off'**
+  String courEtaDropoff(int minutes);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Agreeing on the price'**
+  String get courPhasePrice;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Going to pickup'**
+  String get courPhaseToPickup;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Picked up'**
+  String get courPhasePickedUp;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get courPhaseActive;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer sees your location'**
+  String get courSharingLive;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is off'**
+  String get courSharingOff;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Location isn\'t updating'**
+  String get courSharingFailing;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning on location…'**
+  String get courSharingStarting;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location'**
+  String get courPermissionTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer and your company can\'t see where you are until you allow location.'**
+  String get courPermissionBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get courOpenSettings;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Number copied: {phone}. Paste it into your phone app to call.'**
+  String courPhoneCopied(String phone);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Will pay {amount} cash'**
+  String courWillPayCash(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order price {amount}'**
+  String courOrderPriceValue(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the phone number'**
+  String get courCopyPhone;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with the customer'**
+  String get courChatWithCustomer;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes: {notes}'**
+  String courRecipientNotes(String notes);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the amount you collected, like 42.'**
+  String get courAmountInvalid;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you deliver the order?'**
+  String get courCompleteTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm you handed it over and collected {amount} cash.'**
+  String courCompleteCod(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm you handed it over and collected the cash.'**
+  String get courCompleteCodNoPrice;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm you handed the order over.'**
+  String get courCompleteNonCod;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'I collected a different amount'**
+  String get courCompleteDifferent;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount collected'**
+  String get courCompleteAmountLabel;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'In Egyptian pounds'**
+  String get courCompleteAmountHelp;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I collected {amount}'**
+  String courCompleteConfirmAmount(String amount);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I collected the cash'**
+  String get courCompleteConfirmCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I delivered it'**
+  String get courCompleteConfirm;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get courNotYet;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your company sees the amount you confirm.'**
+  String get courCompleteNote;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Request cancellation'**
+  String get courCancelTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your company owner decides. Until they answer, the task stays yours.'**
+  String get courCancelBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get courCancelSend;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the task'**
+  String get courCancelKeep;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept {price}?'**
+  String courPriceAcceptTitle(String price);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip starts right away at this price.'**
+  String get courPriceAcceptBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price sent. Waiting for the customer.'**
+  String get courProposalSent;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price accepted. The trip has started.'**
+  String get courPriceAccepted;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Price declined.'**
+  String get courPriceDeclined;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer offers {price}'**
+  String courPriceCustomerTitle(String price);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The suggested price was {price}.'**
+  String courPriceWas(String price);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You offered {price}'**
+  String courPriceMineTitle(String price);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the customer\'s answer.'**
+  String get courPriceMineBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose your price'**
+  String get courPriceProposeTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The suggested price is {price}. You can send one offer; the customer accepts or declines it.'**
+  String courPriceProposeBody(String price);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the price to be agreed'**
+  String get courPriceWaitingTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price'**
+  String get courPriceProposeLabel;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Between {min} and {max}'**
+  String courPriceBounds(String min, String max);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The price offer ran out of time.'**
+  String get courPriceExpired;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Available for tasks'**
+  String get courAvailableOn;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get courAvailableOff;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We send your location to your company every minute.'**
+  String get courAvailableOnBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t get new orders.'**
+  String get courAvailableOffBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked while a task is in progress.'**
+  String get courAvailableLocked;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks finished today'**
+  String get courTodayDone;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash today, at order price'**
+  String get courTodayCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash is the price of today\'s delivered cash orders; your company sees the amount you confirmed.'**
+  String get courTodayCashNote;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Older orders have no finish time, so they count by the day they were created.'**
+  String get courTodayByCreation;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get courFinishedHeader;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'To {place}'**
+  String courToPlace(String place);
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get courPayCash;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished tasks yet'**
+  String get courNoFinishedTitle;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks you deliver, and ones that get cancelled, show up here.'**
+  String get courNoFinishedBody;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No agreement on the price'**
+  String get courReasonPriceDisagreement;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification'**
+  String get acctVerification;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get acctKyeApproved;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get acctKyePending;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get acctKyeRejected;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not uploaded'**
+  String get acctKyeMissing;
 }
 
 class _AppLocalizationsDelegate

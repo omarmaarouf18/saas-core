@@ -20,6 +20,11 @@ import 'security_page.dart';
 /// saved addresses, 2FA (security), language (phone / English / Arabic),
 /// theme (light / dark / phone), support tickets, notifications and sign
 /// out.
+///
+/// FE-COURIER: a courier (role `employee`) sees the courier rows instead:
+/// verification (document status, opens the upload), my details, security,
+/// language, theme, support and sign out. Saved addresses and the
+/// notifications row are customer-only (the courier shell has a bell).
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -129,6 +134,7 @@ class _AccountPageState extends State<AccountPage> {
       'en' => l10n.acctLangEnglish,
       _ => l10n.acctPhoneSetting,
     };
+    final isCourier = user?.role == 'employee';
     final themeValue = switch (themeMode) {
       ThemeMode.light => l10n.acctThemeLight,
       ThemeMode.dark => l10n.acctThemeDark,
@@ -165,6 +171,15 @@ class _AccountPageState extends State<AccountPage> {
               QdSectionHeader(title: l10n.acctSectionAccount, small: true),
               const SizedBox(height: 6),
               QdListGroup(children: [
+                if (isCourier)
+                  QdListTile(
+                    key: const Key('account_verification'),
+                    icon: Icons.badge_outlined,
+                    title: l10n.acctVerification,
+                    value: _kyeLabel(l10n, user?.kyeStatus),
+                    chevron: true,
+                    onTap: () => nav.openVerification(context),
+                  ),
                 QdListTile(
                   key: const Key('account_details'),
                   icon: Icons.person_outline,
@@ -173,15 +188,16 @@ class _AccountPageState extends State<AccountPage> {
                   onTap: () =>
                       nav.push<void>(context, (_) => const MyDetailsPage()),
                 ),
-                QdListTile(
-                  key: const Key('account_addresses'),
-                  icon: Icons.location_on_outlined,
-                  title: l10n.acctSavedAddresses,
-                  value: '${user?.frequentAddresses?.length ?? 0}',
-                  chevron: true,
-                  onTap: () => nav.push<void>(
-                      context, (_) => const SavedAddressesPage()),
-                ),
+                if (!isCourier)
+                  QdListTile(
+                    key: const Key('account_addresses'),
+                    icon: Icons.location_on_outlined,
+                    title: l10n.acctSavedAddresses,
+                    value: '${user?.frequentAddresses?.length ?? 0}',
+                    chevron: true,
+                    onTap: () => nav.push<void>(
+                        context, (_) => const SavedAddressesPage()),
+                  ),
                 QdListTile(
                   key: const Key('account_security'),
                   icon: Icons.lock_outline,
@@ -219,13 +235,14 @@ class _AccountPageState extends State<AccountPage> {
                   chevron: true,
                   onTap: _pickTheme,
                 ),
-                QdListTile(
-                  key: const Key('account_notifications'),
-                  icon: Icons.notifications_outlined,
-                  title: l10n.acctNotifications,
-                  chevron: true,
-                  onTap: () => nav.openNotifications(context),
-                ),
+                if (!isCourier)
+                  QdListTile(
+                    key: const Key('account_notifications'),
+                    icon: Icons.notifications_outlined,
+                    title: l10n.acctNotifications,
+                    chevron: true,
+                    onTap: () => nav.openNotifications(context),
+                  ),
               ]),
               const SizedBox(height: 18),
               QdSectionHeader(title: l10n.acctSectionSupport, small: true),
@@ -256,6 +273,15 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 }
+
+/// The courier's document (KYE) status as a row value.
+String _kyeLabel(AppLocalizations l10n, String? status) =>
+    switch (status?.trim().toLowerCase()) {
+      'approved' => l10n.acctKyeApproved,
+      'rejected' => l10n.acctKyeRejected,
+      null || '' => l10n.acctKyeMissing,
+      _ => l10n.acctKyePending,
+    };
 
 class _Header extends StatelessWidget {
   const _Header({required this.user});

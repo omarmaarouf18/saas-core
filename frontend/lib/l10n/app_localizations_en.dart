@@ -5197,4 +5197,477 @@ class AppLocalizationsEn extends AppLocalizations {
   String ownLogMoneyOut(String amount) {
     return 'Money out, $amount';
   }
+
+  @override
+  String get courNavTask => 'Task';
+
+  @override
+  String get courNavJobs => 'My jobs';
+
+  @override
+  String get courNavAccount => 'Account';
+
+  @override
+  String get courKyeMissing =>
+      'Upload your documents so your account can be verified.';
+
+  @override
+  String get courKyePending => 'Your documents are waiting for review.';
+
+  @override
+  String courKyeRejected(String reason) {
+    return 'Your documents were not accepted: $reason';
+  }
+
+  @override
+  String get courKyeRejectedNoReason =>
+      'Your documents were not accepted. Upload them again.';
+
+  @override
+  String get courKyeUpload => 'Upload documents';
+
+  @override
+  String get courKyeView => 'View documents';
+
+  @override
+  String get courKyeReupload => 'Upload again';
+
+  @override
+  String get courBlockedTitle => 'You can\'t take orders right now';
+
+  @override
+  String get courBlockedSuspended =>
+      'Your account was suspended, so no orders will reach you.';
+
+  @override
+  String get courBlockedPaused =>
+      'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.';
+
+  @override
+  String get courBlockedReason => 'Reason';
+
+  @override
+  String get courBlockedWhat =>
+      'Talk to your company owner, or contact support if you think this is a mistake.';
+
+  @override
+  String get courBlockedCheck => 'Check again';
+
+  @override
+  String get courLoadError => 'Couldn\'t load your jobs.';
+
+  @override
+  String get courRefresh => 'Refresh';
+
+  @override
+  String get courIdleOnlineTitle => 'No task right now';
+
+  @override
+  String get courIdleOnlineBody =>
+      'You\'re available. New orders show up here.';
+
+  @override
+  String get courIdleOfflineTitle => 'You\'re not available';
+
+  @override
+  String get courIdleOfflineBody => 'Turn on availability to get new orders.';
+
+  @override
+  String get courGoOnline => 'Make me available';
+
+  @override
+  String courKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get courPriceNotSet => 'Not set yet';
+
+  @override
+  String get courPackageSmall => 'Small';
+
+  @override
+  String get courPackageMedium => 'Medium';
+
+  @override
+  String get courPackageLarge => 'Large';
+
+  @override
+  String courPackage(String details) {
+    return 'Package: $details';
+  }
+
+  @override
+  String get courMapLabel => 'Map of the route and your location';
+
+  @override
+  String get courNoDestination => 'Drop-off not set yet';
+
+  @override
+  String get courChatTitle => 'Customer';
+
+  @override
+  String get courChatEmpty =>
+      'Messages with the customer about this order show here.';
+
+  @override
+  String get courOfferSubtitle => 'A new task for you';
+
+  @override
+  String get courOfferTitle => 'New order';
+
+  @override
+  String get courOfferExpired => 'This offer has ended.';
+
+  @override
+  String courPickupFromYou(String distance) {
+    return 'Pickup · $distance from you';
+  }
+
+  @override
+  String courDropoffTrip(String distance) {
+    return 'Drop-off · trip $distance';
+  }
+
+  @override
+  String get courCashToCollect => 'You\'ll collect cash';
+
+  @override
+  String get courOrderPrice => 'Order price';
+
+  @override
+  String get courAskCustomer => 'Ask the customer';
+
+  @override
+  String get courDecline => 'Decline';
+
+  @override
+  String get courAccept => 'Accept the task';
+
+  @override
+  String get courOfferAccepted => 'Task accepted';
+
+  @override
+  String get courOfferDeclined => 'Offer declined';
+
+  @override
+  String get courOfferGone => 'This offer is no longer available.';
+
+  @override
+  String get courPickedUpDone => 'Pickup recorded. Head to the drop-off.';
+
+  @override
+  String get courPickupAlready => 'This order is already marked as picked up.';
+
+  @override
+  String get courNotYours => 'This order is no longer assigned to you.';
+
+  @override
+  String get courDelivered => 'Order delivered. Well done!';
+
+  @override
+  String get courCancelSent => 'Request sent to your company owner.';
+
+  @override
+  String courCoordsCopied(String coords) {
+    return 'Location copied: $coords. Paste it into your maps app.';
+  }
+
+  @override
+  String get courOtherJobsTitle => 'Your running tasks';
+
+  @override
+  String courOtherJobs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have $count more running tasks.',
+      one: 'You have 1 more running task.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get courOtherJobsShow => 'Show';
+
+  @override
+  String get courPickedUp => 'I picked up the order';
+
+  @override
+  String courDeliveredCollected(String amount) {
+    return 'Delivered, collected $amount';
+  }
+
+  @override
+  String get courDeliveredCash => 'Delivered and collected the cash';
+
+  @override
+  String get courDeliveredPlain => 'Delivered';
+
+  @override
+  String get courOpenInMaps => 'Open in maps';
+
+  @override
+  String get courCurrentTitle => 'Current task';
+
+  @override
+  String get courCancelPending =>
+      'You asked to cancel. Waiting for your company owner.';
+
+  @override
+  String get courCancelRejected =>
+      'Your company owner said no to cancelling. The task is still yours.';
+
+  @override
+  String get courRequestCancel => 'Can\'t finish? Request cancellation';
+
+  @override
+  String courEtaPickup(int minutes) {
+    return 'Estimate: about $minutes min to the pickup';
+  }
+
+  @override
+  String courEtaDropoff(int minutes) {
+    return 'Estimate: about $minutes min to the drop-off';
+  }
+
+  @override
+  String get courPhasePrice => 'Agreeing on the price';
+
+  @override
+  String get courPhaseToPickup => 'Going to pickup';
+
+  @override
+  String get courPhasePickedUp => 'Picked up';
+
+  @override
+  String get courPhaseActive => 'In progress';
+
+  @override
+  String get courSharingLive => 'Customer sees your location';
+
+  @override
+  String get courSharingOff => 'Location is off';
+
+  @override
+  String get courSharingFailing => 'Location isn\'t updating';
+
+  @override
+  String get courSharingStarting => 'Turning on location…';
+
+  @override
+  String get courPermissionTitle => 'Turn on location';
+
+  @override
+  String get courPermissionBody =>
+      'The customer and your company can\'t see where you are until you allow location.';
+
+  @override
+  String get courOpenSettings => 'Open settings';
+
+  @override
+  String courPhoneCopied(String phone) {
+    return 'Number copied: $phone. Paste it into your phone app to call.';
+  }
+
+  @override
+  String courWillPayCash(String amount) {
+    return 'Will pay $amount cash';
+  }
+
+  @override
+  String courOrderPriceValue(String amount) {
+    return 'Order price $amount';
+  }
+
+  @override
+  String get courCopyPhone => 'Copy the phone number';
+
+  @override
+  String get courChatWithCustomer => 'Chat with the customer';
+
+  @override
+  String courRecipientNotes(String notes) {
+    return 'Notes: $notes';
+  }
+
+  @override
+  String get courAmountInvalid => 'Enter the amount you collected, like 42.';
+
+  @override
+  String get courCompleteTitle => 'Did you deliver the order?';
+
+  @override
+  String courCompleteCod(String amount) {
+    return 'Confirm you handed it over and collected $amount cash.';
+  }
+
+  @override
+  String get courCompleteCodNoPrice =>
+      'Confirm you handed it over and collected the cash.';
+
+  @override
+  String get courCompleteNonCod => 'Confirm you handed the order over.';
+
+  @override
+  String get courCompleteDifferent => 'I collected a different amount';
+
+  @override
+  String get courCompleteAmountLabel => 'Amount collected';
+
+  @override
+  String get courCompleteAmountHelp => 'In Egyptian pounds';
+
+  @override
+  String courCompleteConfirmAmount(String amount) {
+    return 'Yes, I collected $amount';
+  }
+
+  @override
+  String get courCompleteConfirmCash => 'Yes, I collected the cash';
+
+  @override
+  String get courCompleteConfirm => 'Yes, I delivered it';
+
+  @override
+  String get courNotYet => 'Not yet';
+
+  @override
+  String get courCompleteNote => 'Your company sees the amount you confirm.';
+
+  @override
+  String get courCancelTitle => 'Request cancellation';
+
+  @override
+  String get courCancelBody =>
+      'Your company owner decides. Until they answer, the task stays yours.';
+
+  @override
+  String get courCancelSend => 'Send request';
+
+  @override
+  String get courCancelKeep => 'Keep the task';
+
+  @override
+  String courPriceAcceptTitle(String price) {
+    return 'Accept $price?';
+  }
+
+  @override
+  String get courPriceAcceptBody => 'The trip starts right away at this price.';
+
+  @override
+  String get courProposalSent => 'Price sent. Waiting for the customer.';
+
+  @override
+  String get courPriceAccepted => 'Price accepted. The trip has started.';
+
+  @override
+  String get courPriceDeclined => 'Price declined.';
+
+  @override
+  String courPriceCustomerTitle(String price) {
+    return 'The customer offers $price';
+  }
+
+  @override
+  String courPriceWas(String price) {
+    return 'The suggested price was $price.';
+  }
+
+  @override
+  String courPriceMineTitle(String price) {
+    return 'You offered $price';
+  }
+
+  @override
+  String get courPriceMineBody => 'Waiting for the customer\'s answer.';
+
+  @override
+  String get courPriceProposeTitle => 'Propose your price';
+
+  @override
+  String courPriceProposeBody(String price) {
+    return 'The suggested price is $price. You can send one offer; the customer accepts or declines it.';
+  }
+
+  @override
+  String get courPriceWaitingTitle => 'Waiting for the price to be agreed';
+
+  @override
+  String get courPriceProposeLabel => 'Your price';
+
+  @override
+  String courPriceBounds(String min, String max) {
+    return 'Between $min and $max';
+  }
+
+  @override
+  String get courPriceExpired => 'The price offer ran out of time.';
+
+  @override
+  String get courAvailableOn => 'Available for tasks';
+
+  @override
+  String get courAvailableOff => 'Not available';
+
+  @override
+  String get courAvailableOnBody =>
+      'We send your location to your company every minute.';
+
+  @override
+  String get courAvailableOffBody => 'You won\'t get new orders.';
+
+  @override
+  String get courAvailableLocked => 'Locked while a task is in progress.';
+
+  @override
+  String get courTodayDone => 'Tasks finished today';
+
+  @override
+  String get courTodayCash => 'Cash today, at order price';
+
+  @override
+  String get courTodayCashNote =>
+      'Cash is the price of today\'s delivered cash orders; your company sees the amount you confirmed.';
+
+  @override
+  String get courTodayByCreation =>
+      'Older orders have no finish time, so they count by the day they were created.';
+
+  @override
+  String get courFinishedHeader => 'Finished';
+
+  @override
+  String courToPlace(String place) {
+    return 'To $place';
+  }
+
+  @override
+  String get courPayCash => 'Cash';
+
+  @override
+  String get courNoFinishedTitle => 'No finished tasks yet';
+
+  @override
+  String get courNoFinishedBody =>
+      'Tasks you deliver, and ones that get cancelled, show up here.';
+
+  @override
+  String get courReasonPriceDisagreement => 'No agreement on the price';
+
+  @override
+  String get acctVerification => 'Verification';
+
+  @override
+  String get acctKyeApproved => 'Verified';
+
+  @override
+  String get acctKyePending => 'Under review';
+
+  @override
+  String get acctKyeRejected => 'Not accepted';
+
+  @override
+  String get acctKyeMissing => 'Not uploaded';
 }

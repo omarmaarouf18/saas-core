@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../screens/kyc_document_upload_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../auth/auth_nav.dart';
 import 'notifications/notifications_page.dart';
@@ -21,6 +22,11 @@ class AccountNav {
       NotificationsPage.open(context);
 
   Future<void> openSupport(BuildContext context) => TicketsPage.open(context);
+
+  /// Courier verification (KYE): the existing document upload screen.
+  Future<void> openVerification(BuildContext context) =>
+      Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const KycDocumentUploadScreen()));
 
   /// Same steps as utils/logout_helper.dart: stop the notification stream,
   /// revoke the session, then the signed-out start screen (flag-selected).

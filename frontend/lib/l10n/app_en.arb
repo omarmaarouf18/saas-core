@@ -4527,5 +4527,663 @@
         "type": "String"
       }
     }
+  },
+  "courNavTask": "Task",
+  "@courNavTask": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNavJobs": "My jobs",
+  "@courNavJobs": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNavAccount": "Account",
+  "@courNavAccount": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeMissing": "Upload your documents so your account can be verified.",
+  "@courKyeMissing": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyePending": "Your documents are waiting for review.",
+  "@courKyePending": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeRejected": "Your documents were not accepted: {reason}",
+  "@courKyeRejected": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "courKyeRejectedNoReason": "Your documents were not accepted. Upload them again.",
+  "@courKyeRejectedNoReason": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeUpload": "Upload documents",
+  "@courKyeUpload": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeView": "View documents",
+  "@courKyeView": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKyeReupload": "Upload again",
+  "@courKyeReupload": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedTitle": "You can't take orders right now",
+  "@courBlockedTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedSuspended": "Your account was suspended, so no orders will reach you.",
+  "@courBlockedSuspended": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedPaused": "Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.",
+  "@courBlockedPaused": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedReason": "Reason",
+  "@courBlockedReason": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedWhat": "Talk to your company owner, or contact support if you think this is a mistake.",
+  "@courBlockedWhat": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courBlockedCheck": "Check again",
+  "@courBlockedCheck": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courLoadError": "Couldn't load your jobs.",
+  "@courLoadError": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courRefresh": "Refresh",
+  "@courRefresh": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOnlineTitle": "No task right now",
+  "@courIdleOnlineTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOnlineBody": "You're available. New orders show up here.",
+  "@courIdleOnlineBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOfflineTitle": "You're not available",
+  "@courIdleOfflineTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courIdleOfflineBody": "Turn on availability to get new orders.",
+  "@courIdleOfflineBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courGoOnline": "Make me available",
+  "@courGoOnline": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courKm": "{km} km",
+  "@courKm": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceNotSet": "Not set yet",
+  "@courPriceNotSet": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageSmall": "Small",
+  "@courPackageSmall": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageMedium": "Medium",
+  "@courPackageMedium": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackageLarge": "Large",
+  "@courPackageLarge": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPackage": "Package: {details}",
+  "@courPackage": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "courMapLabel": "Map of the route and your location",
+  "@courMapLabel": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoDestination": "Drop-off not set yet",
+  "@courNoDestination": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courChatTitle": "Customer",
+  "@courChatTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courChatEmpty": "Messages with the customer about this order show here.",
+  "@courChatEmpty": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferSubtitle": "A new task for you",
+  "@courOfferSubtitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferTitle": "New order",
+  "@courOfferTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferExpired": "This offer has ended.",
+  "@courOfferExpired": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPickupFromYou": "Pickup · {distance} from you",
+  "@courPickupFromYou": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "courDropoffTrip": "Drop-off · trip {distance}",
+  "@courDropoffTrip": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "courCashToCollect": "You'll collect cash",
+  "@courCashToCollect": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOrderPrice": "Order price",
+  "@courOrderPrice": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAskCustomer": "Ask the customer",
+  "@courAskCustomer": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courDecline": "Decline",
+  "@courDecline": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAccept": "Accept the task",
+  "@courAccept": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferAccepted": "Task accepted",
+  "@courOfferAccepted": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferDeclined": "Offer declined",
+  "@courOfferDeclined": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOfferGone": "This offer is no longer available.",
+  "@courOfferGone": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPickedUpDone": "Pickup recorded. Head to the drop-off.",
+  "@courPickedUpDone": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPickupAlready": "This order is already marked as picked up.",
+  "@courPickupAlready": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNotYours": "This order is no longer assigned to you.",
+  "@courNotYours": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courDelivered": "Order delivered. Well done!",
+  "@courDelivered": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelSent": "Request sent to your company owner.",
+  "@courCancelSent": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCoordsCopied": "Location copied: {coords}. Paste it into your maps app.",
+  "@courCoordsCopied": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "courOtherJobsTitle": "Your running tasks",
+  "@courOtherJobsTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOtherJobs": "{count, plural, =1{You have 1 more running task.} other{You have {count} more running tasks.}}",
+  "@courOtherJobs": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courOtherJobsShow": "Show",
+  "@courOtherJobsShow": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPickedUp": "I picked up the order",
+  "@courPickedUp": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courDeliveredCollected": "Delivered, collected {amount}",
+  "@courDeliveredCollected": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courDeliveredCash": "Delivered and collected the cash",
+  "@courDeliveredCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courDeliveredPlain": "Delivered",
+  "@courDeliveredPlain": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOpenInMaps": "Open in maps",
+  "@courOpenInMaps": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCurrentTitle": "Current task",
+  "@courCurrentTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelPending": "You asked to cancel. Waiting for your company owner.",
+  "@courCancelPending": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelRejected": "Your company owner said no to cancelling. The task is still yours.",
+  "@courCancelRejected": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courRequestCancel": "Can't finish? Request cancellation",
+  "@courRequestCancel": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courEtaPickup": "Estimate: about {minutes} min to the pickup",
+  "@courEtaPickup": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "courEtaDropoff": "Estimate: about {minutes} min to the drop-off",
+  "@courEtaDropoff": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "courPhasePrice": "Agreeing on the price",
+  "@courPhasePrice": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPhaseToPickup": "Going to pickup",
+  "@courPhaseToPickup": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPhasePickedUp": "Picked up",
+  "@courPhasePickedUp": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPhaseActive": "In progress",
+  "@courPhaseActive": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courSharingLive": "Customer sees your location",
+  "@courSharingLive": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courSharingOff": "Location is off",
+  "@courSharingOff": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courSharingFailing": "Location isn't updating",
+  "@courSharingFailing": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courSharingStarting": "Turning on location…",
+  "@courSharingStarting": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPermissionTitle": "Turn on location",
+  "@courPermissionTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPermissionBody": "The customer and your company can't see where you are until you allow location.",
+  "@courPermissionBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courOpenSettings": "Open settings",
+  "@courOpenSettings": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPhoneCopied": "Number copied: {phone}. Paste it into your phone app to call.",
+  "@courPhoneCopied": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "courWillPayCash": "Will pay {amount} cash",
+  "@courWillPayCash": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courOrderPriceValue": "Order price {amount}",
+  "@courOrderPriceValue": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courCopyPhone": "Copy the phone number",
+  "@courCopyPhone": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courChatWithCustomer": "Chat with the customer",
+  "@courChatWithCustomer": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courRecipientNotes": "Notes: {notes}",
+  "@courRecipientNotes": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "notes": {
+        "type": "String"
+      }
+    }
+  },
+  "courAmountInvalid": "Enter the amount you collected, like 42.",
+  "@courAmountInvalid": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteTitle": "Did you deliver the order?",
+  "@courCompleteTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteCod": "Confirm you handed it over and collected {amount} cash.",
+  "@courCompleteCod": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courCompleteCodNoPrice": "Confirm you handed it over and collected the cash.",
+  "@courCompleteCodNoPrice": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteNonCod": "Confirm you handed the order over.",
+  "@courCompleteNonCod": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteDifferent": "I collected a different amount",
+  "@courCompleteDifferent": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteAmountLabel": "Amount collected",
+  "@courCompleteAmountLabel": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteAmountHelp": "In Egyptian pounds",
+  "@courCompleteAmountHelp": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteConfirmAmount": "Yes, I collected {amount}",
+  "@courCompleteConfirmAmount": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courCompleteConfirmCash": "Yes, I collected the cash",
+  "@courCompleteConfirmCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteConfirm": "Yes, I delivered it",
+  "@courCompleteConfirm": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNotYet": "Not yet",
+  "@courNotYet": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCompleteNote": "Your company sees the amount you confirm.",
+  "@courCompleteNote": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelTitle": "Request cancellation",
+  "@courCancelTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelBody": "Your company owner decides. Until they answer, the task stays yours.",
+  "@courCancelBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelSend": "Send request",
+  "@courCancelSend": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courCancelKeep": "Keep the task",
+  "@courCancelKeep": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceAcceptTitle": "Accept {price}?",
+  "@courPriceAcceptTitle": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceAcceptBody": "The trip starts right away at this price.",
+  "@courPriceAcceptBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courProposalSent": "Price sent. Waiting for the customer.",
+  "@courProposalSent": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceAccepted": "Price accepted. The trip has started.",
+  "@courPriceAccepted": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceDeclined": "Price declined.",
+  "@courPriceDeclined": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceCustomerTitle": "The customer offers {price}",
+  "@courPriceCustomerTitle": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceWas": "The suggested price was {price}.",
+  "@courPriceWas": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceMineTitle": "You offered {price}",
+  "@courPriceMineTitle": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceMineBody": "Waiting for the customer's answer.",
+  "@courPriceMineBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceProposeTitle": "Propose your price",
+  "@courPriceProposeTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceProposeBody": "The suggested price is {price}. You can send one offer; the customer accepts or declines it.",
+  "@courPriceProposeBody": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceWaitingTitle": "Waiting for the price to be agreed",
+  "@courPriceWaitingTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceProposeLabel": "Your price",
+  "@courPriceProposeLabel": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courPriceBounds": "Between {min} and {max}",
+  "@courPriceBounds": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "courPriceExpired": "The price offer ran out of time.",
+  "@courPriceExpired": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOn": "Available for tasks",
+  "@courAvailableOn": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOff": "Not available",
+  "@courAvailableOff": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOnBody": "We send your location to your company every minute.",
+  "@courAvailableOnBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableOffBody": "You won't get new orders.",
+  "@courAvailableOffBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courAvailableLocked": "Locked while a task is in progress.",
+  "@courAvailableLocked": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayDone": "Tasks finished today",
+  "@courTodayDone": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayCash": "Cash today, at order price",
+  "@courTodayCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayCashNote": "Cash is the price of today's delivered cash orders; your company sees the amount you confirmed.",
+  "@courTodayCashNote": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courTodayByCreation": "Older orders have no finish time, so they count by the day they were created.",
+  "@courTodayByCreation": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courFinishedHeader": "Finished",
+  "@courFinishedHeader": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courToPlace": "To {place}",
+  "@courToPlace": {
+    "description": "FE-COURIER redesigned courier screens.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "courPayCash": "Cash",
+  "@courPayCash": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoFinishedTitle": "No finished tasks yet",
+  "@courNoFinishedTitle": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courNoFinishedBody": "Tasks you deliver, and ones that get cancelled, show up here.",
+  "@courNoFinishedBody": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "courReasonPriceDisagreement": "No agreement on the price",
+  "@courReasonPriceDisagreement": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctVerification": "Verification",
+  "@acctVerification": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeApproved": "Verified",
+  "@acctKyeApproved": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyePending": "Under review",
+  "@acctKyePending": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeRejected": "Not accepted",
+  "@acctKyeRejected": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeMissing": "Not uploaded",
+  "@acctKyeMissing": {
+    "description": "FE-COURIER redesigned courier screens."
   }
 }

@@ -33,6 +33,11 @@ class RecordingAccountNav extends AccountNav {
 
   @override
   Future<void> openSupport(BuildContext context) async => support++;
+
+  int verification = 0;
+
+  @override
+  Future<void> openVerification(BuildContext context) async => verification++;
 }
 
 class AccountTestDeps extends AuthTestDeps {
