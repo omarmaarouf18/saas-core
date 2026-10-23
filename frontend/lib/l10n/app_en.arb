@@ -5843,5 +5843,125 @@
   "bookFixFields": "Check the highlighted fields.",
   "@bookFixFields": {
     "description": "FE-V2-CONSUME booking: banner when a field has an error."
+  },
+  "tlPickedUp": "The courier picked up the order",
+  "@tlPickedUp": {
+    "description": "FE-V2-CONSUME timeline: picked-up step (delivery, shipping)."
+  },
+  "tlPickedUpRide": "The driver picked you up",
+  "@tlPickedUpRide": {
+    "description": "FE-V2-CONSUME timeline: picked-up step (rides)."
+  },
+  "tlPickedUpRideOwner": "The driver picked up the passenger",
+  "@tlPickedUpRideOwner": {
+    "description": "FE-V2-CONSUME owner timeline: picked-up step (rides)."
+  },
+  "tlArrived": "Arrived",
+  "@tlArrived": {
+    "description": "FE-V2-CONSUME timeline: last step for rides."
+  },
+  "tlCancelled": "Cancelled",
+  "@tlCancelled": {
+    "description": "FE-V2-CONSUME timeline: cancelled step."
+  },
+  "tlUnavailable": "No courier was free",
+  "@tlUnavailable": {
+    "description": "FE-V2-CONSUME timeline: unavailable step."
+  },
+  "tlOwnRequested": "Customer ordered",
+  "@tlOwnRequested": {
+    "description": "FE-V2-CONSUME owner timeline: first step."
+  },
+  "tlOwnAccepted": "{name} accepted",
+  "@tlOwnAccepted": {
+    "description": "FE-V2-CONSUME owner timeline: accepted step with the courier's name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "phaseToPickup": "The courier is on the way to pick up your order",
+  "@phaseToPickup": {
+    "description": "FE-V2-CONSUME customer: sub_status heading_to_pickup (delivery, shipping)."
+  },
+  "phaseToPickupRide": "The driver is on the way to pick you up",
+  "@phaseToPickupRide": {
+    "description": "FE-V2-CONSUME customer: sub_status heading_to_pickup (rides)."
+  },
+  "phasePickedUp": "On the way to you",
+  "@phasePickedUp": {
+    "description": "FE-V2-CONSUME customer: sub_status picked_up (delivery, shipping)."
+  },
+  "phasePickedUpRide": "On the way to your destination",
+  "@phasePickedUpRide": {
+    "description": "FE-V2-CONSUME customer: sub_status picked_up (rides)."
+  },
+  "phaseChipToPickup": "Going to pickup",
+  "@phaseChipToPickup": {
+    "description": "FE-V2-CONSUME owner: sub_status chip heading_to_pickup."
+  },
+  "phaseChipToPickupRide": "Going to passenger",
+  "@phaseChipToPickupRide": {
+    "description": "FE-V2-CONSUME owner: sub_status chip heading_to_pickup (rides)."
+  },
+  "phaseChipPickedUp": "Picked up",
+  "@phaseChipPickedUp": {
+    "description": "FE-V2-CONSUME owner: sub_status chip picked_up."
+  },
+  "phaseChipPickedUpRide": "Passenger on board",
+  "@phaseChipPickedUpRide": {
+    "description": "FE-V2-CONSUME owner: sub_status chip picked_up (rides)."
+  },
+  "etaAround": "Arrives around {time}",
+  "@etaAround": {
+    "description": "FE-V2-CONSUME: ETA to the drop-off.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "etaPickupAround": "At the pickup around {time}",
+  "@etaPickupAround": {
+    "description": "FE-V2-CONSUME: ETA to the pickup.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "etaPickupAroundRide": "Picks you up around {time}",
+  "@etaPickupAroundRide": {
+    "description": "FE-V2-CONSUME: ETA to the passenger (rides).",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "etaSoon": "Should arrive any minute",
+  "@etaSoon": {
+    "description": "FE-V2-CONSUME: ETA already passed, to the drop-off."
+  },
+  "etaPickupSoon": "Should reach the pickup any minute",
+  "@etaPickupSoon": {
+    "description": "FE-V2-CONSUME: ETA already passed, to the pickup."
+  },
+  "ordRecipient": "Recipient",
+  "@ordRecipient": {
+    "description": "FE-V2-CONSUME order: recipient row label."
+  },
+  "ordPassenger": "Passenger",
+  "@ordPassenger": {
+    "description": "FE-V2-CONSUME order: recipient row label (rides)."
+  },
+  "ordPackage": "Package",
+  "@ordPackage": {
+    "description": "FE-V2-CONSUME order: package row label."
+  },
+  "ordCallCourier": "Call the courier",
+  "@ordCallCourier": {
+    "description": "FE-V2-CONSUME customer: call button on the courier card."
   }
 }

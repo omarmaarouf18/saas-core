@@ -7,11 +7,12 @@ import '../../../providers/marketplace_provider.dart';
 import '../../../ui/qd_ui.dart';
 import '../chat/chat_page.dart';
 import '../customer_format.dart';
+import 'job_v2_sections.dart';
 import 'order_controller.dart';
 
 /// Sections shared by the order detail views (FE-CUST-2). One widget per
-/// section, so fields the API does not have yet (ETA, recipient, vehicle,
-/// per-status times; JOB-MODEL-V2) slot in without touching the views.
+/// section; the job model v2 fields (FE-V2-CONSUME: recipient, package,
+/// address text, courier phone) render inside them when present.
 
 /// Common body of every view: optional fixed [top] (the tracking map),
 /// then a pull-to-refresh list with the stale-data banner first, then an
@@ -185,7 +186,9 @@ enum OrderPriceMode {
   paid,
 }
 
-/// Pickup, drop-off and the price (A-Searching / A-Track details card).
+/// Pickup, drop-off (address text, then the landmark note), the recipient
+/// and package when given, and the price (A-Searching / A-Track details
+/// card).
 class OrderRouteCard extends StatelessWidget {
   const OrderRouteCard({
     super.key,
@@ -210,11 +213,16 @@ class OrderRouteCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           QdRouteLines(
-            pickup: jobPlaceLabel(l10n, job.location),
-            dropoff: jobPlaceLabel(l10n, job.destination),
+            pickup: jobPlaceLabel(l10n, job.location, withNote: true),
+            dropoff: jobPlaceLabel(l10n, job.destination, withNote: true),
             pickupCaption: l10n.ordPickupFrom,
             dropoffCaption: l10n.ordDeliverTo,
           ),
+          if (JobRecipientPackageRows.hasAny(job)) ...[
+            const SizedBox(height: QdSpace.x3),
+            Container(height: 1, color: c.border),
+            JobRecipientPackageRows(job: job, ride: orderIsRide(context, job)),
+          ],
           if (showPrice) ...[
             const SizedBox(height: QdSpace.x3),
             Container(height: 1, color: c.border),
@@ -268,7 +276,8 @@ class OrderPriceRow extends StatelessWidget {
 }
 
 /// The courier (or the one looking at the offer) with the in-app chat,
-/// the only courier contact the API offers.
+/// and a call button when the server sends `courier_phone` (only from
+/// acceptance until the job ends, ADR-0028 §2.6).
 class OrderCourierCard extends StatelessWidget {
   const OrderCourierCard({
     super.key,
@@ -276,6 +285,7 @@ class OrderCourierCard extends StatelessWidget {
     required this.onChat,
     this.name,
     this.subtitle,
+    this.phone,
   });
 
   /// Main line ("<name> is looking at your order").
@@ -285,6 +295,9 @@ class OrderCourierCard extends StatelessWidget {
   final String? name;
   final String? subtitle;
   final VoidCallback onChat;
+
+  /// The courier's phone; null hides the call button.
+  final String? phone;
 
   @override
   Widget build(BuildContext context) {
@@ -314,6 +327,17 @@ class OrderCourierCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: QdSpace.x2),
+          if (phone != null) ...[
+            QdIconButton(
+              key: const Key('ord_call'),
+              icon: Icons.phone_outlined,
+              label: l10n.ordCallCourier,
+              round: true,
+              onPressed: () => callPhone(context, phone!,
+                  notice: (m) => showOrderNotice(context, m)),
+            ),
+            const SizedBox(width: QdSpace.x1),
+          ],
           QdIconButton(
             key: const Key('ord_chat'),
             icon: Icons.chat_bubble_outline,
@@ -333,6 +357,14 @@ String? orderCompanyName(BuildContext context, Job job) {
   final services = context.watch<MarketplaceProvider>().services;
   final name = serviceOfJob(job, services)?.name.trim() ?? '';
   return name.isEmpty ? null : name;
+}
+
+/// Whether [job] is a ride (wording: driver / passenger), when its service
+/// is already loaded; delivery wording otherwise.
+bool orderIsRide(BuildContext context, Job job) {
+  final services = context.watch<MarketplaceProvider>().services;
+  return serviceOfJob(job, services)?.category.trim().toLowerCase() ==
+      'transport';
 }
 
 /// Shows a short notice, with an optional retry, like the old screens'

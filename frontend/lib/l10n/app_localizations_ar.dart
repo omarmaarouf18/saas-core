@@ -6058,4 +6058,87 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get bookFixFields => 'راجع الخانات اللي عليها علامة.';
+
+  @override
+  String get tlPickedUp => 'المندوب استلم الطلب';
+
+  @override
+  String get tlPickedUpRide => 'السواق ركّبك';
+
+  @override
+  String get tlPickedUpRideOwner => 'السواق ركّب الراكب';
+
+  @override
+  String get tlArrived => 'وصل';
+
+  @override
+  String get tlCancelled => 'اتلغى';
+
+  @override
+  String get tlUnavailable => 'مكانش في مندوب فاضي';
+
+  @override
+  String get tlOwnRequested => 'العميل طلب';
+
+  @override
+  String tlOwnAccepted(String name) {
+    return '$name قبل الطلب';
+  }
+
+  @override
+  String get phaseToPickup => 'المندوب في الطريق يستلم طلبك';
+
+  @override
+  String get phaseToPickupRide => 'السواق في الطريق ليك';
+
+  @override
+  String get phasePickedUp => 'في الطريق ليك';
+
+  @override
+  String get phasePickedUpRide => 'في الطريق لوجهتك';
+
+  @override
+  String get phaseChipToPickup => 'رايح يستلم';
+
+  @override
+  String get phaseChipToPickupRide => 'رايح للراكب';
+
+  @override
+  String get phaseChipPickedUp => 'استلم الطلب';
+
+  @override
+  String get phaseChipPickedUpRide => 'الراكب ركب';
+
+  @override
+  String etaAround(String time) {
+    return 'هيوصل حوالي $time';
+  }
+
+  @override
+  String etaPickupAround(String time) {
+    return 'عند مكان الاستلام حوالي $time';
+  }
+
+  @override
+  String etaPickupAroundRide(String time) {
+    return 'هيوصلك حوالي $time';
+  }
+
+  @override
+  String get etaSoon => 'هيوصل في أي لحظة';
+
+  @override
+  String get etaPickupSoon => 'هيوصل لمكان الاستلام في أي لحظة';
+
+  @override
+  String get ordRecipient => 'المستلم';
+
+  @override
+  String get ordPassenger => 'الراكب';
+
+  @override
+  String get ordPackage => 'الشحنة';
+
+  @override
+  String get ordCallCourier => 'اتصل بالمندوب';
 }

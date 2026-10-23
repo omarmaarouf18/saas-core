@@ -25,8 +25,13 @@ import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/ui/qd_launch.dart';
 import 'package:frontend/ui/tokens.dart';
 import 'package:provider/provider.dart';
+
+import '../../helpers/fake_launcher.dart';
+
+export '../../helpers/fake_launcher.dart';
 
 /// Shared fakes and pump helpers for the FE-CUST-1 page tests.
 
@@ -576,7 +581,9 @@ class CustomerTestDeps {
     RecordingNav? nav,
     FakeChat? chat,
     FakeMapTracking? map,
+    FakeLauncher? launcher,
   })  : chat = chat ?? FakeChat(),
+        launcher = launcher ?? FakeLauncher(),
         map = map ?? FakeMapTracking(),
         auth = auth ?? FakeAuth(),
         marketplace = marketplace ?? FakeMarketplace(),
@@ -591,6 +598,7 @@ class CustomerTestDeps {
   final RecordingNav nav;
   final FakeChat chat;
   final FakeMapTracking map;
+  final FakeLauncher launcher;
 }
 
 /// The app around a customer page: real app theme (so [CustomerTheme] is
@@ -621,15 +629,18 @@ Widget customerApp(
         locator: deps.locator,
         child: CustomerNavScope(
           nav: deps.nav,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: quickDeliveryTheme,
-            darkTheme: quickDeliveryDarkTheme,
-            themeMode: themeMode,
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: wrapTheme ? CustomerTheme(child: home) : home,
+          child: QdLauncherScope(
+            launcher: deps.launcher,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: quickDeliveryTheme,
+              darkTheme: quickDeliveryDarkTheme,
+              themeMode: themeMode,
+              locale: locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: wrapTheme ? CustomerTheme(child: home) : home,
+            ),
           ),
         ),
       ),

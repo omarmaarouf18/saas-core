@@ -10970,6 +10970,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check the highlighted fields.'**
   String get bookFixFields;
+
+  /// FE-V2-CONSUME timeline: picked-up step (delivery, shipping).
+  ///
+  /// In en, this message translates to:
+  /// **'The courier picked up the order'**
+  String get tlPickedUp;
+
+  /// FE-V2-CONSUME timeline: picked-up step (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'The driver picked you up'**
+  String get tlPickedUpRide;
+
+  /// FE-V2-CONSUME owner timeline: picked-up step (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'The driver picked up the passenger'**
+  String get tlPickedUpRideOwner;
+
+  /// FE-V2-CONSUME timeline: last step for rides.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived'**
+  String get tlArrived;
+
+  /// FE-V2-CONSUME timeline: cancelled step.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get tlCancelled;
+
+  /// FE-V2-CONSUME timeline: unavailable step.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier was free'**
+  String get tlUnavailable;
+
+  /// FE-V2-CONSUME owner timeline: first step.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer ordered'**
+  String get tlOwnRequested;
+
+  /// FE-V2-CONSUME owner timeline: accepted step with the courier's name.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted'**
+  String tlOwnAccepted(String name);
+
+  /// FE-V2-CONSUME customer: sub_status heading_to_pickup (delivery, shipping).
+  ///
+  /// In en, this message translates to:
+  /// **'The courier is on the way to pick up your order'**
+  String get phaseToPickup;
+
+  /// FE-V2-CONSUME customer: sub_status heading_to_pickup (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'The driver is on the way to pick you up'**
+  String get phaseToPickupRide;
+
+  /// FE-V2-CONSUME customer: sub_status picked_up (delivery, shipping).
+  ///
+  /// In en, this message translates to:
+  /// **'On the way to you'**
+  String get phasePickedUp;
+
+  /// FE-V2-CONSUME customer: sub_status picked_up (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'On the way to your destination'**
+  String get phasePickedUpRide;
+
+  /// FE-V2-CONSUME owner: sub_status chip heading_to_pickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Going to pickup'**
+  String get phaseChipToPickup;
+
+  /// FE-V2-CONSUME owner: sub_status chip heading_to_pickup (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'Going to passenger'**
+  String get phaseChipToPickupRide;
+
+  /// FE-V2-CONSUME owner: sub_status chip picked_up.
+  ///
+  /// In en, this message translates to:
+  /// **'Picked up'**
+  String get phaseChipPickedUp;
+
+  /// FE-V2-CONSUME owner: sub_status chip picked_up (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger on board'**
+  String get phaseChipPickedUpRide;
+
+  /// FE-V2-CONSUME: ETA to the drop-off.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrives around {time}'**
+  String etaAround(String time);
+
+  /// FE-V2-CONSUME: ETA to the pickup.
+  ///
+  /// In en, this message translates to:
+  /// **'At the pickup around {time}'**
+  String etaPickupAround(String time);
+
+  /// FE-V2-CONSUME: ETA to the passenger (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'Picks you up around {time}'**
+  String etaPickupAroundRide(String time);
+
+  /// FE-V2-CONSUME: ETA already passed, to the drop-off.
+  ///
+  /// In en, this message translates to:
+  /// **'Should arrive any minute'**
+  String get etaSoon;
+
+  /// FE-V2-CONSUME: ETA already passed, to the pickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Should reach the pickup any minute'**
+  String get etaPickupSoon;
+
+  /// FE-V2-CONSUME order: recipient row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get ordRecipient;
+
+  /// FE-V2-CONSUME order: recipient row label (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger'**
+  String get ordPassenger;
+
+  /// FE-V2-CONSUME order: package row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Package'**
+  String get ordPackage;
+
+  /// FE-V2-CONSUME customer: call button on the courier card.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the courier'**
+  String get ordCallCourier;
 }
 
 class _AppLocalizationsDelegate

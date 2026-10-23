@@ -6153,4 +6153,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookFixFields => 'Check the highlighted fields.';
+
+  @override
+  String get tlPickedUp => 'The courier picked up the order';
+
+  @override
+  String get tlPickedUpRide => 'The driver picked you up';
+
+  @override
+  String get tlPickedUpRideOwner => 'The driver picked up the passenger';
+
+  @override
+  String get tlArrived => 'Arrived';
+
+  @override
+  String get tlCancelled => 'Cancelled';
+
+  @override
+  String get tlUnavailable => 'No courier was free';
+
+  @override
+  String get tlOwnRequested => 'Customer ordered';
+
+  @override
+  String tlOwnAccepted(String name) {
+    return '$name accepted';
+  }
+
+  @override
+  String get phaseToPickup => 'The courier is on the way to pick up your order';
+
+  @override
+  String get phaseToPickupRide => 'The driver is on the way to pick you up';
+
+  @override
+  String get phasePickedUp => 'On the way to you';
+
+  @override
+  String get phasePickedUpRide => 'On the way to your destination';
+
+  @override
+  String get phaseChipToPickup => 'Going to pickup';
+
+  @override
+  String get phaseChipToPickupRide => 'Going to passenger';
+
+  @override
+  String get phaseChipPickedUp => 'Picked up';
+
+  @override
+  String get phaseChipPickedUpRide => 'Passenger on board';
+
+  @override
+  String etaAround(String time) {
+    return 'Arrives around $time';
+  }
+
+  @override
+  String etaPickupAround(String time) {
+    return 'At the pickup around $time';
+  }
+
+  @override
+  String etaPickupAroundRide(String time) {
+    return 'Picks you up around $time';
+  }
+
+  @override
+  String get etaSoon => 'Should arrive any minute';
+
+  @override
+  String get etaPickupSoon => 'Should reach the pickup any minute';
+
+  @override
+  String get ordRecipient => 'Recipient';
+
+  @override
+  String get ordPassenger => 'Passenger';
+
+  @override
+  String get ordPackage => 'Package';
+
+  @override
+  String get ordCallCourier => 'Call the courier';
 }

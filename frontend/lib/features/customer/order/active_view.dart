@@ -6,13 +6,17 @@ import '../../../models/job.dart';
 import '../../../ui/qd_ui.dart';
 import '../../account/support/new_complaint_sheet.dart';
 import '../customer_format.dart';
+import 'job_v2_sections.dart';
 import 'order_controller.dart';
 import 'order_sections.dart';
 import 'track_map.dart';
 
-/// active / assigned (A-Track): the live map on top, then the courier with
-/// chat, the steps we can know, the route and price, and "open a
-/// complaint" (the FE-AUTH-ACCOUNT complaint sheet, this order preselected).
+/// active / assigned (A-Track): the live map on top, then the phase ("on
+/// the way to you") and ETA when the job has them, the courier with chat
+/// and a call button while the server shares the phone, the timeline
+/// (from `status_history`; legacy jobs keep the created-at-only steps),
+/// the route, recipient, package and price, and "open a complaint" (the
+/// FE-AUTH-ACCOUNT complaint sheet, this order preselected).
 class OrderActiveView extends StatefulWidget {
   const OrderActiveView({super.key, required this.job});
 
@@ -48,6 +52,10 @@ class _OrderActiveViewState extends State<OrderActiveView> {
     final job = widget.job;
     final ctl = context.watch<OrderController>();
     final name = ctl.courierName;
+    final now = ctl.now();
+    final ride = orderIsRide(context, job);
+    final phase = jobPhaseText(l10n, job, ride: ride);
+    final eta = jobEtaText(context, job, now: now, ride: ride);
     return OrderLayout(
       key: const Key('ord_view_active'),
       onRefresh: _refresh,
@@ -58,22 +66,32 @@ class _OrderActiveViewState extends State<OrderActiveView> {
         const SizedBox(height: QdSpace.x2),
         Semantics(
           header: true,
-          child: Text(l10n.ordActiveTitle,
+          child: Text(phase ?? l10n.ordActiveTitle,
+              key: const Key('ord_phase'),
               style: QdText.header.copyWith(color: c.textPrimary)),
         ),
         const SizedBox(height: 2),
-        Text(l10n.ordActiveSub,
-            style: QdText.secondary.copyWith(color: c.textSecondary)),
+        Text(eta ?? l10n.ordActiveSub,
+            key: eta == null ? null : const Key('ord_eta'),
+            style: eta == null
+                ? QdText.secondary.copyWith(color: c.textSecondary)
+                : QdText.bodyStrong.copyWith(color: c.textPrimary)),
         const SizedBox(height: QdSpace.x4),
         OrderCourierCard(
           key: const Key('ord_courier'),
           name: name,
           title: name ?? l10n.ordCourierFallback,
           subtitle: orderCompanyName(context, job),
+          phone: job.courierPhone,
           onChat: () => openCourierChat(context, job),
         ),
         const SizedBox(height: QdSpace.x5),
-        OrderTimeline(job: job, courierName: name, now: ctl.now()),
+        jobHistoryTimeline(context, job,
+                key: const Key('ord_timeline'),
+                now: now,
+                ride: ride,
+                courierName: name) ??
+            OrderTimeline(job: job, courierName: name, now: now),
         const SizedBox(height: QdSpace.x5),
         OrderRouteCard(job: job, priceMode: OrderPriceMode.toPay),
         const SizedBox(height: QdSpace.x2),
@@ -91,9 +109,10 @@ class _OrderActiveViewState extends State<OrderActiveView> {
   }
 }
 
-/// The steps the API lets us know (no per-status times except
-/// `created_at`, no picked-up step): ordered → courier accepted → on the
-/// way → delivered. `assigned` (client alias) stops at "accepted".
+/// Legacy timeline, for jobs without `status_history` (no per-status
+/// times except `created_at`, no picked-up step): ordered → courier
+/// accepted → on the way → delivered. `assigned` (client alias) stops at
+/// "accepted".
 class OrderTimeline extends StatelessWidget {
   const OrderTimeline({
     super.key,

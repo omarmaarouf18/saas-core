@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../ui/qd_ui.dart';
+import 'job_v2_sections.dart';
 import 'order_controller.dart';
 import 'order_sections.dart';
 import 'rating_page.dart';
 
-/// completed: what was paid, the route, and a rate button until the
-/// customer rated (then a thank-you line), as in the old screen.
+/// completed: what was paid, the timeline when the job has a history, the
+/// route, and a rate button until the customer rated (then a thank-you
+/// line), as in the old screen.
 class OrderCompletedView extends StatelessWidget {
   const OrderCompletedView({super.key, required this.job});
 
@@ -66,6 +68,15 @@ class OrderCompletedView extends StatelessWidget {
               ),
             ],
           ),
+        ],
+        if (jobHistoryTimeline(context, job,
+                key: const Key('ord_timeline'),
+                now: ctl.now(),
+                ride: orderIsRide(context, job),
+                courierName: name)
+            case final timeline?) ...[
+          const SizedBox(height: QdSpace.x5),
+          timeline,
         ],
         const SizedBox(height: QdSpace.x5),
         OrderRouteCard(job: job, priceMode: OrderPriceMode.paid),

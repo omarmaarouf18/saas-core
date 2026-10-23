@@ -11,14 +11,19 @@ import 'customer_location.dart';
 /// never shown: a place without a typed note is "Pinned location" (or "Your
 /// current location" when it came from the device).
 
-/// Label for a job's pickup / drop-off: [JobLocation.addressSummary], except
-/// that its coordinate fallback becomes the localized "Pinned location".
-String jobPlaceLabel(AppLocalizations l10n, JobLocation? location) {
+/// Label for a job's pickup / drop-off: its address text (job model v2),
+/// else the landmark note, else the localized "Pinned location" (never
+/// coordinates). With [withNote], a note is appended after an address
+/// ("4 Tahrir St · Beside the metro").
+String jobPlaceLabel(AppLocalizations l10n, JobLocation? location,
+    {bool withNote = false}) {
   if (location == null) return l10n.custPinnedLocation;
-  final summary = location.addressSummary();
-  return summary == location.formatCoordinates()
-      ? l10n.custPinnedLocation
-      : summary;
+  final address = location.address?.trim() ?? '';
+  final note = location.addressNote?.trim() ?? '';
+  if (address.isNotEmpty) {
+    return withNote && note.isNotEmpty ? '$address · $note' : address;
+  }
+  return note.isNotEmpty ? note : l10n.custPinnedLocation;
 }
 
 /// Main line for a picked place: its address text, else "Your current

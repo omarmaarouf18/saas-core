@@ -5,12 +5,13 @@ import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../ui/qd_ui.dart';
 import '../customer_format.dart';
+import 'job_v2_sections.dart';
 import 'order_controller.dart';
 import 'order_sections.dart';
 import 'order_view.dart';
 
 /// Cancelled: the reason as the server gave it, or the price-proposal
-/// expiry explained in words.
+/// expiry explained in words; the timeline when the job has a history.
 class OrderCancelledView extends StatelessWidget {
   const OrderCancelledView({super.key, required this.job});
 
@@ -42,6 +43,15 @@ class OrderCancelledView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: QdText.body.copyWith(color: c.textPrimary),
           ),
+        ],
+        if (jobHistoryTimeline(context, job,
+                key: const Key('ord_timeline'),
+                now: ctl.now(),
+                ride: orderIsRide(context, job),
+                courierName: context.watch<OrderController>().courierName)
+            case final timeline?) ...[
+          const SizedBox(height: QdSpace.x5),
+          timeline,
         ],
         const SizedBox(height: QdSpace.x5),
         OrderRouteCard(job: job, priceMode: OrderPriceMode.plain),
