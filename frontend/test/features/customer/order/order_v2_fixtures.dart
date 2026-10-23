@@ -16,6 +16,8 @@ Job orderJobV2({
   List<JobStatusHistoryEntry>? history,
   String? pickupAddress = '15 Kasr El Nil St, Downtown',
   String? dropAddress = '4 Tahrir St, Dokki',
+  String? pickupNote = 'Floor 3',
+  String? dropNote = 'Beside the metro',
 }) {
   DateTime ago(int m) => fixedNow.subtract(Duration(minutes: m));
   return Job(
@@ -30,12 +32,12 @@ Job orderJobV2({
         latitude: 30.05,
         longitude: 31.24,
         address: pickupAddress,
-        addressNote: 'Floor 3'),
+        addressNote: pickupNote),
     destination: JobLocation(
         latitude: 30.06,
         longitude: 31.22,
         address: dropAddress,
-        addressNote: 'Beside the metro'),
+        addressNote: dropNote),
     paymentMethod: 'cod',
     suggestedPrice: 42,
     agreedPrice: 45,

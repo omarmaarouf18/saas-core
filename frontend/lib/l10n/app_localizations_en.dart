@@ -6146,7 +6146,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookErrPhone =>
-      'Enter an Egyptian mobile number like 01012345678, or an international number starting with +.';
+      'Enter an Egyptian mobile number like 01012345678, or an international number with its country code.';
 
   @override
   String get bookErrSize => 'Choose small, medium or large.';

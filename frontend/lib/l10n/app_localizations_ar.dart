@@ -6051,7 +6051,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get bookErrPhone =>
-      'اكتب رقم موبايل مصري زي 01012345678، أو رقم دولي بيبدأ بـ +.';
+      'اكتب رقم موبايل مصري زي 01012345678، أو رقم دولي بكود الدولة.';
 
   @override
   String get bookErrSize => 'اختار صغيرة أو متوسطة أو كبيرة.';

@@ -5832,7 +5832,7 @@
   "@bookErrNoteTooLong": {
     "description": "FE-V2-CONSUME booking: a stop's landmark note is too long for the server."
   },
-  "bookErrPhone": "Enter an Egyptian mobile number like 01012345678, or an international number starting with +.",
+  "bookErrPhone": "Enter an Egyptian mobile number like 01012345678, or an international number with its country code.",
   "@bookErrPhone": {
     "description": "FE-V2-CONSUME booking: invalid recipient phone."
   },

@@ -10956,7 +10956,7 @@ abstract class AppLocalizations {
   /// FE-V2-CONSUME booking: invalid recipient phone.
   ///
   /// In en, this message translates to:
-  /// **'Enter an Egyptian mobile number like 01012345678, or an international number starting with +.'**
+  /// **'Enter an Egyptian mobile number like 01012345678, or an international number with its country code.'**
   String get bookErrPhone;
 
   /// FE-V2-CONSUME booking: invalid package size.
