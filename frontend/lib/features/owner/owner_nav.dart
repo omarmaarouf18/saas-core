@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../screens/kyc_document_upload_screen.dart';
 import '../../screens/notifications_screen.dart';
 import '../../screens/subscription_screen.dart';
 import '../../screens/wallet_screen.dart';
 import '../../ui/qd_ui.dart';
+import '../verification/verification_page.dart';
 import 'activity_log_page.dart';
 import 'fleet_map_page.dart';
 import 'owner_controller.dart';
@@ -38,9 +38,8 @@ class OwnerNav {
   Future<void> openNotifications(BuildContext context) =>
       _old(context, const NotificationsScreen());
 
-  /// The existing KYB document upload screen.
-  Future<void> openKyb(BuildContext context) =>
-      _old(context, const KycDocumentUploadScreen());
+  /// Verification (KYB): the page shared with the courier app.
+  Future<void> openKyb(BuildContext context) => VerificationPage.open(context);
 
   /// Team map (O-Fleet), with [employeeId]'s courier selected if given.
   Future<void> openFleetMap(BuildContext context, {String? employeeId}) =>

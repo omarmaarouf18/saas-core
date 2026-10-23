@@ -5670,4 +5670,201 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctKyeMissing => 'Not uploaded';
+
+  @override
+  String get vrfTitleOwner => 'Business verification';
+
+  @override
+  String get vrfTitleCourier => 'ID verification';
+
+  @override
+  String get vrfLoadError => 'Couldn\'t refresh your verification status.';
+
+  @override
+  String get vrfStateMissingTitle => 'Upload your documents';
+
+  @override
+  String vrfStateMissingOwner(int total) {
+    return 'Upload all $total documents so we can verify your business and you can start taking orders.';
+  }
+
+  @override
+  String vrfStateMissingCourier(int total) {
+    return 'Upload all $total documents so we can confirm who you are.';
+  }
+
+  @override
+  String vrfStateIncompleteTitle(int done, int total) {
+    return '$done of $total documents uploaded';
+  }
+
+  @override
+  String get vrfStateIncompleteBody =>
+      'Review starts once every document is uploaded.';
+
+  @override
+  String get vrfStatePendingTitle => 'Your documents are under review';
+
+  @override
+  String get vrfStatePendingBody =>
+      'We\'ll let you know when the review is done. You can still replace a document.';
+
+  @override
+  String get vrfStateApprovedTitle => 'Verified';
+
+  @override
+  String get vrfStateApprovedBody =>
+      'Your documents were accepted. They\'re locked now.';
+
+  @override
+  String get vrfStateRejectedTitle => 'Your documents weren\'t accepted';
+
+  @override
+  String vrfRejectedReason(String reason) {
+    return 'Reviewer\'s note: $reason';
+  }
+
+  @override
+  String get vrfRejectedNoReason =>
+      'No reason was given. Contact support if you\'re not sure what to change.';
+
+  @override
+  String get vrfRejectedHint =>
+      'Replace the documents that need fixing. They go back to review as soon as you upload one.';
+
+  @override
+  String get vrfDocsHeader => 'Documents';
+
+  @override
+  String vrfDocsCount(int done, int total) {
+    return '$done of $total uploaded';
+  }
+
+  @override
+  String get vrfSlotIdFront => 'ID card, front';
+
+  @override
+  String get vrfSlotIdFrontHint =>
+      'A clear photo of the front of your national ID or passport.';
+
+  @override
+  String get vrfSlotIdBack => 'ID card, back';
+
+  @override
+  String get vrfSlotIdBackHint =>
+      'A clear photo of the back of your national ID.';
+
+  @override
+  String get vrfSlotSelfie => 'Selfie with your ID';
+
+  @override
+  String get vrfSlotSelfieHint => 'Hold your ID card next to your face.';
+
+  @override
+  String get vrfSlotBusiness => 'Commercial register';
+
+  @override
+  String get vrfSlotBusinessHint =>
+      'Commercial register or tax card. A photo or a PDF.';
+
+  @override
+  String get vrfSlotNeeded => 'Needed';
+
+  @override
+  String get vrfSlotUploaded => 'Uploaded';
+
+  @override
+  String get vrfSlotInReview => 'Under review';
+
+  @override
+  String get vrfSlotAccepted => 'Accepted';
+
+  @override
+  String get vrfSlotNotAccepted => 'Not accepted';
+
+  @override
+  String get vrfSlotUploading => 'Uploading';
+
+  @override
+  String get vrfOnFilePhoto => 'Photo on file';
+
+  @override
+  String get vrfOnFilePdf => 'PDF on file';
+
+  @override
+  String get vrfUpload => 'Upload';
+
+  @override
+  String get vrfReplace => 'Replace';
+
+  @override
+  String get vrfChooseAnother => 'Choose another file';
+
+  @override
+  String vrfUploadingFile(String name) {
+    return 'Uploading $name…';
+  }
+
+  @override
+  String vrfUploadedNotice(String slot) {
+    return '$slot uploaded.';
+  }
+
+  @override
+  String get vrfSentForReview =>
+      'All documents uploaded. They\'re under review now.';
+
+  @override
+  String vrfErrTooLarge(String size) {
+    return 'This file is $size MB. The limit is 10 MB.';
+  }
+
+  @override
+  String get vrfErrEmpty => 'This file is empty. Choose another one.';
+
+  @override
+  String get vrfErrFormatPhoto => 'Use a JPG or PNG photo.';
+
+  @override
+  String get vrfErrFormatDoc => 'Use a JPG or PNG photo, or a PDF.';
+
+  @override
+  String get vrfErrNotAllowed => 'This account can\'t upload these documents.';
+
+  @override
+  String get vrfErrPicker => 'Couldn\'t open that. Try another option.';
+
+  @override
+  String get vrfErrUpload =>
+      'Couldn\'t upload the file. Check your connection and try again.';
+
+  @override
+  String vrfSourceTitle(String slot) {
+    return 'Add: $slot';
+  }
+
+  @override
+  String get vrfSourceCamera => 'Take a photo';
+
+  @override
+  String get vrfSourceGallery => 'Choose from photos';
+
+  @override
+  String get vrfSourceFile => 'Choose a file';
+
+  @override
+  String get vrfSourceFileHintPdf => 'JPG, PNG or PDF, up to 10 MB';
+
+  @override
+  String get vrfSourceFileHintPhoto => 'JPG or PNG, up to 10 MB';
+
+  @override
+  String get vrfRulesOwner =>
+      'Photos must be JPG or PNG, up to 10 MB each. The commercial register can also be a PDF.';
+
+  @override
+  String get vrfRulesCourier => 'Photos must be JPG or PNG, up to 10 MB each.';
+
+  @override
+  String get vrfLocked => 'Accepted documents can\'t be changed.';
 }

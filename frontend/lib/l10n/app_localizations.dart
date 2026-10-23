@@ -10112,6 +10112,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not uploaded'**
   String get acctKyeMissing;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Business verification'**
+  String get vrfTitleOwner;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'ID verification'**
+  String get vrfTitleCourier;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh your verification status.'**
+  String get vrfLoadError;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your documents'**
+  String get vrfStateMissingTitle;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Upload all {total} documents so we can verify your business and you can start taking orders.'**
+  String vrfStateMissingOwner(int total);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Upload all {total} documents so we can confirm who you are.'**
+  String vrfStateMissingCourier(int total);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} documents uploaded'**
+  String vrfStateIncompleteTitle(int done, int total);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Review starts once every document is uploaded.'**
+  String get vrfStateIncompleteBody;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents are under review'**
+  String get vrfStatePendingTitle;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll let you know when the review is done. You can still replace a document.'**
+  String get vrfStatePendingBody;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get vrfStateApprovedTitle;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents were accepted. They\'re locked now.'**
+  String get vrfStateApprovedBody;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Your documents weren\'t accepted'**
+  String get vrfStateRejectedTitle;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewer\'s note: {reason}'**
+  String vrfRejectedReason(String reason);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'No reason was given. Contact support if you\'re not sure what to change.'**
+  String get vrfRejectedNoReason;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the documents that need fixing. They go back to review as soon as you upload one.'**
+  String get vrfRejectedHint;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get vrfDocsHeader;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} uploaded'**
+  String vrfDocsCount(int done, int total);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'ID card, front'**
+  String get vrfSlotIdFront;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'A clear photo of the front of your national ID or passport.'**
+  String get vrfSlotIdFrontHint;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'ID card, back'**
+  String get vrfSlotIdBack;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'A clear photo of the back of your national ID.'**
+  String get vrfSlotIdBackHint;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie with your ID'**
+  String get vrfSlotSelfie;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Hold your ID card next to your face.'**
+  String get vrfSlotSelfieHint;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial register'**
+  String get vrfSlotBusiness;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial register or tax card. A photo or a PDF.'**
+  String get vrfSlotBusinessHint;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Needed'**
+  String get vrfSlotNeeded;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get vrfSlotUploaded;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get vrfSlotInReview;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get vrfSlotAccepted;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get vrfSlotNotAccepted;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get vrfSlotUploading;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Photo on file'**
+  String get vrfOnFilePhoto;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'PDF on file'**
+  String get vrfOnFilePdf;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Upload'**
+  String get vrfUpload;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get vrfReplace;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another file'**
+  String get vrfChooseAnother;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {name}…'**
+  String vrfUploadingFile(String name);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'{slot} uploaded.'**
+  String vrfUploadedNotice(String slot);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'All documents uploaded. They\'re under review now.'**
+  String get vrfSentForReview;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'This file is {size} MB. The limit is 10 MB.'**
+  String vrfErrTooLarge(String size);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'This file is empty. Choose another one.'**
+  String get vrfErrEmpty;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPG or PNG photo.'**
+  String get vrfErrFormatPhoto;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPG or PNG photo, or a PDF.'**
+  String get vrfErrFormatDoc;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t upload these documents.'**
+  String get vrfErrNotAllowed;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open that. Try another option.'**
+  String get vrfErrPicker;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload the file. Check your connection and try again.'**
+  String get vrfErrUpload;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Add: {slot}'**
+  String vrfSourceTitle(String slot);
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get vrfSourceCamera;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from photos'**
+  String get vrfSourceGallery;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a file'**
+  String get vrfSourceFile;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'JPG, PNG or PDF, up to 10 MB'**
+  String get vrfSourceFileHintPdf;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'JPG or PNG, up to 10 MB'**
+  String get vrfSourceFileHintPhoto;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Photos must be JPG or PNG, up to 10 MB each. The commercial register can also be a PDF.'**
+  String get vrfRulesOwner;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Photos must be JPG or PNG, up to 10 MB each.'**
+  String get vrfRulesCourier;
+
+  /// FE-OWNER-2b shared verification page (KYB / KYE).
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted documents can\'t be changed.'**
+  String get vrfLocked;
 }
 
 class _AppLocalizationsDelegate

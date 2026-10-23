@@ -1915,5 +1915,130 @@
   "acctKyeApproved": "اتأكدت",
   "acctKyePending": "بتتراجع",
   "acctKyeRejected": "ما اتقبلتش",
-  "acctKyeMissing": "ما اترفعتش"
+  "acctKyeMissing": "ما اترفعتش",
+  "vrfTitleOwner": "توثيق الشغل",
+  "vrfTitleCourier": "توثيق الهوية",
+  "vrfLoadError": "مقدرناش نحدّث حالة التوثيق.",
+  "vrfStateMissingTitle": "ارفع مستنداتك",
+  "vrfStateMissingOwner": "ارفع الـ{total} مستندات عشان نوثّق شغلك وتبدأ تستقبل طلبات.",
+  "@vrfStateMissingOwner": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateMissingCourier": "ارفع الـ{total} مستندات عشان نتأكد من هويتك.",
+  "@vrfStateMissingCourier": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteTitle": "اترفع {done} من {total} مستندات",
+  "@vrfStateIncompleteTitle": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteBody": "المراجعة بتبدأ أول ما كل المستندات تترفع.",
+  "vrfStatePendingTitle": "مستنداتك بتتراجع",
+  "vrfStatePendingBody": "هنبلغك لما المراجعة تخلص. لسه تقدر تغيّر أي مستند.",
+  "vrfStateApprovedTitle": "اتوثّقت",
+  "vrfStateApprovedBody": "مستنداتك اتقبلت، ومقفولة دلوقتي.",
+  "vrfStateRejectedTitle": "مستنداتك ما اتقبلتش",
+  "vrfRejectedReason": "ملاحظة المراجع: {reason}",
+  "@vrfRejectedReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfRejectedNoReason": "مفيش سبب مكتوب. كلّم الدعم لو مش متأكد تغيّر إيه.",
+  "vrfRejectedHint": "غيّر المستندات اللي محتاجة تتصلح. بترجع للمراجعة أول ما ترفع واحد.",
+  "vrfDocsHeader": "المستندات",
+  "vrfDocsCount": "اترفع {done} من {total}",
+  "@vrfDocsCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfSlotIdFront": "البطاقة، الوش",
+  "vrfSlotIdFrontHint": "صورة واضحة لوش البطاقة أو الباسبور.",
+  "vrfSlotIdBack": "البطاقة، الضهر",
+  "vrfSlotIdBackHint": "صورة واضحة لضهر البطاقة.",
+  "vrfSlotSelfie": "سيلفي بالبطاقة",
+  "vrfSlotSelfieHint": "امسك البطاقة جنب وشك.",
+  "vrfSlotBusiness": "السجل التجاري",
+  "vrfSlotBusinessHint": "السجل التجاري أو البطاقة الضريبية. صورة أو PDF.",
+  "vrfSlotNeeded": "مطلوب",
+  "vrfSlotUploaded": "اترفع",
+  "vrfSlotInReview": "بيتراجع",
+  "vrfSlotAccepted": "اتقبل",
+  "vrfSlotNotAccepted": "ما اتقبلش",
+  "vrfSlotUploading": "بيترفع",
+  "vrfOnFilePhoto": "فيه صورة مترفوعة",
+  "vrfOnFilePdf": "فيه PDF مترفوع",
+  "vrfUpload": "ارفع",
+  "vrfReplace": "غيّر",
+  "vrfChooseAnother": "اختار ملف تاني",
+  "vrfUploadingFile": "بنرفع {name}…",
+  "@vrfUploadingFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfUploadedNotice": "اترفع: {slot}.",
+  "@vrfUploadedNotice": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSentForReview": "كل المستندات اترفعت، وبتتراجع دلوقتي.",
+  "vrfErrTooLarge": "الملف ده {size} ميجا. الحد 10 ميجا.",
+  "@vrfErrTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfErrEmpty": "الملف ده فاضي. اختار ملف تاني.",
+  "vrfErrFormatPhoto": "استخدم صورة JPG أو PNG.",
+  "vrfErrFormatDoc": "استخدم صورة JPG أو PNG، أو ملف PDF.",
+  "vrfErrNotAllowed": "الحساب ده مينفعش يرفع المستندات دي.",
+  "vrfErrPicker": "مقدرناش نفتحه. جرّب اختيار تاني.",
+  "vrfErrUpload": "مقدرناش نرفع الملف. اتأكد من النت وجرّب تاني.",
+  "vrfSourceTitle": "إضافة: {slot}",
+  "@vrfSourceTitle": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSourceCamera": "صوّر",
+  "vrfSourceGallery": "اختار من الصور",
+  "vrfSourceFile": "اختار ملف",
+  "vrfSourceFileHintPdf": "JPG أو PNG أو PDF، لحد 10 ميجا",
+  "vrfSourceFileHintPhoto": "JPG أو PNG، لحد 10 ميجا",
+  "vrfRulesOwner": "الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة. السجل التجاري ممكن يكون PDF كمان.",
+  "vrfRulesCourier": "الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة.",
+  "vrfLocked": "المستندات المقبولة مينفعش تتغيّر."
 }

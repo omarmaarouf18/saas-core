@@ -5185,5 +5185,280 @@
   "acctKyeMissing": "Not uploaded",
   "@acctKyeMissing": {
     "description": "FE-COURIER redesigned courier screens."
+  },
+  "vrfTitleOwner": "Business verification",
+  "@vrfTitleOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfTitleCourier": "ID verification",
+  "@vrfTitleCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfLoadError": "Couldn't refresh your verification status.",
+  "@vrfLoadError": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateMissingTitle": "Upload your documents",
+  "@vrfStateMissingTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateMissingOwner": "Upload all {total} documents so we can verify your business and you can start taking orders.",
+  "@vrfStateMissingOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateMissingCourier": "Upload all {total} documents so we can confirm who you are.",
+  "@vrfStateMissingCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteTitle": "{done} of {total} documents uploaded",
+  "@vrfStateIncompleteTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfStateIncompleteBody": "Review starts once every document is uploaded.",
+  "@vrfStateIncompleteBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStatePendingTitle": "Your documents are under review",
+  "@vrfStatePendingTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStatePendingBody": "We'll let you know when the review is done. You can still replace a document.",
+  "@vrfStatePendingBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateApprovedTitle": "Verified",
+  "@vrfStateApprovedTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateApprovedBody": "Your documents were accepted. They're locked now.",
+  "@vrfStateApprovedBody": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfStateRejectedTitle": "Your documents weren't accepted",
+  "@vrfStateRejectedTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRejectedReason": "Reviewer's note: {reason}",
+  "@vrfRejectedReason": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfRejectedNoReason": "No reason was given. Contact support if you're not sure what to change.",
+  "@vrfRejectedNoReason": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRejectedHint": "Replace the documents that need fixing. They go back to review as soon as you upload one.",
+  "@vrfRejectedHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfDocsHeader": "Documents",
+  "@vrfDocsHeader": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfDocsCount": "{done} of {total} uploaded",
+  "@vrfDocsCount": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "vrfSlotIdFront": "ID card, front",
+  "@vrfSlotIdFront": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdFrontHint": "A clear photo of the front of your national ID or passport.",
+  "@vrfSlotIdFrontHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdBack": "ID card, back",
+  "@vrfSlotIdBack": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotIdBackHint": "A clear photo of the back of your national ID.",
+  "@vrfSlotIdBackHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotSelfie": "Selfie with your ID",
+  "@vrfSlotSelfie": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotSelfieHint": "Hold your ID card next to your face.",
+  "@vrfSlotSelfieHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotBusiness": "Commercial register",
+  "@vrfSlotBusiness": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotBusinessHint": "Commercial register or tax card. A photo or a PDF.",
+  "@vrfSlotBusinessHint": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotNeeded": "Needed",
+  "@vrfSlotNeeded": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotUploaded": "Uploaded",
+  "@vrfSlotUploaded": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotInReview": "Under review",
+  "@vrfSlotInReview": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotAccepted": "Accepted",
+  "@vrfSlotAccepted": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotNotAccepted": "Not accepted",
+  "@vrfSlotNotAccepted": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSlotUploading": "Uploading",
+  "@vrfSlotUploading": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfOnFilePhoto": "Photo on file",
+  "@vrfOnFilePhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfOnFilePdf": "PDF on file",
+  "@vrfOnFilePdf": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfUpload": "Upload",
+  "@vrfUpload": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfReplace": "Replace",
+  "@vrfReplace": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfChooseAnother": "Choose another file",
+  "@vrfChooseAnother": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfUploadingFile": "Uploading {name}…",
+  "@vrfUploadingFile": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfUploadedNotice": "{slot} uploaded.",
+  "@vrfUploadedNotice": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSentForReview": "All documents uploaded. They're under review now.",
+  "@vrfSentForReview": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrTooLarge": "This file is {size} MB. The limit is 10 MB.",
+  "@vrfErrTooLarge": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfErrEmpty": "This file is empty. Choose another one.",
+  "@vrfErrEmpty": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrFormatPhoto": "Use a JPG or PNG photo.",
+  "@vrfErrFormatPhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrFormatDoc": "Use a JPG or PNG photo, or a PDF.",
+  "@vrfErrFormatDoc": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrNotAllowed": "This account can't upload these documents.",
+  "@vrfErrNotAllowed": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrPicker": "Couldn't open that. Try another option.",
+  "@vrfErrPicker": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfErrUpload": "Couldn't upload the file. Check your connection and try again.",
+  "@vrfErrUpload": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceTitle": "Add: {slot}",
+  "@vrfSourceTitle": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE).",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "vrfSourceCamera": "Take a photo",
+  "@vrfSourceCamera": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceGallery": "Choose from photos",
+  "@vrfSourceGallery": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFile": "Choose a file",
+  "@vrfSourceFile": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFileHintPdf": "JPG, PNG or PDF, up to 10 MB",
+  "@vrfSourceFileHintPdf": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfSourceFileHintPhoto": "JPG or PNG, up to 10 MB",
+  "@vrfSourceFileHintPhoto": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRulesOwner": "Photos must be JPG or PNG, up to 10 MB each. The commercial register can also be a PDF.",
+  "@vrfRulesOwner": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfRulesCourier": "Photos must be JPG or PNG, up to 10 MB each.",
+  "@vrfRulesCourier": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "vrfLocked": "Accepted documents can't be changed.",
+  "@vrfLocked": {
+    "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
   }
 }

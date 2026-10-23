@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/job.dart';
-import '../../screens/kyc_document_upload_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_nav.dart';
 import '../account/notifications/notifications_page.dart';
 import '../account/support/tickets_page.dart';
 import '../customer/chat/chat_page.dart';
 import '../customer/customer_theme.dart';
+import '../verification/verification_page.dart';
 import 'courier_format.dart';
 
 /// Navigation out of the redesigned courier pages (FE-COURIER). Swappable
@@ -20,11 +20,9 @@ class CourierNav {
   Future<T?> push<T>(BuildContext context, WidgetBuilder page) =>
       Navigator.of(context).push<T>(qdPageRoute<T>(page));
 
-  /// Document upload for verification (KYE): the existing screen, as the
-  /// old courier app's verification button opened it.
+  /// Verification (KYE): the page shared with the owner app (FE-OWNER-2b).
   Future<void> openVerification(BuildContext context) =>
-      Navigator.of(context).push<void>(
-          MaterialPageRoute(builder: (_) => const KycDocumentUploadScreen()));
+      VerificationPage.open(context);
 
   /// Chat with the customer on the job channel (the chat page shared with
   /// the customer app).
