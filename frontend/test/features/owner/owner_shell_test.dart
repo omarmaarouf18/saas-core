@@ -43,6 +43,12 @@ void main() {
       final w = ownerRootScreen(legacy: () => const Text('legacy'));
       expect(w, isA<Text>());
     });
+
+    test('HomeScreen skips the old dashboard fetch only when on', () {
+      expect(runLegacyOwnerDashboardFetch(redesign: false), isTrue);
+      expect(runLegacyOwnerDashboardFetch(redesign: true), isFalse);
+      expect(runLegacyOwnerDashboardFetch(), isTrue);
+    });
   });
 
   group('OwnerShell', () {

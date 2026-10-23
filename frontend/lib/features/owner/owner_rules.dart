@@ -313,3 +313,27 @@ UsernameProblem? usernameProblem(String value) {
 bool isValidEmail(String value) =>
     RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         .hasMatch(value.trim());
+
+/// O-Fleet filter (FE-OWNER-2).
+enum FleetFilter { all, onJob, free }
+
+/// The order a courier on the map is out on, or null when free.
+///
+/// The marker's job id comes from the hydration (an active job, or any job
+/// updated in the last 15 minutes, including a finished one) or from the
+/// live location message. A job we know from the owner jobs list counts
+/// only while it is ongoing, so a courier who just delivered shows as free.
+/// A job id we do not know (beyond the loaded 100) is trusted.
+String? fleetJobIdOf(String? markerJobId, Iterable<Job> jobs) {
+  if (markerJobId == null || markerJobId.isEmpty) return null;
+  for (final j in jobs) {
+    if (j.id == markerJobId) return isOngoing(j) ? j.id : null;
+  }
+  return markerJobId;
+}
+
+bool fleetFilterMatches(FleetFilter f, String? jobId) => switch (f) {
+      FleetFilter.all => true,
+      FleetFilter.onJob => jobId != null,
+      FleetFilter.free => jobId == null,
+    };

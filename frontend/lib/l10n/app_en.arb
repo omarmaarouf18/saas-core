@@ -3423,7 +3423,7 @@
   "@ownRowCustomer": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
-  "ownCustomerRef": "Account {id}",
+  "ownCustomerRef": "Customer {id}",
   "@ownCustomerRef": {
     "description": "FE-OWNER-1 redesigned owner screens.",
     "placeholders": {
@@ -4150,5 +4150,382 @@
   "ownNavAccount": "Account",
   "@ownNavAccount": {
     "description": "FE-OWNER-1 redesigned owner screens."
+  },
+  "ownSvcTitle": "Service setup",
+  "@ownSvcTitle": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSectionBusiness": "Service",
+  "@ownSvcSectionBusiness": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPhotoNote": "Customers see the first letter of your service name for now. Photo upload is coming.",
+  "@ownSvcPhotoNote": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcName": "Service name as customers see it",
+  "@ownSvcName": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcNameRequired": "Enter the service name",
+  "@ownSvcNameRequired": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcKind": "Type",
+  "@ownSvcKind": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcKindDelivery": "Delivery",
+  "@ownSvcKindDelivery": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcKindTransport": "Rides",
+  "@ownSvcKindTransport": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcKindShipping": "Shipping",
+  "@ownSvcKindShipping": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSectionPlace": "Place and coverage",
+  "@ownSvcSectionPlace": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPlace": "Business location on the map",
+  "@ownSvcPlace": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPlaceMissing": "Required",
+  "@ownSvcPlaceMissing": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPlaceSet": "Set on the map",
+  "@ownSvcPlaceSet": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPickerTitle": "Business location",
+  "@ownSvcPickerTitle": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcAddress": "Written address",
+  "@ownSvcAddress": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcAddressShort": "Write at least 3 letters, or leave it empty",
+  "@ownSvcAddressShort": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcRadius": "How far do you serve?",
+  "@ownSvcRadius": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcKm": "km",
+  "@ownSvcKm": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcRadiusInvalid": "Enter a distance above 0",
+  "@ownSvcRadiusInvalid": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSectionHours": "Working hours",
+  "@ownSvcSectionHours": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursNone": "No hours set: customers see you as open all the time.",
+  "@ownSvcHoursNone": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursSet": "Set working hours",
+  "@ownSvcHoursSet": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursSame": "Same every day",
+  "@ownSvcHoursSame": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursPerDay": "Each day",
+  "@ownSvcHoursPerDay": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcOpens": "Opens",
+  "@ownSvcOpens": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcCloses": "Closes",
+  "@ownSvcCloses": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcDayOff": "Day off",
+  "@ownSvcDayOff": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursRemove": "Remove hours",
+  "@ownSvcHoursRemove": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursSameTime": "Opening and closing can't be the same time",
+  "@ownSvcHoursSameTime": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcHoursMissing": "Pick both times",
+  "@ownSvcHoursMissing": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSectionPricing": "Pricing",
+  "@ownSvcSectionPricing": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcBaseFee": "Opening fee",
+  "@ownSvcBaseFee": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPerKm": "Per km",
+  "@ownSvcPerKm": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcPriceInvalid": "Enter 0 or more",
+  "@ownSvcPriceInvalid": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcExample": "Example: a {km} km trip shows the customer {price}.",
+  "@ownSvcExample": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "km": {
+        "type": "int"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "ownSvcExampleEmpty": "Enter both prices to see what a customer pays.",
+  "@ownSvcExampleEmpty": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSave": "Save",
+  "@ownSvcSave": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcSaved": "Service saved",
+  "@ownSvcSaved": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcFixErrors": "Check the fields marked in red",
+  "@ownSvcFixErrors": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcLoadError": "We couldn't load your service",
+  "@ownSvcLoadError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcErrKyb": "Your business papers need to be approved before you can save the service.",
+  "@ownSvcErrKyb": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcErrPlan": "Saving the service needs an active plan.",
+  "@ownSvcErrPlan": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcErrUnavailable": "This is unavailable right now. Try again in a bit.",
+  "@ownSvcErrUnavailable": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcErrPartial": "The service was created but some details weren't saved. Tap save again.",
+  "@ownSvcErrPartial": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownSvcCurrency": "EGP",
+  "@ownSvcCurrency": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetMapLabel": "Map of your couriers",
+  "@ownFleetMapLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetFilterLabel": "Show",
+  "@ownFleetFilterLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetAll": "All",
+  "@ownFleetAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetFree": "Free",
+  "@ownFleetFree": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetDenied": "You don't have access to this team map.",
+  "@ownFleetDenied": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetLoadError": "Your couriers' locations didn't load.",
+  "@ownFleetLoadError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetReconnecting": "Reconnecting to live locations…",
+  "@ownFleetReconnecting": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetNobody": "No courier is sharing a location right now.",
+  "@ownFleetNobody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetRefresh": "Refresh",
+  "@ownFleetRefresh": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetSummary": "On the map: {total} · on a job: {onJob}",
+  "@ownFleetSummary": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "onJob": {
+        "type": "int"
+      }
+    }
+  },
+  "ownFleetSummaryNone": "Couriers show up here while they share their location.",
+  "@ownFleetSummaryNone": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetTapHint": "Tap a courier to see their order.",
+  "@ownFleetTapHint": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetLastUpdate": "Last update {ago}",
+  "@ownFleetLastUpdate": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetClose": "Close",
+  "@ownFleetClose": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownFleetOrderRef": "Order {ref}",
+  "@ownFleetOrderRef": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetOrderTo": "Order {ref} · to {place}",
+  "@ownFleetOrderTo": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "ownFleetCourierPage": "Courier page",
+  "@ownFleetCourierPage": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTitle": "Activity log",
+  "@ownLogTitle": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTabActivity": "Activity",
+  "@ownLogTabActivity": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogTabMoney": "Money",
+  "@ownLogTabMoney": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodLabel": "Period",
+  "@ownLogPeriodLabel": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodAll": "All",
+  "@ownLogPeriodAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodToday": "Today",
+  "@ownLogPeriodToday": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogPeriodWeek": "7 days",
+  "@ownLogPeriodWeek": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityEmpty": "No activity yet",
+  "@ownLogActivityEmpty": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityEmptyBody": "Courier actions and account changes show up here.",
+  "@ownLogActivityEmptyBody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyEmpty": "No money movements yet",
+  "@ownLogMoneyEmpty": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyEmptyBody": "Orders are paid in cash for now, so this stays empty until online payments start.",
+  "@ownLogMoneyEmptyBody": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogNoneInPeriod": "Nothing in this period",
+  "@ownLogNoneInPeriod": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogShowAll": "Show all",
+  "@ownLogShowAll": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogActivityError": "We couldn't load the activity",
+  "@ownLogActivityError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogMoneyError": "We couldn't load the money movements",
+  "@ownLogMoneyError": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogStale": "Couldn't refresh. This is the last list we loaded.",
+  "@ownLogStale": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogYou": "You",
+  "@ownLogYou": {
+    "description": "FE-OWNER-2 redesigned owner screens."
+  },
+  "ownLogBalanceAfter": "balance after {amount}",
+  "@ownLogBalanceAfter": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownLogMoneyIn": "Money in, {amount}",
+  "@ownLogMoneyIn": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ownLogMoneyOut": "Money out, {amount}",
+  "@ownLogMoneyOut": {
+    "description": "FE-OWNER-2 redesigned owner screens.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }

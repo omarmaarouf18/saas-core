@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
+import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/features/owner/owner_controller.dart';
 import 'package:frontend/features/owner/owner_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/models/employee_marker.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/reconciliation_job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
+import 'package:frontend/providers/map_tracking_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
@@ -19,6 +22,8 @@ import 'package:frontend/providers/reconciliation_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
+
+import '../customer/customer_harness.dart' show BlankTileProvider;
 
 export '../customer/customer_harness.dart'
     show ar, en, bothLocales, fixedNow, usePhone, loadPlexFont;
@@ -221,6 +226,188 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
     return {'message': 'updated'};
   }
 
+  // FE-OWNER-2: audit log (activity log).
+  @override
+  List<dynamic> auditLogEntries = [];
+
+  @override
+  String? auditLogError;
+
+  List<dynamic> nextAudit = [];
+  String? nextAuditError;
+  Completer<void>? auditGate;
+  final List<Map<String, String>> auditCalls = [];
+
+  @override
+  Future<void> fetchAuditLog({
+    required String tenantId,
+    required String requesterToken,
+  }) async {
+    auditCalls.add({'tenantId': tenantId, 'token': requesterToken});
+    if (auditGate != null) await auditGate!.future;
+    if (nextAuditError != null) {
+      auditLogError = error = nextAuditError;
+    } else {
+      auditLogEntries = List.of(nextAudit);
+      auditLogError = error = null;
+    }
+    notifyListeners();
+  }
+
+  // FE-OWNER-2: wallet, subscription and ledger (fetchDashboardData).
+  @override
+  double walletBalance = 0;
+
+  @override
+  double escrowBalance = 0;
+
+  @override
+  double withdrawableBalance = 0;
+
+  @override
+  String subscriptionTier = 'free';
+
+  @override
+  List<dynamic> ledgerEntries = [];
+
+  @override
+  String? dashboardError;
+
+  @override
+  bool isDashboardHydrated = false;
+
+  /// What the next fetchDashboardData loads (null keeps the values).
+  ({double total, double escrow, double withdrawable, String tier})? nextWallet;
+  List<dynamic> nextLedger = [];
+  String? nextDashboardError;
+  Completer<void>? dashboardGate;
+  final List<String> dashboardCalls = [];
+
+  @override
+  Future<void> fetchDashboardData(String tenantId) async {
+    dashboardCalls.add(tenantId);
+    if (dashboardGate != null) await dashboardGate!.future;
+    if (nextDashboardError != null) {
+      dashboardError = error = nextDashboardError;
+    } else {
+      final w = nextWallet;
+      if (w != null) {
+        walletBalance = w.total;
+        escrowBalance = w.escrow;
+        withdrawableBalance = w.withdrawable;
+        subscriptionTier = w.tier;
+      }
+      ledgerEntries = List.of(nextLedger);
+      isDashboardHydrated = true;
+      dashboardError = error = null;
+    }
+    notifyListeners();
+  }
+
+  // FE-OWNER-2: services (service setup).
+  @override
+  List<dynamic> services = [];
+
+  @override
+  String? servicesError;
+
+  List<dynamic> nextServices = [];
+  String? nextServicesError;
+  Completer<void>? servicesGate;
+  int serviceCalls = 0;
+
+  @override
+  Future<void> fetchServices() async {
+    serviceCalls++;
+    if (servicesGate != null) await servicesGate!.future;
+    if (nextServicesError != null) {
+      servicesError = error = nextServicesError;
+    } else {
+      services = List.of(nextServices);
+      servicesError = error = null;
+    }
+    notifyListeners();
+  }
+
+  final List<Map<String, dynamic>> createCalls = [];
+  Object? nextCreateError;
+  Map<String, dynamic> nextCreateResponse = {
+    'message': 'service created',
+    'service': {'id': 'svc-new'},
+  };
+
+  @override
+  Future<Map<String, dynamic>> createService({
+    required String name,
+    required String category,
+    required double tenantBasePrice,
+    required double tenantPricePerKM,
+    required double latitude,
+    required double longitude,
+    required String ownerId,
+  }) async {
+    createCalls.add({
+      'name': name,
+      'category': category,
+      'tenant_base_price': tenantBasePrice,
+      'tenant_price_per_km': tenantPricePerKM,
+      'latitude': latitude,
+      'longitude': longitude,
+      'owner_id': ownerId,
+    });
+    if (nextCreateError != null) throw nextCreateError!;
+    return nextCreateResponse;
+  }
+
+  final List<Map<String, dynamic>> updateCalls = [];
+  Object? nextUpdateError;
+  Completer<void>? updateGate;
+
+  @override
+  Future<Map<String, dynamic>> updateOwnerServiceConfig({
+    required String serviceId,
+    required String ownerId,
+    String? name,
+    String? category,
+    double? tenantBasePrice,
+    double? tenantPricePerKM,
+    String? photoUrl,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+    double? latitude,
+    double? longitude,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
+  }) async {
+    final call = <String, dynamic>{
+      'service_id': serviceId,
+      'owner_id': ownerId,
+      'name': name,
+      'category': category,
+      'tenant_base_price': tenantBasePrice,
+      'tenant_price_per_km': tenantPricePerKM,
+      'photo_url': photoUrl,
+      'address': address,
+      'working_hours': workingHours,
+      'coverage_radius_km': coverageRadiusKm,
+      'latitude': latitude,
+      'longitude': longitude,
+      'schedule_mode': scheduleMode,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'per_day_schedule': perDaySchedule,
+      'timezone': timezone,
+    }..removeWhere((_, v) => v == null);
+    updateCalls.add(call);
+    if (updateGate != null) await updateGate!.future;
+    if (nextUpdateError != null) throw nextUpdateError!;
+    return {'message': 'service updated'};
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -303,6 +490,90 @@ class FakeRecon extends ChangeNotifier implements ReconciliationProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Fleet map fake (FE-OWNER-2): tests set markers and connection state;
+/// hydrations, subscriptions, name lookups and disconnects are recorded.
+class FakeOwnerMap extends ChangeNotifier implements MapTrackingProvider {
+  @override
+  List<EmployeeMarkerData> markersList = [];
+
+  @override
+  bool isLoading = false;
+
+  @override
+  bool isConnected = true;
+
+  @override
+  String? error;
+
+  @override
+  String? subscriptionError;
+
+  final List<String> hydrateCalls = [];
+  final List<String> subscribeCalls = [];
+  Map<String, String> names = const {};
+  int disconnects = 0;
+
+  /// What the next hydration loads.
+  List<EmployeeMarkerData>? nextMarkers;
+  String? nextError;
+
+  @override
+  Future<void> hydrateOwnerFleet(String ownerToken) async {
+    hydrateCalls.add(ownerToken);
+    if (nextError != null) {
+      error = nextError;
+    } else {
+      error = null;
+      if (nextMarkers != null) markersList = List.of(nextMarkers!);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void connectAndSubscribe(String channel, String token,
+      {Object? customChannel}) {
+    subscribeCalls.add(channel);
+  }
+
+  @override
+  void setEmployeeNameLookup(Map<String, String> lookup) {
+    names = Map.of(lookup);
+    markersList = [
+      for (final m in markersList)
+        EmployeeMarkerData(
+          employeeId: m.employeeId,
+          employeeName: lookup[m.employeeId],
+          jobId: m.jobId,
+          latitude: m.latitude,
+          longitude: m.longitude,
+          updatedAt: m.updatedAt,
+        ),
+    ];
+    notifyListeners();
+  }
+
+  @override
+  void disconnect() {
+    disconnects++;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+EmployeeMarkerData courierAt(String id,
+        {String? jobId,
+        double lat = 30.05,
+        double lon = 31.24,
+        DateTime? updatedAt}) =>
+    EmployeeMarkerData(
+      employeeId: id,
+      jobId: jobId,
+      latitude: lat,
+      longitude: lon,
+      updatedAt: updatedAt ?? ownerNow.subtract(const Duration(minutes: 3)),
+    );
+
 class FakeOwnerNotifications extends ChangeNotifier
     implements NotificationsProvider {
   @override
@@ -333,9 +604,14 @@ class RecordingOwnerNav extends OwnerNav {
   @override
   Future<void> openKyb(BuildContext context) async => opened.add('kyb');
 
+  /// The courier the last fleet map hand-off focused.
+  String? fleetFocus;
+
   @override
-  Future<void> openFleetMap(BuildContext context) async =>
-      opened.add('fleet_map');
+  Future<void> openFleetMap(BuildContext context, {String? employeeId}) async {
+    opened.add('fleet_map');
+    fleetFocus = employeeId;
+  }
 
   @override
   Future<void> openServiceSetup(BuildContext context) async =>
@@ -360,7 +636,9 @@ class OwnerTestDeps {
     FakeRecon? recon,
     FakeOwnerNotifications? notifications,
     RecordingOwnerNav? nav,
+    FakeOwnerMap? map,
   })  : auth = auth ?? FakeOwnerAuth(),
+        map = map ?? FakeOwnerMap(),
         owner = owner ?? FakeOwner(),
         ratings = ratings ?? FakeRatings(),
         recon = recon ?? FakeRecon(),
@@ -373,6 +651,7 @@ class OwnerTestDeps {
   final FakeRecon recon;
   final FakeOwnerNotifications notifications;
   final RecordingOwnerNav nav;
+  final FakeOwnerMap map;
 
   late final OwnerDataController data =
       OwnerDataController(owner, auth, now: () => ownerNow);
@@ -396,6 +675,7 @@ Widget ownerApp(
       ChangeNotifierProvider<ReconciliationProvider>.value(value: deps.recon),
       ChangeNotifierProvider<NotificationsProvider>.value(
           value: deps.notifications),
+      ChangeNotifierProvider<MapTrackingProvider>.value(value: deps.map),
       ChangeNotifierProvider<ThemeProvider>(create: (_) => _FakeTheme()),
       ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       if (withData)
@@ -403,15 +683,18 @@ Widget ownerApp(
     ],
     child: OwnerNavScope(
       nav: deps.nav,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: quickDeliveryTheme,
-        darkTheme: quickDeliveryDarkTheme,
-        themeMode: ThemeMode.light,
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: QdThemeScope(child: home),
+      child: CustomerMapTilesScope(
+        tileProvider: BlankTileProvider(),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: quickDeliveryTheme,
+          darkTheme: quickDeliveryDarkTheme,
+          themeMode: ThemeMode.light,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QdThemeScope(child: home),
+        ),
       ),
     ),
   );

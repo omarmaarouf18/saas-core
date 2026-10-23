@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
 import '../../screens/kyc_document_upload_screen.dart';
 import '../../screens/notifications_screen.dart';
-import '../../screens/owner_configuration_screen.dart';
-import '../../screens/owner_fleet_map_screen.dart';
-import '../../screens/owner_history_screen.dart';
 import '../../screens/subscription_screen.dart';
 import '../../screens/wallet_screen.dart';
 import '../../ui/qd_ui.dart';
+import 'activity_log_page.dart';
+import 'fleet_map_page.dart';
 import 'owner_controller.dart';
+import 'service_setup_page.dart';
 
 /// Navigation for the redesigned owner pages (FE-OWNER-1).
 ///
@@ -43,17 +42,14 @@ class OwnerNav {
   Future<void> openKyb(BuildContext context) =>
       _old(context, const KycDocumentUploadScreen());
 
-  /// The existing fleet map (O-Fleet is FE-OWNER-2).
-  Future<void> openFleetMap(BuildContext context) {
-    final auth = context.read<AuthProvider>();
-    return _old(
-      context,
-      OwnerFleetMapScreen(ownerId: auth.user?.id ?? '', token: auth.token),
-    );
-  }
+  /// Team map (O-Fleet), with [employeeId]'s courier selected if given.
+  Future<void> openFleetMap(BuildContext context, {String? employeeId}) =>
+      push<void>(
+          context, (_) => OwnerFleetMapPage(focusEmployeeId: employeeId));
 
+  /// Service setup (O-Service).
   Future<void> openServiceSetup(BuildContext context) =>
-      _old(context, const OwnerConfigurationScreen());
+      OwnerServicePage.open(context);
 
   Future<void> openWallet(BuildContext context) =>
       _old(context, const WalletScreen());
@@ -61,9 +57,9 @@ class OwnerNav {
   Future<void> openSubscription(BuildContext context) =>
       _old(context, const SubscriptionScreen());
 
-  /// Activity log, finished jobs and ledger (the old History tab).
+  /// Activity log: activity and money (replaces the old History tab).
   Future<void> openHistory(BuildContext context) =>
-      _old(context, const OwnerHistoryScreen());
+      OwnerActivityPage.open(context);
 }
 
 class OwnerNavScope extends InheritedWidget {

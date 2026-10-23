@@ -4406,7 +4406,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ownCustomerRef(String id) {
-    return 'Account $id';
+    return 'Customer $id';
   }
 
   @override
@@ -4923,4 +4923,278 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownNavAccount => 'Account';
+
+  @override
+  String get ownSvcTitle => 'Service setup';
+
+  @override
+  String get ownSvcSectionBusiness => 'Service';
+
+  @override
+  String get ownSvcPhotoNote =>
+      'Customers see the first letter of your service name for now. Photo upload is coming.';
+
+  @override
+  String get ownSvcName => 'Service name as customers see it';
+
+  @override
+  String get ownSvcNameRequired => 'Enter the service name';
+
+  @override
+  String get ownSvcKind => 'Type';
+
+  @override
+  String get ownSvcKindDelivery => 'Delivery';
+
+  @override
+  String get ownSvcKindTransport => 'Rides';
+
+  @override
+  String get ownSvcKindShipping => 'Shipping';
+
+  @override
+  String get ownSvcSectionPlace => 'Place and coverage';
+
+  @override
+  String get ownSvcPlace => 'Business location on the map';
+
+  @override
+  String get ownSvcPlaceMissing => 'Required';
+
+  @override
+  String get ownSvcPlaceSet => 'Set on the map';
+
+  @override
+  String get ownSvcPickerTitle => 'Business location';
+
+  @override
+  String get ownSvcAddress => 'Written address';
+
+  @override
+  String get ownSvcAddressShort =>
+      'Write at least 3 letters, or leave it empty';
+
+  @override
+  String get ownSvcRadius => 'How far do you serve?';
+
+  @override
+  String get ownSvcKm => 'km';
+
+  @override
+  String get ownSvcRadiusInvalid => 'Enter a distance above 0';
+
+  @override
+  String get ownSvcSectionHours => 'Working hours';
+
+  @override
+  String get ownSvcHoursNone =>
+      'No hours set: customers see you as open all the time.';
+
+  @override
+  String get ownSvcHoursSet => 'Set working hours';
+
+  @override
+  String get ownSvcHoursSame => 'Same every day';
+
+  @override
+  String get ownSvcHoursPerDay => 'Each day';
+
+  @override
+  String get ownSvcOpens => 'Opens';
+
+  @override
+  String get ownSvcCloses => 'Closes';
+
+  @override
+  String get ownSvcDayOff => 'Day off';
+
+  @override
+  String get ownSvcHoursRemove => 'Remove hours';
+
+  @override
+  String get ownSvcHoursSameTime =>
+      'Opening and closing can\'t be the same time';
+
+  @override
+  String get ownSvcHoursMissing => 'Pick both times';
+
+  @override
+  String get ownSvcSectionPricing => 'Pricing';
+
+  @override
+  String get ownSvcBaseFee => 'Opening fee';
+
+  @override
+  String get ownSvcPerKm => 'Per km';
+
+  @override
+  String get ownSvcPriceInvalid => 'Enter 0 or more';
+
+  @override
+  String ownSvcExample(int km, String price) {
+    return 'Example: a $km km trip shows the customer $price.';
+  }
+
+  @override
+  String get ownSvcExampleEmpty =>
+      'Enter both prices to see what a customer pays.';
+
+  @override
+  String get ownSvcSave => 'Save';
+
+  @override
+  String get ownSvcSaved => 'Service saved';
+
+  @override
+  String get ownSvcFixErrors => 'Check the fields marked in red';
+
+  @override
+  String get ownSvcLoadError => 'We couldn\'t load your service';
+
+  @override
+  String get ownSvcErrKyb =>
+      'Your business papers need to be approved before you can save the service.';
+
+  @override
+  String get ownSvcErrPlan => 'Saving the service needs an active plan.';
+
+  @override
+  String get ownSvcErrUnavailable =>
+      'This is unavailable right now. Try again in a bit.';
+
+  @override
+  String get ownSvcErrPartial =>
+      'The service was created but some details weren\'t saved. Tap save again.';
+
+  @override
+  String get ownSvcCurrency => 'EGP';
+
+  @override
+  String get ownFleetMapLabel => 'Map of your couriers';
+
+  @override
+  String get ownFleetFilterLabel => 'Show';
+
+  @override
+  String get ownFleetAll => 'All';
+
+  @override
+  String get ownFleetFree => 'Free';
+
+  @override
+  String get ownFleetDenied => 'You don\'t have access to this team map.';
+
+  @override
+  String get ownFleetLoadError => 'Your couriers\' locations didn\'t load.';
+
+  @override
+  String get ownFleetReconnecting => 'Reconnecting to live locations…';
+
+  @override
+  String get ownFleetNobody => 'No courier is sharing a location right now.';
+
+  @override
+  String get ownFleetRefresh => 'Refresh';
+
+  @override
+  String ownFleetSummary(int total, int onJob) {
+    return 'On the map: $total · on a job: $onJob';
+  }
+
+  @override
+  String get ownFleetSummaryNone =>
+      'Couriers show up here while they share their location.';
+
+  @override
+  String get ownFleetTapHint => 'Tap a courier to see their order.';
+
+  @override
+  String ownFleetLastUpdate(String ago) {
+    return 'Last update $ago';
+  }
+
+  @override
+  String get ownFleetClose => 'Close';
+
+  @override
+  String ownFleetOrderRef(String ref) {
+    return 'Order $ref';
+  }
+
+  @override
+  String ownFleetOrderTo(String ref, String place) {
+    return 'Order $ref · to $place';
+  }
+
+  @override
+  String get ownFleetCourierPage => 'Courier page';
+
+  @override
+  String get ownLogTitle => 'Activity log';
+
+  @override
+  String get ownLogTabActivity => 'Activity';
+
+  @override
+  String get ownLogTabMoney => 'Money';
+
+  @override
+  String get ownLogPeriodLabel => 'Period';
+
+  @override
+  String get ownLogPeriodAll => 'All';
+
+  @override
+  String get ownLogPeriodToday => 'Today';
+
+  @override
+  String get ownLogPeriodWeek => '7 days';
+
+  @override
+  String get ownLogActivityEmpty => 'No activity yet';
+
+  @override
+  String get ownLogActivityEmptyBody =>
+      'Courier actions and account changes show up here.';
+
+  @override
+  String get ownLogMoneyEmpty => 'No money movements yet';
+
+  @override
+  String get ownLogMoneyEmptyBody =>
+      'Orders are paid in cash for now, so this stays empty until online payments start.';
+
+  @override
+  String get ownLogNoneInPeriod => 'Nothing in this period';
+
+  @override
+  String get ownLogShowAll => 'Show all';
+
+  @override
+  String get ownLogActivityError => 'We couldn\'t load the activity';
+
+  @override
+  String get ownLogMoneyError => 'We couldn\'t load the money movements';
+
+  @override
+  String get ownLogStale =>
+      'Couldn\'t refresh. This is the last list we loaded.';
+
+  @override
+  String get ownLogYou => 'You';
+
+  @override
+  String ownLogBalanceAfter(String amount) {
+    return 'balance after $amount';
+  }
+
+  @override
+  String ownLogMoneyIn(String amount) {
+    return 'Money in, $amount';
+  }
+
+  @override
+  String ownLogMoneyOut(String amount) {
+    return 'Money out, $amount';
+  }
 }

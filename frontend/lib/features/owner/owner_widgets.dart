@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../../ui/qd_ui.dart';
 
 /// Small layout pieces shared by the redesigned owner pages (FE-OWNER-1).
@@ -28,6 +29,39 @@ class OwnerInfoGroup extends StatelessWidget {
             rows[i],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Bordered group of arbitrary rows with 1 dp dividers (per-day hours,
+/// activity lists). The border is drawn over the rows so row fills never
+/// cover it.
+class OwnerBorderedColumn extends StatelessWidget {
+  const OwnerBorderedColumn({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = QdColors.of(context);
+    final radius = BorderRadius.circular(QdRadius.card);
+    return ClipRRect(
+      borderRadius: radius,
+      child: Container(
+        foregroundDecoration: BoxDecoration(
+          border: Border.all(color: c.border),
+          borderRadius: radius,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) Container(height: 1, color: c.fillMuted),
+              children[i],
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -114,4 +148,56 @@ PreferredSizeWidget ownerAppBar(BuildContext context,
         ),
     ],
   );
+}
+
+/// KYB status banner (A-Owner): not uploaded, under review, or rejected
+/// with the reviewer's reason; the action opens the verification page.
+class OwnerKybBanner extends StatelessWidget {
+  const OwnerKybBanner(
+      {super.key,
+      required this.status,
+      required this.reason,
+      required this.onOpen});
+
+  final String status;
+  final String? reason;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final pending = status == 'pending_super_admin_approval';
+    final rejected = status == 'rejected';
+    final why = reason?.trim() ?? '';
+    return QdBanner(
+      key: Key(
+          'own_kyb_${rejected ? 'rejected' : pending ? 'pending' : 'missing'}'),
+      tone: rejected
+          ? QdBannerTone.danger
+          : pending
+              ? QdBannerTone.warning
+              : QdBannerTone.info,
+      icon: rejected
+          ? Icons.error_outline
+          : pending
+              ? Icons.hourglass_top
+              : Icons.verified_user_outlined,
+      title: rejected
+          ? l10n.ownKybRejectedTitle
+          : pending
+              ? l10n.ownKybPendingTitle
+              : l10n.ownKybMissingTitle,
+      message: rejected
+          ? (why.isEmpty ? l10n.ownKybRejectedBody : why)
+          : pending
+              ? l10n.ownKybPendingBody
+              : l10n.ownKybMissingBody,
+      actionLabel: rejected
+          ? l10n.ownKybUploadAgain
+          : pending
+              ? l10n.ownKybView
+              : l10n.ownKybUpload,
+      onAction: onOpen,
+    );
+  }
 }

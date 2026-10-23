@@ -7914,7 +7914,7 @@ abstract class AppLocalizations {
   /// FE-OWNER-1 redesigned owner screens.
   ///
   /// In en, this message translates to:
-  /// **'Account {id}'**
+  /// **'Customer {id}'**
   String ownCustomerRef(String id);
 
   /// FE-OWNER-1 redesigned owner screens.
@@ -8810,6 +8810,498 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get ownNavAccount;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service setup'**
+  String get ownSvcTitle;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get ownSvcSectionBusiness;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers see the first letter of your service name for now. Photo upload is coming.'**
+  String get ownSvcPhotoNote;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service name as customers see it'**
+  String get ownSvcName;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the service name'**
+  String get ownSvcNameRequired;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get ownSvcKind;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get ownSvcKindDelivery;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides'**
+  String get ownSvcKindTransport;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping'**
+  String get ownSvcKindShipping;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Place and coverage'**
+  String get ownSvcSectionPlace;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Business location on the map'**
+  String get ownSvcPlace;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get ownSvcPlaceMissing;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Set on the map'**
+  String get ownSvcPlaceSet;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Business location'**
+  String get ownSvcPickerTitle;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Written address'**
+  String get ownSvcAddress;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least 3 letters, or leave it empty'**
+  String get ownSvcAddressShort;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'How far do you serve?'**
+  String get ownSvcRadius;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get ownSvcKm;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a distance above 0'**
+  String get ownSvcRadiusInvalid;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours'**
+  String get ownSvcSectionHours;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No hours set: customers see you as open all the time.'**
+  String get ownSvcHoursNone;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Set working hours'**
+  String get ownSvcHoursSet;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Same every day'**
+  String get ownSvcHoursSame;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Each day'**
+  String get ownSvcHoursPerDay;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens'**
+  String get ownSvcOpens;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Closes'**
+  String get ownSvcCloses;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Day off'**
+  String get ownSvcDayOff;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove hours'**
+  String get ownSvcHoursRemove;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening and closing can\'t be the same time'**
+  String get ownSvcHoursSameTime;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick both times'**
+  String get ownSvcHoursMissing;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing'**
+  String get ownSvcSectionPricing;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening fee'**
+  String get ownSvcBaseFee;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Per km'**
+  String get ownSvcPerKm;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 0 or more'**
+  String get ownSvcPriceInvalid;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: a {km} km trip shows the customer {price}.'**
+  String ownSvcExample(int km, String price);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter both prices to see what a customer pays.'**
+  String get ownSvcExampleEmpty;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get ownSvcSave;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Service saved'**
+  String get ownSvcSaved;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the fields marked in red'**
+  String get ownSvcFixErrors;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your service'**
+  String get ownSvcLoadError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business papers need to be approved before you can save the service.'**
+  String get ownSvcErrKyb;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the service needs an active plan.'**
+  String get ownSvcErrPlan;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'This is unavailable right now. Try again in a bit.'**
+  String get ownSvcErrUnavailable;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'The service was created but some details weren\'t saved. Tap save again.'**
+  String get ownSvcErrPartial;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'EGP'**
+  String get ownSvcCurrency;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Map of your couriers'**
+  String get ownFleetMapLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get ownFleetFilterLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownFleetAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get ownFleetFree;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have access to this team map.'**
+  String get ownFleetDenied;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Your couriers\' locations didn\'t load.'**
+  String get ownFleetLoadError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to live locations…'**
+  String get ownFleetReconnecting;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is sharing a location right now.'**
+  String get ownFleetNobody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get ownFleetRefresh;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'On the map: {total} · on a job: {onJob}'**
+  String ownFleetSummary(int total, int onJob);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couriers show up here while they share their location.'**
+  String get ownFleetSummaryNone;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a courier to see their order.'**
+  String get ownFleetTapHint;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Last update {ago}'**
+  String ownFleetLastUpdate(String ago);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get ownFleetClose;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref}'**
+  String ownFleetOrderRef(String ref);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {ref} · to {place}'**
+  String ownFleetOrderTo(String ref, String place);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier page'**
+  String get ownFleetCourierPage;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity log'**
+  String get ownLogTitle;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get ownLogTabActivity;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get ownLogTabMoney;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get ownLogPeriodLabel;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get ownLogPeriodAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get ownLogPeriodToday;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get ownLogPeriodWeek;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get ownLogActivityEmpty;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Courier actions and account changes show up here.'**
+  String get ownLogActivityEmptyBody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'No money movements yet'**
+  String get ownLogMoneyEmpty;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders are paid in cash for now, so this stays empty until online payments start.'**
+  String get ownLogMoneyEmptyBody;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in this period'**
+  String get ownLogNoneInPeriod;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get ownLogShowAll;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the activity'**
+  String get ownLogActivityError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the money movements'**
+  String get ownLogMoneyError;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. This is the last list we loaded.'**
+  String get ownLogStale;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get ownLogYou;
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'balance after {amount}'**
+  String ownLogBalanceAfter(String amount);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money in, {amount}'**
+  String ownLogMoneyIn(String amount);
+
+  /// FE-OWNER-2 redesigned owner screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Money out, {amount}'**
+  String ownLogMoneyOut(String amount);
 }
 
 class _AppLocalizationsDelegate

@@ -26,6 +26,13 @@ String shortIdIsolated(String id) {
   return '\u2066$s\u2069';
 }
 
+/// "#" and the first characters of an id in one left-to-right isolate, so
+/// the "#" stays in front of the id inside Arabic text ("عميل #cust-9").
+String shortRefIsolated(String id) {
+  final s = id.length > 6 ? id.substring(0, 6) : id;
+  return '\u2066#$s\u2069';
+}
+
 /// The courier's username from the employees list; a short id when the
 /// courier is not in it (removed, or the list failed to load); null when
 /// nobody is assigned.

@@ -152,7 +152,7 @@ class _OwnerTodayPageState extends State<OwnerTodayPage> {
           QdSpace.gutter, QdSpace.x1, QdSpace.gutter, QdSpace.x6),
       children: [
         if (kyb != 'approved') ...[
-          _KybBanner(
+          OwnerKybBanner(
               status: kyb,
               reason: user?.rejectionReason,
               onOpen: () => nav.openKyb(context)),
@@ -295,53 +295,6 @@ class _OwnerTodayPageState extends State<OwnerTodayPage> {
         formatAgo(context, job.cancellationRequestedAt!, now: data.now()),
     ];
     return parts.join(' · ');
-  }
-}
-
-class _KybBanner extends StatelessWidget {
-  const _KybBanner(
-      {required this.status, required this.reason, required this.onOpen});
-
-  final String status;
-  final String? reason;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final pending = status == 'pending_super_admin_approval';
-    final rejected = status == 'rejected';
-    final why = reason?.trim() ?? '';
-    return QdBanner(
-      key: Key(
-          'own_kyb_${rejected ? 'rejected' : pending ? 'pending' : 'missing'}'),
-      tone: rejected
-          ? QdBannerTone.danger
-          : pending
-              ? QdBannerTone.warning
-              : QdBannerTone.info,
-      icon: rejected
-          ? Icons.error_outline
-          : pending
-              ? Icons.hourglass_top
-              : Icons.verified_user_outlined,
-      title: rejected
-          ? l10n.ownKybRejectedTitle
-          : pending
-              ? l10n.ownKybPendingTitle
-              : l10n.ownKybMissingTitle,
-      message: rejected
-          ? (why.isEmpty ? l10n.ownKybRejectedBody : why)
-          : pending
-              ? l10n.ownKybPendingBody
-              : l10n.ownKybMissingBody,
-      actionLabel: rejected
-          ? l10n.ownKybUploadAgain
-          : pending
-              ? l10n.ownKybView
-              : l10n.ownKybUpload,
-      onAction: onOpen,
-    );
   }
 }
 
