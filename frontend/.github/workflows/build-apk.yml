@@ -76,7 +76,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: omarmaarouf18
-          repositories: logiclinc
+          repositories: logiclink
 
       - name: Publish release info to logiclinkeg.tech website
         env:
@@ -86,8 +86,8 @@ jobs:
             echo "Error: APP_TOKEN is missing or empty."
             exit 1
           fi
-          git clone "https://x-access-token:${APP_TOKEN}@github.com/omarmaarouf18/logiclinc.git" /tmp/logiclinc
-          cd /tmp/logiclinc
+          git clone "https://x-access-token:${APP_TOKEN}@github.com/omarmaarouf18/logiclink.git" /tmp/logiclink
+          cd /tmp/logiclink
           cat > app-release.json <<EOF
           {
             "version": "${{ steps.vars.outputs.version }}",
