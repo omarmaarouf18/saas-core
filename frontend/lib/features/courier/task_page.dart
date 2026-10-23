@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/l10n.dart';
-import '../../models/job.dart';
 import '../../ui/qd_ui.dart';
+import 'active_job_page.dart';
 import 'courier_controller.dart';
 import 'courier_widgets.dart';
 import 'offer_page.dart';
@@ -25,7 +25,10 @@ class CourierTaskPage extends StatelessWidget {
       return CourierOfferPage(key: ValueKey('offer_${offer.id}'), job: offer);
     }
     final current = ctl.current;
-    if (current != null) return _JobSummary(job: current);
+    if (current != null) {
+      return CourierActiveJobPage(
+          key: ValueKey('job_${current.id}'), job: current);
+    }
     return const _IdleView();
   }
 }
@@ -39,37 +42,6 @@ class _Loading extends StatelessWidget {
       key: const Key('courier_task_loading'),
       backgroundColor: QdColors.of(context).surface,
       body: const Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-/// Temporary until the current-job page lands (item 4).
-class _JobSummary extends StatelessWidget {
-  const _JobSummary({required this.job});
-
-  final Job job;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = QdColors.of(context);
-    return Scaffold(
-      backgroundColor: c.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(QdSpace.gutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CourierHeader(title: context.l10n.courNavTask),
-              const SizedBox(height: QdSpace.x4),
-              QdJobStatusChips(
-                status: job.status,
-                cancellationRequestStatus: job.cancellationRequestStatus,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

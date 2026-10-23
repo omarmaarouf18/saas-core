@@ -78,7 +78,15 @@ class EmployeeJobsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> completeJob(String jobId, {bool cashCollected = false}) async {
+  Future<void> completeJob(String jobId, {bool cashCollected = false}) =>
+      completeJobWithAmount(jobId, cashCollected: cashCollected);
+
+  /// [completeJob] plus (FE-COURIER) the cash actually collected at the door
+  /// when it differs from the price: sent as `actual_cash_amount` only when
+  /// positive (the server records the price otherwise). A separate method so
+  /// [completeJob]'s signature, which test doubles override, is unchanged.
+  Future<void> completeJobWithAmount(String jobId,
+      {bool cashCollected = false, double? actualCashAmount}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -88,6 +96,8 @@ class EmployeeJobsProvider extends ChangeNotifier {
       await apiClient.post('/users/jobs/complete', {
         'job_id': jobId,
         'cash_collected': cashCollected,
+        if (actualCashAmount != null && actualCashAmount > 0)
+          'actual_cash_amount': actualCashAmount,
         if (token.isNotEmpty) 'requester_id': token,
       });
 
@@ -120,11 +130,87 @@ class EmployeeJobsProvider extends ChangeNotifier {
           cancellationRequestStatus: existing.cancellationRequestStatus,
           createdAt: existing.createdAt,
           updatedAt: DateTime.now(),
+          statusHistory: existing.statusHistory,
+          estimatedDurationMinutes: existing.estimatedDurationMinutes,
+          recipient: existing.recipient,
+          packageDetails: existing.packageDetails,
+          distanceReview: existing.distanceReview,
         );
       }
     } catch (e) {
       debugPrint('Error completing job: $e');
       _error = friendlyErrorMessage(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Job model v2 (ADR-0028 §3.2, FE-COURIER): the assigned courier
+  /// confirms the pickup (`POST /users/jobs/pickup`, bearer token).
+  /// `heading_to_pickup` becomes `picked_up`. On success the local entry is
+  /// replaced with the server's job when the response carries one, else
+  /// marked `picked_up` locally. Errors are rethrown with
+  /// [lastErrorStatusCode] set (409 already picked up / not active, 403 not
+  /// the assigned courier, 404 gone).
+  Future<Job?> pickupJob(String jobId) async {
+    _isLoading = true;
+    _error = null;
+    _lastErrorStatusCode = null;
+    notifyListeners();
+
+    try {
+      final res = await apiClient.post('/users/jobs/pickup', {'job_id': jobId});
+      final index = _jobs.indexWhere((j) => j.id == jobId);
+      if (res is Map && res['job'] is Map) {
+        final updated =
+            Job.fromJson(Map<String, dynamic>.from(res['job'] as Map));
+        if (index != -1) _jobs[index] = updated;
+        return updated;
+      }
+      if (index != -1) {
+        final existing = _jobs[index];
+        _jobs[index] = Job(
+          id: existing.id,
+          ownerId: existing.ownerId,
+          employeeId: existing.employeeId,
+          userId: existing.userId,
+          serviceId: existing.serviceId,
+          status: existing.status,
+          location: existing.location,
+          destination: existing.destination,
+          currentLocation: existing.currentLocation,
+          paymentMethod: existing.paymentMethod,
+          cancellationReason: existing.cancellationReason,
+          lockedEscrowAmount: existing.lockedEscrowAmount,
+          suggestedPrice: existing.suggestedPrice,
+          proposedPrice: existing.proposedPrice,
+          proposedBy: existing.proposedBy,
+          agreedPrice: existing.agreedPrice,
+          priceProposalExpiresAt: existing.priceProposalExpiresAt,
+          currentOfferedEmployeeId: existing.currentOfferedEmployeeId,
+          offerExpiresAt: existing.offerExpiresAt,
+          offeredEmployeeIds: existing.offeredEmployeeIds,
+          cancellationRequestReason: existing.cancellationRequestReason,
+          cancellationRequestedAt: existing.cancellationRequestedAt,
+          cancellationRequestStatus: existing.cancellationRequestStatus,
+          createdAt: existing.createdAt,
+          updatedAt: DateTime.now(),
+          subStatus: 'picked_up',
+          statusHistory: existing.statusHistory,
+          estimatedDurationMinutes: existing.estimatedDurationMinutes,
+          recipient: existing.recipient,
+          packageDetails: existing.packageDetails,
+          distanceReview: existing.distanceReview,
+        );
+        return _jobs[index];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error confirming pickup: $e');
+      _error = friendlyErrorMessage(e);
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       rethrow;
     } finally {
       _isLoading = false;
@@ -182,6 +268,11 @@ class EmployeeJobsProvider extends ChangeNotifier {
             cancellationRequestStatus: existing.cancellationRequestStatus,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
+            statusHistory: existing.statusHistory,
+            estimatedDurationMinutes: existing.estimatedDurationMinutes,
+            recipient: existing.recipient,
+            packageDetails: existing.packageDetails,
+            distanceReview: existing.distanceReview,
           );
         }
       }
@@ -276,6 +367,12 @@ class EmployeeJobsProvider extends ChangeNotifier {
           cancellationRequestStatus: 'pending',
           createdAt: existing.createdAt,
           updatedAt: DateTime.now(),
+          subStatus: existing.subStatus,
+          statusHistory: existing.statusHistory,
+          estimatedDurationMinutes: existing.estimatedDurationMinutes,
+          recipient: existing.recipient,
+          packageDetails: existing.packageDetails,
+          distanceReview: existing.distanceReview,
         );
       }
 
@@ -363,6 +460,11 @@ class EmployeeJobsProvider extends ChangeNotifier {
             cancellationRequestStatus: existing.cancellationRequestStatus,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
+            statusHistory: existing.statusHistory,
+            estimatedDurationMinutes: existing.estimatedDurationMinutes,
+            recipient: existing.recipient,
+            packageDetails: existing.packageDetails,
+            distanceReview: existing.distanceReview,
           );
           return _jobs[index];
         }

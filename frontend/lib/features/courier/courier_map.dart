@@ -58,7 +58,8 @@ class _CourierMapState extends State<CourierMap> {
       _map.move(pts.first, 15);
     } else {
       _map.fitCamera(CameraFit.coordinates(
-          coordinates: pts, padding: const EdgeInsets.all(40)));
+          coordinates: pts,
+          padding: const EdgeInsets.fromLTRB(40, 64, 40, 72)));
     }
   }
 
@@ -112,7 +113,11 @@ class _CourierMapState extends State<CourierMap> {
                         ? null
                         : CameraFit.coordinates(
                             coordinates: pts,
-                            padding: const EdgeInsets.all(32)),
+                            // Room for the overlays (and, on the current
+                            // job, the sheet over the map's bottom edge).
+                            padding: widget.interactive
+                                ? const EdgeInsets.fromLTRB(40, 64, 40, 72)
+                                : const EdgeInsets.all(32)),
                     interactionOptions: InteractionOptions(
                         flags: widget.interactive
                             ? InteractiveFlag.all & ~InteractiveFlag.rotate
@@ -163,7 +168,7 @@ class _CourierMapState extends State<CourierMap> {
             if (widget.interactive)
               PositionedDirectional(
                 end: QdSpace.x4,
-                top: QdSpace.x4 + 52,
+                top: QdSpace.x4,
                 child: QdIconButton(
                   key: const Key('courier_map_recenter'),
                   icon: Icons.center_focus_strong_outlined,

@@ -158,8 +158,19 @@ class FakeEmployeeJobs extends ChangeNotifier implements EmployeeJobsProvider {
   Future<void> declineJobOffer(String jobId) => _act('decline', {'job': jobId});
 
   @override
-  Future<void> completeJob(String jobId, {bool cashCollected = false}) =>
-      _act('complete', {'job': jobId, 'cash': cashCollected});
+  Future<void> completeJobWithAmount(String jobId,
+          {bool cashCollected = false, double? actualCashAmount}) =>
+      _act('complete', {
+        'job': jobId,
+        'cash': cashCollected,
+        'amount': actualCashAmount,
+      });
+
+  @override
+  Future<Job?> pickupJob(String jobId) async {
+    await _act('pickup', {'job': jobId});
+    return null;
+  }
 
   @override
   Future<Map<String, dynamic>> requestCancellation({

@@ -5003,4 +5003,253 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courOfferGone => 'العرض ده مبقاش متاح.';
+
+  @override
+  String get courPickedUpDone => 'اتسجل الاستلام. اتحرك على مكان التسليم.';
+
+  @override
+  String get courPickupAlready => 'الطلب ده متسجل إنه اتستلم خلاص.';
+
+  @override
+  String get courNotYours => 'الطلب ده مبقاش معاك.';
+
+  @override
+  String get courDelivered => 'الطلب اتسلّم. تسلم إيدك!';
+
+  @override
+  String get courCancelSent => 'اتبعت الطلب لصاحب الشغل.';
+
+  @override
+  String courCoordsCopied(String coords) {
+    return 'اتنسخ المكان: $coords. الصقه في تطبيق الخرايط.';
+  }
+
+  @override
+  String get courOtherJobsTitle => 'مهامك الشغالة';
+
+  @override
+  String courOtherJobs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'عندك $count مهام تانية شغالة.',
+      one: 'عندك مهمة تانية شغالة.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get courOtherJobsShow => 'اعرض';
+
+  @override
+  String get courPickedUp => 'استلمت الطلب';
+
+  @override
+  String courDeliveredCollected(String amount) {
+    return 'سلّمت واستلمت $amount';
+  }
+
+  @override
+  String get courDeliveredCash => 'سلّمت واستلمت الكاش';
+
+  @override
+  String get courDeliveredPlain => 'سلّمت الطلب';
+
+  @override
+  String get courOpenInMaps => 'افتح في الخرائط';
+
+  @override
+  String get courCurrentTitle => 'المهمة الحالية';
+
+  @override
+  String get courCancelPending => 'طلبت الإلغاء. مستني رد صاحب الشغل.';
+
+  @override
+  String get courCancelRejected => 'صاحب الشغل رفض الإلغاء. المهمة لسه معاك.';
+
+  @override
+  String get courRequestCancel => 'مش هقدر أكمل؟ اطلب إلغاء';
+
+  @override
+  String courEtaPickup(int minutes) {
+    return 'تقدير: حوالي $minutes دقيقة لمكان الاستلام';
+  }
+
+  @override
+  String courEtaDropoff(int minutes) {
+    return 'تقدير: حوالي $minutes دقيقة لمكان التسليم';
+  }
+
+  @override
+  String get courPhasePrice => 'بنتفق على السعر';
+
+  @override
+  String get courPhaseToPickup => 'رايح للاستلام';
+
+  @override
+  String get courPhasePickedUp => 'استلمت';
+
+  @override
+  String get courPhaseActive => 'شغال';
+
+  @override
+  String get courSharingLive => 'العميل شايف مكانك';
+
+  @override
+  String get courSharingOff => 'اللوكيشن مقفول';
+
+  @override
+  String get courSharingFailing => 'اللوكيشن مش بيتحدّث';
+
+  @override
+  String get courSharingStarting => 'بنشغّل اللوكيشن…';
+
+  @override
+  String get courPermissionTitle => 'شغّل اللوكيشن';
+
+  @override
+  String get courPermissionBody =>
+      'العميل والشركة مش هيشوفوا مكانك لحد ما تسمح باللوكيشن.';
+
+  @override
+  String get courOpenSettings => 'افتح الإعدادات';
+
+  @override
+  String courPhoneCopied(String phone) {
+    return 'اتنسخ الرقم: $phone. الصقه في تطبيق الاتصال.';
+  }
+
+  @override
+  String courWillPayCash(String amount) {
+    return 'هيدفع $amount كاش';
+  }
+
+  @override
+  String courOrderPriceValue(String amount) {
+    return 'سعر الطلب $amount';
+  }
+
+  @override
+  String get courCopyPhone => 'انسخ رقم التليفون';
+
+  @override
+  String get courChatWithCustomer => 'محادثة العميل';
+
+  @override
+  String courRecipientNotes(String notes) {
+    return 'ملاحظات: $notes';
+  }
+
+  @override
+  String get courAmountInvalid => 'اكتب المبلغ اللي استلمته، زي 42.';
+
+  @override
+  String get courCompleteTitle => 'سلّمت الطلب؟';
+
+  @override
+  String courCompleteCod(String amount) {
+    return 'أكّد إنك سلّمته واستلمت $amount كاش.';
+  }
+
+  @override
+  String get courCompleteCodNoPrice => 'أكّد إنك سلّمته واستلمت الكاش.';
+
+  @override
+  String get courCompleteNonCod => 'أكّد إنك سلّمت الطلب.';
+
+  @override
+  String get courCompleteDifferent => 'استلمت مبلغ مختلف';
+
+  @override
+  String get courCompleteAmountLabel => 'المبلغ اللي استلمته';
+
+  @override
+  String get courCompleteAmountHelp => 'بالجنيه المصري';
+
+  @override
+  String courCompleteConfirmAmount(String amount) {
+    return 'أيوه، استلمت $amount';
+  }
+
+  @override
+  String get courCompleteConfirmCash => 'أيوه، استلمت الكاش';
+
+  @override
+  String get courCompleteConfirm => 'أيوه، سلّمته';
+
+  @override
+  String get courNotYet => 'لسه';
+
+  @override
+  String get courCompleteNote => 'الشركة بتشوف المبلغ اللي بتأكده.';
+
+  @override
+  String get courCancelTitle => 'اطلب إلغاء';
+
+  @override
+  String get courCancelBody =>
+      'صاحب الشغل هو اللي هيقرر. لحد ما يرد، المهمة معاك.';
+
+  @override
+  String get courCancelSend => 'ابعت الطلب';
+
+  @override
+  String get courCancelKeep => 'كمّل المهمة';
+
+  @override
+  String courPriceAcceptTitle(String price) {
+    return 'توافق على $price؟';
+  }
+
+  @override
+  String get courPriceAcceptBody => 'المشوار هيبدأ على طول بالسعر ده.';
+
+  @override
+  String get courProposalSent => 'السعر اتبعت. مستني رد العميل.';
+
+  @override
+  String get courPriceAccepted => 'السعر اتقبل. المشوار بدأ.';
+
+  @override
+  String get courPriceDeclined => 'رفضت السعر.';
+
+  @override
+  String courPriceCustomerTitle(String price) {
+    return 'العميل عارض $price';
+  }
+
+  @override
+  String courPriceWas(String price) {
+    return 'السعر المقترح كان $price.';
+  }
+
+  @override
+  String courPriceMineTitle(String price) {
+    return 'إنت عرضت $price';
+  }
+
+  @override
+  String get courPriceMineBody => 'مستني رد العميل.';
+
+  @override
+  String get courPriceProposeTitle => 'اقترح سعرك';
+
+  @override
+  String courPriceProposeBody(String price) {
+    return 'السعر المقترح $price. تقدر تبعت عرض واحد، والعميل يقبله أو يرفضه.';
+  }
+
+  @override
+  String get courPriceWaitingTitle => 'مستني الاتفاق على السعر';
+
+  @override
+  String get courPriceProposeLabel => 'سعرك';
+
+  @override
+  String courPriceBounds(String min, String max) {
+    return 'من $min لـ $max';
+  }
+
+  @override
+  String get courPriceExpired => 'وقت عرض السعر خلص.';
 }

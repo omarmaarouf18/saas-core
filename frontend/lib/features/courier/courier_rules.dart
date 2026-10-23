@@ -98,3 +98,27 @@ KyeState kyeStateOf(UserProfile? user) => switch (_norm(user?.kyeStatus)) {
 /// Suspended by a reviewer, or paused (frozen) by the company: the auth
 /// service reports both as `account_status: suspended`.
 bool isBlocked(UserProfile? user) => user?.isSuspended ?? false;
+
+/// The one primary action of the current job (A-Courier).
+enum CourierAction { none, pickup, deliver }
+
+/// heading_to_pickup -> pickup; picked_up, or no sub-status (jobs from
+/// before job model v2) -> deliver; nothing unless the job is active.
+CourierAction primaryActionFor(Job job) {
+  if (!isActive(job)) return CourierAction.none;
+  return _norm(job.subStatus) == 'heading_to_pickup'
+      ? CourierAction.pickup
+      : CourierAction.deliver;
+}
+
+/// The stop the courier is heading to: the pickup until it is picked up,
+/// then the drop-off (the pickup when no drop-off was set).
+JobLocation navigationTarget(Job job) =>
+    primaryActionFor(job) == CourierAction.pickup
+        ? job.location
+        : (job.destination ?? job.location);
+
+/// A cancellation can be requested while the job runs and no request is
+/// pending (the old rule).
+bool canRequestCancellation(Job job) =>
+    isCurrent(job) && _norm(job.cancellationRequestStatus) != 'pending';
