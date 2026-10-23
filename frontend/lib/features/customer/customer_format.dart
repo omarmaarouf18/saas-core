@@ -21,16 +21,20 @@ String jobPlaceLabel(AppLocalizations l10n, JobLocation? location) {
       : summary;
 }
 
-/// Main line for a picked place: "Your current location" for the device
-/// location, otherwise its note, otherwise "Pinned location".
+/// Main line for a picked place: its address text, else "Your current
+/// location" for the device location, else its note, else "Pinned
+/// location".
 String placeTitle(AppLocalizations l10n, PickedPlace place) {
+  if (place.trimmedAddress case final address?) return address;
   if (place.isDeviceLocation) return l10n.custCurrentLocation;
   return place.trimmedNote ?? l10n.custPinnedLocation;
 }
 
 /// Second line for a picked place: the note, when the main line is not it.
 String? placeNote(PickedPlace place) =>
-    place.isDeviceLocation ? place.trimmedNote : null;
+    place.trimmedAddress != null || place.isDeviceLocation
+        ? place.trimmedNote
+        : null;
 
 String categoryLabel(AppLocalizations l10n, String? category) =>
     switch (category?.trim().toLowerCase()) {

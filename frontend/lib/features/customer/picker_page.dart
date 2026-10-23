@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/constants.dart';
 import '../../l10n/l10n.dart';
 import '../../ui/qd_ui.dart';
+import 'booking_rules.dart';
 import 'customer_location.dart';
 import 'customer_theme.dart';
 
@@ -30,8 +31,9 @@ class CustomerMapTilesScope extends InheritedWidget {
 }
 
 /// Full-screen location picker (A-Picker): the map moves under a fixed
-/// centre pin, "my location" recentres it, an optional landmark note, and
-/// one confirm button that returns a [PickedPlace].
+/// centre pin, "my location" recentres it, optional address text (job
+/// model v2, ≤ 250) and landmark note, and one confirm button that returns
+/// a [PickedPlace].
 ///
 /// Without an [initial] place it tries the device location first; when
 /// location is denied or off it says so and the customer picks by hand.
@@ -49,7 +51,7 @@ class CustomerPickerPage extends StatefulWidget {
   final String title;
   final PickedPlace? initial;
 
-  /// The marketplace search-area picker needs no landmark note.
+  /// The marketplace search-area picker needs no address or landmark note.
   final bool showNote;
 
   /// Pushes the picker and returns the confirmed place, or null when the
@@ -72,6 +74,7 @@ class CustomerPickerPage extends StatefulWidget {
 class _CustomerPickerPageState extends State<CustomerPickerPage> {
   final MapController _map = MapController();
   late final TextEditingController _note;
+  late final TextEditingController _address;
   late LatLng _center;
   bool _fromDevice = false;
   bool _locating = false;
@@ -87,6 +90,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
         : LatLng(initial.latitude, initial.longitude);
     _fromDevice = initial?.isDeviceLocation ?? false;
     _note = TextEditingController(text: initial?.trimmedNote ?? '');
+    _address = TextEditingController(text: initial?.trimmedAddress ?? '');
     if (initial == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _locate());
     }
@@ -95,6 +99,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
   @override
   void dispose() {
     _note.dispose();
+    _address.dispose();
     _map.dispose();
     super.dispose();
   }
@@ -125,6 +130,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       latitude: _center.latitude,
       longitude: _center.longitude,
       note: widget.showNote ? _note.text.trim() : null,
+      address: widget.showNote ? _address.text.trim() : null,
       isDeviceLocation: _fromDevice,
     ));
   }
@@ -240,6 +246,17 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                 ),
                 if (widget.showNote) ...[
                   const SizedBox(height: 14),
+                  QdTextField(
+                    key: const Key('cust_picker_address'),
+                    label: l10n.bookAddressLabel,
+                    hint: l10n.bookAddressHint,
+                    controller: _address,
+                    textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(kAddressMaxLength),
+                    ],
+                  ),
+                  const SizedBox(height: QdSpace.x3),
                   QdTextField(
                     key: const Key('cust_picker_note'),
                     label: l10n.custNoteLabel,

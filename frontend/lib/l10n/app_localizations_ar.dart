@@ -5966,4 +5966,96 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courCallRecipient => 'اتصل بالمستلم';
+
+  @override
+  String get bookAddressLabel => 'العنوان · اختياري';
+
+  @override
+  String get bookAddressHint => 'الشارع، العمارة، المنطقة';
+
+  @override
+  String get bookRecipientTitle => 'مين هيستلم؟';
+
+  @override
+  String get bookPassengerTitle => 'مين اللي هيركب؟';
+
+  @override
+  String get bookRecipientMe => 'أنا المستلم';
+
+  @override
+  String get bookPassengerMe => 'أنا اللي راكب';
+
+  @override
+  String get bookRecipientOther => 'حد تاني';
+
+  @override
+  String get bookRecipientName => 'الاسم · اختياري';
+
+  @override
+  String get bookRecipientNameHint => 'المندوب يسأل على مين؟';
+
+  @override
+  String get bookPassengerNameHint => 'السواق يسأل على مين؟';
+
+  @override
+  String get bookRecipientPhone => 'رقم التليفون · اختياري';
+
+  @override
+  String get bookRecipientNotes => 'ملاحظات · اختياري';
+
+  @override
+  String get bookRecipientNotesHint => 'مثلاً: كلّمه قبل ما توصل';
+
+  @override
+  String get bookRecipientPhoneHelp => 'بيظهر للمندوب بس وهو بيوصّل الطلب.';
+
+  @override
+  String get bookPackageTitle => 'الشحنة';
+
+  @override
+  String get bookPackageSize => 'الحجم';
+
+  @override
+  String get bookSizeNone => 'مش محدد';
+
+  @override
+  String get bookSizeSmall => 'صغيرة';
+
+  @override
+  String get bookSizeMedium => 'متوسطة';
+
+  @override
+  String get bookSizeLarge => 'كبيرة';
+
+  @override
+  String get bookPackageNotes => 'ملاحظات عن الشحنة · اختياري';
+
+  @override
+  String get bookPackageNotesHint => 'مثلاً: قابلة للكسر، براحة عليها';
+
+  @override
+  String get bookPackageNoPrice => 'الحجم مش بيغيّر السعر.';
+
+  @override
+  String bookErrTooLong(int max) {
+    return 'اكتب $max حرف بالكتير.';
+  }
+
+  @override
+  String bookErrAddressTooLong(int max) {
+    return 'في عنوان طويل. اكتب $max حرف بالكتير.';
+  }
+
+  @override
+  String get bookErrNoteTooLong => 'في علامة مميزة طويلة. قصّرها وجرّب تاني.';
+
+  @override
+  String get bookErrPhone =>
+      'اكتب رقم موبايل مصري زي 01012345678، أو رقم دولي بيبدأ بـ +.';
+
+  @override
+  String get bookErrSize => 'اختار صغيرة أو متوسطة أو كبيرة.';
+
+  @override
+  String get bookFixFields => 'راجع الخانات اللي عليها علامة.';
 }

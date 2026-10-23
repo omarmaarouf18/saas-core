@@ -150,6 +150,34 @@ class FakeMarketplace extends ChangeNotifier implements MarketplaceProvider {
     required String paymentMethod,
     String? pickupAddressNote,
     String? destinationAddressNote,
+  }) =>
+      bookJobWithDetails(
+        serviceId: serviceId,
+        userId: userId,
+        latitude: latitude,
+        longitude: longitude,
+        destinationLatitude: destinationLatitude,
+        destinationLongitude: destinationLongitude,
+        paymentMethod: paymentMethod,
+        pickupAddressNote: pickupAddressNote,
+        destinationAddressNote: destinationAddressNote,
+      );
+
+  @override
+  Future<Job?> bookJobWithDetails({
+    required String serviceId,
+    required String userId,
+    required double latitude,
+    required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
+    required String paymentMethod,
+    String? pickupAddressNote,
+    String? destinationAddressNote,
+    String? pickupAddress,
+    String? destinationAddress,
+    JobRecipient? recipient,
+    JobPackageDetails? packageDetails,
   }) async {
     bookCalls.add(BookCall({
       'serviceId': serviceId,
@@ -161,6 +189,13 @@ class FakeMarketplace extends ChangeNotifier implements MarketplaceProvider {
       'paymentMethod': paymentMethod,
       'pickupAddressNote': pickupAddressNote,
       'destinationAddressNote': destinationAddressNote,
+      'pickupAddress': pickupAddress,
+      'destinationAddress': destinationAddress,
+      'recipientName': recipient?.name,
+      'recipientPhone': recipient?.phone,
+      'recipientNotes': recipient?.notes,
+      'packageSize': packageDetails?.size,
+      'packageNotes': packageDetails?.notes,
     }));
     if (bookGate != null) await bookGate!.future;
     if (nextBookError != null) throw nextBookError!;

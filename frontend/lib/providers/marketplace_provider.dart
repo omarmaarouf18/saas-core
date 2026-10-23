@@ -73,6 +73,38 @@ class MarketplaceProvider extends ChangeNotifier {
     // Sent only when non-empty (backend omitempty symmetry).
     String? pickupAddressNote,
     String? destinationAddressNote,
+  }) =>
+      bookJobWithDetails(
+        serviceId: serviceId,
+        userId: userId,
+        latitude: latitude,
+        longitude: longitude,
+        destinationLatitude: destinationLatitude,
+        destinationLongitude: destinationLongitude,
+        paymentMethod: paymentMethod,
+        pickupAddressNote: pickupAddressNote,
+        destinationAddressNote: destinationAddressNote,
+      );
+
+  /// [bookJob] plus the job model v2 inputs (ADR-0028, FE-V2-CONSUME):
+  /// optional address text, recipient and package details. Each is sent
+  /// only when it carries a non-empty value, so a booking without them is
+  /// the old request. A separate method keeps [bookJob]'s signature, which
+  /// existing test doubles override.
+  Future<Job?> bookJobWithDetails({
+    required String serviceId,
+    required String userId, // JWT token
+    required double latitude,
+    required double longitude,
+    required double destinationLatitude,
+    required double destinationLongitude,
+    required String paymentMethod,
+    String? pickupAddressNote,
+    String? destinationAddressNote,
+    String? pickupAddress,
+    String? destinationAddress,
+    JobRecipient? recipient,
+    JobPackageDetails? packageDetails,
   }) async {
     _isLoading = true;
     _error = null;
@@ -88,6 +120,8 @@ class MarketplaceProvider extends ChangeNotifier {
           'longitude': longitude,
           if (pickupAddressNote != null && pickupAddressNote.trim().isNotEmpty)
             'address_note': pickupAddressNote.trim(),
+          if (pickupAddress != null && pickupAddress.trim().isNotEmpty)
+            'address': pickupAddress.trim(),
         },
         'destination': {
           'latitude': destinationLatitude,
@@ -95,8 +129,13 @@ class MarketplaceProvider extends ChangeNotifier {
           if (destinationAddressNote != null &&
               destinationAddressNote.trim().isNotEmpty)
             'address_note': destinationAddressNote.trim(),
+          if (destinationAddress != null &&
+              destinationAddress.trim().isNotEmpty)
+            'address': destinationAddress.trim(),
         },
         'payment_method': paymentMethod,
+        if (_recipientJson(recipient) case final r?) 'recipient': r,
+        if (_packageJson(packageDetails) case final p?) 'package_details': p,
       });
 
       if (res is Map && res.containsKey('job')) {
@@ -112,6 +151,30 @@ class MarketplaceProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// `recipient` body: the non-empty, trimmed fields; null when none.
+  static Map<String, String>? _recipientJson(JobRecipient? r) {
+    if (r == null) return null;
+    final m = <String, String>{
+      for (final (k, v) in [
+        ('name', r.name),
+        ('phone', r.phone),
+        ('notes', r.notes)
+      ])
+        if (v != null && v.trim().isNotEmpty) k: v.trim(),
+    };
+    return m.isEmpty ? null : m;
+  }
+
+  /// `package_details` body: the non-empty, trimmed fields; null when none.
+  static Map<String, String>? _packageJson(JobPackageDetails? p) {
+    if (p == null) return null;
+    final m = <String, String>{
+      for (final (k, v) in [('size', p.size), ('notes', p.notes)])
+        if (v != null && v.trim().isNotEmpty) k: v.trim(),
+    };
+    return m.isEmpty ? null : m;
   }
 
   Future<Job?> fetchJobStatus(String jobId, String userToken) async {

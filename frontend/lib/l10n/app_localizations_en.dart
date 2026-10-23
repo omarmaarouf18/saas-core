@@ -6059,4 +6059,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courCallRecipient => 'Call the recipient';
+
+  @override
+  String get bookAddressLabel => 'Address · optional';
+
+  @override
+  String get bookAddressHint => 'Street, building, area';
+
+  @override
+  String get bookRecipientTitle => 'Who receives it?';
+
+  @override
+  String get bookPassengerTitle => 'Who\'s riding?';
+
+  @override
+  String get bookRecipientMe => 'I\'m the recipient';
+
+  @override
+  String get bookPassengerMe => 'I\'m riding';
+
+  @override
+  String get bookRecipientOther => 'Someone else';
+
+  @override
+  String get bookRecipientName => 'Name · optional';
+
+  @override
+  String get bookRecipientNameHint => 'Who should the courier ask for?';
+
+  @override
+  String get bookPassengerNameHint => 'Who should the driver ask for?';
+
+  @override
+  String get bookRecipientPhone => 'Phone · optional';
+
+  @override
+  String get bookRecipientNotes => 'Notes · optional';
+
+  @override
+  String get bookRecipientNotesHint => 'e.g. call before you arrive';
+
+  @override
+  String get bookRecipientPhoneHelp =>
+      'Shared with the courier only while the order is on its way.';
+
+  @override
+  String get bookPackageTitle => 'Package';
+
+  @override
+  String get bookPackageSize => 'Size';
+
+  @override
+  String get bookSizeNone => 'Not specified';
+
+  @override
+  String get bookSizeSmall => 'Small';
+
+  @override
+  String get bookSizeMedium => 'Medium';
+
+  @override
+  String get bookSizeLarge => 'Large';
+
+  @override
+  String get bookPackageNotes => 'Package notes · optional';
+
+  @override
+  String get bookPackageNotesHint => 'e.g. fragile, handle with care';
+
+  @override
+  String get bookPackageNoPrice => 'The size doesn\'t change the price.';
+
+  @override
+  String bookErrTooLong(int max) {
+    return 'Use at most $max characters.';
+  }
+
+  @override
+  String bookErrAddressTooLong(int max) {
+    return 'An address is too long. Use at most $max characters.';
+  }
+
+  @override
+  String get bookErrNoteTooLong =>
+      'A landmark note is too long. Shorten it and try again.';
+
+  @override
+  String get bookErrPhone =>
+      'Enter an Egyptian mobile number like 01012345678, or an international number starting with +.';
+
+  @override
+  String get bookErrSize => 'Choose small, medium or large.';
+
+  @override
+  String get bookFixFields => 'Check the highlighted fields.';
 }

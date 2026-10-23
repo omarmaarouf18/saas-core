@@ -10796,6 +10796,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call the recipient'**
   String get courCallRecipient;
+
+  /// FE-V2-CONSUME picker: street address text field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Address · optional'**
+  String get bookAddressLabel;
+
+  /// FE-V2-CONSUME picker: street address hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Street, building, area'**
+  String get bookAddressHint;
+
+  /// FE-V2-CONSUME booking: recipient section title (delivery, shipping).
+  ///
+  /// In en, this message translates to:
+  /// **'Who receives it?'**
+  String get bookRecipientTitle;
+
+  /// FE-V2-CONSUME booking: recipient section title for rides.
+  ///
+  /// In en, this message translates to:
+  /// **'Who\'s riding?'**
+  String get bookPassengerTitle;
+
+  /// FE-V2-CONSUME booking: recipient toggle, default.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m the recipient'**
+  String get bookRecipientMe;
+
+  /// FE-V2-CONSUME booking: passenger toggle, default (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m riding'**
+  String get bookPassengerMe;
+
+  /// FE-V2-CONSUME booking: recipient toggle, someone else.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else'**
+  String get bookRecipientOther;
+
+  /// FE-V2-CONSUME booking: recipient name label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name · optional'**
+  String get bookRecipientName;
+
+  /// FE-V2-CONSUME booking: recipient name hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Who should the courier ask for?'**
+  String get bookRecipientNameHint;
+
+  /// FE-V2-CONSUME booking: passenger name hint (rides).
+  ///
+  /// In en, this message translates to:
+  /// **'Who should the driver ask for?'**
+  String get bookPassengerNameHint;
+
+  /// FE-V2-CONSUME booking: recipient phone label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone · optional'**
+  String get bookRecipientPhone;
+
+  /// FE-V2-CONSUME booking: recipient notes label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes · optional'**
+  String get bookRecipientNotes;
+
+  /// FE-V2-CONSUME booking: recipient notes hint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. call before you arrive'**
+  String get bookRecipientNotesHint;
+
+  /// FE-V2-CONSUME booking: recipient phone privacy helper (ADR-0028 §2.9).
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with the courier only while the order is on its way.'**
+  String get bookRecipientPhoneHelp;
+
+  /// FE-V2-CONSUME booking: package section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Package'**
+  String get bookPackageTitle;
+
+  /// FE-V2-CONSUME booking: package size chips label.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get bookPackageSize;
+
+  /// FE-V2-CONSUME: package size not set.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get bookSizeNone;
+
+  /// FE-V2-CONSUME: package size small.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get bookSizeSmall;
+
+  /// FE-V2-CONSUME: package size medium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get bookSizeMedium;
+
+  /// FE-V2-CONSUME: package size large.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get bookSizeLarge;
+
+  /// FE-V2-CONSUME booking: package notes label.
+  ///
+  /// In en, this message translates to:
+  /// **'Package notes · optional'**
+  String get bookPackageNotes;
+
+  /// FE-V2-CONSUME booking: package notes hint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. fragile, handle with care'**
+  String get bookPackageNotesHint;
+
+  /// FE-V2-CONSUME booking: package size is informational (ADR-0028 §2.7).
+  ///
+  /// In en, this message translates to:
+  /// **'The size doesn\'t change the price.'**
+  String get bookPackageNoPrice;
+
+  /// FE-V2-CONSUME booking: field too long.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} characters.'**
+  String bookErrTooLong(int max);
+
+  /// FE-V2-CONSUME booking: a stop's address text is too long.
+  ///
+  /// In en, this message translates to:
+  /// **'An address is too long. Use at most {max} characters.'**
+  String bookErrAddressTooLong(int max);
+
+  /// FE-V2-CONSUME booking: a stop's landmark note is too long for the server.
+  ///
+  /// In en, this message translates to:
+  /// **'A landmark note is too long. Shorten it and try again.'**
+  String get bookErrNoteTooLong;
+
+  /// FE-V2-CONSUME booking: invalid recipient phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an Egyptian mobile number like 01012345678, or an international number starting with +.'**
+  String get bookErrPhone;
+
+  /// FE-V2-CONSUME booking: invalid package size.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose small, medium or large.'**
+  String get bookErrSize;
+
+  /// FE-V2-CONSUME booking: banner when a field has an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the highlighted fields.'**
+  String get bookFixFields;
 }
 
 class _AppLocalizationsDelegate

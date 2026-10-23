@@ -9,21 +9,26 @@ import '../../models/job.dart';
 const double kDefaultLatitude = 30.0444;
 const double kDefaultLongitude = 31.2357;
 
-/// A place the customer chose: coordinates, an optional landmark note and
-/// whether it came from the device location (shown as "Your current
-/// location" instead of "Pinned location").
+/// A place the customer chose: coordinates, optional address text (job
+/// model v2) and landmark note, and whether it came from the device
+/// location (shown as "Your current location" instead of "Pinned
+/// location").
 @immutable
 class PickedPlace {
   const PickedPlace({
     required this.latitude,
     required this.longitude,
     this.note,
+    this.address,
     this.isDeviceLocation = false,
   });
 
   final double latitude;
   final double longitude;
   final String? note;
+
+  /// Street / building / area text (ADR-0028 §2.2), typed in the picker.
+  final String? address;
   final bool isDeviceLocation;
 
   String? get trimmedNote {
@@ -31,15 +36,24 @@ class PickedPlace {
     return n.isEmpty ? null : n;
   }
 
-  PickedPlace copyWith({String? note}) => PickedPlace(
+  String? get trimmedAddress {
+    final a = address?.trim() ?? '';
+    return a.isEmpty ? null : a;
+  }
+
+  PickedPlace copyWith({String? note, String? address}) => PickedPlace(
         latitude: latitude,
         longitude: longitude,
         note: note ?? this.note,
+        address: address ?? this.address,
         isDeviceLocation: isDeviceLocation,
       );
 
   JobLocation toJobLocation() => JobLocation(
-      latitude: latitude, longitude: longitude, addressNote: trimmedNote);
+      latitude: latitude,
+      longitude: longitude,
+      addressNote: trimmedNote,
+      address: trimmedAddress);
 
   @override
   bool operator ==(Object other) =>
@@ -47,10 +61,12 @@ class PickedPlace {
       other.latitude == latitude &&
       other.longitude == longitude &&
       other.note == note &&
+      other.address == address &&
       other.isDeviceLocation == isDeviceLocation;
 
   @override
-  int get hashCode => Object.hash(latitude, longitude, note, isDeviceLocation);
+  int get hashCode =>
+      Object.hash(latitude, longitude, note, address, isDeviceLocation);
 }
 
 enum LocateStatus { found, denied, unavailable }
