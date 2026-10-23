@@ -66,6 +66,17 @@ class OwnerProvider extends ChangeNotifier {
   String? _dashboardError;
   String? get dashboardError => _dashboardError;
 
+  /// FE-OWNER-2b: when the subscription ends (`expires_at` of
+  /// `GET /users/subscription`); null when there is none. The server sends
+  /// Go's zero time for "no expiry", which is treated as none.
+  DateTime? _subscriptionExpiresAt;
+  DateTime? get subscriptionExpiresAt => _subscriptionExpiresAt;
+
+  /// FE-OWNER-2b: the error of the last [fetchPayoutRequests] call alone
+  /// (null after a success); see [ownerJobsError].
+  String? _payoutRequestsError;
+  String? get payoutRequestsError => _payoutRequestsError;
+
   OwnerProvider(this.apiClient);
 
   Future<void> fetchDashboardData(String tenantId) async {
@@ -86,6 +97,7 @@ class OwnerProvider extends ChangeNotifier {
       final subRes = await apiClient
           .get('/users/subscription', queryParams: {'tenant_id': tenantId});
       _subscriptionTier = subRes['tier'] ?? 'free';
+      _subscriptionExpiresAt = _expiryOf(subRes['expires_at']);
 
       // 3. Fetch Ledger entries
       final ledgerRes = await apiClient
@@ -631,6 +643,7 @@ class OwnerProvider extends ChangeNotifier {
       } else {
         _payoutRequests = [];
       }
+      _payoutRequestsError = null;
       return _payoutRequests;
     } catch (e) {
       debugPrint('Error fetching payout requests: $e');
@@ -638,10 +651,17 @@ class OwnerProvider extends ChangeNotifier {
       // is the sole error signal, never a contradictory wiped empty state
       // with an active withdraw CTA on possibly stale balances.
       _error = friendlyErrorMessage(e);
+      _payoutRequestsError = _error;
       return _payoutRequests;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  static DateTime? _expiryOf(Object? raw) {
+    final t = raw is String ? DateTime.tryParse(raw) : null;
+    // Go's zero time (0001-01-01) means "no expiry".
+    return t == null || t.year <= 1 ? null : t;
   }
 }

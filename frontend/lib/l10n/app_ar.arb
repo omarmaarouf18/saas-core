@@ -2044,5 +2044,77 @@
   "acctSectionBusiness": "شغلك",
   "acctServiceSetup": "إعداد الخدمة",
   "acctPlan": "الباقة",
-  "acctActivityLog": "سجل النشاط"
+  "acctActivityLog": "سجل النشاط",
+  "ownWalletTitle": "المحفظة",
+  "ownWalletAvailable": "متاح للسحب",
+  "ownWalletTotal": "الرصيد الكلي",
+  "ownWalletHeld": "محجوز للطلبات",
+  "ownWalletAddMoney": "اشحن",
+  "ownWalletWithdraw": "اسحب",
+  "ownWalletLoadError": "مقدرناش نحمّل المحفظة.",
+  "ownWalletStale": "مقدرناش نحدّث. دي آخر أرصدة اتحمّلت.",
+  "ownWalletPayouts": "السحوبات",
+  "ownWalletPayoutsEmpty": "مفيش سحوبات لسه.",
+  "ownWalletPayoutsError": "مقدرناش نحمّل السحوبات.",
+  "ownWalletPayoutReason": "السبب: {reason}",
+  "@ownWalletPayoutReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPayoutRequested": "اتطلب",
+  "ownPayoutApproved": "اتوافق عليه",
+  "ownPayoutPaid": "اتدفع",
+  "ownPayoutRejected": "اترفض",
+  "ownPayoutUnknown": "حالة مش معروفة",
+  "ownWalletRecent": "آخر حركات الفلوس",
+  "ownWalletSeeAll": "شوف الكل",
+  "ownWalletRecentEmpty": "مفيش حركات فلوس لسه.",
+  "ownPlanTitle": "الباقة",
+  "ownPlanYours": "باقتك",
+  "ownPlanFree": "مجانية",
+  "ownPlanPaid": "مدفوعة",
+  "ownPlanPending": "بتتراجع",
+  "ownPlanCancelled": "ملغية",
+  "ownPlanUnknown": "مش معروفة",
+  "ownPlanOpen": "العملاء يقدروا يلاقوا شغلك ويحجزوا.",
+  "ownPlanOpenUntil": "العملاء يقدروا يلاقوا شغلك ويحجزوا. شغالة لحد {date}.",
+  "@ownPlanOpenUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanExpired": "خلصت يوم {date}. العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا لحد ما تتجدد.",
+  "@ownPlanExpired": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanClosed": "العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا وانت على الباقة دي.",
+  "ownPlanPendingNote": "طلب الترقية وصلنا. Quick Delivery هتكلمك عشان تفعّل الباقة المدفوعة.",
+  "ownPlanIncludes": "الباقة المدفوعة فيها إيه",
+  "ownPlanFeatureListed": "شغلك بيظهر للعملاء وبيستقبل حجوزات",
+  "ownPlanFeatureService": "تجهّز خدمتك وتغيّر فيها",
+  "ownPlanFeatureTracking": "مكان المندوب مباشر على طلباتك",
+  "ownPlanFeatureNoCommission": "من غير عمولة على طلباتك",
+  "ownPlanChangeTitle": "تغيير الباقة",
+  "ownPlanChangeBody": "اطلب الباقة المدفوعة من هنا. Quick Delivery بتراجع كل طلب وبتكلمك.",
+  "ownPlanContactSupport": "كلّم الدعم",
+  "ownPlanLoadError": "مقدرناش نحمّل الباقة.",
+  "ownPlanRequestUpgrade": "اطلب الترقية",
+  "ownPlanUpgradeTitle": "تطلب الباقة المدفوعة؟",
+  "ownPlanUpgradeBody": "Quick Delivery هتراجع طلبك وتكلمك.",
+  "ownPlanUpgradeSend": "ابعت الطلب",
+  "ownPlanUpgradeSent": "الطلب اتبعت. باقتك بتتراجع.",
+  "ownPlanDowngrade": "حوّل للمجانية",
+  "ownPlanDowngradeTitle": "تحوّل للباقة المجانية؟",
+  "ownPlanDowngradeBodyPaid": "العملاء مش هيقدروا يلاقوا شغلك أو يحجزوا لحد ما ترجع للباقة المدفوعة.",
+  "ownPlanDowngradeBodyPending": "ده هيلغي طلب الترقية.",
+  "ownPlanDowngraded": "انت دلوقتي على الباقة المجانية."
 }

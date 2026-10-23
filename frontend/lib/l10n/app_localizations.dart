@@ -10472,6 +10472,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity log'**
   String get acctActivityLog;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get ownWalletTitle;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Available to withdraw'**
+  String get ownWalletAvailable;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Total balance'**
+  String get ownWalletTotal;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Held for orders'**
+  String get ownWalletHeld;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Add money'**
+  String get ownWalletAddMoney;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get ownWalletWithdraw;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your wallet.'**
+  String get ownWalletLoadError;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. These are the last balances we loaded.'**
+  String get ownWalletStale;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get ownWalletPayouts;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'No withdrawals yet.'**
+  String get ownWalletPayoutsEmpty;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your withdrawals.'**
+  String get ownWalletPayoutsError;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String ownWalletPayoutReason(String reason);
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get ownPayoutRequested;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get ownPayoutApproved;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get ownPayoutPaid;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get ownPayoutRejected;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown status'**
+  String get ownPayoutUnknown;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent money movements'**
+  String get ownWalletRecent;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get ownWalletSeeAll;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'No money movements yet.'**
+  String get ownWalletRecentEmpty;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get ownPlanTitle;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan'**
+  String get ownPlanYours;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get ownPlanFree;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get ownPlanPaid;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get ownPlanPending;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get ownPlanCancelled;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get ownPlanUnknown;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers can find and book your business.'**
+  String get ownPlanOpen;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers can find and book your business. Active until {date}.'**
+  String ownPlanOpenUntil(String date);
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended on {date}. Customers can\'t find or book your business until it\'s renewed.'**
+  String ownPlanExpired(String date);
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers can\'t find or book your business on this plan.'**
+  String get ownPlanClosed;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.'**
+  String get ownPlanPendingNote;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'What the paid plan includes'**
+  String get ownPlanIncludes;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business shows up for customers and takes bookings'**
+  String get ownPlanFeatureListed;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up and change your service'**
+  String get ownPlanFeatureService;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Live courier location on your orders'**
+  String get ownPlanFeatureTracking;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'No commission on your orders'**
+  String get ownPlanFeatureNoCommission;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing your plan'**
+  String get ownPlanChangeTitle;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for the paid plan here. Quick Delivery reviews each request and contacts you.'**
+  String get ownPlanChangeBody;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get ownPlanContactSupport;
+
+  /// FE-OWNER-2b read-only wallet and plan pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your plan.'**
+  String get ownPlanLoadError;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Request upgrade'**
+  String get ownPlanRequestUpgrade;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Request the paid plan?'**
+  String get ownPlanUpgradeTitle;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Delivery will review your request and contact you.'**
+  String get ownPlanUpgradeBody;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get ownPlanUpgradeSend;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent. Your plan is under review.'**
+  String get ownPlanUpgradeSent;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to free'**
+  String get ownPlanDowngrade;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the free plan?'**
+  String get ownPlanDowngradeTitle;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers won\'t be able to find or book your business until you\'re on the paid plan again.'**
+  String get ownPlanDowngradeBodyPaid;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'This cancels your upgrade request.'**
+  String get ownPlanDowngradeBodyPending;
+
+  /// FE-OWNER-2b plan page: request upgrade / switch to free.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the free plan now.'**
+  String get ownPlanDowngraded;
 }
 
 class _AppLocalizationsDelegate

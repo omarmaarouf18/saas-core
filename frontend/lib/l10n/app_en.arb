@@ -5476,5 +5476,224 @@
   "acctActivityLog": "Activity log",
   "@acctActivityLog": {
     "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "ownWalletTitle": "Wallet",
+  "@ownWalletTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletAvailable": "Available to withdraw",
+  "@ownWalletAvailable": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletTotal": "Total balance",
+  "@ownWalletTotal": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletHeld": "Held for orders",
+  "@ownWalletHeld": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletAddMoney": "Add money",
+  "@ownWalletAddMoney": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletWithdraw": "Withdraw",
+  "@ownWalletWithdraw": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletLoadError": "Couldn't load your wallet.",
+  "@ownWalletLoadError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletStale": "Couldn't refresh. These are the last balances we loaded.",
+  "@ownWalletStale": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayouts": "Withdrawals",
+  "@ownWalletPayouts": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutsEmpty": "No withdrawals yet.",
+  "@ownWalletPayoutsEmpty": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutsError": "Couldn't load your withdrawals.",
+  "@ownWalletPayoutsError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletPayoutReason": "Reason: {reason}",
+  "@ownWalletPayoutReason": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPayoutRequested": "Requested",
+  "@ownPayoutRequested": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutApproved": "Approved",
+  "@ownPayoutApproved": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutPaid": "Paid",
+  "@ownPayoutPaid": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutRejected": "Rejected",
+  "@ownPayoutRejected": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPayoutUnknown": "Unknown status",
+  "@ownPayoutUnknown": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletRecent": "Recent money movements",
+  "@ownWalletRecent": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletSeeAll": "See all",
+  "@ownWalletSeeAll": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownWalletRecentEmpty": "No money movements yet.",
+  "@ownWalletRecentEmpty": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanTitle": "Plan",
+  "@ownPlanTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanYours": "Your plan",
+  "@ownPlanYours": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFree": "Free",
+  "@ownPlanFree": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPaid": "Paid",
+  "@ownPlanPaid": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPending": "Under review",
+  "@ownPlanPending": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanCancelled": "Cancelled",
+  "@ownPlanCancelled": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanUnknown": "Unknown",
+  "@ownPlanUnknown": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanOpen": "Customers can find and book your business.",
+  "@ownPlanOpen": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanOpenUntil": "Customers can find and book your business. Active until {date}.",
+  "@ownPlanOpenUntil": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanExpired": "Ended on {date}. Customers can't find or book your business until it's renewed.",
+  "@ownPlanExpired": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ownPlanClosed": "Customers can't find or book your business on this plan.",
+  "@ownPlanClosed": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanPendingNote": "We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.",
+  "@ownPlanPendingNote": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanIncludes": "What the paid plan includes",
+  "@ownPlanIncludes": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureListed": "Your business shows up for customers and takes bookings",
+  "@ownPlanFeatureListed": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureService": "Set up and change your service",
+  "@ownPlanFeatureService": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureTracking": "Live courier location on your orders",
+  "@ownPlanFeatureTracking": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanFeatureNoCommission": "No commission on your orders",
+  "@ownPlanFeatureNoCommission": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanChangeTitle": "Changing your plan",
+  "@ownPlanChangeTitle": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanChangeBody": "Ask for the paid plan here. Quick Delivery reviews each request and contacts you.",
+  "@ownPlanChangeBody": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanContactSupport": "Contact support",
+  "@ownPlanContactSupport": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanLoadError": "Couldn't load your plan.",
+  "@ownPlanLoadError": {
+    "description": "FE-OWNER-2b read-only wallet and plan pages."
+  },
+  "ownPlanRequestUpgrade": "Request upgrade",
+  "@ownPlanRequestUpgrade": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeTitle": "Request the paid plan?",
+  "@ownPlanUpgradeTitle": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeBody": "Quick Delivery will review your request and contact you.",
+  "@ownPlanUpgradeBody": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeSend": "Send request",
+  "@ownPlanUpgradeSend": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanUpgradeSent": "Request sent. Your plan is under review.",
+  "@ownPlanUpgradeSent": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngrade": "Switch to free",
+  "@ownPlanDowngrade": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeTitle": "Switch to the free plan?",
+  "@ownPlanDowngradeTitle": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeBodyPaid": "Customers won't be able to find or book your business until you're on the paid plan again.",
+  "@ownPlanDowngradeBodyPaid": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngradeBodyPending": "This cancels your upgrade request.",
+  "@ownPlanDowngradeBodyPending": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
+  },
+  "ownPlanDowngraded": "You're on the free plan now.",
+  "@ownPlanDowngraded": {
+    "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
   }
 }

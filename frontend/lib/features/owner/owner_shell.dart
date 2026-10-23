@@ -9,6 +9,7 @@ import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import 'orders_page.dart';
 import 'owner_nav.dart';
+import 'plan_rules.dart';
 import 'owner_controller.dart';
 import 'team_page.dart';
 import 'today_page.dart';
@@ -139,12 +140,18 @@ class _OwnerAccount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nav = OwnerNavScope.of(context);
+    final owner = context.watch<OwnerProvider>();
     return AccountPage(
       owner: OwnerAccountLinks(
         openServiceSetup: nav.openServiceSetup,
         openPlan: nav.openSubscription,
         openWallet: nav.openWallet,
         openActivity: nav.openHistory,
+        // Known once the plan or wallet page (or the activity log's money
+        // tab) loaded it; the shell does not fetch it.
+        planValue: owner.isDashboardHydrated
+            ? planLabel(context.l10n, owner.subscriptionTier)
+            : null,
       ),
     );
   }

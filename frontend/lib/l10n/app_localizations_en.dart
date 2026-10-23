@@ -5879,4 +5879,171 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctActivityLog => 'Activity log';
+
+  @override
+  String get ownWalletTitle => 'Wallet';
+
+  @override
+  String get ownWalletAvailable => 'Available to withdraw';
+
+  @override
+  String get ownWalletTotal => 'Total balance';
+
+  @override
+  String get ownWalletHeld => 'Held for orders';
+
+  @override
+  String get ownWalletAddMoney => 'Add money';
+
+  @override
+  String get ownWalletWithdraw => 'Withdraw';
+
+  @override
+  String get ownWalletLoadError => 'Couldn\'t load your wallet.';
+
+  @override
+  String get ownWalletStale =>
+      'Couldn\'t refresh. These are the last balances we loaded.';
+
+  @override
+  String get ownWalletPayouts => 'Withdrawals';
+
+  @override
+  String get ownWalletPayoutsEmpty => 'No withdrawals yet.';
+
+  @override
+  String get ownWalletPayoutsError => 'Couldn\'t load your withdrawals.';
+
+  @override
+  String ownWalletPayoutReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get ownPayoutRequested => 'Requested';
+
+  @override
+  String get ownPayoutApproved => 'Approved';
+
+  @override
+  String get ownPayoutPaid => 'Paid';
+
+  @override
+  String get ownPayoutRejected => 'Rejected';
+
+  @override
+  String get ownPayoutUnknown => 'Unknown status';
+
+  @override
+  String get ownWalletRecent => 'Recent money movements';
+
+  @override
+  String get ownWalletSeeAll => 'See all';
+
+  @override
+  String get ownWalletRecentEmpty => 'No money movements yet.';
+
+  @override
+  String get ownPlanTitle => 'Plan';
+
+  @override
+  String get ownPlanYours => 'Your plan';
+
+  @override
+  String get ownPlanFree => 'Free';
+
+  @override
+  String get ownPlanPaid => 'Paid';
+
+  @override
+  String get ownPlanPending => 'Under review';
+
+  @override
+  String get ownPlanCancelled => 'Cancelled';
+
+  @override
+  String get ownPlanUnknown => 'Unknown';
+
+  @override
+  String get ownPlanOpen => 'Customers can find and book your business.';
+
+  @override
+  String ownPlanOpenUntil(String date) {
+    return 'Customers can find and book your business. Active until $date.';
+  }
+
+  @override
+  String ownPlanExpired(String date) {
+    return 'Ended on $date. Customers can\'t find or book your business until it\'s renewed.';
+  }
+
+  @override
+  String get ownPlanClosed =>
+      'Customers can\'t find or book your business on this plan.';
+
+  @override
+  String get ownPlanPendingNote =>
+      'We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.';
+
+  @override
+  String get ownPlanIncludes => 'What the paid plan includes';
+
+  @override
+  String get ownPlanFeatureListed =>
+      'Your business shows up for customers and takes bookings';
+
+  @override
+  String get ownPlanFeatureService => 'Set up and change your service';
+
+  @override
+  String get ownPlanFeatureTracking => 'Live courier location on your orders';
+
+  @override
+  String get ownPlanFeatureNoCommission => 'No commission on your orders';
+
+  @override
+  String get ownPlanChangeTitle => 'Changing your plan';
+
+  @override
+  String get ownPlanChangeBody =>
+      'Ask for the paid plan here. Quick Delivery reviews each request and contacts you.';
+
+  @override
+  String get ownPlanContactSupport => 'Contact support';
+
+  @override
+  String get ownPlanLoadError => 'Couldn\'t load your plan.';
+
+  @override
+  String get ownPlanRequestUpgrade => 'Request upgrade';
+
+  @override
+  String get ownPlanUpgradeTitle => 'Request the paid plan?';
+
+  @override
+  String get ownPlanUpgradeBody =>
+      'Quick Delivery will review your request and contact you.';
+
+  @override
+  String get ownPlanUpgradeSend => 'Send request';
+
+  @override
+  String get ownPlanUpgradeSent => 'Request sent. Your plan is under review.';
+
+  @override
+  String get ownPlanDowngrade => 'Switch to free';
+
+  @override
+  String get ownPlanDowngradeTitle => 'Switch to the free plan?';
+
+  @override
+  String get ownPlanDowngradeBodyPaid =>
+      'Customers won\'t be able to find or book your business until you\'re on the paid plan again.';
+
+  @override
+  String get ownPlanDowngradeBodyPending =>
+      'This cancels your upgrade request.';
+
+  @override
+  String get ownPlanDowngraded => 'You\'re on the free plan now.';
 }
