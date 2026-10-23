@@ -1828,5 +1828,10 @@
   "courPayCash": "كاش",
   "courNoFinishedTitle": "لسه مفيش مهام خلصت",
   "courNoFinishedBody": "المهام اللي بتسلّمها، واللي بتتلغي، هتظهر هنا.",
-  "courReasonPriceDisagreement": "ما اتفقناش على السعر"
+  "courReasonPriceDisagreement": "ما اتفقناش على السعر",
+  "acctVerification": "التحقق من الهوية",
+  "acctKyeApproved": "اتأكدت",
+  "acctKyePending": "بتتراجع",
+  "acctKyeRejected": "ما اتقبلتش",
+  "acctKyeMissing": "ما اترفعتش"
 }

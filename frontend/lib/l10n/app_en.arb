@@ -4788,5 +4788,25 @@
   "courReasonPriceDisagreement": "No agreement on the price",
   "@courReasonPriceDisagreement": {
     "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctVerification": "Verification",
+  "@acctVerification": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeApproved": "Verified",
+  "@acctKyeApproved": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyePending": "Under review",
+  "@acctKyePending": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeRejected": "Not accepted",
+  "@acctKyeRejected": {
+    "description": "FE-COURIER redesigned courier screens."
+  },
+  "acctKyeMissing": "Not uploaded",
+  "@acctKyeMissing": {
+    "description": "FE-COURIER redesigned courier screens."
   }
 }

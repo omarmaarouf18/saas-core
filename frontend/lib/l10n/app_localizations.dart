@@ -9590,6 +9590,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No agreement on the price'**
   String get courReasonPriceDisagreement;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification'**
+  String get acctVerification;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get acctKyeApproved;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get acctKyePending;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get acctKyeRejected;
+
+  /// FE-COURIER redesigned courier screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Not uploaded'**
+  String get acctKyeMissing;
 }
 
 class _AppLocalizationsDelegate

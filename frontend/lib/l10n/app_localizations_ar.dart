@@ -5302,4 +5302,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courReasonPriceDisagreement => 'ما اتفقناش على السعر';
+
+  @override
+  String get acctVerification => 'التحقق من الهوية';
+
+  @override
+  String get acctKyeApproved => 'اتأكدت';
+
+  @override
+  String get acctKyePending => 'بتتراجع';
+
+  @override
+  String get acctKyeRejected => 'ما اتقبلتش';
+
+  @override
+  String get acctKyeMissing => 'ما اترفعتش';
 }

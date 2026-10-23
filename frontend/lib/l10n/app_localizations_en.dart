@@ -5381,4 +5381,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courReasonPriceDisagreement => 'No agreement on the price';
+
+  @override
+  String get acctVerification => 'Verification';
+
+  @override
+  String get acctKyeApproved => 'Verified';
+
+  @override
+  String get acctKyePending => 'Under review';
+
+  @override
+  String get acctKyeRejected => 'Not accepted';
+
+  @override
+  String get acctKyeMissing => 'Not uploaded';
 }
