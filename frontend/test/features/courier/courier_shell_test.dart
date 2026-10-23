@@ -112,6 +112,17 @@ void main() {
       expect(deps.jobs.fetchCalls, 2);
     });
 
+    testWidgets('the Account tab is the account page with courier rows',
+        (tester) async {
+      await _pumpShell(tester, CourierTestDeps());
+      await tester.tap(find.descendant(
+          of: find.byKey(const Key('courier_shell_nav')),
+          matching: find.text('Account')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('account_verification')), findsOneWidget);
+      expect(find.byKey(const Key('account_addresses')), findsNothing);
+    });
+
     testWidgets('the bell opens notifications', (tester) async {
       final deps = CourierTestDeps();
       await _pumpShell(tester, deps);

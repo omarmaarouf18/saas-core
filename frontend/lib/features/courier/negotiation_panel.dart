@@ -311,29 +311,22 @@ class _CourierNegotiationPanelState extends State<CourierNegotiationPanel> {
             ),
           ],
           if (party == CourierProposal.customer) ...[
+            // Stacked full width: the labels carry the amount and do not
+            // fit side by side at 360 dp.
             const SizedBox(height: QdSpace.x3),
-            Row(
-              children: [
-                Expanded(
-                  child: QdButton.secondary(
-                    key: const Key('courier_price_decline'),
-                    label: l10n.ordDecline,
-                    fullWidth: true,
-                    onPressed: _busy || over ? null : () => _respond('decline'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: QdButton(
-                    key: const Key('courier_price_accept'),
-                    label: l10n.ordAcceptPrice(formatMoney(l10n, proposed!)),
-                    fullWidth: true,
-                    loading: _busy,
-                    onPressed: over ? null : () => _respond('accept'),
-                  ),
-                ),
-              ],
+            QdButton(
+              key: const Key('courier_price_accept'),
+              label: l10n.ordAcceptPrice(formatMoney(l10n, proposed!)),
+              fullWidth: true,
+              loading: _busy,
+              onPressed: over ? null : () => _respond('accept'),
+            ),
+            const SizedBox(height: QdSpace.x2),
+            QdButton.secondary(
+              key: const Key('courier_price_decline'),
+              label: l10n.ordDecline,
+              fullWidth: true,
+              onPressed: _busy || over ? null : () => _respond('decline'),
             ),
           ],
         ],
