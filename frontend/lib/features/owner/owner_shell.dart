@@ -55,7 +55,18 @@ class _OwnerShellState extends State<OwnerShell> {
       context.read<AuthProvider>(),
       now: widget.now,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => _data.refresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _data.refresh();
+      if (_index == 3) _loadPlan();
+    });
+  }
+
+  /// The Account tab's plan row: the plan (with the wallet and ledger, one
+  /// call) is loaded each time the tab opens (owner decision, FE-V2-CONSUME).
+  void _loadPlan() {
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+    context.read<OwnerProvider>().fetchDashboardData(token);
   }
 
   @override
@@ -71,7 +82,11 @@ class _OwnerShellState extends State<OwnerShell> {
       _visited.add(i);
     });
     // Back on a data tab: pick up changes (joins a refresh in flight).
-    if (i != 3) _data.refresh();
+    if (i != 3) {
+      _data.refresh();
+    } else {
+      _loadPlan();
+    }
   }
 
   @override
@@ -147,8 +162,8 @@ class _OwnerAccount extends StatelessWidget {
         openPlan: nav.openSubscription,
         openWallet: nav.openWallet,
         openActivity: nav.openHistory,
-        // Known once the plan or wallet page (or the activity log's money
-        // tab) loaded it; the shell does not fetch it.
+        // Loaded by the shell when this tab opens (and by the plan, wallet
+        // and activity pages); empty until the first load finishes.
         planValue: owner.isDashboardHydrated
             ? planLabel(context.l10n, owner.subscriptionTier)
             : null,

@@ -152,6 +152,42 @@ void main() {
       expect(find.byType(VerificationPage), findsOneWidget);
     });
 
+    testWidgets('Account tab loads the plan each time it opens',
+        (tester) async {
+      usePhone(tester);
+      final deps = deps0();
+      deps.owner.nextWallet =
+          (total: 0, escrow: 0, withdrawable: 0, tier: 'paid');
+      await pumpShell(tester, deps);
+      expect(deps.owner.dashboardCalls, isEmpty);
+      Finder tab(String label) => find.descendant(
+          of: find.byKey(const Key('owner_shell_nav')),
+          matching: find.text(label));
+      await tester.tap(tab('Account'));
+      await tester.pumpAndSettle();
+      expect(deps.owner.dashboardCalls, ['owner-jwt']);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('account_plan')),
+              matching: find.text('Paid')),
+          findsOneWidget);
+      await tester.tap(tab('Today'));
+      await tester.pumpAndSettle();
+      await tester.tap(tab('Account'));
+      await tester.pumpAndSettle();
+      expect(deps.owner.dashboardCalls, ['owner-jwt', 'owner-jwt']);
+    });
+
+    testWidgets('opening on the Account tab loads the plan', (tester) async {
+      usePhone(tester);
+      final deps = deps0();
+      await tester.pumpWidget(ownerApp(
+          deps, OwnerShell(initialIndex: 3, now: () => ownerNow),
+          withData: false));
+      await tester.pumpAndSettle();
+      expect(deps.owner.dashboardCalls, ['owner-jwt']);
+    });
+
     testWidgets('bell opens the existing notifications screen', (tester) async {
       usePhone(tester);
       final deps = deps0();
