@@ -5460,5 +5460,21 @@
   "vrfLocked": "Accepted documents can't be changed.",
   "@vrfLocked": {
     "description": "FE-OWNER-2b shared verification page (KYB / KYE)."
+  },
+  "acctSectionBusiness": "Your business",
+  "@acctSectionBusiness": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctServiceSetup": "Service setup",
+  "@acctServiceSetup": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctPlan": "Plan",
+  "@acctPlan": {
+    "description": "FE-OWNER-2b owner rows on the account page."
+  },
+  "acctActivityLog": "Activity log",
+  "@acctActivityLog": {
+    "description": "FE-OWNER-2b owner rows on the account page."
   }
 }

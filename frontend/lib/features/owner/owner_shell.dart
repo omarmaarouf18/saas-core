@@ -5,9 +5,10 @@ import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
-import '../../screens/settings_screen.dart';
 import '../../ui/qd_ui.dart';
+import '../account/account_page.dart';
 import 'orders_page.dart';
+import 'owner_nav.dart';
 import 'owner_controller.dart';
 import 'team_page.dart';
 import 'today_page.dart';
@@ -26,8 +27,8 @@ bool runLegacyOwnerDashboardFetch({bool redesign = kRedesignOwner}) =>
     !redesign;
 
 /// Redesigned owner shell (FE-OWNER-1): Today / Orders / Team / Account with
-/// a [QdBottomNav] under the redesign theme. Account is the existing
-/// SettingsScreen for now, under the app theme.
+/// a [QdBottomNav] under the redesign theme. Account is the shared account
+/// page with the owner rows (FE-OWNER-2b).
 class OwnerShell extends StatefulWidget {
   const OwnerShell({super.key, this.initialIndex = 0, this.now});
 
@@ -75,9 +76,6 @@ class _OwnerShellState extends State<OwnerShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    // Captured outside the redesign scope: the Account tab keeps the app
-    // theme (it is the old SettingsScreen).
-    final appTheme = Theme.of(context);
     Widget lazy(int i, Widget Function() build) =>
         _visited.contains(i) ? build() : const SizedBox.shrink();
 
@@ -100,10 +98,7 @@ class _OwnerShellState extends State<OwnerShell> {
                 ),
                 lazy(1, () => const OwnerOrdersPage()),
                 lazy(2, () => const OwnerTeamPage()),
-                lazy(
-                  3,
-                  () => Theme(data: appTheme, child: const SettingsScreen()),
-                ),
+                lazy(3, () => const _OwnerAccount()),
               ],
             ),
             bottomNavigationBar: QdBottomNav(
@@ -131,6 +126,25 @@ class _OwnerShellState extends State<OwnerShell> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The Account tab: the shared account page with the owner rows, which
+/// open the owner pages through [OwnerNav] (they need the shell's data).
+class _OwnerAccount extends StatelessWidget {
+  const _OwnerAccount();
+
+  @override
+  Widget build(BuildContext context) {
+    final nav = OwnerNavScope.of(context);
+    return AccountPage(
+      owner: OwnerAccountLinks(
+        openServiceSetup: nav.openServiceSetup,
+        openPlan: nav.openSubscription,
+        openWallet: nav.openWallet,
+        openActivity: nav.openHistory,
       ),
     );
   }

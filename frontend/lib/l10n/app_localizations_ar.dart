@@ -5778,4 +5778,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get vrfLocked => 'المستندات المقبولة مينفعش تتغيّر.';
+
+  @override
+  String get acctSectionBusiness => 'شغلك';
+
+  @override
+  String get acctServiceSetup => 'إعداد الخدمة';
+
+  @override
+  String get acctPlan => 'الباقة';
+
+  @override
+  String get acctActivityLog => 'سجل النشاط';
 }

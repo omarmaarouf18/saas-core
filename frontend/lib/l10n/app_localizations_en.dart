@@ -5867,4 +5867,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vrfLocked => 'Accepted documents can\'t be changed.';
+
+  @override
+  String get acctSectionBusiness => 'Your business';
+
+  @override
+  String get acctServiceSetup => 'Service setup';
+
+  @override
+  String get acctPlan => 'Plan';
+
+  @override
+  String get acctActivityLog => 'Activity log';
 }

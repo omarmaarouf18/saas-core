@@ -10448,6 +10448,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Accepted documents can\'t be changed.'**
   String get vrfLocked;
+
+  /// FE-OWNER-2b owner rows on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business'**
+  String get acctSectionBusiness;
+
+  /// FE-OWNER-2b owner rows on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Service setup'**
+  String get acctServiceSetup;
+
+  /// FE-OWNER-2b owner rows on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get acctPlan;
+
+  /// FE-OWNER-2b owner rows on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity log'**
+  String get acctActivityLog;
 }
 
 class _AppLocalizationsDelegate

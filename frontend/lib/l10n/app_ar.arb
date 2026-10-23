@@ -2040,5 +2040,9 @@
   "vrfSourceFileHintPhoto": "JPG أو PNG، لحد 10 ميجا",
   "vrfRulesOwner": "الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة. السجل التجاري ممكن يكون PDF كمان.",
   "vrfRulesCourier": "الصور لازم تكون JPG أو PNG، لحد 10 ميجا للواحدة.",
-  "vrfLocked": "المستندات المقبولة مينفعش تتغيّر."
+  "vrfLocked": "المستندات المقبولة مينفعش تتغيّر.",
+  "acctSectionBusiness": "شغلك",
+  "acctServiceSetup": "إعداد الخدمة",
+  "acctPlan": "الباقة",
+  "acctActivityLog": "سجل النشاط"
 }
