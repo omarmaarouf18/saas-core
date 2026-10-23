@@ -27,6 +27,8 @@ dependencies:
     sdk: flutter
   intl: ^0.20.2
   flutter_svg: ^2.3.0
+  # FE-V2-CONSUME: dial, maps and links (pinned).
+  url_launcher: 6.3.2
 
 dev_dependencies:
   flutter_test:
