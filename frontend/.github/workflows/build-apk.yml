@@ -90,12 +90,21 @@ jobs:
                --repo omarmaarouf18/quick-delivery-mobile \
                --clobber
           BASE="https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/${TAG}"
-          echo "apk_url=${BASE}/app-arm64-v8a-release.apk" >> "$GITHUB_OUTPUT"
+          # ONE CHANNEL: the website's default download (apk_url) is the
+          # universal app-release.apk, the same file the api-gateway
+          # download_url (releases/latest/download/app-release.apk) hands out
+          # at the forced-update gate. Split APKs carry an ABI version-code
+          # offset (arm64-v8a = 2000 + n, universal = n), so a phone that got
+          # a split from the website could never install the gate's universal
+          # update ("App not installed"). Splits stay in apk_urls for manual
+          # installs only. Guarded by "Verify app-release.json channel" below
+          # and scripts/test_apk_channel.sh in saas-core.
+          echo "apk_url=${BASE}/app-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_armeabi_v7a=${BASE}/app-armeabi-v7a-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_arm64_v8a=${BASE}/app-arm64-v8a-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_x86_64=${BASE}/app-x86_64-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_universal=${BASE}/app-release.apk" >> "$GITHUB_OUTPUT"
-          SIZE_MB=$(du -m "$OUT/app-arm64-v8a-release.apk" | cut -f1)
+          SIZE_MB=$(du -m build/universal/app-release.apk | cut -f1)
           echo "size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
 
       - name: Generate GitHub App token
@@ -134,6 +143,13 @@ jobs:
             "size_mb": "${{ steps.release.outputs.size_mb }}"
           }
           EOF
+          # Verify app-release.json channel: refuse to publish if the default
+          # download is not the universal app-release.apk the update gate uses.
+          jq -e '(.apk_url | endswith("/app-release.apk")) and (.apk_url == .apk_urls.universal)' app-release.json >/dev/null || {
+            echo "Error: app-release.json apk_url must be the universal app-release.apk (same file as apk_urls.universal and the api-gateway download_url):"
+            cat app-release.json
+            exit 1
+          }
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add app-release.json
