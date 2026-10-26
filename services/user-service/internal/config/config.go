@@ -27,6 +27,9 @@ type Config struct {
 	TLSKeyPath             string
 	TLSCAPath              string
 	RedisURI               string
+	StorageBaseDir         string
+	StorageBaseURL         string
+	DocumentEncryptionKey  string
 }
 
 func Load() (*Config, error) {
@@ -108,6 +111,16 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")
+	if storageBaseDir == "" {
+		storageBaseDir = "./data/service_photos"
+	}
+	storageBaseURL := os.Getenv("STORAGE_BASE_URL")
+	if storageBaseURL == "" {
+		storageBaseURL = "/api/v1"
+	}
+	docEncKey := os.Getenv("DOCUMENT_ENCRYPTION_KEY")
+
 	return &Config{
 		AppEnv:                 appEnv,
 		AllowTestPaymentBypass: allowTestPaymentBypass,
@@ -125,6 +138,9 @@ func Load() (*Config, error) {
 		TLSKeyPath:             tlsKeyPath,
 		TLSCAPath:              tlsCAPath,
 		RedisURI:               redisURI,
+		StorageBaseDir:         storageBaseDir,
+		StorageBaseURL:         storageBaseURL,
+		DocumentEncryptionKey:  docEncKey,
 	}, nil
 }
 

@@ -283,6 +283,10 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`PATCH /users/services`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`POST /users/services`** | `user-service` | Owner JWT (KYC Approved) | Inserts service listing. | Downstream: calls `auth-service/auth/user`. Writes `services` collection. |
 | **`PUT /users/services`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
+| **`GET /users/services/`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
+| **`POST /users/services/`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
+| **`GET /users/services/photo`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
+| **`POST /users/services/photo`** | `user-service` | Public | <!-- TODO: verify manually --> | <!-- TODO: verify manually --> |
 | **`PATCH /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`POST /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
 | **`PUT /users/services/update`** | `user-service` | Owner JWT (KYC Approved) | Updates an existing service listing (photo, address, working hours, coverage radius, prices, category). | Downstream: calls `auth-service/auth/user`. Updates `services` collection. |
