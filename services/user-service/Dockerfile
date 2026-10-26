@@ -38,6 +38,9 @@ FROM alpine:3.20 AS prod
 RUN apk --no-cache add ca-certificates curl \
     && addgroup -S appgroup && adduser -S appuser -G appgroup
 
+WORKDIR /app
+RUN mkdir -p /app/data/service_photos && chown -R appuser:appgroup /app
+
 COPY --from=build /bin/service /bin/service
 
 EXPOSE 3003

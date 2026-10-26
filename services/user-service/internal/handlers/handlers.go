@@ -292,8 +292,17 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client, sto
 			appEnv = cfg.AppEnv
 		}
 		userStorage, err := storage.NewLocalStorageWithPath(storageBaseDir, baseURL, "/users/services/photo", secret, encKey, appEnv)
+		if err != nil {
+			log.Printf("[USER] Primary storage initialization failed (%s): %v; attempting temp dir fallback", storageBaseDir, err)
+			tmp, tmpErr := os.MkdirTemp("", "user_photos_*")
+			if tmpErr == nil {
+				userStorage, err = storage.NewLocalStorageWithPath(tmp, baseURL, "/users/services/photo", secret, encKey, appEnv)
+			}
+		}
 		if err == nil {
 			u.storage = userStorage
+		} else {
+			log.Printf("[USER] Failed to initialize storage: %v", err)
 		}
 	}
 
