@@ -2384,10 +2384,10 @@ abstract class AppLocalizations {
   /// **'{count} of 10'**
   String acctAddressCount(int count);
 
-  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  /// FE-AUTH-ACCOUNT; FE-BE-GAPS saved addresses with coordinates.
   ///
   /// In en, this message translates to:
-  /// **'Addresses are saved as text, without a map pin.'**
+  /// **'Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.'**
   String get acctAddressesNote;
 
   /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
@@ -6505,6 +6505,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t remove the photo. Try again.'**
   String get ownSvcPhotoErrRemove;
+
+  /// FE-BE-GAPS item 3: saved address label chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get addrLabelTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get addrLabelHome;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get addrLabelWork;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get addrLabelOther;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this place'**
+  String get addrLabelCustom;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mum\'s house, the gym'**
+  String get addrLabelCustomHint;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Place on the map'**
+  String get addrPin;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get addrPinMissing;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned on the map'**
+  String get addrPinSet;
+
+  /// FE-BE-GAPS item 3: picker title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin the place'**
+  String get addrPinTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or write a name'**
+  String get addrErrLabel;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} characters'**
+  String addrErrTooLong(int max);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin the place on the map'**
+  String get addrErrPin;
+
+  /// FE-BE-GAPS item 3: old string-only addresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on the map yet'**
+  String get addrLegacyTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'These older addresses have no map pin. Pin one to use it when you book.'**
+  String get addrLegacyBody;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin it'**
+  String get addrLegacyPin;
+
+  /// FE-BE-GAPS item 3: button semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin {address} on the map'**
+  String addrLegacyPinFor(String address);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Older addresses will be removed'**
+  String get addrDropLegacyTitle;
+
+  /// FE-BE-GAPS item 3: the server rebuilds frequent_addresses from saved_addresses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 older address without a map pin will be removed when you save. Pin it first to keep it.} other{{count} older addresses without a map pin will be removed when you save. Pin them first to keep them.}}'**
+  String addrDropLegacyBody(int count);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get addrDropLegacyConfirm;
+
+  /// FE-BE-GAPS item 3: picker list.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved places'**
+  String get custSavedPlaces;
+
+  /// FE-BE-GAPS item 3: legacy string chosen in the picker.
+  ///
+  /// In en, this message translates to:
+  /// **'No map pin yet: move the map to it, then confirm'**
+  String get custSavedNeedsPin;
+
+  /// FE-BE-GAPS item 3: chip semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {label}: {address}'**
+  String custSavedUse(String label, String address);
 }
 
 class _AppLocalizationsDelegate

@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctAddressesNote =>
-      'Addresses are saved as text, without a map pin.';
+      'Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.';
 
   @override
   String get acctAddressesEmpty => 'No saved addresses yet';
@@ -3642,4 +3642,91 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ownSvcPhotoErrRemove =>
       'We couldn\'t remove the photo. Try again.';
+
+  @override
+  String get addrLabelTitle => 'Name';
+
+  @override
+  String get addrLabelHome => 'Home';
+
+  @override
+  String get addrLabelWork => 'Work';
+
+  @override
+  String get addrLabelOther => 'Other';
+
+  @override
+  String get addrLabelCustom => 'Name this place';
+
+  @override
+  String get addrLabelCustomHint => 'e.g. Mum\'s house, the gym';
+
+  @override
+  String get addrPin => 'Place on the map';
+
+  @override
+  String get addrPinMissing => 'Required';
+
+  @override
+  String get addrPinSet => 'Pinned on the map';
+
+  @override
+  String get addrPinTitle => 'Pin the place';
+
+  @override
+  String get addrErrLabel => 'Choose or write a name';
+
+  @override
+  String addrErrTooLong(int max) {
+    return 'Use at most $max characters';
+  }
+
+  @override
+  String get addrErrPin => 'Pin the place on the map';
+
+  @override
+  String get addrLegacyTitle => 'Not on the map yet';
+
+  @override
+  String get addrLegacyBody =>
+      'These older addresses have no map pin. Pin one to use it when you book.';
+
+  @override
+  String get addrLegacyPin => 'Pin it';
+
+  @override
+  String addrLegacyPinFor(String address) {
+    return 'Pin $address on the map';
+  }
+
+  @override
+  String get addrDropLegacyTitle => 'Older addresses will be removed';
+
+  @override
+  String addrDropLegacyBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count older addresses without a map pin will be removed when you save. Pin them first to keep them.',
+      one:
+          '1 older address without a map pin will be removed when you save. Pin it first to keep it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addrDropLegacyConfirm => 'Save anyway';
+
+  @override
+  String get custSavedPlaces => 'Saved places';
+
+  @override
+  String get custSavedNeedsPin =>
+      'No map pin yet: move the map to it, then confirm';
+
+  @override
+  String custSavedUse(String label, String address) {
+    return 'Use $label: $address';
+  }
 }

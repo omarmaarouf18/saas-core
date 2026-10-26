@@ -1482,9 +1482,9 @@
       }
     }
   },
-  "acctAddressesNote": "Addresses are saved as text, without a map pin.",
+  "acctAddressesNote": "Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.",
   "@acctAddressesNote": {
-    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+    "description": "FE-AUTH-ACCOUNT; FE-BE-GAPS saved addresses with coordinates."
   },
   "acctAddressesEmpty": "No saved addresses yet",
   "@acctAddressesEmpty": {
@@ -4716,5 +4716,120 @@
   "ownSvcPhotoErrRemove": "We couldn't remove the photo. Try again.",
   "@ownSvcPhotoErrRemove": {
     "description": "FE-BE-GAPS item 1."
+  },
+  "addrLabelTitle": "Name",
+  "@addrLabelTitle": {
+    "description": "FE-BE-GAPS item 3: saved address label chooser."
+  },
+  "addrLabelHome": "Home",
+  "@addrLabelHome": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelWork": "Work",
+  "@addrLabelWork": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelOther": "Other",
+  "@addrLabelOther": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelCustom": "Name this place",
+  "@addrLabelCustom": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelCustomHint": "e.g. Mum's house, the gym",
+  "@addrLabelCustomHint": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPin": "Place on the map",
+  "@addrPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinMissing": "Required",
+  "@addrPinMissing": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinSet": "Pinned on the map",
+  "@addrPinSet": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinTitle": "Pin the place",
+  "@addrPinTitle": {
+    "description": "FE-BE-GAPS item 3: picker title."
+  },
+  "addrErrLabel": "Choose or write a name",
+  "@addrErrLabel": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrErrTooLong": "Use at most {max} characters",
+  "@addrErrTooLong": {
+    "description": "FE-BE-GAPS item 3.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "addrErrPin": "Pin the place on the map",
+  "@addrErrPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyTitle": "Not on the map yet",
+  "@addrLegacyTitle": {
+    "description": "FE-BE-GAPS item 3: old string-only addresses."
+  },
+  "addrLegacyBody": "These older addresses have no map pin. Pin one to use it when you book.",
+  "@addrLegacyBody": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyPin": "Pin it",
+  "@addrLegacyPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyPinFor": "Pin {address} on the map",
+  "@addrLegacyPinFor": {
+    "description": "FE-BE-GAPS item 3: button semantics.",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "addrDropLegacyTitle": "Older addresses will be removed",
+  "@addrDropLegacyTitle": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrDropLegacyBody": "{count, plural, =1{1 older address without a map pin will be removed when you save. Pin it first to keep it.} other{{count} older addresses without a map pin will be removed when you save. Pin them first to keep them.}}",
+  "@addrDropLegacyBody": {
+    "description": "FE-BE-GAPS item 3: the server rebuilds frequent_addresses from saved_addresses.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addrDropLegacyConfirm": "Save anyway",
+  "@addrDropLegacyConfirm": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "custSavedPlaces": "Saved places",
+  "@custSavedPlaces": {
+    "description": "FE-BE-GAPS item 3: picker list."
+  },
+  "custSavedNeedsPin": "No map pin yet: move the map to it, then confirm",
+  "@custSavedNeedsPin": {
+    "description": "FE-BE-GAPS item 3: legacy string chosen in the picker."
+  },
+  "custSavedUse": "Use {label}: {address}",
+  "@custSavedUse": {
+    "description": "FE-BE-GAPS item 3: chip semantics.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
   }
 }

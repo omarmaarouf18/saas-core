@@ -5,6 +5,7 @@ import '../core/error_messages.dart';
 import '../core/password_policy.dart';
 import '../l10n/app_localizations_en.dart';
 import '../models/user_profile.dart';
+import '../models/saved_address.dart';
 import '../services/push_notification_service.dart';
 
 /// B2: server text reaches the auth banner ONLY for 429 lockouts (the
@@ -579,6 +580,7 @@ class AuthProvider extends ChangeNotifier {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    List<SavedAddress>? savedAddresses,
     bool? twoFactorEnabled,
     String? password,
   }) async {
@@ -594,6 +596,12 @@ class AuthProvider extends ChangeNotifier {
       if (phone != null) body['phone'] = phone;
       if (frequentAddresses != null) {
         body['frequent_addresses'] = frequentAddresses;
+      }
+      // The whole list; the server re-derives frequent_addresses from it.
+      if (savedAddresses != null) {
+        body['saved_addresses'] = [
+          for (final a in savedAddresses) a.toJson(),
+        ];
       }
       if (twoFactorEnabled != null) {
         body['two_factor_enabled'] = twoFactorEnabled;

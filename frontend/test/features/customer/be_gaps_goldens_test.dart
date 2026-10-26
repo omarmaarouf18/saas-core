@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/market_page.dart';
+import 'package:frontend/features/customer/picker_page.dart';
+import 'package:frontend/models/saved_address.dart';
 
 import '../../helpers/fake_service_photos.dart';
 import 'customer_harness.dart';
@@ -35,8 +37,44 @@ CustomerTestDeps _marketPhotos(Locale l) {
   return deps;
 }
 
+CustomerTestDeps _pickerSaved(Locale l) {
+  final deps = CustomerTestDeps();
+  final saved = [
+    SavedAddress(
+      id: 'addr-home',
+      label: 'Home',
+      address: _t(l, '12 Tahrir St, Dokki', '12 شارع التحرير، الدقي'),
+      addressNote:
+          _t(l, 'Floor 3, the blue door', 'الدور التالت، الباب الأزرق'),
+      latitude: 30.0444,
+      longitude: 31.2357,
+    ),
+    SavedAddress(
+      id: 'addr-work',
+      label: 'Work',
+      address: _t(l, 'Smart Village B7', 'القرية الذكية B7'),
+      latitude: 30.075,
+      longitude: 31.02,
+    ),
+  ];
+  deps.auth.user = deps.auth.user!.copyWith(
+    savedAddresses: saved,
+    frequentAddresses: [
+      for (final a in saved) a.address,
+      _t(l, 'Club, Heliopolis', 'النادي، مصر الجديدة'),
+    ],
+  );
+  return deps;
+}
+
 final Map<String, (CustomerTestDeps Function(Locale), Widget Function(Locale))>
     _cases = {
+  'picker_saved': (
+    _pickerSaved,
+    (l) => CustomerPickerPage(
+        title: _t(l, 'Drop-off place', 'مكان التسليم'),
+        initial: const PickedPlace(latitude: 30.06, longitude: 31.22)),
+  ),
   'market_photo': (
     _marketPhotos,
     (_) => CustomerMarketPage(
@@ -44,7 +82,7 @@ final Map<String, (CustomerTestDeps Function(Locale), Widget Function(Locale))>
   ),
 };
 
-final Set<String> _dark = {'market_photo'};
+final Set<String> _dark = {'market_photo', 'picker_saved'};
 
 void main() {
   setUpAll(loadPlexFont);

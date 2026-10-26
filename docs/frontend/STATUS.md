@@ -231,6 +231,7 @@
    * `reconciliation_job.dart`
    * `payout_request.dart`
    * `support_ticket.dart`
+   * `saved_address.dart` (FE-BE-GAPS: `saved_addresses` entry with label, address, note and coordinates; ADR-0028 §2.8)
  * **Theme / design system** (`frontend/lib/ui/`, redesign A): `tokens.dart`, `qd_theme.dart` (`qdLightTheme` / `qdDarkTheme`, the app theme in `main.dart`), `qd_ui.dart` (barrel), `qd_launch.dart`, `qd_licenses.dart`, `components/qd_*.dart`, debug gallery `gallery/qd_gallery_screen.dart` (`/qd-gallery`, debug builds only).
  * **L10n** (`frontend/lib/l10n/`):
    * `l10n.dart` (null-safe `context.l10n` extension + `appL10n` helper)

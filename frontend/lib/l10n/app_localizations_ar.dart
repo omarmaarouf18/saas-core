@@ -1268,7 +1268,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get acctAddressesNote =>
-      'العناوين بتتحفظ كنص، من غير مكان على الخريطة.';
+      'كل عنوان ليه مكان على الخريطة، فبيملا الاستلام أو التسليم بلمسة واحدة وانت بتطلب.';
 
   @override
   String get acctAddressesEmpty => 'مفيش عناوين محفوظة لسه';
@@ -3589,4 +3589,91 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownSvcPhotoErrRemove => 'مقدرناش نشيل الصورة. جرّب تاني.';
+
+  @override
+  String get addrLabelTitle => 'الاسم';
+
+  @override
+  String get addrLabelHome => 'البيت';
+
+  @override
+  String get addrLabelWork => 'الشغل';
+
+  @override
+  String get addrLabelOther => 'مكان تاني';
+
+  @override
+  String get addrLabelCustom => 'سمّي المكان ده';
+
+  @override
+  String get addrLabelCustomHint => 'مثلاً: بيت ماما، الجيم';
+
+  @override
+  String get addrPin => 'المكان على الخريطة';
+
+  @override
+  String get addrPinMissing => 'مطلوب';
+
+  @override
+  String get addrPinSet => 'متحدد على الخريطة';
+
+  @override
+  String get addrPinTitle => 'حدد المكان';
+
+  @override
+  String get addrErrLabel => 'اختار أو اكتب اسم';
+
+  @override
+  String addrErrTooLong(int max) {
+    return 'اكتب $max حرف بالكتير';
+  }
+
+  @override
+  String get addrErrPin => 'حدد المكان على الخريطة';
+
+  @override
+  String get addrLegacyTitle => 'لسه مش على الخريطة';
+
+  @override
+  String get addrLegacyBody =>
+      'العناوين القديمة دي ملهاش مكان على الخريطة. حدد مكانها عشان تستخدمها وانت بتطلب.';
+
+  @override
+  String get addrLegacyPin => 'حدده';
+
+  @override
+  String addrLegacyPinFor(String address) {
+    return 'حدد $address على الخريطة';
+  }
+
+  @override
+  String get addrDropLegacyTitle => 'العناوين القديمة هتتشال';
+
+  @override
+  String addrDropLegacyBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count عناوين قديمة من غير مكان على الخريطة هتتشال لما تحفظ. حددها الأول لو عايز تحتفظ بيها.',
+      one:
+          'عنوان قديم من غير مكان على الخريطة هيتشال لما تحفظ. حدده الأول لو عايز تحتفظ بيه.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addrDropLegacyConfirm => 'احفظ برضه';
+
+  @override
+  String get custSavedPlaces => 'أماكنك المحفوظة';
+
+  @override
+  String get custSavedNeedsPin =>
+      'ملوش مكان على الخريطة: حرّك الخريطة عليه وبعدين أكّد';
+
+  @override
+  String custSavedUse(String label, String address) {
+    return 'استخدم $label: $address';
+  }
 }

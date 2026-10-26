@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/ui/qd_theme.dart';
 import 'package:frontend/features/auth/auth_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/models/saved_address.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
@@ -89,6 +90,7 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
     String? accountStatus,
     String? suspensionReason,
     List<String>? addresses,
+    List<SavedAddress> saved = const [],
     String role = 'user',
   }) =>
       UserProfile(
@@ -97,7 +99,11 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
         username: 'Mona',
         phone: '01001234567',
         role: role,
-        frequentAddresses: addresses ?? ['Home, 12 Tahrir St', 'Work'],
+        frequentAddresses: addresses ??
+            (saved.isEmpty
+                ? ['Home, 12 Tahrir St', 'Work']
+                : [for (final s in saved) s.address]),
+        savedAddresses: saved,
         twoFactorEnabled: twoFactor,
         accountStatus: accountStatus,
         suspensionReason: suspensionReason,
@@ -205,6 +211,7 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    List<SavedAddress>? savedAddresses,
     bool? twoFactorEnabled,
     String? password,
   }) async {
@@ -212,6 +219,8 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
       if (username != null) 'username': username,
       if (phone != null) 'phone': phone,
       if (frequentAddresses != null) 'frequent_addresses': frequentAddresses,
+      if (savedAddresses != null)
+        'saved_addresses': [for (final a in savedAddresses) a.toJson()],
     };
     if (!await _run('updateOwnProfile', '')) {
       throw Exception(error);
@@ -219,7 +228,17 @@ class FakeAuthFlow extends ChangeNotifier implements AuthProvider {
     user = user?.copyWith(
       username: username,
       phone: phone,
-      frequentAddresses: frequentAddresses,
+      frequentAddresses: savedAddresses != null
+          ? [for (final a in savedAddresses) a.address]
+          : frequentAddresses,
+      savedAddresses: savedAddresses == null
+          ? null
+          : [
+              for (var i = 0; i < savedAddresses.length; i++)
+                savedAddresses[i].id.isEmpty
+                    ? savedAddresses[i].copyWith(id: 'addr_new_$i')
+                    : savedAddresses[i],
+            ],
     );
     notifyListeners();
     return true;

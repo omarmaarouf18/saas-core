@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
+import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
+import '../../models/saved_address.dart';
+import '../../providers/auth_provider.dart';
 import '../../ui/qd_ui.dart';
-import 'booking_rules.dart';
+import '../account/saved_address_rules.dart';
 import 'customer_location.dart';
 
 /// Max landmark note length, as the old picker dialog and the backend.
-const int kAddressNoteMaxLength = 500;
+const int kAddressNoteMaxLength = kAddressNoteMaxRunes;
 
 /// Supplies the map tile provider to [CustomerPickerPage] (default: network
 /// tiles from `mapTileUrlTemplate`). Tests use it to avoid network tiles.
@@ -37,8 +40,11 @@ class CustomerMapTilesScope extends InheritedWidget {
 /// Without an [initial] place it tries the device location first; when
 /// location is denied or off it says so and the customer picks by hand.
 ///
-/// Saved addresses ("Home" / "Work" chips in the mockup) are not shown:
-/// `UserProfile.frequentAddresses` are plain strings without coordinates.
+/// With the address and note fields shown (booking stops), the customer's
+/// saved places come first (FE-BE-GAPS, ADR-0028 §2.8): one tap moves the
+/// pin there and fills the address text and the note. Old string-only
+/// addresses (`frequent_addresses`) fill the text only; the customer still
+/// has to move the pin.
 class CustomerPickerPage extends StatefulWidget {
   const CustomerPickerPage({
     super.key,
@@ -79,6 +85,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
   bool _locating = false;
   bool _denied = false;
   bool _mapReady = false;
+
+  /// An old string-only address was chosen: it has no pin yet.
+  bool _needsPin = false;
 
   @override
   void initState() {
@@ -124,6 +133,24 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     }
   }
 
+  void _useSaved(SavedAddress a) {
+    setState(() {
+      _center = LatLng(a.latitude, a.longitude);
+      _fromDevice = false;
+      _needsPin = false;
+      _address.text = a.address;
+      _note.text = a.addressNote;
+    });
+    if (_mapReady) _map.move(_center, _map.camera.zoom);
+  }
+
+  void _useLegacy(String text) {
+    setState(() {
+      _address.text = text;
+      _needsPin = true;
+    });
+  }
+
   void _confirm() {
     Navigator.of(context).pop(PickedPlace(
       latitude: _center.latitude,
@@ -158,6 +185,8 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                           if (!hasGesture) return;
                           _center = camera.center;
                           _fromDevice = false;
+                          // The customer moved the pin: it is placed now.
+                          if (_needsPin) setState(() => _needsPin = false);
                         },
                       ),
                       children: [
@@ -239,6 +268,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                   ),
                   const SizedBox(height: QdSpace.x3),
                 ],
+                if (widget.showNote) ..._savedPlaces(context),
                 Text(
                   l10n.custPickerHint,
                   style: QdText.body.copyWith(color: c.textSecondary),
@@ -251,9 +281,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                     hint: l10n.bookAddressHint,
                     controller: _address,
                     textInputAction: TextInputAction.next,
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(kAddressMaxLength),
-                    ],
+                    maxRunes: kAddressTextMaxRunes,
                   ),
                   const SizedBox(height: QdSpace.x3),
                   QdTextField(
@@ -262,9 +290,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                     hint: l10n.custNoteHint,
                     controller: _note,
                     textInputAction: TextInputAction.done,
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(kAddressNoteMaxLength),
-                    ],
+                    maxRunes: kAddressNoteMaxRunes,
                   ),
                 ],
                 const SizedBox(height: 14),
@@ -280,5 +306,85 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
         ],
       ),
     );
+  }
+
+  /// "Saved places": the customer's saved addresses, then old
+  /// string-only ones. Empty when there are none.
+  List<Widget> _savedPlaces(BuildContext context) {
+    final l10n = context.l10n;
+    final c = QdColors.of(context);
+    final user = Provider.of<AuthProvider?>(context)?.user;
+    final saved = user?.savedAddresses ?? const <SavedAddress>[];
+    final legacy = legacyAddressesOf(user);
+    if (saved.isEmpty && legacy.isEmpty) return const [];
+    Widget chip(Key key, IconData icon, String label, String semantic,
+            VoidCallback onTap) =>
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: QdSpace.x2),
+          child: Semantics(
+            button: true,
+            label: semantic,
+            excludeSemantics: true,
+            child: ActionChip(
+              key: key,
+              avatar: Icon(icon, size: 18, color: c.textPrimary),
+              label: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 160),
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: QdText.secondary.copyWith(color: c.textPrimary)),
+              ),
+              backgroundColor: c.surface,
+              side: BorderSide(color: c.borderInput),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(QdRadius.pill)),
+              onPressed: onTap,
+            ),
+          ),
+        );
+    return [
+      Text(l10n.custSavedPlaces,
+          style: QdText.secondary
+              .copyWith(color: c.textSecondary, fontWeight: FontWeight.w600)),
+      const SizedBox(height: QdSpace.x2),
+      SingleChildScrollView(
+        key: const Key('cust_picker_saved'),
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (var i = 0; i < saved.length; i++)
+            chip(
+              Key('cust_picker_saved_$i'),
+              savedLabelKindOf(saved[i].label) == SavedLabelKind.work
+                  ? Icons.work_outline
+                  : savedLabelKindOf(saved[i].label) == SavedLabelKind.home
+                      ? Icons.home_outlined
+                      : Icons.location_on_outlined,
+              savedLabelText(l10n, saved[i].label),
+              l10n.custSavedUse(
+                  savedLabelText(l10n, saved[i].label), saved[i].address),
+              () => _useSaved(saved[i]),
+            ),
+          for (var i = 0; i < legacy.length; i++)
+            chip(
+              Key('cust_picker_legacy_$i'),
+              Icons.location_off_outlined,
+              legacy[i],
+              l10n.custSavedUse(legacy[i], l10n.custSavedNeedsPin),
+              () => _useLegacy(legacy[i]),
+            ),
+        ]),
+      ),
+      if (_needsPin) ...[
+        const SizedBox(height: QdSpace.x2),
+        QdBanner(
+          key: const Key('cust_picker_needs_pin'),
+          tone: QdBannerTone.warning,
+          icon: Icons.push_pin_outlined,
+          message: l10n.custSavedNeedsPin,
+        ),
+      ],
+      const SizedBox(height: 14),
+    ];
   }
 }
