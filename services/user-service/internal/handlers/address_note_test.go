@@ -101,8 +101,11 @@ func TestTrackJob_AddressNoteTooLongRejected(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if body["error"] != "address_note_too_long" {
-		t.Errorf("expected address_note_too_long, got %v", body["error"])
+	if body["code"] != "address_note_too_long" {
+		t.Errorf("expected code address_note_too_long, got %v", body["code"])
+	}
+	if body["error"] == "" || body["message"] == "" {
+		t.Errorf("expected non-empty error and message in response: %s", rec.Body.String())
 	}
 }
 

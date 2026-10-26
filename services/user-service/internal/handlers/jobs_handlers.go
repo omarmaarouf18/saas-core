@@ -172,9 +172,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	req.Destination.AddressNote = strings.TrimSpace(req.Destination.AddressNote)
 	if len([]rune(req.Location.AddressNote)) > models.MaxAddressNoteLength ||
 		len([]rune(req.Destination.AddressNote)) > models.MaxAddressNoteLength {
+		msg := fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength)
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error":   "address_note_too_long",
-			"message": fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength),
+			"error":   msg,
+			"code":    "address_note_too_long",
+			"message": msg,
 		})
 		return
 	}
@@ -184,7 +186,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// field-specific error before any employee/KYC/escrow work, exactly
 	// like the address-note gate above.
 	if code, msg := validateV2BookingFields(&req); code != "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": code, "message": msg})
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   msg,
+			"code":    code,
+			"message": msg,
+		})
 		return
 	}
 
@@ -2431,7 +2437,11 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.JobID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "job_id is required",
+			"code":    "job_id_required",
+			"message": "job_id is required",
+		})
 		return
 	}
 
@@ -2446,14 +2456,22 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		requesterToken = req.RequesterToken
 	}
 	if requesterToken == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error":   "requester token is required",
+			"code":    "unauthorized",
+			"message": "requester token is required",
+		})
 		return
 	}
 
 	courierID, err := resolveTokenWithRole(requesterToken, "employee")
 	if err != nil {
 		if strings.Contains(err.Error(), "role mismatch") {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error":   err.Error(),
+				"code":    "role_mismatch",
+				"message": err.Error(),
+			})
 			return
 		}
 		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
@@ -2463,20 +2481,36 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error":   "job not found",
+			"code":    "job_not_found",
+			"message": "job not found",
+		})
 		return
 	}
 
 	if job.Status != models.JobStatusActive {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": "job is not active"})
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job is not active",
+			"code":    "job_not_active",
+			"message": "job is not active",
+		})
 		return
 	}
 	if job.EmployeeID != courierID {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error":   "access denied: only the assigned courier can confirm pickup",
+			"code":    "access_denied",
+			"message": "access denied: only the assigned courier can confirm pickup",
+		})
 		return
 	}
 	if job.SubStatus == models.SubStatusPickedUp {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job already picked up",
+			"code":    "already_picked_up",
+			"message": "job already picked up",
+		})
 		return
 	}
 
@@ -2496,11 +2530,23 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		msg := err.Error()
 		switch {
 		case strings.Contains(msg, "already_picked_up"):
-			writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job already picked up",
+				"code":    "already_picked_up",
+				"message": "job already picked up",
+			})
 		case strings.Contains(msg, "access_denied"):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error":   "access denied: only the assigned courier can confirm pickup",
+				"code":    "access_denied",
+				"message": "access denied: only the assigned courier can confirm pickup",
+			})
 		case strings.Contains(msg, "job_not_found"):
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error":   "job not found",
+				"code":    "job_not_found",
+				"message": "job not found",
+			})
 		default:
 			// Anything else (including losing the CAS race against an
 			// exit-from-active) is a concurrent-state conflict.
