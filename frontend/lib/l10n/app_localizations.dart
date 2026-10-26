@@ -11162,6 +11162,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order steps'**
   String get ownTimelineTitle;
+
+  /// FE-CLEANUP notifications: owner, cancellation requested.
+  ///
+  /// In en, this message translates to:
+  /// **'A courier asked to cancel a job'**
+  String get ntfCancelRequestedTitle;
+
+  /// FE-CLEANUP notifications: owner, cancellation request expired.
+  ///
+  /// In en, this message translates to:
+  /// **'A cancellation request ran out'**
+  String get ntfCancelExpiredTitle;
+
+  /// FE-CLEANUP notifications: courier, owner answered the cancellation request.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cancellation request was answered'**
+  String get ntfCancelResolvedTitle;
+
+  /// FE-CLEANUP notifications: courier, job offer.
+  ///
+  /// In en, this message translates to:
+  /// **'New job offer'**
+  String get ntfJobOfferTitle;
+
+  /// FE-CLEANUP notifications: courier, job offer body.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer it from the Task tab before the time runs out.'**
+  String get ntfJobOfferBody;
+
+  /// FE-CLEANUP notifications: courier, dispatch alert.
+  ///
+  /// In en, this message translates to:
+  /// **'New job'**
+  String get ntfJobAlertTitle;
+
+  /// FE-CLEANUP notifications: owner / courier, verification approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your verification was approved'**
+  String get ntfKycApprovedTitle;
+
+  /// FE-CLEANUP notifications: owner / courier, verification rejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Your verification wasn\'t accepted'**
+  String get ntfKycRejectedTitle;
+
+  /// FE-CLEANUP verification-rejected dialog: opens the verification page.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix my documents'**
+  String get vrfRejectedOpen;
+
+  /// FE-CLEANUP update-required page: opens the download link.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the update'**
+  String get updDownload;
+
+  /// FE-CLEANUP page for a signed-in role the app has no screens for.
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t use the app'**
+  String get roleUnsupportedTitle;
+
+  /// FE-CLEANUP page for a signed-in role the app has no screens for.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a customer, business or courier account. Staff accounts use the web console.'**
+  String get roleUnsupportedBody;
 }
 
 class _AppLocalizationsDelegate

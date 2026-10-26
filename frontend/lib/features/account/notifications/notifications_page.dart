@@ -32,8 +32,8 @@ class NotificationsPage extends StatefulWidget {
   /// Clock for day groups and relative times (tests).
   final DateTime Function()? now;
 
-  /// Opens the page from [context] (inside the customer shell, so order
-  /// links can switch to its My orders tab).
+  /// Opens the page from [context] (inside a role shell, so links can
+  /// switch to its tabs, see [NotificationShellScope]).
   static Future<void> open(BuildContext context) {
     final links = NotificationLinks.of(context);
     return Navigator.of(context)
@@ -79,18 +79,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final provider = context.read<NotificationsProvider>();
     if (!n.isRead) provider.markAsRead(n.id);
     final role = context.read<AuthProvider>().user?.role;
-    final target = notificationTarget(n, role);
-    switch (target.kind) {
-      case NotificationTargetKind.orders:
-        _links.openOrders(context);
-      case NotificationTargetKind.ticket:
-        _links.openTicket(context, target.ticketId!,
-            resolved: n.type == 'ticket_resolved');
-      case NotificationTargetKind.tickets:
-        _links.openTickets(context);
-      case NotificationTargetKind.none:
-        break;
-    }
+    _links.follow(context, notificationTarget(n, role),
+        resolved: n.type == 'ticket_resolved');
   }
 
   Future<void> _clearAll() async {
@@ -333,15 +323,29 @@ class _NotificationTile extends StatelessWidget {
   final VoidCallback onDismiss;
 
   /// Icon, tile fill and icon color per type (A-Notifs: gold for an
-  /// accepted order, green for delivered, muted otherwise).
+  /// accepted order or a new job, green for delivered or approved, red for
+  /// cancelled or rejected, amber for cancellation requests, muted
+  /// otherwise).
   (IconData, Color, Color) _icon(QdColors c, String type) => switch (type) {
-        'job_accepted' => (Icons.inventory_2_outlined, c.gold, c.onGold),
-        'job_completed' => (Icons.check, c.successBg, c.success),
-        'job_cancelled' || 'job_unavailable' => (
+        'job_accepted' || 'job_offer' || 'job_alert' => (
+            Icons.inventory_2_outlined,
+            c.gold,
+            c.onGold
+          ),
+        'job_completed' || 'kyc_approved' => (
+            Icons.check,
+            c.successBg,
+            c.success
+          ),
+        'job_cancelled' || 'job_unavailable' || 'kyc_rejected' => (
             Icons.block,
             c.dangerBg,
             c.danger
           ),
+        'cancellation_requested' ||
+        'cancellation_request_expired' ||
+        'cancellation_resolved' =>
+          (Icons.schedule, c.warningBg, c.warning),
         'ticket_resolved' || 'ticket_assigned' => (
             Icons.chat_bubble_outline,
             c.fillMuted,

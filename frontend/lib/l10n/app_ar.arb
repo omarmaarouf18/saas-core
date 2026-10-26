@@ -2180,5 +2180,17 @@
   "ownRowEta": "الوقت المتوقع",
   "ownCallRecipient": "اتصل بالمستلم",
   "ownCallCourier": "اتصل بالمندوب",
-  "ownTimelineTitle": "خطوات الطلب"
+  "ownTimelineTitle": "خطوات الطلب",
+  "ntfCancelRequestedTitle": "مندوب طالب يلغي مهمة",
+  "ntfCancelExpiredTitle": "وقت طلب الإلغاء خلص",
+  "ntfCancelResolvedTitle": "اترد على طلب الإلغاء بتاعك",
+  "ntfJobOfferTitle": "عرض مهمة جديد",
+  "ntfJobOfferBody": "رد عليه من المهمة قبل ما الوقت يخلص.",
+  "ntfJobAlertTitle": "مهمة جديدة",
+  "ntfKycApprovedTitle": "التوثيق بتاعك اتقبل",
+  "ntfKycRejectedTitle": "التوثيق بتاعك ما اتقبلش",
+  "vrfRejectedOpen": "صلّح المستندات",
+  "updDownload": "نزّل التحديث",
+  "roleUnsupportedTitle": "الحساب ده مينفعش يستخدم التطبيق",
+  "roleUnsupportedBody": "ادخل بحساب عميل أو صاحب شغل أو مندوب. حسابات الموظفين بتستخدم لوحة التحكم على الويب."
 }

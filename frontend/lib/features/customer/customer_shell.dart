@@ -68,7 +68,9 @@ class _CustomerShellState extends State<CustomerShell> {
     if (i != 2) _jobs.refresh();
   }
 
-  void _showOrders() => _select(1);
+  /// What notification links can show here: the My orders tab.
+  late final NotificationShellLinks _links =
+      NotificationShellLinks(showOrders: () => _select(1));
 
   @override
   Widget build(BuildContext context) {
@@ -79,8 +81,8 @@ class _CustomerShellState extends State<CustomerShell> {
     return ChangeNotifierProvider<CustomerJobsController>.value(
       value: _jobs,
       // Notification links to an order switch to the My orders tab.
-      child: OrdersTabScope(
-        showOrders: _showOrders,
+      child: NotificationShellScope(
+        links: _links,
         child: CustomerTheme(
           child: Scaffold(
             key: const Key('customer_shell'),

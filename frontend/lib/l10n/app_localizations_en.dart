@@ -6259,4 +6259,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownTimelineTitle => 'Order steps';
+
+  @override
+  String get ntfCancelRequestedTitle => 'A courier asked to cancel a job';
+
+  @override
+  String get ntfCancelExpiredTitle => 'A cancellation request ran out';
+
+  @override
+  String get ntfCancelResolvedTitle => 'Your cancellation request was answered';
+
+  @override
+  String get ntfJobOfferTitle => 'New job offer';
+
+  @override
+  String get ntfJobOfferBody =>
+      'Answer it from the Task tab before the time runs out.';
+
+  @override
+  String get ntfJobAlertTitle => 'New job';
+
+  @override
+  String get ntfKycApprovedTitle => 'Your verification was approved';
+
+  @override
+  String get ntfKycRejectedTitle => 'Your verification wasn\'t accepted';
+
+  @override
+  String get vrfRejectedOpen => 'Fix my documents';
+
+  @override
+  String get updDownload => 'Download the update';
+
+  @override
+  String get roleUnsupportedTitle => 'This account can\'t use the app';
+
+  @override
+  String get roleUnsupportedBody =>
+      'Sign in with a customer, business or courier account. Staff accounts use the web console.';
 }

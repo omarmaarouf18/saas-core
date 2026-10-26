@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../screens/notifications_screen.dart';
 import '../../ui/qd_ui.dart';
+import '../account/notifications/notifications_page.dart';
 import '../account/support/tickets_page.dart';
 import '../verification/verification_page.dart';
 import 'activity_log_page.dart';
@@ -16,9 +16,8 @@ import 'wallet_page.dart';
 ///
 /// New pages are pushed with [push], which renders them under the redesign
 /// theme and re-provides the shell's [OwnerDataController] (pushed routes
-/// live in the navigator overlay, outside the shell's providers). Screens
-/// that are not rebuilt yet (FE-OWNER-2) open as they are, with the app
-/// theme. Tests swap this through [OwnerNavScope] to record hand-offs.
+/// live in the navigator overlay, outside the shell's providers). Tests
+/// swap this through [OwnerNavScope] to record hand-offs.
 class OwnerNav {
   const OwnerNav();
 
@@ -32,12 +31,9 @@ class OwnerNav {
     ));
   }
 
-  Future<void> _old(BuildContext context, Widget screen) =>
-      Navigator.of(context)
-          .push<void>(MaterialPageRoute(builder: (_) => screen));
-
+  /// Notifications: the page shared by every role, with owner links.
   Future<void> openNotifications(BuildContext context) =>
-      _old(context, const NotificationsScreen());
+      NotificationsPage.open(context);
 
   /// Verification (KYB): the page shared with the courier app.
   Future<void> openKyb(BuildContext context) => VerificationPage.open(context);

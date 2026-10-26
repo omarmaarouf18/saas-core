@@ -6164,4 +6164,41 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownTimelineTitle => 'خطوات الطلب';
+
+  @override
+  String get ntfCancelRequestedTitle => 'مندوب طالب يلغي مهمة';
+
+  @override
+  String get ntfCancelExpiredTitle => 'وقت طلب الإلغاء خلص';
+
+  @override
+  String get ntfCancelResolvedTitle => 'اترد على طلب الإلغاء بتاعك';
+
+  @override
+  String get ntfJobOfferTitle => 'عرض مهمة جديد';
+
+  @override
+  String get ntfJobOfferBody => 'رد عليه من المهمة قبل ما الوقت يخلص.';
+
+  @override
+  String get ntfJobAlertTitle => 'مهمة جديدة';
+
+  @override
+  String get ntfKycApprovedTitle => 'التوثيق بتاعك اتقبل';
+
+  @override
+  String get ntfKycRejectedTitle => 'التوثيق بتاعك ما اتقبلش';
+
+  @override
+  String get vrfRejectedOpen => 'صلّح المستندات';
+
+  @override
+  String get updDownload => 'نزّل التحديث';
+
+  @override
+  String get roleUnsupportedTitle => 'الحساب ده مينفعش يستخدم التطبيق';
+
+  @override
+  String get roleUnsupportedBody =>
+      'ادخل بحساب عميل أو صاحب شغل أو مندوب. حسابات الموظفين بتستخدم لوحة التحكم على الويب.';
 }

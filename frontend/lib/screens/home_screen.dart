@@ -17,7 +17,6 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_success_banner.dart';
 import '../widgets/rating_summary_card.dart';
-import '../widgets/app_shell.dart';
 import '../widgets/cancel_job_dialog.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/dashboard_screen_template.dart';
@@ -35,6 +34,7 @@ import 'owner_configuration_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
 import '../features/auth/auth_nav.dart';
+import '../features/auth/unsupported_role_page.dart';
 import '../features/courier/courier_shell.dart';
 import '../features/customer/customer_shell.dart';
 import '../features/owner/owner_shell.dart';
@@ -229,7 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return customerRootScreen();
     }
     if (user.role != 'owner') {
-      return _buildNonOwnerShell(user, l10n);
+      // FE-CLEANUP: roles without mobile screens (staff).
+      return const UnsupportedRolePage();
     }
 
     // FE-OWNER-1: redesigned owner shell behind QD_REDESIGN_OWNER.
@@ -1366,100 +1367,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildNonOwnerShell(UserProfile user, AppLocalizations l10n) {
-    return AppShell(
-      appBarBackgroundColor: Colors.transparent,
-      leading: DashboardScreenTemplate.brandLogo(),
-      showBackButton: false,
-      title: l10n.quickDeliveryDashboard,
-      actions: [
-        _buildNotificationBell(context),
-        IconButton(
-          key: const Key('settings_button'),
-          icon: const Icon(Icons.settings_outlined),
-          tooltip: l10n.ownerHomeTooltipSettings,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const SettingsScreen(),
-              ),
-            );
-          },
-        ),
-      ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.ownerHomeWelcomeUser(
-                user.username.isNotEmpty ? user.username : user.email,
-              ),
-              style: AppTypography.headlineLgMobile.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Text(
-              l10n.ownerHomeAccountId(user.id),
-              style: AppTypography.bodyMd.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ThemedCard(
-              borderRadius: AppRadius.md,
-              padding: AppSpacing.lg,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ThemedSectionHeader(title: l10n.ownerHomeProfileInfo),
-                  const Divider(
-                    height: AppSpacing.lg,
-                    color: AppColors.outlineVariant,
-                  ),
-                  _buildDetailRow(l10n.ownerHomeLabelUsername, user.username),
-                  _buildDetailRow(l10n.ownerHomeLabelEmail, user.email),
-                  _buildDetailRow(
-                    l10n.ownerHomeLabelRole,
-                    userRoleLabel(context.l10n, user.role),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.base),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTypography.bodyMd.copyWith(
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTypography.bodyMd.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -7,7 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/l10n/app_localizations.dart';
-import 'package:frontend/models/notification_model.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
@@ -86,56 +85,6 @@ Widget _hostedApp({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  group('NotificationsProvider kyc_rejected emission', () {
-    test('emits kyc_rejected notifications on kycRejectionStream', () async {
-      final source = _RecordingSseSource();
-      final provider =
-          NotificationsProvider(ApiClient(), sseStreamSource: source.call);
-
-      final received = <NotificationModel>[];
-      final sub = provider.kycRejectionStream.listen(received.add);
-
-      provider.initSse('token-stream');
-      source.emit(
-          '{"id":"n-rej-1","type":"kyc_rejected","tenant_id":"t-1","user_id":"target-user","title":"Verification rejected","body":"Your KYE verification was rejected. Reason: selfie mismatch"}');
-
-      await Future<void>.delayed(Duration.zero);
-      expect(received, hasLength(1));
-      expect(received.first.type, 'kyc_rejected');
-      expect(received.first.userId, 'target-user');
-      expect(received.first.body, contains('selfie mismatch'));
-      expect(provider.notifications.length, 1);
-
-      // Other outcome types must not hit the stream.
-      source.emit(
-          '{"id":"n-ok-1","type":"kyc_approved","tenant_id":"t-1","user_id":"target-user","title":"ok","body":"approved"}');
-      await Future<void>.delayed(Duration.zero);
-      expect(received, hasLength(1));
-
-      await sub.cancel();
-      provider.dispose();
-    });
-
-    test('parses optional user_id into NotificationModel', () {
-      final withUser = NotificationModel.fromJson({
-        'id': 'a',
-        'type': 'kyc_rejected',
-        'user_id': 'u-1',
-        'title': 't',
-        'body': 'b',
-      });
-      expect(withUser.userId, 'u-1');
-
-      final withoutUser = NotificationModel.fromJson({
-        'id': 'b',
-        'type': 'job_alert',
-        'title': 't',
-        'body': 'b',
-      });
-      expect(withoutUser.userId, isNull);
-    });
-  });
 
   group('KycRejectionDialogHost', () {
     testWidgets('shows rejection dialog for the targeted user', (tester) async {

@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/auth/redesign_update_gate.dart';
 import 'package:frontend/features/auth/update_required_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import 'package:frontend/ui/qd_launch.dart';
+
+import '../../helpers/fake_launcher.dart';
 
 import 'auth_harness.dart';
 
@@ -26,7 +29,7 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
-  testWidgets('server versions and link; the button copies the link',
+  testWidgets('server versions and link; the copy button copies the link',
       (tester) async {
     usePhone(tester);
     await tester.pumpWidget(authApp(
@@ -46,6 +49,45 @@ void main() {
     await tester.tap(find.byKey(const Key('update_copy')));
     await tester.pump();
     expect(clipboard, ['https://example.com/app.apk']);
+    expect(
+        find.text(
+            'Link copied. Open it in your browser to install the new version.'),
+        findsOneWidget);
+  });
+
+  testWidgets('download opens the link in another app', (tester) async {
+    usePhone(tester);
+    final launcher = FakeLauncher(opens: (_) => true);
+    await tester.pumpWidget(authApp(
+        AuthTestDeps(),
+        QdLauncherScope(
+          launcher: launcher,
+          child: const UpdateRequiredPage(
+              downloadUrl: 'https://example.com/app.apk'),
+        )));
+    await tester.pumpAndSettle();
+    expect(find.text('Download the update'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('update_download')));
+    await tester.pump();
+    expect(launcher.tried, [Uri.parse('https://example.com/app.apk')]);
+    expect(clipboard, isEmpty);
+  });
+
+  testWidgets('download with nothing to open it: the link is copied',
+      (tester) async {
+    usePhone(tester);
+    final launcher = FakeLauncher();
+    await tester.pumpWidget(authApp(
+        AuthTestDeps(),
+        QdLauncherScope(
+          launcher: launcher,
+          child: const UpdateRequiredPage(),
+        )));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('update_download')));
+    await tester.pump();
+    expect(launcher.tried, [Uri.parse(kFallbackDownloadUrl)]);
+    expect(clipboard, [kFallbackDownloadUrl]);
     expect(
         find.text(
             'Link copied. Open it in your browser to install the new version.'),

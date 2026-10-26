@@ -5991,5 +5991,53 @@
   "ownTimelineTitle": "Order steps",
   "@ownTimelineTitle": {
     "description": "FE-V2-CONSUME owner order detail: timeline section title."
+  },
+  "ntfCancelRequestedTitle": "A courier asked to cancel a job",
+  "@ntfCancelRequestedTitle": {
+    "description": "FE-CLEANUP notifications: owner, cancellation requested."
+  },
+  "ntfCancelExpiredTitle": "A cancellation request ran out",
+  "@ntfCancelExpiredTitle": {
+    "description": "FE-CLEANUP notifications: owner, cancellation request expired."
+  },
+  "ntfCancelResolvedTitle": "Your cancellation request was answered",
+  "@ntfCancelResolvedTitle": {
+    "description": "FE-CLEANUP notifications: courier, owner answered the cancellation request."
+  },
+  "ntfJobOfferTitle": "New job offer",
+  "@ntfJobOfferTitle": {
+    "description": "FE-CLEANUP notifications: courier, job offer."
+  },
+  "ntfJobOfferBody": "Answer it from the Task tab before the time runs out.",
+  "@ntfJobOfferBody": {
+    "description": "FE-CLEANUP notifications: courier, job offer body."
+  },
+  "ntfJobAlertTitle": "New job",
+  "@ntfJobAlertTitle": {
+    "description": "FE-CLEANUP notifications: courier, dispatch alert."
+  },
+  "ntfKycApprovedTitle": "Your verification was approved",
+  "@ntfKycApprovedTitle": {
+    "description": "FE-CLEANUP notifications: owner / courier, verification approved."
+  },
+  "ntfKycRejectedTitle": "Your verification wasn't accepted",
+  "@ntfKycRejectedTitle": {
+    "description": "FE-CLEANUP notifications: owner / courier, verification rejected."
+  },
+  "vrfRejectedOpen": "Fix my documents",
+  "@vrfRejectedOpen": {
+    "description": "FE-CLEANUP verification-rejected dialog: opens the verification page."
+  },
+  "updDownload": "Download the update",
+  "@updDownload": {
+    "description": "FE-CLEANUP update-required page: opens the download link."
+  },
+  "roleUnsupportedTitle": "This account can't use the app",
+  "@roleUnsupportedTitle": {
+    "description": "FE-CLEANUP page for a signed-in role the app has no screens for."
+  },
+  "roleUnsupportedBody": "Sign in with a customer, business or courier account. Staff accounts use the web console.",
+  "@roleUnsupportedBody": {
+    "description": "FE-CLEANUP page for a signed-in role the app has no screens for."
   }
 }

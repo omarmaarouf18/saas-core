@@ -9,6 +9,7 @@ import '../../providers/employee_location_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
+import '../account/notifications/notification_rules.dart';
 import 'blocked_page.dart';
 import 'courier_controller.dart';
 import 'courier_rules.dart';
@@ -93,6 +94,13 @@ class _CourierShellState extends State<CourierShell> {
         key: const Key('job_alert_dispatch_snackbar'));
   }
 
+  /// What notification links can show here: the Task tab (offer or
+  /// current job) and My jobs.
+  late final NotificationShellLinks _links = NotificationShellLinks(
+    showTask: () => _select(0),
+    showJobs: () => _select(1),
+  );
+
   void _select(int i) {
     if (i == _index) return;
     setState(() {
@@ -115,35 +123,38 @@ class _CourierShellState extends State<CourierShell> {
       child: QdThemeScope(
         child: blocked
             ? const CourierBlockedPage()
-            : Builder(
-                builder: (context) => Scaffold(
-                  key: const Key('courier_shell'),
-                  backgroundColor: QdColors.of(context).surface,
-                  body: IndexedStack(
-                    index: _index,
-                    children: [
-                      lazy(0, () => const CourierTaskPage()),
-                      lazy(1, () => const CourierJobsPage()),
-                      lazy(2, () => const AccountPage()),
-                    ],
-                  ),
-                  bottomNavigationBar: QdBottomNav(
-                    key: const Key('courier_shell_nav'),
-                    currentIndex: _index,
-                    onTap: _select,
-                    items: [
-                      QdNavItem(
-                          icon: Icons.inventory_2_outlined,
-                          activeIcon: Icons.inventory_2,
-                          label: l10n.courNavTask),
-                      QdNavItem(
-                          icon: Icons.format_list_bulleted,
-                          label: l10n.courNavJobs),
-                      QdNavItem(
-                          icon: Icons.person_outline,
-                          activeIcon: Icons.person,
-                          label: l10n.courNavAccount),
-                    ],
+            : NotificationShellScope(
+                links: _links,
+                child: Builder(
+                  builder: (context) => Scaffold(
+                    key: const Key('courier_shell'),
+                    backgroundColor: QdColors.of(context).surface,
+                    body: IndexedStack(
+                      index: _index,
+                      children: [
+                        lazy(0, () => const CourierTaskPage()),
+                        lazy(1, () => const CourierJobsPage()),
+                        lazy(2, () => const AccountPage()),
+                      ],
+                    ),
+                    bottomNavigationBar: QdBottomNav(
+                      key: const Key('courier_shell_nav'),
+                      currentIndex: _index,
+                      onTap: _select,
+                      items: [
+                        QdNavItem(
+                            icon: Icons.inventory_2_outlined,
+                            activeIcon: Icons.inventory_2,
+                            label: l10n.courNavTask),
+                        QdNavItem(
+                            icon: Icons.format_list_bulleted,
+                            label: l10n.courNavJobs),
+                        QdNavItem(
+                            icon: Icons.person_outline,
+                            activeIcon: Icons.person,
+                            label: l10n.courNavAccount),
+                      ],
+                    ),
                   ),
                 ),
               ),
