@@ -3322,11 +3322,12 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 
 // EmployeeResponse represents an employee item returned by GetEmployees.
 type EmployeeResponse struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string           `json:"id"`
+	Username  string           `json:"username"`
+	Email     string           `json:"email"`
+	IsActive  bool             `json:"is_active"`
+	KYEStatus models.KYCStatus `json:"kye_status,omitempty"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 // GetEmployees returns all employees registered under the caller's tenant owner account.
@@ -3388,6 +3389,7 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			Username:  emp.Username,
 			Email:     emp.Email,
 			IsActive:  emp.IsActive,
+			KYEStatus: emp.KYEStatus,
 			CreatedAt: emp.CreatedAt,
 		})
 	}

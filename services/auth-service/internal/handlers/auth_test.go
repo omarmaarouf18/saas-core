@@ -2664,6 +2664,7 @@ func TestGetEmployees(t *testing.T) {
 		TenantID:   "tenant_a",
 		OwnerID:    "owner_a_id",
 		IsActive:   true,
+		KYEStatus:  models.KYCApproved,
 		Password:   "$2a$10$secret_hash",
 		IDFrontDoc: "documents/id_front.png",
 		OTPCode:    "123456",
@@ -2679,6 +2680,7 @@ func TestGetEmployees(t *testing.T) {
 		TenantID:   "tenant_a",
 		OwnerID:    "owner_a_id",
 		IsActive:   false, // Frozen/inactive
+		KYEStatus:  models.KYCPendingApproval,
 		Password:   "$2a$10$secret_hash",
 		IDFrontDoc: "documents/id_front_2.png",
 		OTPCode:    "654321",
@@ -2744,11 +2746,17 @@ func TestGetEmployees(t *testing.T) {
 				if item["is_active"] != true {
 					t.Errorf("Expected emp_a1_id to have is_active=true")
 				}
+				if item["kye_status"] != "approved" {
+					t.Errorf("Expected emp_a1_id to have kye_status='approved', got %v", item["kye_status"])
+				}
 			}
 			if item["id"] == "emp_a2_id" {
 				foundFrozen = true
 				if item["is_active"] != false {
 					t.Errorf("Expected emp_a2_id to have is_active=false")
+				}
+				if item["kye_status"] != "pending_super_admin_approval" {
+					t.Errorf("Expected emp_a2_id to have kye_status='pending_super_admin_approval', got %v", item["kye_status"])
 				}
 			}
 		}
