@@ -48,21 +48,31 @@ jobs:
           echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
           echo "full_version=${VERSION}+${BUILD_NUMBER}" >> $GITHUB_OUTPUT
 
-      - name: Build Release APKs (one per ABI)
+      - name: Build Release APKs (universal, then one per ABI)
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}
         run: |
-          flutter build apk --release --split-per-abi \
-            --build-number=${{ github.run_number }} \
-            --dart-define=API_BASE_URL="${API_BASE_URL}" \
-            --dart-define=APP_VERSION="${{ steps.vars.outputs.full_version }}"
-          ls -l build/app/outputs/flutter-apk/
+          OUT=build/app/outputs/flutter-apk
+          DEFINES=(--build-number=${{ github.run_number }}
+            --dart-define=API_BASE_URL="${API_BASE_URL}"
+            --dart-define=APP_VERSION="${{ steps.vars.outputs.full_version }}")
+          # Universal APK (all ABIs): published as the legacy app-release.apk,
+          # so `releases/latest/download/app-release.apk` (the api-gateway
+          # default download_url and the in-app fallback link) installs on
+          # any phone. Kept aside before the split build reuses the folder.
+          flutter build apk --release "${DEFINES[@]}"
+          mkdir -p build/universal
+          cp "$OUT/app-release.apk" build/universal/app-release.apk
+          flutter build apk --release --split-per-abi "${DEFINES[@]}"
+          ls -l "$OUT" build/universal
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-${{ steps.vars.outputs.short_sha }}
-          path: build/app/outputs/flutter-apk/app-*-release.apk
+          path: |
+            build/app/outputs/flutter-apk/app-*-release.apk
+            build/universal/app-release.apk
 
       - name: Create GitHub Release with APKs
         id: release
@@ -71,16 +81,11 @@ jobs:
         run: |
           TAG="app-release-${{ steps.vars.outputs.short_sha }}"
           OUT=build/app/outputs/flutter-apk
-          # app-release.apk: a copy of the arm64-v8a APK under the old single
-          # APK name, so `releases/latest/download/app-release.apk` (the
-          # api-gateway default download_url and the 1.x in-app fallback link)
-          # keeps resolving.
-          cp "$OUT/app-arm64-v8a-release.apk" "$OUT/app-release.apk"
-          APKS="$OUT/app-armeabi-v7a-release.apk $OUT/app-arm64-v8a-release.apk $OUT/app-x86_64-release.apk $OUT/app-release.apk"
+          APKS="$OUT/app-armeabi-v7a-release.apk $OUT/app-arm64-v8a-release.apk $OUT/app-x86_64-release.apk build/universal/app-release.apk"
           gh release create "$TAG" $APKS \
             --repo omarmaarouf18/quick-delivery-mobile \
             --title "App Release ${{ steps.vars.outputs.full_version }} (${{ steps.vars.outputs.short_sha }})" \
-            --notes "Automated release built from version ${{ steps.vars.outputs.full_version }} (commit ${{ steps.vars.outputs.short_sha }}). One APK per ABI; most phones need arm64-v8a." \
+            --notes "Automated release built from version ${{ steps.vars.outputs.full_version }} (commit ${{ steps.vars.outputs.short_sha }}). One APK per ABI (most phones need arm64-v8a) and app-release.apk, a universal APK for any phone." \
             || gh release upload "$TAG" $APKS \
                --repo omarmaarouf18/quick-delivery-mobile \
                --clobber
@@ -89,6 +94,7 @@ jobs:
           echo "apk_url_armeabi_v7a=${BASE}/app-armeabi-v7a-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_arm64_v8a=${BASE}/app-arm64-v8a-release.apk" >> "$GITHUB_OUTPUT"
           echo "apk_url_x86_64=${BASE}/app-x86_64-release.apk" >> "$GITHUB_OUTPUT"
+          echo "apk_url_universal=${BASE}/app-release.apk" >> "$GITHUB_OUTPUT"
           SIZE_MB=$(du -m "$OUT/app-arm64-v8a-release.apk" | cut -f1)
           echo "size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
 
@@ -121,7 +127,8 @@ jobs:
             "apk_urls": {
               "armeabi-v7a": "${{ steps.release.outputs.apk_url_armeabi_v7a }}",
               "arm64-v8a": "${{ steps.release.outputs.apk_url_arm64_v8a }}",
-              "x86_64": "${{ steps.release.outputs.apk_url_x86_64 }}"
+              "x86_64": "${{ steps.release.outputs.apk_url_x86_64 }}",
+              "universal": "${{ steps.release.outputs.apk_url_universal }}"
             },
             "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
             "size_mb": "${{ steps.release.outputs.size_mb }}"
@@ -137,7 +144,7 @@ jobs:
         run: |
           echo "### 📱 Android APK Build Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: \`${{ steps.vars.outputs.full_version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Artifact Name**: \`app-release-${{ steps.vars.outputs.short_sha }}\` (one APK per ABI)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact Name**: \`app-release-${{ steps.vars.outputs.short_sha }}\` (one APK per ABI plus the universal app-release.apk)" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ steps.vars.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **API Base URL**: \`${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

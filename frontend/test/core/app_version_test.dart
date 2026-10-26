@@ -20,7 +20,7 @@ void main() {
     expect(ApiClient(appVersion: kAppVersion).appVersion, '2.0.0');
   });
 
-  test('build-apk.yml: pinned Flutter, build number, one APK per ABI', () {
+  test('build-apk.yml: pinned Flutter, build number, per-ABI + universal', () {
     final wf = File('.github/workflows/build-apk.yml').readAsStringSync();
     expect(wf, contains("flutter-version: '3.44.6'"));
     expect(wf, contains('--split-per-abi'));
@@ -30,8 +30,14 @@ void main() {
       expect(wf, contains('app-$abi-release.apk'), reason: abi);
       expect(wf, contains('"$abi":'), reason: 'apk_urls.$abi');
     }
-    // apk_url stays, now the arm64-v8a APK; the old name stays downloadable.
+    // apk_url stays, now the arm64-v8a APK; the old name is a universal
+    // APK (a plain, non-split build) so any phone can install it.
     expect(wf, contains(r'apk_url=${BASE}/app-arm64-v8a-release.apk'));
+    expect(wf, contains(r'flutter build apk --release "${DEFINES[@]}"'));
+    expect(wf, contains('build/universal/app-release.apk'));
+    expect(wf, contains('"universal":'));
+    expect(wf,
+        isNot(contains('app-arm64-v8a-release.apk" "\$OUT/app-release.apk"')));
     expect(wf, contains('"full_version":'));
     expect(wf, contains('repositories: logiclink'));
     expect(wf, contains('omarmaarouf18/logiclink.git'));
