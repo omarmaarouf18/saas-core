@@ -1784,7 +1784,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownOrdersTitle => 'Orders';
 
   @override
-  String get ownOrdersSearchHint => 'Order number or courier name';
+  String get ownOrdersSearchHint => 'Order number, customer or courier';
 
   @override
   String get ownClearSearch => 'Clear search';
@@ -1980,18 +1980,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownEmpIdCheck => 'ID check';
-
-  @override
-  String get ownKyeApproved => 'Approved';
-
-  @override
-  String get ownKyePending => 'Under review';
-
-  @override
-  String get ownKyeRejected => 'Rejected';
-
-  @override
-  String get ownKyeMissing => 'Documents missing';
 
   @override
   String get ownEmpCurrentOrder => 'Current order';
@@ -3728,5 +3716,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String custSavedUse(String label, String address) {
     return 'Use $label: $address';
+  }
+
+  @override
+  String ownForCustomer(String name) {
+    return 'For $name';
+  }
+
+  @override
+  String ownKyeBodyApproved(String name) {
+    return '$name\'s ID documents were checked and accepted.';
+  }
+
+  @override
+  String ownKyeBodyPending(String name) {
+    return '$name uploaded their ID documents. Our team is reviewing them.';
+  }
+
+  @override
+  String ownKyeBodyRejected(String name) {
+    return '$name\'s documents weren\'t accepted. They can upload new ones from Verification in the courier app.';
+  }
+
+  @override
+  String ownKyeBodyMissing(String name) {
+    return '$name hasn\'t uploaded ID documents yet. They upload them from Verification in the courier app.';
+  }
+
+  @override
+  String ownKyeChipFor(String status) {
+    return 'ID check: $status';
   }
 }

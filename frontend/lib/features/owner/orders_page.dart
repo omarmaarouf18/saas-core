@@ -59,7 +59,8 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     final query = _search.text;
     final shown = byTab[_tab]!
         .where((j) => orderMatchesQuery(
-            j, query, data.employeeById(j.employeeId)?.displayName))
+            j, query, data.employeeById(j.employeeId)?.displayName,
+            customerName: data.extrasOf(j.id).customerName))
         .toList();
 
     final header = Padding(
@@ -247,9 +248,14 @@ class OwnerOrderRow extends StatelessWidget {
     final c = QdColors.of(context);
     final data = context.watch<OwnerDataController>();
     final courier = data.employeeById(job.employeeId)?.displayName;
-    final title = courier == null
-        ? jobRefIsolated(job)
-        : '${jobRefIsolated(job)} · $courier';
+    // The customer's name when the server has it (USER-AUTH-BE item 3);
+    // the courier then moves to the summary line.
+    final customer = data.extrasOf(job.id).customerName;
+    final title = customer != null
+        ? '$customer · ${jobRefIsolated(job)}'
+        : courier == null
+            ? jobRefIsolated(job)
+            : '${jobRefIsolated(job)} · $courier';
     final requested = hasPendingCancellationRequest(job);
     final phase = jobPhaseChip(l10n, job,
         ride: ownerJobIsRide(context.watch<OwnerProvider>().services, job));
@@ -276,7 +282,9 @@ class OwnerOrderRow extends StatelessWidget {
                               QdText.rowTitleSm.copyWith(color: c.textPrimary)),
                       const SizedBox(height: 2),
                       Text(
-                        _summary(context, data),
+                        customer != null && courier != null
+                            ? '$courier · ${_summary(context, data)}'
+                            : _summary(context, data),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: QdText.caption.copyWith(color: c.textSecondary),

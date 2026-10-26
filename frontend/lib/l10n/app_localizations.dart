@@ -3236,10 +3236,10 @@ abstract class AppLocalizations {
   /// **'Orders'**
   String get ownOrdersTitle;
 
-  /// FE-OWNER-1 redesigned owner screens.
+  /// FE-OWNER-1; FE-BE-GAPS: customer name is searchable.
   ///
   /// In en, this message translates to:
-  /// **'Order number or courier name'**
+  /// **'Order number, customer or courier'**
   String get ownOrdersSearchHint;
 
   /// FE-OWNER-1 redesigned owner screens.
@@ -3589,30 +3589,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID check'**
   String get ownEmpIdCheck;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Approved'**
-  String get ownKyeApproved;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Under review'**
-  String get ownKyePending;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejected'**
-  String get ownKyeRejected;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Documents missing'**
-  String get ownKyeMissing;
 
   /// FE-OWNER-1 redesigned owner screens.
   ///
@@ -6643,6 +6619,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use {label}: {address}'**
   String custSavedUse(String label, String address);
+
+  /// FE-BE-GAPS item 4: Today request row, the customer.
+  ///
+  /// In en, this message translates to:
+  /// **'For {name}'**
+  String ownForCustomer(String name);
+
+  /// FE-BE-GAPS item 4: ID check sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s ID documents were checked and accepted.'**
+  String ownKyeBodyApproved(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} uploaded their ID documents. Our team is reviewing them.'**
+  String ownKyeBodyPending(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s documents weren\'t accepted. They can upload new ones from Verification in the courier app.'**
+  String ownKyeBodyRejected(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t uploaded ID documents yet. They upload them from Verification in the courier app.'**
+  String ownKyeBodyMissing(String name);
+
+  /// FE-BE-GAPS item 4: team row chip semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'ID check: {status}'**
+  String ownKyeChipFor(String status);
 }
 
 class _AppLocalizationsDelegate

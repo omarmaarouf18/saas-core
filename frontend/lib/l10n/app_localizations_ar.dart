@@ -1758,7 +1758,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownOrdersTitle => 'الطلبات';
 
   @override
-  String get ownOrdersSearchHint => 'رقم الطلب أو اسم المندوب';
+  String get ownOrdersSearchHint => 'رقم الطلب أو اسم العميل أو المندوب';
 
   @override
   String get ownClearSearch => 'امسح البحث';
@@ -1953,18 +1953,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownEmpIdCheck => 'التحقق من الهوية';
-
-  @override
-  String get ownKyeApproved => 'متراجع ومقبول';
-
-  @override
-  String get ownKyePending => 'بيتراجع';
-
-  @override
-  String get ownKyeRejected => 'مرفوض';
-
-  @override
-  String get ownKyeMissing => 'المستندات ناقصة';
 
   @override
   String get ownEmpCurrentOrder => 'المهمة الحالية';
@@ -3675,5 +3663,35 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String custSavedUse(String label, String address) {
     return 'استخدم $label: $address';
+  }
+
+  @override
+  String ownForCustomer(String name) {
+    return 'لـ $name';
+  }
+
+  @override
+  String ownKyeBodyApproved(String name) {
+    return 'مستندات $name اتراجعت واتقبلت.';
+  }
+
+  @override
+  String ownKyeBodyPending(String name) {
+    return '$name رفع مستنداته. فريقنا بيراجعها.';
+  }
+
+  @override
+  String ownKyeBodyRejected(String name) {
+    return 'مستندات $name متقبلتش. يقدر يرفع مستندات جديدة من صفحة التحقق في تطبيق المندوب.';
+  }
+
+  @override
+  String ownKyeBodyMissing(String name) {
+    return '$name لسه مرفعش مستنداته. بيرفعها من صفحة التحقق في تطبيق المندوب.';
+  }
+
+  @override
+  String ownKyeChipFor(String status) {
+    return 'التحقق من الهوية: $status';
   }
 }

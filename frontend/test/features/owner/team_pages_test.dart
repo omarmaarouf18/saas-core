@@ -177,23 +177,37 @@ void main() {
               of: find.byKey(const Key('own_employee_delivered_count')),
               matching: find.text('1')),
           findsOneWidget);
-      // No ID-check row: /auth/employees does not return kye_status.
-      expect(find.byKey(const Key('own_employee_kye')), findsNothing);
+      // No kye_status in the payload (older server): "Not uploaded".
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('own_employee_kye')),
+              matching: find.text('Not uploaded')),
+          findsOneWidget);
 
       await tester.tap(find.byKey(const Key('own_employee_current')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('own_order_page')), findsOneWidget);
     });
 
-    testWidgets('ID-check row when the payload carries kye_status',
+    testWidgets('ID-check row: kye_status chip, tap explains it',
         (tester) async {
       usePhone(tester);
       final deps = deps0();
       deps.owner.nextEmployees = [
-        {...staff('emp-1', 'Karim'), 'kye_status': 'pending'},
+        {
+          ...staff('emp-1', 'Karim'),
+          'kye_status': 'pending_super_admin_approval'
+        },
       ];
       await pumpOwner(tester, deps, page('emp-1'));
       expect(find.text('Under review'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('own_employee_kye')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('own_kye_sheet')), findsOneWidget);
+      expect(
+          find.text(
+              'Karim uploaded their ID documents. Our team is reviewing them.'),
+          findsOneWidget);
     });
 
     testWidgets('all their orders: orders page filtered by name',

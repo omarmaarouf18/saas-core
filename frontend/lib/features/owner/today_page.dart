@@ -289,7 +289,9 @@ class _OwnerTodayPageState extends State<OwnerTodayPage> {
       BuildContext context, OwnerDataController data, Job job) {
     final l10n = context.l10n;
     final reason = job.cancellationRequestReason?.trim() ?? '';
+    final customer = data.extrasOf(job.id).customerName;
     final parts = <String>[
+      if (customer != null) l10n.ownForCustomer(customer),
       reason.isEmpty ? l10n.ownCancelReqNoReason : l10n.ownNeedsReason(reason),
       if (job.cancellationRequestedAt != null)
         formatAgo(context, job.cancellationRequestedAt!, now: data.now()),

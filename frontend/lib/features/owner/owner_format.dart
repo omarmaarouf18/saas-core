@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../customer/customer_format.dart';
+import '../../models/job.dart';
 import 'owner_controller.dart';
+import 'owner_rules.dart';
 
 export '../customer/customer_format.dart'
     show
@@ -43,6 +45,12 @@ String? courierNameOf(
   if (e != null && e.displayName.isNotEmpty) return e.displayName;
   return l10n.ownCourierUnknown(shortIdIsolated(employeeId));
 }
+
+/// The customer as an owner sees them: the name snapshotted at booking
+/// (`customer_name`), else "Customer #ref" from the customer id.
+String ownerCustomerLabel(
+        AppLocalizations l10n, Job job, OwnerJobExtras extras) =>
+    extras.customerName ?? l10n.ownCustomerRef(shortRefIsolated(job.userId));
 
 /// "just now", "12 min ago", "3 h ago", else the date and time.
 String formatAgo(BuildContext context, DateTime instant, {DateTime? now}) {

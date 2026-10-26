@@ -523,7 +523,7 @@
   "ownCancelled": "الطلب اتلغى.",
   "ownCancelledRefunded": "الطلب اتلغى والمبلغ المحجوز رجع للعميل.",
   "ownOrdersTitle": "الطلبات",
-  "ownOrdersSearchHint": "رقم الطلب أو اسم المندوب",
+  "ownOrdersSearchHint": "رقم الطلب أو اسم العميل أو المندوب",
   "ownClearSearch": "امسح البحث",
   "ownOrdersKind": "حالة الطلبات",
   "ownTabOngoing": "جارية · {count}",
@@ -582,10 +582,6 @@
   "ownEmpDelivered": "اتسلمت",
   "ownEmpCountsNote": "محسوبة من آخر طلباتك اللي في التطبيق.",
   "ownEmpIdCheck": "التحقق من الهوية",
-  "ownKyeApproved": "متراجع ومقبول",
-  "ownKyePending": "بيتراجع",
-  "ownKyeRejected": "مرفوض",
-  "ownKyeMissing": "المستندات ناقصة",
   "ownEmpCurrentOrder": "المهمة الحالية",
   "ownEmpNone": "مفيش",
   "ownEmpAllOrders": "كل مهامه",
@@ -1180,5 +1176,11 @@
   "addrDropLegacyConfirm": "احفظ برضه",
   "custSavedPlaces": "أماكنك المحفوظة",
   "custSavedNeedsPin": "ملوش مكان على الخريطة: حرّك الخريطة عليه وبعدين أكّد",
-  "custSavedUse": "استخدم {label}: {address}"
+  "custSavedUse": "استخدم {label}: {address}",
+  "ownForCustomer": "لـ {name}",
+  "ownKyeBodyApproved": "مستندات {name} اتراجعت واتقبلت.",
+  "ownKyeBodyPending": "{name} رفع مستنداته. فريقنا بيراجعها.",
+  "ownKyeBodyRejected": "مستندات {name} متقبلتش. يقدر يرفع مستندات جديدة من صفحة التحقق في تطبيق المندوب.",
+  "ownKyeBodyMissing": "{name} لسه مرفعش مستنداته. بيرفعها من صفحة التحقق في تطبيق المندوب.",
+  "ownKyeChipFor": "التحقق من الهوية: {status}"
 }

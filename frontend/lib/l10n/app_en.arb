@@ -2164,9 +2164,9 @@
   "@ownOrdersTitle": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
-  "ownOrdersSearchHint": "Order number or courier name",
+  "ownOrdersSearchHint": "Order number, customer or courier",
   "@ownOrdersSearchHint": {
-    "description": "FE-OWNER-1 redesigned owner screens."
+    "description": "FE-OWNER-1; FE-BE-GAPS: customer name is searchable."
   },
   "ownClearSearch": "Clear search",
   "@ownClearSearch": {
@@ -2450,22 +2450,6 @@
   },
   "ownEmpIdCheck": "ID check",
   "@ownEmpIdCheck": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeApproved": "Approved",
-  "@ownKyeApproved": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyePending": "Under review",
-  "@ownKyePending": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeRejected": "Rejected",
-  "@ownKyeRejected": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeMissing": "Documents missing",
-  "@ownKyeMissing": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
   "ownEmpCurrentOrder": "Current order",
@@ -4828,6 +4812,60 @@
         "type": "String"
       },
       "address": {
+        "type": "String"
+      }
+    }
+  },
+  "ownForCustomer": "For {name}",
+  "@ownForCustomer": {
+    "description": "FE-BE-GAPS item 4: Today request row, the customer.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyApproved": "{name}'s ID documents were checked and accepted.",
+  "@ownKyeBodyApproved": {
+    "description": "FE-BE-GAPS item 4: ID check sheet.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyPending": "{name} uploaded their ID documents. Our team is reviewing them.",
+  "@ownKyeBodyPending": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyRejected": "{name}'s documents weren't accepted. They can upload new ones from Verification in the courier app.",
+  "@ownKyeBodyRejected": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyMissing": "{name} hasn't uploaded ID documents yet. They upload them from Verification in the courier app.",
+  "@ownKyeBodyMissing": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeChipFor": "ID check: {status}",
+  "@ownKyeChipFor": {
+    "description": "FE-BE-GAPS item 4: team row chip semantics.",
+    "placeholders": {
+      "status": {
         "type": "String"
       }
     }

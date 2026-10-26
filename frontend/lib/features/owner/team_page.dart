@@ -259,11 +259,45 @@ class _CourierRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: QdSpace.x2),
-                courierStateChip(l10n, state),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    courierStateChip(l10n, state),
+                    const SizedBox(height: QdSpace.x1),
+                    _KyeChipButton(employee: employee),
+                  ],
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The ID check chip of a team row; opens the member page with its
+/// verification sheet.
+class _KyeChipButton extends StatelessWidget {
+  const _KyeChipButton({required this.employee});
+
+  final OwnerEmployee employee;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final state = kyeStateOf(employee.kyeStatus);
+    return Semantics(
+      button: true,
+      label: l10n.ownKyeChipFor(kyeLabel(l10n, state)),
+      excludeSemantics: true,
+      child: InkWell(
+        key: Key('own_courier_kye_${employee.id}'),
+        borderRadius: BorderRadius.circular(QdRadius.pill),
+        onTap: () =>
+            OwnerEmployeePage.open(context, employee.id, showIdCheck: true),
+        child: kyeChip(l10n, state),
       ),
     );
   }
