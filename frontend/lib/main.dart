@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/l10n/l10n.dart';
 
 import 'core/api_client.dart';
+import 'core/app_version.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/auth/update_gate.dart';
 import 'providers/auth_provider.dart';
@@ -47,7 +48,7 @@ void main() {
   // for its license to be shown with the app.
   registerQdFontLicenses();
 
-  final apiClient = ApiClient();
+  final apiClient = ApiClient(appVersion: kAppVersion);
 
   // HTTP 426 forced-update gate (QA audit A5): route any upgrade-required
   // response to the blocking UpdateRequiredPage instead of letting it
