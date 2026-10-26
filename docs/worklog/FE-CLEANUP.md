@@ -38,3 +38,61 @@ Baseline on the branch start: `flutter analyze` → `No issues found! (ran in 5.
 | Every other file in `lib/screens/` and `lib/widgets/` | Reached only from the files above |
 
 `lib/services/push_notification_service.dart` opens no screen (FCM token registration only).
+
+## Items status
+- 0 inventory — done (above).
+- 1 replace what is still old — done: one NotificationsPage for every role with role-checked links (customer → My orders / tickets; owner → order detail by job id from the body, else Orders; team for `employee_*`, plan for `subscription_*` (no backend type emits these yet), verification for `kyc_*`; courier → Task tab for `job_offer` / `job_alert` / declined cancellation, My jobs for approved cancellation / dispute, verification); VerificationRejectedHost (redesigned dialog, same SSE trigger, button to the verification page); LaunchSplash; update page "Download the update" opens the link (url_launcher via openOrCopy), copies it as fallback; UnsupportedRolePage for staff roles (was the old generic dashboard).
+- 2 app-wide theme — done: MaterialApp theme/darkTheme = qdLightTheme/qdDarkTheme; QdThemeScope, CustomerTheme, customerRoute removed (qdPageRoute → MaterialPageRoute). Dark review: 6 new dark goldens; WCAG matrix of all tokens computed; no text/background pair used by the pages is below 4.5:1. Failing combinations exist only unused (dark textSecondary on warningBg 3.57, dangerBg 3.95, successBg 3.59; light textMuted on fills ~4.0–4.4) — not fixed because nothing renders them; new used pairs added to test/ui/tokens_test.dart.
+- 3 flags removed — done: core/feature_flags.dart, core/update_gate.dart deleted; RoleHome (role → shell, profile refresh on open) replaces HomeScreen routing; AuthGate / UpdateGate renamed from Redesign*; flag tests became routing tests (test/features/auth/role_home_test.dart, auth_gate_test.dart).
+- 4 old UI deleted — done: 72 lib files, 29839 lines (all lib/screens 33 files incl. ComponentLibraryScreen + route, all lib/widgets 37 files, core/theme.dart, utils/logout_helper.dart); 59 test files 21808 lines (+609 old-screen test cases removed from 13 mixed files, provider/model cases kept); 63 PNGs in test/goldens; 801 unused ARB keys (EN+AR); 5 Poppins TTFs (780 KB) and the GoogleFonts switch; docs/frontend/DESIGN_SYSTEM.md (old system, 312 lines) → pointer. /qd-gallery kept.
+- 5 version and APK — done: pubspec 2.0.0+1; lib/core/app_version.dart (`APP_VERSION` dart-define, default 2.0.0) now feeds X-App-Version (it was hard-coded `1.0.0+1` in ApiClient); build-apk.yml pinned to Flutter 3.44.6, `--split-per-abi`, `--build-number=${{ github.run_number }}`, uploads the 3 ABI APKs plus `app-release.apk` (copy of arm64-v8a, so `releases/latest/download/app-release.apk` — the gateway default download_url and the in-app fallback — keeps working); app-release.json keeps `apk_url` (arm64-v8a), adds `apk_urls`, `full_version`, `build_number`; website step and `logiclink` unchanged.
+- 6 docs — NOT done (usage limit): STATUS.md features/file index rows, 00-SCREEN-MAP status column, docs/design/DESIGN_SYSTEM.md (theme app-wide), frontend/docs/CI_CD.md, frontend/README.md goldens section and CONNECTING_TO_BACKEND.md flag lines still describe the old state.
+
+## Changes per commit (message only — NO SHAs)
+1. `FE-CLEANUP: item 0 - inventory of old UI reachable with the flags on`
+2. `FE-CLEANUP: item 1 - notifications for every role, new rejection dialog, splash and update download`
+3. `FE-CLEANUP: drop golden failure images committed by mistake; ignore them`
+4. `FE-CLEANUP: item 2 - redesign theme app-wide, theme wrappers removed, dark review goldens`
+5. `FE-CLEANUP: item 3 - remove the QD_REDESIGN flags; RoleHome routes to the new shells`
+6. `FE-CLEANUP: item 4 - delete the old UI, its tests, goldens and ARB keys`
+7. `FE-CLEANUP: item 5 - version 2.0.0, real X-App-Version, split-per-ABI release APKs`
+8. `FE-CLEANUP: worklog`
+
+## Verification (literal lines)
+- item 1: `No issues found! (ran in 1.2s)`; `01:12 +1847: All tests passed!`; `== pre-push gate: all checks passed (scope: docs infra-tests docgen frontend) ==`
+- item 2: `No issues found! (ran in 1.1s)`; `01:39 +1852: All tests passed!`
+- item 3: `No issues found! (ran in 1.1s)`; `01:04 +1834: All tests passed!`
+- item 4: `No issues found! (ran in 1.0s)`; `00:35 +1219: All tests passed!`; make ci-full `== pre-push gate: all checks passed (scope: full) ==`
+- item 5: make ci-full `No issues found! (ran in 2.5s)`, `00:37 +1221: All tests passed!`, `== pre-push gate: all checks passed (scope: full) ==`
+- api-gateway (read-only run): `ok  	github.com/project/gateway/internal/version	0.048s`, `ok  	github.com/project/gateway/internal/middleware	0.003s` — ParseSemVer strips `+build`, so 2.0.0+N passes and 1.0.0+1 keeps working while the minimum is 1.0.0.
+- `flutter build apk --release --split-per-abi --build-number=1 --dart-define=APP_VERSION=2.0.0+1`:
+  `✓ Built build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk (18.8MB)`
+  `✓ Built build/app/outputs/flutter-apk/app-arm64-v8a-release.apk (21.1MB)`
+  `✓ Built build/app/outputs/flutter-apk/app-x86_64-release.apk (22.6MB)`
+  aapt2: `versionCode='2001' versionName='2.0.0'` (arm64; ABI offset + build number). Before: one 62 MB APK (task prompt figure, not re-measured).
+
+## Goldens
+- Changed: test/features/auth/goldens/auth_update_{ar_rtl,en_ltr}_360x800.png (download + copy buttons).
+- New: cour_idle_dark_en_ltr, cour_active_deliver_dark_en_ltr, cust_home_dark_en_ltr, ord_active_dark_en_ltr, own_shell_dark_en_ltr, own_order_dark_en_ltr (360x800).
+- Deleted: all 63 PNGs in test/goldens/ (old screens). No other feature golden changed under the app-wide theme.
+
+## Manual test plan (owner)
+- Customer: launch → new splash → sign in → shell; bell → notifications; tap an order notification → My orders; dark mode toggle on sign-in page → whole app dark.
+- Owner: Today bell → new notifications page; cancellation-request notification → that order's detail; KYB rejection while online → new dialog → "Fix my documents" opens verification.
+- Courier: offer notification → Task tab; approved cancellation → My jobs; KYE rejection dialog.
+- Any: server minimum above 2.0.0 → update page; "Download the update" opens the browser; staff account → unsupported-role page with sign out.
+
+## Unverified
+- No device/emulator run; all checks are widget tests, goldens and the local release build.
+- build-apk.yml not run on GitHub (validated by YAML parse and test/core/app_version_test.dart only).
+- New dark goldens not yet rendered on CI.
+
+## Follow-ups / out-of-lane findings
+- scripts/changed-scope.sh:254 (`… | head -n 20 | …` under pipefail) dies with SIGPIPE (exit 141) once the branch has many changed paths, so `make check` and sometimes `make commit` fail; items 4–5 used `make ci-full`.
+- .github/workflows/regen-goldens.yml still runs the deleted test/golden_screens_test.dart and uploads frontend/test/goldens/ (hot path).
+- pubspec still lists google_fonts and flutter_svg (now unused) and assets/branding/qd_logo.svg; root DESIGN.md still says Poppins.
+- Owner/courier notification bodies are English server text (titles are localized); a job_id in the notification payload would replace body parsing.
+
+## Open questions
+- `app-release.apk` alias and `apk_url` point to arm64-v8a: 32-bit (armeabi-v7a) phones following those links get an APK they cannot install. OK, or should the alias be a universal APK?
+- Team / plan notification links match `employee_*` / `subscription_*` types that no service sends today. Keep, or drop until the backend sends them?
