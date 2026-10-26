@@ -195,6 +195,7 @@ services:
       - ../certs/ca.crt:/app/certs/ca.crt:ro
       - ../certs/user-service.crt:/app/certs/user-service.crt:ro
       - ../certs/user-service.key:/app/certs/user-service.key:ro
+      - staging_service_photos_data:/app/data/service_photos
     environment:
       PORT: ${USER_SERVICE_PORT}
       MONGO_URI: ${MONGO_URI}
@@ -207,6 +208,8 @@ services:
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
+      DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
+      STORAGE_BASE_DIR: /app/data/service_photos
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       ALLOW_TEST_PAYMENT_BYPASS: ${ALLOW_TEST_PAYMENT_BYPASS:-true}
       TLS_CERT_PATH: /app/certs/user-service.crt
@@ -322,6 +325,8 @@ volumes:
     name: staging_saas_documents_data
   staging_attachments_data:
     name: staging_saas_attachments_data
+  staging_service_photos_data:
+    name: staging_saas_service_photos_data
 
 networks:
   staging-net:

@@ -170,11 +170,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// note fails fast with a field-specific error, not a booking failure.
 	req.Location.AddressNote = strings.TrimSpace(req.Location.AddressNote)
 	req.Destination.AddressNote = strings.TrimSpace(req.Destination.AddressNote)
-	if len(req.Location.AddressNote) > models.MaxAddressNoteLength ||
-		len(req.Destination.AddressNote) > models.MaxAddressNoteLength {
+	if len([]rune(req.Location.AddressNote)) > models.MaxAddressNoteLength ||
+		len([]rune(req.Destination.AddressNote)) > models.MaxAddressNoteLength {
+		msg := fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength)
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error":   "address_note_too_long",
-			"message": fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength),
+			"error":   msg,
+			"code":    "address_note_too_long",
+			"message": msg,
 		})
 		return
 	}
@@ -184,7 +186,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// field-specific error before any employee/KYC/escrow work, exactly
 	// like the address-note gate above.
 	if code, msg := validateV2BookingFields(&req); code != "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": code, "message": msg})
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   msg,
+			"code":    code,
+			"message": msg,
+		})
 		return
 	}
 
@@ -438,11 +444,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			proposedBy = "customer"
 		}
 
+		customerName := u.fetchUserName(ctx, req.UserID)
 		job := &models.Job{
 			ID:                       generateID(),
 			OwnerID:                  req.OwnerID,
 			EmployeeID:               "",
 			UserID:                   req.UserID,
+			CustomerName:             customerName,
 			ServiceID:                req.ServiceID,
 			Status:                   initialStatus,
 			Location:                 req.Location,
@@ -549,9 +557,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		Latitude:  empLoc.Latitude,
 		Longitude: empLoc.Longitude,
 	}
+	customerName := u.fetchUserName(ctx, req.UserID)
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
 		UserID:                   req.UserID,
+		CustomerName:             customerName,
 		ServiceID:                req.ServiceID,
 		Status:                   initialStatus,
 		Location:                 req.Location,
@@ -1040,12 +1050,29 @@ func (u *UserService) v2PhoneLookup(ctx context.Context, cache map[string]string
 	return p
 }
 
+// v2CustomerNameLookup memoizes per-request S2S customer name reads for legacy jobs
+// in owner job views.
+func (u *UserService) v2CustomerNameLookup(ctx context.Context, cache map[string]string, userID string) string {
+	if userID == "" {
+		return ""
+	}
+	if name, ok := cache[userID]; ok {
+		return name
+	}
+	name := u.fetchUserName(ctx, userID)
+	cache[userID] = name
+	return name
+}
+
 // v2OwnerDTOWithCourierPhone / v2CustomerDTOWithCourierPhone implement the
 // ADR-0028 §2.11 contact window for the job-detail endpoints: CourierPhone
 // (the assigned courier's phone via S2S) appears on owner/customer dtos
 // only while the job is active; the DTO's omitempty drops it otherwise.
 func v2OwnerDTOWithCourierPhone(u *UserService, ctx context.Context, j *models.Job) models.OwnerJobResponse {
 	dto := models.NewOwnerJobResponse(j)
+	if dto.CustomerName == "" && j.UserID != "" {
+		dto.CustomerName = u.fetchUserName(ctx, j.UserID)
+	}
 	if j.Status == models.JobStatusActive && j.EmployeeID != "" {
 		dto.CourierPhone = u.fetchUserPhone(ctx, j.EmployeeID)
 	}
@@ -1305,6 +1332,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 	resps := make([]models.OwnerJobResponse, 0, len(jobs))
 	now := time.Now()
 	phoneCache := map[string]string{}
+	nameCache := map[string]string{}
 	for _, j := range jobs {
 		if activeOnly {
 			isActiveStatus := j.Status == models.JobStatusActive
@@ -1314,6 +1342,9 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		dto := models.NewOwnerJobResponse(j)
+		if dto.CustomerName == "" && j.UserID != "" {
+			dto.CustomerName = u.v2CustomerNameLookup(r.Context(), nameCache, j.UserID)
+		}
 		if j.Status == models.JobStatusActive && j.EmployeeID != "" {
 			dto.CourierPhone = u.v2PhoneLookup(r.Context(), phoneCache, j.EmployeeID)
 		}
@@ -2406,7 +2437,11 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.JobID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "job_id is required",
+			"code":    "job_id_required",
+			"message": "job_id is required",
+		})
 		return
 	}
 
@@ -2421,14 +2456,22 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		requesterToken = req.RequesterToken
 	}
 	if requesterToken == "" {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "requester token is required"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error":   "requester token is required",
+			"code":    "unauthorized",
+			"message": "requester token is required",
+		})
 		return
 	}
 
 	courierID, err := resolveTokenWithRole(requesterToken, "employee")
 	if err != nil {
 		if strings.Contains(err.Error(), "role mismatch") {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error":   err.Error(),
+				"code":    "role_mismatch",
+				"message": err.Error(),
+			})
 			return
 		}
 		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
@@ -2438,20 +2481,36 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	job := u.store.GetJob(ctx, req.JobID)
 	if job == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error":   "job not found",
+			"code":    "job_not_found",
+			"message": "job not found",
+		})
 		return
 	}
 
 	if job.Status != models.JobStatusActive {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": "job is not active"})
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job is not active",
+			"code":    "job_not_active",
+			"message": "job is not active",
+		})
 		return
 	}
 	if job.EmployeeID != courierID {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error":   "access denied: only the assigned courier can confirm pickup",
+			"code":    "access_denied",
+			"message": "access denied: only the assigned courier can confirm pickup",
+		})
 		return
 	}
 	if job.SubStatus == models.SubStatusPickedUp {
-		writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "job already picked up",
+			"code":    "already_picked_up",
+			"message": "job already picked up",
+		})
 		return
 	}
 
@@ -2471,11 +2530,23 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 		msg := err.Error()
 		switch {
 		case strings.Contains(msg, "already_picked_up"):
-			writeJSON(w, http.StatusConflict, map[string]string{"error": "job already picked up"})
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job already picked up",
+				"code":    "already_picked_up",
+				"message": "job already picked up",
+			})
 		case strings.Contains(msg, "access_denied"):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: only the assigned courier can confirm pickup"})
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error":   "access denied: only the assigned courier can confirm pickup",
+				"code":    "access_denied",
+				"message": "access denied: only the assigned courier can confirm pickup",
+			})
 		case strings.Contains(msg, "job_not_found"):
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error":   "job not found",
+				"code":    "job_not_found",
+				"message": "job not found",
+			})
 		default:
 			// Anything else (including losing the CAS race against an
 			// exit-from-active) is a concurrent-state conflict.
@@ -2495,7 +2566,7 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "pickup recorded",
-		"job":     refreshed,
+		"job":     models.NewEmployeeJobResponse(refreshed, courierID),
 	})
 }
 
@@ -2713,6 +2784,7 @@ func (u *UserService) sendJobOfferNotification(job *models.Job, employeeID strin
 			"type":      "job_offer",
 			"tenant_id": job.OwnerID,
 			"user_id":   employeeID,
+			"job_id":    job.ID,
 			"title":     "New Job Offer",
 			"body":      fmt.Sprintf("You have an incoming job offer for job %s. Respond within 60 seconds.", job.ID),
 			"roles":     []string{"employee"},
@@ -2771,6 +2843,7 @@ func (u *UserService) broadcastCourierAccepted(job *models.Job, finalPrice float
 			"type":      "job_accepted",
 			"tenant_id": job.OwnerID,
 			"user_id":   job.UserID,
+			"job_id":    job.ID,
 			"title":     title,
 			"body":      body,
 			"roles":     []string{"client", "user"},
@@ -2823,6 +2896,7 @@ func (u *UserService) broadcastJobUnavailable(job *models.Job) {
 			"type":      "job_unavailable",
 			"tenant_id": job.OwnerID,
 			"user_id":   job.UserID,
+			"job_id":    job.ID,
 			"title":     "All Couriers Busy",
 			"body":      "All couriers in your area are currently busy. You can retry your booking anytime.",
 			"roles":     []string{"client", "user"},
@@ -2875,6 +2949,7 @@ func (u *UserService) notifyCustomerEscrowLockFailed(job *models.Job) {
 			"type":      "job_cancelled",
 			"tenant_id": job.OwnerID,
 			"user_id":   job.UserID,
+			"job_id":    job.ID,
 			"title":     "Booking Cancelled",
 			"body":      "Your booking was cancelled because the service owner could not lock escrow funds.",
 			"roles":     []string{"client", "user"},
@@ -3492,6 +3567,7 @@ func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, not
 			"type":      notifType,
 			"tenant_id": job.OwnerID,
 			"user_id":   userID,
+			"job_id":    job.ID,
 			"title":     title,
 			"body":      body,
 			"roles":     []string{role},

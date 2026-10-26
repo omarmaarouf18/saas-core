@@ -222,8 +222,11 @@ func TestV2TrackJob_ValidationErrors(t *testing.T) {
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 				t.Fatalf("decode: %v", err)
 			}
-			if body["error"] != tc.wantErr {
-				t.Errorf("expected %q, got %q (body: %s)", tc.wantErr, body["error"], rec.Body.String())
+			if body["code"] != tc.wantErr {
+				t.Errorf("expected code %q, got %q (body: %s)", tc.wantErr, body["code"], rec.Body.String())
+			}
+			if body["error"] == "" || body["message"] == "" {
+				t.Errorf("expected non-empty error and message in body: %s", rec.Body.String())
 			}
 		})
 	}

@@ -205,7 +205,12 @@ var KnownEndpoints = map[string]struct {
 	},
 	"PATCH /auth/user": {
 		Permissions: "Authenticated User JWT",
-		Function:    "Self-service profile update (username, phone, frequent_addresses) with IDOR protection.",
+		Function:    "Self-service profile update (username, phone, frequent_addresses, saved_addresses) with IDOR protection.",
+		Targets:     "Updates `users` collection.",
+	},
+	"PUT /auth/user": {
+		Permissions: "Authenticated User JWT",
+		Function:    "Self-service profile update (username, phone, frequent_addresses, saved_addresses) with IDOR protection.",
 		Targets:     "Updates `users` collection.",
 	},
 	"GET /auth/user/public-profile": {

@@ -81,8 +81,13 @@ func (u *UserService) GetReconciliationQueue(w http.ResponseWriter, r *http.Requ
 	}
 
 	resps := make([]models.OwnerJobResponse, 0, len(jobs))
+	nameCache := map[string]string{}
 	for _, j := range jobs {
-		resps = append(resps, models.NewOwnerJobResponse(j))
+		dto := models.NewOwnerJobResponse(j)
+		if dto.CustomerName == "" && j.UserID != "" {
+			dto.CustomerName = u.v2CustomerNameLookup(r.Context(), nameCache, j.UserID)
+		}
+		resps = append(resps, dto)
 	}
 	writeJSON(w, http.StatusOK, resps)
 }

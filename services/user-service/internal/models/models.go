@@ -335,6 +335,8 @@ type Job struct {
 	// (courier→destination); nil when no fresh courier location exists
 	// (ADR-0028 §2.5).
 	EstimatedDurationMinutes *int `json:"estimated_duration_minutes,omitempty" bson:"estimated_duration_minutes,omitempty"`
+	// CustomerName snapshots the booking customer's display name for owners.
+	CustomerName string `json:"customer_name,omitempty" bson:"customer_name,omitempty"`
 }
 
 // DistanceReview is an owner-facing review flag for a cash-on-delivery job
@@ -401,6 +403,7 @@ type OwnerJobResponse struct {
 	StatusHistory            []JobStatusHistoryEntry `json:"status_history,omitempty"`
 	EstimatedDurationMinutes *int                    `json:"estimated_duration_minutes,omitempty"`
 	CourierPhone             string                  `json:"courier_phone,omitempty"`
+	CustomerName             string                  `json:"customer_name,omitempty"`
 }
 
 // NewOwnerJobResponse maps a Job struct to an OwnerJobResponse DTO.
@@ -413,6 +416,7 @@ func NewOwnerJobResponse(j *Job) OwnerJobResponse {
 		OwnerID:                   j.OwnerID,
 		ServiceID:                 j.ServiceID,
 		UserID:                    j.UserID,
+		CustomerName:              j.CustomerName,
 		EmployeeID:                j.EmployeeID,
 		CurrentOfferedEmployeeID:  j.CurrentOfferedEmployeeID,
 		OfferExpiresAt:            j.OfferExpiresAt,
@@ -781,9 +785,11 @@ type CreateServiceRequest struct {
 	Latitude         float64       `json:"latitude"`
 	Longitude        float64       `json:"longitude"`
 	PhotoURL         string        `json:"photo_url,omitempty"`
+	Photo            string        `json:"photo,omitempty"`
 	Address          string        `json:"address,omitempty"`
 	WorkingHours     string        `json:"working_hours,omitempty"`
 	CoverageRadiusKM float64       `json:"coverage_radius_km,omitempty"`
+	CoverageRadius   float64       `json:"coverage_radius,omitempty"`
 	ScheduleMode     string        `json:"schedule_mode,omitempty"`
 	OpenTime         string        `json:"open_time,omitempty"`
 	CloseTime        string        `json:"close_time,omitempty"`
@@ -804,9 +810,11 @@ type UpdateServiceRequest struct {
 	Latitude         *float64       `json:"latitude,omitempty"`
 	Longitude        *float64       `json:"longitude,omitempty"`
 	PhotoURL         *string        `json:"photo_url,omitempty"`
+	Photo            *string        `json:"photo,omitempty"`
 	Address          *string        `json:"address,omitempty"`
 	WorkingHours     *string        `json:"working_hours,omitempty"`
 	CoverageRadiusKM *float64       `json:"coverage_radius_km,omitempty"`
+	CoverageRadius   *float64       `json:"coverage_radius,omitempty"`
 	ScheduleMode     *string        `json:"schedule_mode,omitempty"`
 	OpenTime         *string        `json:"open_time,omitempty"`
 	CloseTime        *string        `json:"close_time,omitempty"`

@@ -166,7 +166,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 		switch r.Method {
 		case http.MethodGet:
 			a.GetUser(w, r)
-		case http.MethodPatch:
+		case http.MethodPatch, http.MethodPut:
 			a.UpdateProfile(w, r)
 		default:
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
@@ -1169,6 +1169,7 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 		"username":           user.Username,
 		"phone":              user.Phone,
 		"frequent_addresses": user.FrequentAddresses,
+		"saved_addresses":    user.SavedAddresses,
 		"tenant_id":          user.TenantID,
 		"kyc_status":         user.KYCStatus,
 		"is_active":          user.IsActive,
@@ -1203,8 +1204,8 @@ func (a *Auth) GetUser(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPatch {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use PATCH"})
+	if r.Method != http.MethodPatch && r.Method != http.MethodPut {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed, use PATCH or PUT"})
 		return
 	}
 
@@ -1354,6 +1355,65 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		updateFields["frequent_addresses"] = addresses
+	}
+
+	// 3b. Saved Addresses with coordinates (ADR-0028 §2.8)
+	if val, exists := raw["saved_addresses"]; exists {
+		rawArr, ok := val.([]any)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "saved_addresses must be an array of objects"})
+			return
+		}
+		if len(rawArr) > 10 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "saved_addresses cannot exceed 10 entries"})
+			return
+		}
+		bytesArr, err := json.Marshal(rawArr)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid saved_addresses format"})
+			return
+		}
+		var parsed []models.SavedAddress
+		if err := json.Unmarshal(bytesArr, &parsed); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid saved_addresses structure: " + err.Error()})
+			return
+		}
+
+		derivedFrequent := make([]string, 0, len(parsed))
+		for i := range parsed {
+			addr := &parsed[i]
+			addr.Address = strings.TrimSpace(addr.Address)
+			if addr.Address == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "address is required for saved address"})
+				return
+			}
+			if len([]rune(addr.Address)) > 250 {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "address cannot exceed 250 characters"})
+				return
+			}
+			addr.Label = strings.TrimSpace(addr.Label)
+			if len([]rune(addr.Label)) > 100 {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "label cannot exceed 100 characters"})
+				return
+			}
+			addr.AddressNote = strings.TrimSpace(addr.AddressNote)
+			if len([]rune(addr.AddressNote)) > 500 {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "address_note cannot exceed 500 characters"})
+				return
+			}
+			if addr.Latitude < -90 || addr.Latitude > 90 || addr.Longitude < -180 || addr.Longitude > 180 {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180"})
+				return
+			}
+			if addr.ID == "" {
+				addr.ID = fmt.Sprintf("addr_%d_%d", time.Now().UnixNano(), i)
+			}
+			derivedFrequent = append(derivedFrequent, addr.Address)
+		}
+
+		updateFields["saved_addresses"] = parsed
+		// Keep frequent_addresses as the derived string list for old apps (ADR-0028 §2.8)
+		updateFields["frequent_addresses"] = derivedFrequent
 	}
 
 	// 4. Two-Factor Authentication (2FA) Preference Toggle
@@ -2888,7 +2948,37 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 
 	user := a.store.GetByEmail(ctx, req.Email)
 	if user != nil {
-		// Existing user records in DB are already confirmed accounts.
+		// If user has an active, unverified 2FA login challenge, generate and dispatch a new OTP.
+		if user.OTPCode != "" && !user.OTPVerified && user.EffectiveAccountStatus() != models.AccountStatusSuspended && user.IsActive {
+			otpCode, err := generate6DigitOTP()
+			if err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+				return
+			}
+			if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to set OTP", err)
+				return
+			}
+			if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+				log.Printf("[AUTH] OTP resend dispatch error via %s: %v", a.dispatcher.Name(), err)
+			}
+			if a.isLocal {
+				log.Printf("[AUTH] OTP generated for 2FA login resend: email=%s code=%s dispatcher=%s",
+					user.Email, otpCode, a.dispatcher.Name())
+				genericResponse["dev_otp"] = otpCode
+			} else {
+				log.Printf("[AUTH] OTP generated for 2FA login resend: email=%s dispatcher=%s",
+					user.Email, a.dispatcher.Name())
+			}
+			a.limiter.RecordFailure(clientIP)
+			a.limiter.RecordFailure(req.Email)
+			writeJSON(w, http.StatusOK, genericResponse)
+			return
+		}
+
+		// Existing user without pending login challenge: record limiter failure and return generic response
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusOK, genericResponse)
 		return
 	}
@@ -3322,11 +3412,12 @@ func (a *Auth) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 
 // EmployeeResponse represents an employee item returned by GetEmployees.
 type EmployeeResponse struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string           `json:"id"`
+	Username  string           `json:"username"`
+	Email     string           `json:"email"`
+	IsActive  bool             `json:"is_active"`
+	KYEStatus models.KYCStatus `json:"kye_status,omitempty"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 // GetEmployees returns all employees registered under the caller's tenant owner account.
@@ -3388,6 +3479,7 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			Username:  emp.Username,
 			Email:     emp.Email,
 			IsActive:  emp.IsActive,
+			KYEStatus: emp.KYEStatus,
 			CreatedAt: emp.CreatedAt,
 		})
 	}

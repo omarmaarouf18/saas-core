@@ -339,6 +339,7 @@ type sendRequest struct {
 	TenantID string     `json:"tenant_id"`
 	UserID   string     `json:"user_id,omitempty"`
 	UserIDs  []string   `json:"user_ids,omitempty"`
+	JobID    string     `json:"job_id,omitempty"`
 	Global   bool       `json:"global,omitempty"`
 	Title    string     `json:"title"`
 	Body     string     `json:"body"`
@@ -387,6 +388,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		TenantID:  req.TenantID,
 		UserID:    req.UserID,
 		UserIDs:   req.UserIDs,
+		JobID:     req.JobID,
 		Global:    req.Global,
 		Title:     req.Title,
 		Body:      req.Body,
@@ -408,6 +410,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 			TenantID:  notif.TenantID,
 			UserID:    notif.UserID,
 			UserIDs:   notif.UserIDs,
+			JobID:     notif.JobID,
 			Global:    notif.Global,
 			Title:     notif.Title,
 			Body:      notif.Body,
@@ -469,6 +472,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		Type:      "job_alert",
 		TenantID:  req.TenantID,
 		UserID:    req.EmployeeID,
+		JobID:     req.JobID,
 		Title:     "🆕 New Job Alert",
 		Body:      fmt.Sprintf("New job %s for service %s: %s", req.JobID, req.ServiceName, req.Description),
 		Roles:     []hub.Role{hub.RoleOwner, hub.RoleEmployee, hub.RoleClient},
@@ -485,6 +489,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 			Type:      notif.Type,
 			TenantID:  notif.TenantID,
 			UserID:    "", // Clear persisted UserID so role-broadcast alert is scoped by Roles, not an exclusive single employee
+			JobID:     notif.JobID,
 			Title:     notif.Title,
 			Body:      notif.Body,
 			Roles:     roles,
@@ -569,6 +574,7 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 			Type:      it.Type,
 			TenantID:  it.TenantID,
 			UserID:    it.UserID,
+			JobID:     it.JobID,
 			Title:     it.Title,
 			Body:      it.Body,
 			Timestamp: it.Timestamp,
@@ -595,6 +601,7 @@ type notificationHistoryItem struct {
 	Type      string    `json:"type"`
 	TenantID  string    `json:"tenant_id"`
 	UserID    string    `json:"user_id,omitempty"`
+	JobID     string    `json:"job_id,omitempty"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`

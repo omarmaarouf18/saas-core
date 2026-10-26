@@ -1,13 +1,22 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
+	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/user-service/internal/models"
@@ -21,6 +30,28 @@ import (
 
 func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	ctx := r.Context()
+
+	if id := q.Get("id"); id != "" || q.Get("service_id") != "" {
+		if id == "" {
+			id = q.Get("service_id")
+		}
+		svc := u.store.GetServiceByID(ctx, id)
+		if svc == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+			return
+		}
+		if isLocalPath(svc.PhotoURL) {
+			svc.PhotoURL = ""
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"count":    1,
+			"service":  svc,
+			"services": []*models.Service{svc},
+		})
+		return
+	}
+
 	sortBy := q.Get("sort_by")
 	nearBy := q.Get("near_by") == "true"
 	hasLat := q.Get("lat") != ""
@@ -41,7 +72,6 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := r.Context()
 	if nearBy || hasLat || hasLon {
 		if !isValidCoordinate(refLat, refLon) {
 			// #nosec G706 //nolint:gosec -- floats formatted via %.6f, log injection not possible
@@ -58,6 +88,11 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	// ADR-0024: the public listing excludes closed tenants' services server-side
 	// (missing/unpaid/expired subscription); customers need no client-side logic.
 	services := u.store.ListServicesOpenOnly(ctx, sortBy, nearBy, refLat, refLon, radius, limit, offset)
+	for i := range services {
+		if isLocalPath(services[i].PhotoURL) {
+			services[i].PhotoURL = ""
+		}
+	}
 	// #nosec G706 //nolint:gosec -- sortBy is validated query parameter, log injection not possible
 	log.Printf("[USER] ListServices: sort_by=%s near_by=%v results=%d", sortBy, nearBy, len(services))
 
@@ -91,6 +126,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
+	}
+
+	if req.PhotoURL == "" && req.Photo != "" {
+		req.PhotoURL = req.Photo
+	}
+	if req.CoverageRadiusKM == 0 && req.CoverageRadius > 0 {
+		req.CoverageRadiusKM = req.CoverageRadius
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
@@ -183,6 +225,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		ID: generateID(), TenantID: req.OwnerID, Name: req.Name, Category: req.Category,
 		BasePrice: req.TenantBasePrice, TenantBasePrice: req.TenantBasePrice,
 		TenantPricePerKM: req.TenantPricePerKM, Latitude: req.Latitude, Longitude: req.Longitude,
+		Location: models.NewGeoJSONPoint(req.Latitude, req.Longitude),
 		PhotoURL: req.PhotoURL, Address: req.Address, WorkingHours: req.WorkingHours,
 		CoverageRadiusKM: req.CoverageRadiusKM,
 		ScheduleMode:     req.ScheduleMode, OpenTime: req.OpenTime, CloseTime: req.CloseTime,
@@ -198,6 +241,9 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("[USER] Service created: id=%s name=%s", svc.ID, svc.Name)
+	if isLocalPath(svc.PhotoURL) {
+		svc.PhotoURL = ""
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"message": "service created", "service": svc})
 }
 
@@ -210,6 +256,13 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
+	}
+
+	if req.PhotoURL == nil && req.Photo != nil {
+		req.PhotoURL = req.Photo
+	}
+	if req.CoverageRadiusKM == nil && req.CoverageRadius != nil {
+		req.CoverageRadiusKM = req.CoverageRadius
 	}
 
 	if (req.Latitude != nil || req.Longitude != nil) &&
@@ -446,4 +499,308 @@ func (u *UserService) GetPlatformConfig(w http.ResponseWriter, r *http.Request) 
 
 func isValidCoordinate(lat, lon float64) bool {
 	return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+}
+
+// ---------------------------------------------------------------------------
+// POST /users/services/photo or POST /users/services/photo/upload or POST /users/services/{id}/photo
+// ---------------------------------------------------------------------------
+
+func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	if u.storage == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		return
+	}
+
+	authToken := resolveOwnerAuthToken(r, r.FormValue("owner_token"), r.FormValue("owner_id"))
+	if authToken == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "owner authorization required"})
+		return
+	}
+	ownerID, err := resolveTokenWithRole(authToken, "owner")
+	if err != nil {
+		if strings.Contains(err.Error(), "role mismatch") {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
+		return
+	}
+
+	// Verify owner exists and has approved KYC
+	kycStatus, err := u.checkKYC(ownerID)
+	if err != nil {
+		if errors.Is(err, ErrServiceUnavailable) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error":   "service_unavailable",
+				"message": "Authentication service is temporarily unavailable. Please try again later.",
+			})
+			return
+		}
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: unable to verify owner KYC status",
+		})
+		return
+	}
+	if kycStatus != "approved" {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "action blocked: owner KYC approval is pending",
+		})
+		return
+	}
+
+	// Paid tier membership check
+	if !u.enforcePaidTier(w, r, ownerID, ownerID, "upload_service_photo", "Service photo upload") {
+		return
+	}
+
+	serviceID := r.URL.Query().Get("id")
+	if serviceID == "" {
+		serviceID = r.URL.Query().Get("service_id")
+	}
+	if serviceID == "" {
+		serviceID = r.FormValue("service_id")
+	}
+	if serviceID == "" {
+		serviceID = r.FormValue("id")
+	}
+	if serviceID == "" {
+		serviceID = extractServiceIDFromPhotoPath(r.URL.Path)
+	}
+
+	var existingService *models.Service
+	if serviceID != "" {
+		existingService = u.store.GetServiceByID(r.Context(), serviceID)
+		if existingService == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+			return
+		}
+		if existingService.TenantID != ownerID {
+			handlerutil.ShipSecurityEvent(r.Context(), "IDOR_SERVICE_PHOTO_ATTEMPT", "user-service", ownerID, serviceID, "owner attempted to upload photo for service belonging to another tenant", handlerutil.GetClientIP(r))
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied: service belongs to another tenant"})
+			return
+		}
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
+
+	var fileData []byte
+	contentType := r.Header.Get("Content-Type")
+
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		// #nosec G120 //nolint:gosec -- body is bounded by http.MaxBytesReader, preventing memory exhaustion
+		if err := r.ParseMultipartForm(5 << 20); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo exceeds maximum size of 5MB or invalid multipart body"})
+			return
+		}
+		file, header, err := r.FormFile("photo")
+		if err != nil {
+			file, header, err = r.FormFile("file")
+		}
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo file is required"})
+			return
+		}
+		defer file.Close()
+		if header.Size > 5<<20 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo exceeds maximum size of 5MB"})
+			return
+		}
+		fileData, err = io.ReadAll(file)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read photo file"})
+			return
+		}
+	} else {
+		var err error
+		fileData, err = io.ReadAll(r.Body)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo exceeds maximum size of 5MB or read failed"})
+			return
+		}
+	}
+
+	if len(fileData) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo file is empty"})
+		return
+	}
+	if len(fileData) > 5<<20 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "photo exceeds maximum size of 5MB"})
+		return
+	}
+
+	// Magic-byte check
+	// JPEG: FF D8 FF
+	// PNG: 89 50 4E 47 0D 0A 1A 0A
+	isJPEG := len(fileData) >= 3 && fileData[0] == 0xFF && fileData[1] == 0xD8 && fileData[2] == 0xFF
+	isPNG := len(fileData) >= 8 && bytes.Equal(fileData[:8], []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
+
+	if !isJPEG && !isPNG {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid image format: only JPEG and PNG are allowed",
+		})
+		return
+	}
+
+	img, format, err := image.Decode(bytes.NewReader(fileData))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "corrupt or invalid image"})
+		return
+	}
+
+	var cleanBuf bytes.Buffer
+	var ext string
+	var mimeType string
+
+	switch format {
+	case "png":
+		ext = "png"
+		mimeType = "image/png"
+		if err := png.Encode(&cleanBuf, img); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to process image"})
+			return
+		}
+	case "jpeg":
+		ext = "jpg"
+		mimeType = "image/jpeg"
+		if err := jpeg.Encode(&cleanBuf, img, &jpeg.Options{Quality: 85}); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to process image"})
+			return
+		}
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported image format"})
+		return
+	}
+
+	var key string
+	if existingService != nil {
+		key = fmt.Sprintf("services/%s/photo.%s", existingService.ID, ext)
+	} else {
+		key = fmt.Sprintf("services/%s/photo_%d.%s", ownerID, time.Now().UnixNano(), ext)
+	}
+
+	if err := u.storage.Upload(r.Context(), key, bytes.NewReader(cleanBuf.Bytes()), mimeType); err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to store photo", err)
+		return
+	}
+
+	if existingService != nil {
+		if _, err := u.store.UpdateServiceFields(r.Context(), existingService.ID, ownerID, bson.M{"photo_url": key}); err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update service photo", err)
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message":   "photo uploaded",
+		"photo_url": key,
+		"key":       key,
+	})
+}
+
+// ---------------------------------------------------------------------------
+// GET /users/services/photo or GET /users/services/{id}/photo
+// ---------------------------------------------------------------------------
+
+func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	if u.storage == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		return
+	}
+
+	tokenStr := r.Header.Get("Authorization")
+	if strings.HasPrefix(tokenStr, "Bearer ") || strings.HasPrefix(tokenStr, "bearer ") {
+		tokenStr = strings.TrimSpace(tokenStr[7:])
+	}
+	if tokenStr == "" {
+		tokenStr = r.URL.Query().Get("token")
+	}
+	if tokenStr == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "authentication required"})
+		return
+	}
+
+	_, err := resolveTokenWithRole(tokenStr, "user", "customer", "owner", "employee", "admin")
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeInvalidToken, "invalid or expired token", err)
+		return
+	}
+
+	key := r.URL.Query().Get("key")
+	if key == "" {
+		serviceID := r.URL.Query().Get("id")
+		if serviceID == "" {
+			serviceID = r.URL.Query().Get("service_id")
+		}
+		if serviceID == "" {
+			serviceID = extractServiceIDFromPhotoPath(r.URL.Path)
+		}
+		if serviceID != "" {
+			svc := u.store.GetServiceByID(r.Context(), serviceID)
+			if svc != nil {
+				key = svc.PhotoURL
+			}
+		}
+	}
+
+	if key == "" || isLocalPath(key) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "service photo not found"})
+		return
+	}
+
+	fileRC, err := u.storage.OpenFile(key)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "service photo not found"})
+		return
+	}
+	defer fileRC.Close()
+
+	ext := strings.ToLower(filepath.Ext(key))
+	contentType := "application/octet-stream"
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "private, max-age=86400")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, fileRC)
+}
+
+func extractServiceIDFromPhotoPath(p string) string {
+	clean := strings.TrimPrefix(p, "/users/services/")
+	clean = strings.TrimPrefix(clean, "/api/v1/users/services/")
+	parts := strings.Split(clean, "/")
+	if len(parts) >= 2 && (parts[1] == "photo" || parts[1] == "photo/upload") {
+		return parts[0]
+	}
+	return ""
+}
+
+func isLocalPath(p string) bool {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return false
+	}
+	if strings.HasPrefix(p, "file://") ||
+		strings.HasPrefix(p, "/") ||
+		strings.HasPrefix(p, "\\") ||
+		strings.HasPrefix(p, "./") ||
+		strings.HasPrefix(p, "../") ||
+		(len(p) > 2 && p[1] == ':' && (p[2] == '/' || p[2] == '\\')) {
+		return true
+	}
+	return false
 }

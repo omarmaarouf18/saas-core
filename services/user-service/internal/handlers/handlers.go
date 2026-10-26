@@ -22,11 +22,13 @@ import (
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
 	"github.com/project/shared/infra/resilience"
+	"github.com/project/shared/infra/storage"
 	"github.com/project/shared/infra/tlsutil"
 	"github.com/project/user-service/internal/config"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 	"github.com/redis/go-redis/v9"
+	"os"
 )
 
 var ErrServiceUnavailable = errors.New("service_unavailable")
@@ -111,6 +113,7 @@ type UserService struct {
 	allowTestPaymentBypass     bool
 	digitalPaymentsEnabled     bool
 	rdb                        *redis.Client
+	storage                    storage.Storage
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -169,7 +172,7 @@ func (u *UserService) setTestLocationLastUpdate(jobID string, t time.Time) {
 }
 
 // NewUserService creates a new UserService handler group.
-func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *UserService {
+func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client, stor ...storage.Storage) *UserService {
 	handlerutil.InitCloudWatch(cfg.CloudWatchLogGroup)
 
 	chatServiceURL := cfg.ChatServiceURL
@@ -256,8 +259,60 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client) *Us
 		allowTestPaymentBypass:     cfg.AllowTestPaymentBypass,
 		digitalPaymentsEnabled:     cfg.DigitalPaymentsEnabled,
 	}
+
+	if len(stor) > 0 && stor[0] != nil {
+		u.storage = stor[0]
+	} else {
+		storageBaseDir := ""
+		if cfg != nil {
+			storageBaseDir = cfg.StorageBaseDir
+		}
+		if storageBaseDir == "" {
+			tmp, err := os.MkdirTemp("", "user_photos_*")
+			if err == nil {
+				storageBaseDir = tmp
+			} else {
+				storageBaseDir = "./data/service_photos"
+			}
+		}
+		baseURL := "/api/v1"
+		if cfg != nil && cfg.StorageBaseURL != "" {
+			baseURL = cfg.StorageBaseURL
+		}
+		secret := "default-test-secret"
+		if cfg != nil && cfg.JWTSecret != "" {
+			secret = cfg.JWTSecret
+		}
+		encKey := ""
+		if cfg != nil {
+			encKey = cfg.DocumentEncryptionKey
+		}
+		appEnv := "test"
+		if cfg != nil && cfg.AppEnv != "" {
+			appEnv = cfg.AppEnv
+		}
+		userStorage, err := storage.NewLocalStorageWithPath(storageBaseDir, baseURL, "/users/services/photo", secret, encKey, appEnv)
+		if err != nil {
+			log.Printf("[USER] Primary storage initialization failed (%s): %v; attempting temp dir fallback", storageBaseDir, err)
+			tmp, tmpErr := os.MkdirTemp("", "user_photos_*")
+			if tmpErr == nil {
+				userStorage, err = storage.NewLocalStorageWithPath(tmp, baseURL, "/users/services/photo", secret, encKey, appEnv)
+			}
+		}
+		if err == nil {
+			u.storage = userStorage
+		} else {
+			log.Printf("[USER] Failed to initialize storage: %v", err)
+		}
+	}
+
 	go u.startCascadeSweeper()
 	return u
+}
+
+// SetStorage overrides the storage instance for testing.
+func (u *UserService) SetStorage(stor storage.Storage) {
+	u.storage = stor
 }
 
 // Close stops background workers such as the cascade sweeper.
@@ -273,6 +328,57 @@ func (u *UserService) Close() {
 
 // RegisterRoutes mounts all user-service endpoints on the given ServeMux.
 func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/users/services/photo/upload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			u.UploadServicePhoto(w, r)
+		} else {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/users/services/photo", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			u.GetServicePhoto(w, r)
+		case http.MethodPost:
+			u.UploadServicePhoto(w, r)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/users/services/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/users/services/")
+		parts := strings.Split(path, "/")
+		if len(parts) >= 2 && (parts[1] == "photo" || parts[1] == "photo/upload") {
+			switch r.Method {
+			case http.MethodGet:
+				u.GetServicePhoto(w, r)
+			case http.MethodPost:
+				u.UploadServicePhoto(w, r)
+			default:
+				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+			}
+			return
+		}
+		if len(parts) == 1 && parts[0] != "" && parts[0] != "photo" && parts[0] != "update" {
+			if r.Method == http.MethodGet {
+				svc := u.store.GetServiceByID(r.Context(), parts[0])
+				if svc == nil {
+					writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+					return
+				}
+				if isLocalPath(svc.PhotoURL) {
+					svc.PhotoURL = ""
+				}
+				writeJSON(w, http.StatusOK, map[string]any{
+					"count":    1,
+					"service":  svc,
+					"services": []*models.Service{svc},
+				})
+				return
+			}
+		}
+		http.NotFound(w, r)
+	})
 	mux.HandleFunc("/users/services", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -627,6 +733,44 @@ func (u *UserService) fetchUserPhone(ctx context.Context, userID string) string 
 		return ""
 	}
 	return strings.TrimSpace(user.Phone)
+}
+
+// fetchUserName retrieves a user's display name or username via internal S2S call.
+func (u *UserService) fetchUserName(ctx context.Context, userID string) string {
+	if userID == "" || u.authServiceURL == "" || u.internalServiceToken == "" {
+		return ""
+	}
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	var user struct {
+		Username    string `json:"username"`
+		DisplayName string `json:"display_name"`
+		Name        string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return ""
+	}
+	name := user.DisplayName
+	if name == "" {
+		name = user.Username
+	}
+	if name == "" {
+		name = user.Name
+	}
+	return strings.TrimSpace(name)
 }
 
 func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {

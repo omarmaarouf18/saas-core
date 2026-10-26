@@ -1,7 +1,10 @@
 // Package models defines data types for the auth-service.
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Role represents the authorization level of a user in the platform.
 type Role string
@@ -51,34 +54,111 @@ const (
 	AccountStatusSuspended AccountStatus = "suspended"
 )
 
+// SavedAddress represents a saved address with coordinates (ADR-0028 §2.8).
+type SavedAddress struct {
+	ID          string  `json:"id"                     bson:"id"`
+	Label       string  `json:"label"                  bson:"label"`                  // e.g. "البيت", "الشغل", "مخزن"
+	Address     string  `json:"address"                bson:"address"`                // Street / building
+	AddressNote string  `json:"address_note,omitempty" bson:"address_note,omitempty"` // Landmark note
+	Latitude    float64 `json:"latitude"               bson:"latitude"`
+	Longitude   float64 `json:"longitude"              bson:"longitude"`
+}
+
+func (s *SavedAddress) UnmarshalJSON(data []byte) error {
+	type rawSavedAddress struct {
+		ID          string   `json:"id"`
+		Label       string   `json:"label"`
+		Address     string   `json:"address"`
+		AddressNote string   `json:"address_note"`
+		Latitude    *float64 `json:"latitude"`
+		Longitude   *float64 `json:"longitude"`
+		Lat         *float64 `json:"lat"`
+		Lng         *float64 `json:"lng"`
+		Lon         *float64 `json:"lon"`
+	}
+	var raw rawSavedAddress
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	s.ID = raw.ID
+	s.Label = raw.Label
+	s.Address = raw.Address
+	s.AddressNote = raw.AddressNote
+
+	lat := raw.Latitude
+	if lat == nil {
+		lat = raw.Lat
+	}
+	if lat != nil {
+		s.Latitude = *lat
+	}
+
+	lng := raw.Longitude
+	if lng == nil {
+		lng = raw.Lng
+	}
+	if lng == nil {
+		lng = raw.Lon
+	}
+	if lng != nil {
+		s.Longitude = *lng
+	}
+
+	return nil
+}
+
+func (s SavedAddress) MarshalJSON() ([]byte, error) {
+	type out struct {
+		ID          string  `json:"id"`
+		Label       string  `json:"label"`
+		Address     string  `json:"address"`
+		AddressNote string  `json:"address_note,omitempty"`
+		Latitude    float64 `json:"latitude"`
+		Longitude   float64 `json:"longitude"`
+		Lat         float64 `json:"lat"`
+		Lng         float64 `json:"lng"`
+	}
+	return json.Marshal(out{
+		ID:          s.ID,
+		Label:       s.Label,
+		Address:     s.Address,
+		AddressNote: s.AddressNote,
+		Latitude:    s.Latitude,
+		Longitude:   s.Longitude,
+		Lat:         s.Latitude,
+		Lng:         s.Longitude,
+	})
+}
+
 // User represents a registered user in the platform.
 type User struct {
-	ID                string        `json:"id"                        bson:"_id"`
-	Email             string        `json:"email"                     bson:"email"`
-	Username          string        `json:"username"                  bson:"username"`
-	Phone             string        `json:"phone,omitempty"           bson:"phone,omitempty"`
-	FrequentAddresses []string      `json:"frequent_addresses,omitempty" bson:"frequent_addresses,omitempty"`
-	Password          string        `json:"-"                         bson:"password"`
-	Role              Role          `json:"role"                      bson:"role"`
-	TenantID          string        `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`      // the tenant this user belongs to
-	OwnerID           string        `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`       // KYE: tenant binding (employees only)
-	IsActive          bool          `json:"is_active"                 bson:"is_active"`                // KYE: owner can freeze employee accounts / backward compat
-	AccountStatus     AccountStatus `json:"account_status"            bson:"account_status,omitempty"` // active / suspended standing (ADR-0022)
-	SuspensionReason  string        `json:"suspension_reason,omitempty" bson:"suspension_reason,omitempty"`
-	SuspendedAt       *time.Time    `json:"suspended_at,omitempty"    bson:"suspended_at,omitempty"`
-	ReactivatedAt     *time.Time    `json:"reactivated_at,omitempty"  bson:"reactivated_at,omitempty"`
-	KYCStatus         KYCStatus     `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
-	KYEStatus         KYCStatus     `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
-	IDFrontDoc        string        `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`
-	IDBackDoc         string        `json:"id_back_doc,omitempty"        bson:"id_back_doc,omitempty"`
-	SelfieDoc         string        `json:"selfie_doc,omitempty"         bson:"selfie_doc,omitempty"`
-	BusinessProofDoc  string        `json:"business_proof_doc,omitempty" bson:"business_proof_doc,omitempty"`
-	ReviewerID        string        `json:"reviewer_id,omitempty"        bson:"reviewer_id,omitempty"`
-	ReviewedAt        time.Time     `json:"reviewed_at,omitempty"        bson:"reviewed_at,omitempty"`
-	RejectionReason   string        `json:"rejection_reason,omitempty"   bson:"rejection_reason,omitempty"`
-	OTPCode           string        `json:"-"                         bson:"otp_code,omitempty"`
-	OTPExpiresAt      time.Time     `json:"-"                         bson:"otp_expires_at,omitempty"`
-	OTPVerified       bool          `json:"otp_verified"              bson:"otp_verified"`
+	ID                string         `json:"id"                        bson:"_id"`
+	Email             string         `json:"email"                     bson:"email"`
+	Username          string         `json:"username"                  bson:"username"`
+	Phone             string         `json:"phone,omitempty"           bson:"phone,omitempty"`
+	FrequentAddresses []string       `json:"frequent_addresses,omitempty" bson:"frequent_addresses,omitempty"`
+	SavedAddresses    []SavedAddress `json:"saved_addresses,omitempty"    bson:"saved_addresses,omitempty"`
+	Password          string         `json:"-"                         bson:"password"`
+	Role              Role           `json:"role"                      bson:"role"`
+	TenantID          string         `json:"tenant_id,omitempty"       bson:"tenant_id,omitempty"`      // the tenant this user belongs to
+	OwnerID           string         `json:"owner_id,omitempty"        bson:"owner_id,omitempty"`       // KYE: tenant binding (employees only)
+	IsActive          bool           `json:"is_active"                 bson:"is_active"`                // KYE: owner can freeze employee accounts / backward compat
+	AccountStatus     AccountStatus  `json:"account_status"            bson:"account_status,omitempty"` // active / suspended standing (ADR-0022)
+	SuspensionReason  string         `json:"suspension_reason,omitempty" bson:"suspension_reason,omitempty"`
+	SuspendedAt       *time.Time     `json:"suspended_at,omitempty"    bson:"suspended_at,omitempty"`
+	ReactivatedAt     *time.Time     `json:"reactivated_at,omitempty"  bson:"reactivated_at,omitempty"`
+	KYCStatus         KYCStatus      `json:"kyc_status,omitempty"      bson:"kyc_status,omitempty"` // KYB status for owners
+	KYEStatus         KYCStatus      `json:"kye_status,omitempty"      bson:"kye_status,omitempty"` // KYE status for employees
+	IDFrontDoc        string         `json:"id_front_doc,omitempty"       bson:"id_front_doc,omitempty"`
+	IDBackDoc         string         `json:"id_back_doc,omitempty"        bson:"id_back_doc,omitempty"`
+	SelfieDoc         string         `json:"selfie_doc,omitempty"         bson:"selfie_doc,omitempty"`
+	BusinessProofDoc  string         `json:"business_proof_doc,omitempty" bson:"business_proof_doc,omitempty"`
+	ReviewerID        string         `json:"reviewer_id,omitempty"        bson:"reviewer_id,omitempty"`
+	ReviewedAt        time.Time      `json:"reviewed_at,omitempty"        bson:"reviewed_at,omitempty"`
+	RejectionReason   string         `json:"rejection_reason,omitempty"   bson:"rejection_reason,omitempty"`
+	OTPCode           string         `json:"-"                         bson:"otp_code,omitempty"`
+	OTPExpiresAt      time.Time      `json:"-"                         bson:"otp_expires_at,omitempty"`
+	OTPVerified       bool           `json:"otp_verified"              bson:"otp_verified"`
 	// Phase-2 possession token (ADR-0026 amendment): SHA-256 hex digest of
 	// the server-minted reset token; the raw value is never persisted and
 	// never serialized. Single-use, 10-minute independent expiry.
@@ -246,13 +326,14 @@ type Reviewer struct {
 	Name  string `json:"name"  bson:"name"`
 }
 
-// UpdateProfileRequest is the expected JSON body for PATCH /auth/user.
+// UpdateProfileRequest is the expected JSON body for PATCH or PUT /auth/user.
 type UpdateProfileRequest struct {
-	Username          *string   `json:"username,omitempty"`
-	Phone             *string   `json:"phone,omitempty"`
-	FrequentAddresses *[]string `json:"frequent_addresses,omitempty"`
-	TwoFactorEnabled  *bool     `json:"two_factor_enabled,omitempty"`
-	Password          *string   `json:"password,omitempty"`
+	Username          *string         `json:"username,omitempty"`
+	Phone             *string         `json:"phone,omitempty"`
+	FrequentAddresses *[]string       `json:"frequent_addresses,omitempty"`
+	SavedAddresses    *[]SavedAddress `json:"saved_addresses,omitempty"`
+	TwoFactorEnabled  *bool           `json:"two_factor_enabled,omitempty"`
+	Password          *string         `json:"password,omitempty"`
 }
 
 // AccountDirectoryItem represents a single account row in the reviewer directory.

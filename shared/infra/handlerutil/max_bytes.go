@@ -17,9 +17,9 @@ func MaxBytesMiddleware(defaultLimit int64) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			limit := defaultLimit
 			path := r.URL.Path
-			if strings.Contains(path, "/upload") || strings.Contains(path, "/documents") || strings.Contains(path, "/attachment") {
+			if strings.Contains(path, "/upload") || strings.Contains(path, "/documents") || strings.Contains(path, "/attachment") || strings.Contains(path, "/photo") {
 				if limit < 10<<20 {
-					limit = 10 << 20 // 10 MB for file, document, and attachment uploads
+					limit = 10 << 20 // 10 MB for file, document, attachment, and photo uploads
 				}
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, limit)
