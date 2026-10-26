@@ -2,7 +2,8 @@
 
 ## Task and scope
 - Task ID: FE-CLEANUP
-- Item IDs covered: 0 (inventory), 1 (replace what is still old), 2 (app-wide theme + dark review), 3 (remove the QD_REDESIGN_* flags), 4 (delete the old UI), 5 (version 2.0.0 + split APKs), 6 (docs)
+- Item IDs covered: 0 (inventory), 1 (replace what is still old), 2 (app-wide theme + dark review), 3 (remove the QD_REDESIGN_* flags), 4 (delete the old UI), 5 (version 2.0.0 + split APKs), 5b (universal legacy APK, owner decision), 6 (docs), 7 (drop unused pubspec deps), 8 (changed-scope SIGPIPE fix + regen-goldens)
+- Lane extension (second session, item 8 only): scripts/changed-scope.sh (+ its new test scripts/test_changed_scope.sh) and .github/workflows/regen-goldens.yml; item 7 granted pubspec.yaml / pubspec.lock.
 - Allowed paths (lane): frontend/** (including frontend/.github/workflows/build-apk.yml and frontend/docs/**), docs/frontend/**, docs/design/**, docs/worklog/FE-CLEANUP.md. Providers, models and core/api_client.dart are kept (dead code removed only when proven unused).
 - Agent branch: agent/FE-CLEANUP-redesign-only-2-0-0, created from logic-exploitation (all FE-* redesign tasks and FE-V2-CONSUME merged)
 
@@ -46,7 +47,16 @@ Baseline on the branch start: `flutter analyze` → `No issues found! (ran in 5.
 - 3 flags removed — done: core/feature_flags.dart, core/update_gate.dart deleted; RoleHome (role → shell, profile refresh on open) replaces HomeScreen routing; AuthGate / UpdateGate renamed from Redesign*; flag tests became routing tests (test/features/auth/role_home_test.dart, auth_gate_test.dart).
 - 4 old UI deleted — done: 72 lib files, 29839 lines (all lib/screens 33 files incl. ComponentLibraryScreen + route, all lib/widgets 37 files, core/theme.dart, utils/logout_helper.dart); 59 test files 21808 lines (+609 old-screen test cases removed from 13 mixed files, provider/model cases kept); 63 PNGs in test/goldens; 801 unused ARB keys (EN+AR); 5 Poppins TTFs (780 KB) and the GoogleFonts switch; docs/frontend/DESIGN_SYSTEM.md (old system, 312 lines) → pointer. /qd-gallery kept.
 - 5 version and APK — done: pubspec 2.0.0+1; lib/core/app_version.dart (`APP_VERSION` dart-define, default 2.0.0) now feeds X-App-Version (it was hard-coded `1.0.0+1` in ApiClient); build-apk.yml pinned to Flutter 3.44.6, `--split-per-abi`, `--build-number=${{ github.run_number }}`, uploads the 3 ABI APKs plus `app-release.apk` (copy of arm64-v8a, so `releases/latest/download/app-release.apk` — the gateway default download_url and the in-app fallback — keeps working); app-release.json keeps `apk_url` (arm64-v8a), adds `apk_urls`, `full_version`, `build_number`; website step and `logiclink` unchanged.
-- 6 docs — NOT done (usage limit): STATUS.md features/file index rows, 00-SCREEN-MAP status column, docs/design/DESIGN_SYSTEM.md (theme app-wide), frontend/docs/CI_CD.md, frontend/README.md goldens section and CONNECTING_TO_BACKEND.md flag lines still describe the old state.
+- 5b universal APK — done (owner decision: `apk_url` stays arm64-v8a; the legacy `app-release.apk` must install on any phone): build-apk.yml first runs a plain `flutter build apk --release` (universal, kept as build/universal/app-release.apk), then the `--split-per-abi` build; the release uploads the 3 ABI APKs + the universal `app-release.apk`; app-release.json `apk_urls` gains `universal`. Version codes: universal = build number, split = ABI offset + build number (arm64 2000+n), so a phone with a split APK cannot then install the universal APK of the same run (documented in CI_CD.md).
+- 6 docs — done: docs/frontend/STATUS.md (2.0.0 banner; file index without screens/widgets/theme/logout_helper, with core/app_version.dart and lib/ui; features table without flags, incl. courier and verification rows; three gap bullets about deleted code removed, one 2.0.0 gaps bullet added; old phase entries kept as marked history), 00-SCREEN-MAP status column (29 rows: "in the app (2.0.0)", action simulator "removed", wallet + plan "in the app, read-only"; first column header "old screen, removed in 2.0.0"), docs/design/DESIGN_SYSTEM.md (theme app-wide, dark wired, contrast note, golden paths), frontend/docs/CI_CD.md (pinned Flutter, version/build number, universal + split APKs, app-release.json shape, version codes, downloads), frontend/README.md (golden paths, release build, manual split build, design system section), CONNECTING_TO_BACKEND.md (flag dart-define removed).
+- 7 unused deps — done: google_fonts and flutter_svg removed from pubspec.yaml; pubspec.lock drops them plus path_parsing, petitparser, vector_graphics, vector_graphics_codec, vector_graphics_compiler, xml. Proof (literal):
+  ```
+  $ grep -rn "google_fonts\|GoogleFonts\|flutter_svg\|SvgPicture" lib test linux android ios macos windows web
+  test/ui/tokens_test.dart:130:        expect(f.readAsStringSync(), isNot(contains('google_fonts')),
+  (end)
+  ```
+  (the one hit is a negative assertion). assets/branding/qd_logo.svg stays declared (only the old OTP screen showed it).
+- 8 gate tooling — done: changed-scope.sh prints the first 20 paths with `sed -n '1,20s/^/scope:   /p'` (reads all input) instead of `head -n 20` (closed the pipe early → SIGPIPE → exit 141 under pipefail). scripts/test_changed_scope.sh feeds 1500 paths (~180 KB listing) through `--paths`: before the fix `FAIL exit 0 with 1500 paths: exit 141` (4 checks failed), after `all changed-scope checks passed`. regen-goldens.yml: the deleted test/golden_screens_test.dart step and the frontend/test/goldens/ upload are gone; one step `flutter test --update-goldens test/ui/ test/features/` and one artifact `ci-rendered-goldens` (test/ui/goldens/ + test/features/**/goldens/). Same command run locally: `00:27 +996: All tests passed!`, no PNG changed.
 
 ## Changes per commit (message only — NO SHAs)
 1. `FE-CLEANUP: item 0 - inventory of old UI reachable with the flags on`
@@ -57,6 +67,11 @@ Baseline on the branch start: `flutter analyze` → `No issues found! (ran in 5.
 6. `FE-CLEANUP: item 4 - delete the old UI, its tests, goldens and ARB keys`
 7. `FE-CLEANUP: item 5 - version 2.0.0, real X-App-Version, split-per-ABI release APKs`
 8. `FE-CLEANUP: worklog`
+9. `FE-CLEANUP: item 5b - legacy app-release.apk is a universal APK (owner decision)`
+10. `FE-CLEANUP: item 6 - docs for 2.0.0 (status, screen map, design system, CI/CD, README)`
+11. `FE-CLEANUP: item 7 - drop unused google_fonts and flutter_svg`
+12. `FE-CLEANUP: item 8 - changed-scope SIGPIPE fix with a 1500-path test; regen-goldens covers test/ui and test/features only`
+13. `FE-CLEANUP: worklog` (this update)
 
 ## Verification (literal lines)
 - item 1: `No issues found! (ran in 1.2s)`; `01:12 +1847: All tests passed!`; `== pre-push gate: all checks passed (scope: docs infra-tests docgen frontend) ==`
@@ -70,6 +85,15 @@ Baseline on the branch start: `flutter analyze` → `No issues found! (ran in 5.
   `✓ Built build/app/outputs/flutter-apk/app-arm64-v8a-release.apk (21.1MB)`
   `✓ Built build/app/outputs/flutter-apk/app-x86_64-release.apk (22.6MB)`
   aapt2: `versionCode='2001' versionName='2.0.0'` (arm64; ABI offset + build number). Before: one 62 MB APK (task prompt figure, not re-measured).
+
+- item 5b: make ci-full `No issues found! (ran in 2.5s)`, `00:34 +1221: All tests passed!`; local universal + split build:
+  `✓ Built build/app/outputs/flutter-apk/app-release.apk (59.7MB)` (aapt2: `versionCode='1' versionName='2.0.0'`, `native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'`)
+  `✓ Built build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk (18.8MB)`
+  `✓ Built build/app/outputs/flutter-apk/app-arm64-v8a-release.apk (21.1MB)`
+  `✓ Built build/app/outputs/flutter-apk/app-x86_64-release.apk (22.6MB)`
+- item 6: make ci-full `== pre-push gate: all checks passed (scope: full) ==`
+- item 7: `No issues found! (ran in 3.2s)`; `00:31 +1221: All tests passed!`; make ci-full passed
+- item 8: make check (full scope, now runs without SIGPIPE) `No issues found! (ran in 1.5s)`, `00:31 +1221: All tests passed!`
 
 ## Goldens
 - Changed: test/features/auth/goldens/auth_update_{ar_rtl,en_ltr}_360x800.png (download + copy buttons).
@@ -88,11 +112,11 @@ Baseline on the branch start: `flutter analyze` → `No issues found! (ran in 5.
 - New dark goldens not yet rendered on CI.
 
 ## Follow-ups / out-of-lane findings
-- scripts/changed-scope.sh:254 (`… | head -n 20 | …` under pipefail) dies with SIGPIPE (exit 141) once the branch has many changed paths, so `make check` and sometimes `make commit` fail; items 4–5 used `make ci-full`.
-- .github/workflows/regen-goldens.yml still runs the deleted test/golden_screens_test.dart and uploads frontend/test/goldens/ (hot path).
-- pubspec still lists google_fonts and flutter_svg (now unused) and assets/branding/qd_logo.svg; root DESIGN.md still says Poppins.
+- The SIGPIPE in changed-scope.sh (fixed in item 8) made `make check` / `make commit` fail on this branch; items 4–7 went through `make ci-full`. scripts/test_changed_scope.sh is not wired into the gate (pre-push / Makefile are hot paths outside the item 8 extension).
+- .github/workflows/ci.yml line ~225 comment still mentions frontend/test/goldens/ (outside the item 8 extension).
+- Root DESIGN.md still says Poppins; assets/branding/qd_logo.svg is still declared but unused.
+- Other old docs (docs/frontend/ARCHITECTURE.md, UI/UX audits) describe the deleted screens; only STATUS.md was in scope.
 - Owner/courier notification bodies are English server text (titles are localized); a job_id in the notification payload would replace body parsing.
 
 ## Open questions
-- `app-release.apk` alias and `apk_url` point to arm64-v8a: 32-bit (armeabi-v7a) phones following those links get an APK they cannot install. OK, or should the alias be a universal APK?
-- Team / plan notification links match `employee_*` / `subscription_*` types that no service sends today. Keep, or drop until the backend sends them?
+- none (both earlier questions answered by the owner: universal legacy APK, keep the team / plan links).
