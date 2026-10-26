@@ -133,3 +133,20 @@ Rather than introducing a new job status or schema entity, Phase 1 standardizes 
    * *Rejected*: Mobile app GPS coordinates originate from untrusted client environments and can be spoofed using Android Developer Options or mock location apps.
 3. **Pre-Movement Customer Location Proof**:
    * *Rejected*: Mathematically and structurally impossible to verify customer location prior to movement without a third-party physical witness on site.
+
+---
+
+## Addendum: COD Exception (FIX-COD-RECON)
+
+- **Date**: 2026-10-22
+- **Related Task**: FIX-COD-RECON (`docs/worklog/FIX-COD-RECON.md`)
+
+In the original Phase 1 specification (§2.4), an under-distance mismatch ($\text{ActualDistance} < 0.70 \times \text{BookedDistance}$) routed all delivery and shipping jobs to `models.JobStatusEscrowReconciliationRequired` regardless of payment method.
+
+Because pure Cash-on-Delivery (`payment_method == "cod"`) jobs hold no locked platform escrow funds, halting completion and moving the job to `escrow_reconciliation_required` caused a critical operational issue: the courier's physical cash collection (`req.CashCollected`, `req.ActualCashAmount`) was never recorded in the database, locking the courier's active job assignment and stalling cash reconciliation.
+
+Under the COD exception introduced in `FIX-COD-RECON`:
+1. When `payment_method == "cod"`, `CompleteJob` still evaluates the GPS trail and emits the `TRACKED_DISTANCE_MISMATCH` audit and security event, but attaches a dedicated `distance_review` sub-document (`models.DistanceReview{ActualKm, BookedKm, FlaggedAt, Source: "complete_job"}`) directly to the `Job`.
+2. The COD job transitions immediately to `completed` and records the collected `actual_cash_amount` and courier assignment release atomically.
+3. The job does **not** enter the `escrow_reconciliation_required` queue. The owner inspects the discrepancy directly via `OwnerJobResponse.DistanceReview` (exclusive to the owner).
+4. Escrow (non-COD) jobs continue to route to `escrow_reconciliation_required` as originally specified.

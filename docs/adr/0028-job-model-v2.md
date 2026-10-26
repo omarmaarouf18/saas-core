@@ -1,6 +1,6 @@
 # ADR-0028: Job Model v2 (Recipient, Address Text, Status History, Pickup Phase, ETA, Saved Addresses)
 
-- **Status**: Accepted. Task 1 (models/DTOs + unit tests) and Task 2 (handler/storage status_history, sub_status + `POST /users/jobs/pickup`, ETA snapshots, §2.11 courier_phone contact window, §4.2 list indexes, ratings duplicate-key typed detection) are implemented behind `JOB-V2-BE` (see `docs/worklog/JOB-V2-BE.md`); Tasks 3-6 (auth saved addresses, reviewer console timeline, frontend consumption) are pending.
+- **Status**: Accepted. Tasks 1 and 2 (models/DTOs + unit tests, status_history, sub_status, POST /users/jobs/pickup, ETA snapshots, courier_phone window, list indexes, ratings duplicate key handling) implemented in JOB-V2-BE. Task 3 (auth-service structured saved addresses with coordinates) implemented in USER-AUTH-BE. Tasks 5 and 6 (frontend customer and courier consumption) implemented in FE-CUST-2, FE-COURIER, and FE-V2-CONSUME.
 - **Date**: 2026-10-19 (Revised 2026-10-20)
 - **Related**: ADR-0002 (Per-Job Escrow Integrity), ADR-0006 (Negotiable Transport Pricing), ADR-0007 (GPS Reconciliation), ADR-0008 (Live Employee Tracking), ADR-0009 (Atomic CAS Guards), ADR-0024 (Expired-Subscription Booking Gate), ADR-0025 (Working Hours Schedule), ADR-0027 (Employee Cancellation Request Workflow); FE-DS design system (`docs/design/DESIGN_SYSTEM.md`, `docs/worklog/FE-DS.md` §6); Redesign A mockups (`docs/design/redesign-a/00-SCREEN-MAP.html`, `A-Book.html`, `A-Track.html`, `A-Searching.html`, `A-Courier.html`)
 - **Implementation Lane**: Documentation only (proposal). Code implementation will follow in sequential tasks: backend models & DTOs, endpoint updates, auth-service saved addresses, reviewer console, and modular frontend consumption (`frontend/lib/features/customer/**`, `frontend/lib/features/courier/**`).
@@ -523,3 +523,11 @@ All 6 previous architectural questions have been resolved by owner decisions (do
 ### Negative / Trade-Offs
 - `Job` struct gains additional fields, slightly increasing MongoDB document size (~300 bytes per active document).
 - Couriers have an additional tap required ("استلمت الطلب") before delivery completion, requiring clear UI affordance on `A-Courier.html`.
+
+---
+
+## Implementation Notes
+
+- **JOB-V2-BE** (`docs/worklog/JOB-V2-BE.md`): Delivered Task 1 (v2 models, DTO projections, symmetric phone windowing) and Task 2 (lifecycle `status_history` transitions, `sub_status` tracking, `POST /users/jobs/pickup`, pickup ETA snapshots, list query indexing).
+- **USER-AUTH-BE** (`docs/worklog/USER-AUTH-BE.md`): Delivered Task 3 (auth-service structured `saved_addresses` with `lat`/`lng` coordinates, 10-address cap, bidirectional conversion with legacy `frequent_addresses`), along with backend gap closures for Redesign A (service photo upload/storage, service create full persistence, customer name snapshots for owners, courier KYE status exposure in `/auth/employees`, 2FA login code resend, `job_id` and stable event types in notification payloads, `EmployeeJobResponse` projection for `POST /users/jobs/pickup`, Unicode rune counting for text limits, and stable machine error codes for booking validation and pickup).
+- **FE-COURIER & FE-V2-CONSUME** (`docs/worklog/FE-COURIER.md`, `docs/worklog/FE-V2-CONSUME.md`): Delivered frontend consumption (Tasks 5 and 6) across customer booking/tracking and courier task execution behind feature flags.
