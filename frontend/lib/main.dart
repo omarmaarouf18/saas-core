@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/l10n.dart';
 
 import 'core/api_client.dart';
@@ -21,7 +20,6 @@ import 'providers/map_tracking_provider.dart';
 import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
-import 'screens/component_library_screen.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
 import 'ui/qd_licenses.dart';
@@ -44,10 +42,6 @@ void main() {
   if (kDebugMode) {
     HttpOverrides.global = DevHttpOverrides();
   }
-
-  // Poppins is bundled under assets/fonts/ — brand typography must render
-  // identically offline and never depend on runtime font downloads.
-  GoogleFonts.config.allowRuntimeFetching = false;
 
   // IBM Plex Sans Arabic (redesign A) ships under the SIL OFL, which asks
   // for its license to be shown with the app.
@@ -132,14 +126,6 @@ class MyApp extends StatelessWidget {
         child: child,
       ),
       onGenerateRoute: (settings) {
-        // Debug-only component library route (Storybook-style shared widget
-        // catalog). Never registered in release builds.
-        if (kDebugMode && settings.name == '/component-library') {
-          return MaterialPageRoute(
-            settings: settings,
-            builder: (_) => const ComponentLibraryScreen(),
-          );
-        }
         // Debug-only redesign A gallery (FE-DS); never in release builds.
         if (kDebugMode && settings.name == QdGalleryScreen.routeName) {
           return MaterialPageRoute(

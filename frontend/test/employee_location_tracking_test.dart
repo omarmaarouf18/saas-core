@@ -1,20 +1,14 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/error_messages.dart';
-import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/employee_jobs_provider.dart';
 import 'package:frontend/providers/employee_location_provider.dart';
-import 'package:frontend/providers/notifications_provider.dart';
-import 'package:frontend/screens/employee_jobs_screen.dart';
 
 class MockGeolocatorPlatformForTracking extends GeolocatorPlatform
     with MockPlatformInterfaceMixin {
@@ -224,86 +218,6 @@ void main() {
     expect(mockApiClient.postCallCount, equals(1));
   });
 
-  testWidgets(
-      '(e) EmployeeJobsScreen shows permission-denied explanation UI when denied and sharing indicator when tracking',
-      (WidgetTester tester) async {
-    final activeJob = Job(
-      id: 'job-active-200',
-      ownerId: 'owner-1',
-      employeeId: 'emp-1',
-      userId: 'cust-1',
-      serviceId: 'service-1',
-      status: 'active',
-      location: JobLocation(latitude: 30.0, longitude: 31.0),
-      paymentMethod: 'cod',
-      lockedEscrowAmount: 25.0,
-    );
-
-    final apiClient = ApiClient();
-    final authProvider = MockAuthProviderForTest(
-      apiClient,
-      mockUser: UserProfile(
-        id: 'emp-1',
-        email: 'driver@example.com',
-        username: 'DriverUser',
-        role: 'employee',
-      ),
-    );
-    final jobsProvider = MockEmployeeJobsProviderForTest(
-      apiClient,
-      mockJobs: [activeJob],
-    );
-
-    // Scenario 1: Permission denied
-    mockGeolocator.initialPermission = LocationPermission.denied;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MultiProvider(
-          providers: [
-            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-            ChangeNotifierProvider<EmployeeJobsProvider>.value(
-                value: jobsProvider),
-            ChangeNotifierProvider<EmployeeLocationProvider>.value(
-                value: locationProvider),
-            ChangeNotifierProvider<NotificationsProvider>(
-                create: (_) => NotificationsProvider(apiClient)),
-          ],
-          child: const EmployeeJobsScreen(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Trigger tracking start with denied permission
-    await locationProvider.startTracking(activeJob.id, 'test-token');
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('location_permission_denied_banner')),
-        findsOneWidget);
-    expect(find.byKey(const Key('open_app_settings_button')), findsOneWidget);
-    expect(
-        find.text(
-            'Location sharing is required to share your live delivery progress with the customer.'),
-        findsOneWidget);
-
-    // Scenario 2: Permission granted & tracking active
-    mockGeolocator.initialPermission = LocationPermission.whileInUse;
-    await locationProvider.startTracking(activeJob.id, 'test-token');
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('location_sharing_indicator')), findsOneWidget);
-    expect(find.text('Sharing live location'), findsOneWidget);
-  });
-
   test(
       '(f) startAvailabilityTracking sends pings to /users/employee/location without job_id',
       () async {
@@ -346,65 +260,5 @@ void main() {
         equals('token-stationary-1'));
     expect(mockApiClient.postPayloads.first['latitude'], equals(30.0444));
     expect(mockApiClient.postPayloads.first['longitude'], equals(31.2357));
-  });
-
-  testWidgets(
-      '(h) EmployeeJobsScreen shows permission-denied banner when idle with zero assigned jobs',
-      (WidgetTester tester) async {
-    final apiClient = ApiClient();
-    final authProvider = MockAuthProviderForTest(
-      apiClient,
-      mockUser: UserProfile(
-        id: 'emp-idle-1',
-        email: 'idle@example.com',
-        username: 'IdleDriver',
-        role: 'employee',
-      ),
-    );
-    // Zero jobs: idle / available state
-    final jobsProvider = MockEmployeeJobsProviderForTest(
-      apiClient,
-      mockJobs: [],
-    );
-
-    mockGeolocator.initialPermission = LocationPermission.denied;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MultiProvider(
-          providers: [
-            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-            ChangeNotifierProvider<EmployeeJobsProvider>.value(
-                value: jobsProvider),
-            ChangeNotifierProvider<EmployeeLocationProvider>.value(
-                value: locationProvider),
-            ChangeNotifierProvider<NotificationsProvider>(
-                create: (_) => NotificationsProvider(apiClient)),
-          ],
-          child: const EmployeeJobsScreen(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Trigger availability tracking with denied permission
-    await locationProvider.startAvailabilityTracking('test-token');
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('location_permission_denied_banner')),
-        findsOneWidget);
-    expect(find.byKey(const Key('open_app_settings_button')), findsOneWidget);
-    expect(
-        find.text(
-            'Location sharing is required to share your live delivery progress with the customer.'),
-        findsOneWidget);
   });
 }

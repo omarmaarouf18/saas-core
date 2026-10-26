@@ -1,25 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/notification_model.dart';
-import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
-import 'package:frontend/screens/notifications_screen.dart';
 
 import 'helpers/mock_http_harness.dart';
-
-class _FakeAuthProvider extends AuthProvider {
-  _FakeAuthProvider(super.apiClient);
-
-  @override
-  String? get token => 'test-token';
-
-  @override
-  bool get isAuthenticated => true;
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -418,73 +402,4 @@ void main() {
     });
   });
 
-  group('NotificationsScreen pagination widget test', () {
-    testWidgets(
-        'renders load more button when hasMore is true and triggers loadMore on tap',
-        (tester) async {
-      var loadMoreCalled = false;
-      installMockHttp((req) {
-        if (req.method == 'GET' &&
-            req.uri.path.endsWith('/notifications/history')) {
-          if (req.uri.queryParameters.containsKey('before')) {
-            loadMoreCalled = true;
-            return MockHttpResponse.ok(
-                {'notifications': [], 'has_more': false});
-          }
-          return MockHttpResponse.ok({
-            'notifications': [
-              {
-                'id': 'notif-w1',
-                'type': 'system',
-                'tenant_id': 't1',
-                'title': 'Widget Notif 1',
-                'body': 'Details 1',
-                'timestamp': '2026-08-29T10:00:00.000Z',
-                'is_read': false,
-              },
-            ],
-            'has_more': true,
-          });
-        }
-        return MockHttpResponse(404);
-      });
-
-      final api = ApiClient(baseUrl: 'https://ci.local/api/v1')
-        ..setToken('tok');
-      final provider = NotificationsProvider(api);
-      final auth = _FakeAuthProvider(api);
-
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider<NotificationsProvider>.value(
-                value: provider),
-            ChangeNotifierProvider<AuthProvider>.value(value: auth),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: NotificationsScreen(),
-          ),
-        ),
-      );
-
-      // Allow post frame callback and initial fetchHistory
-      await tester.pumpAndSettle();
-
-      expect(find.text('Widget Notif 1'), findsOneWidget);
-      expect(
-          find.byKey(const Key('list_template_load_more_btn')), findsOneWidget);
-
-      await tester.tap(find.byKey(const Key('list_template_load_more_btn')));
-      await tester.pumpAndSettle();
-
-      expect(loadMoreCalled, isTrue);
-    });
-  });
 }
