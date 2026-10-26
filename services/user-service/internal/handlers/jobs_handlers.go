@@ -2520,7 +2520,7 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "pickup recorded",
-		"job":     refreshed,
+		"job":     models.NewEmployeeJobResponse(refreshed, courierID),
 	})
 }
 
