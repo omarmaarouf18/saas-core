@@ -781,9 +781,11 @@ type CreateServiceRequest struct {
 	Latitude         float64       `json:"latitude"`
 	Longitude        float64       `json:"longitude"`
 	PhotoURL         string        `json:"photo_url,omitempty"`
+	Photo            string        `json:"photo,omitempty"`
 	Address          string        `json:"address,omitempty"`
 	WorkingHours     string        `json:"working_hours,omitempty"`
 	CoverageRadiusKM float64       `json:"coverage_radius_km,omitempty"`
+	CoverageRadius   float64       `json:"coverage_radius,omitempty"`
 	ScheduleMode     string        `json:"schedule_mode,omitempty"`
 	OpenTime         string        `json:"open_time,omitempty"`
 	CloseTime        string        `json:"close_time,omitempty"`
@@ -804,9 +806,11 @@ type UpdateServiceRequest struct {
 	Latitude         *float64       `json:"latitude,omitempty"`
 	Longitude        *float64       `json:"longitude,omitempty"`
 	PhotoURL         *string        `json:"photo_url,omitempty"`
+	Photo            *string        `json:"photo,omitempty"`
 	Address          *string        `json:"address,omitempty"`
 	WorkingHours     *string        `json:"working_hours,omitempty"`
 	CoverageRadiusKM *float64       `json:"coverage_radius_km,omitempty"`
+	CoverageRadius   *float64       `json:"coverage_radius,omitempty"`
 	ScheduleMode     *string        `json:"schedule_mode,omitempty"`
 	OpenTime         *string        `json:"open_time,omitempty"`
 	CloseTime        *string        `json:"close_time,omitempty"`

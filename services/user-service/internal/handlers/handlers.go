@@ -350,6 +350,24 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 			}
 			return
 		}
+		if len(parts) == 1 && parts[0] != "" && parts[0] != "photo" && parts[0] != "update" {
+			if r.Method == http.MethodGet {
+				svc := u.store.GetServiceByID(r.Context(), parts[0])
+				if svc == nil {
+					writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+					return
+				}
+				if isLocalPath(svc.PhotoURL) {
+					svc.PhotoURL = ""
+				}
+				writeJSON(w, http.StatusOK, map[string]any{
+					"count":    1,
+					"service":  svc,
+					"services": []*models.Service{svc},
+				})
+				return
+			}
+		}
 		http.NotFound(w, r)
 	})
 	mux.HandleFunc("/users/services", func(w http.ResponseWriter, r *http.Request) {

@@ -30,6 +30,28 @@ import (
 
 func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	ctx := r.Context()
+
+	if id := q.Get("id"); id != "" || q.Get("service_id") != "" {
+		if id == "" {
+			id = q.Get("service_id")
+		}
+		svc := u.store.GetServiceByID(ctx, id)
+		if svc == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+			return
+		}
+		if isLocalPath(svc.PhotoURL) {
+			svc.PhotoURL = ""
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"count":    1,
+			"service":  svc,
+			"services": []*models.Service{svc},
+		})
+		return
+	}
+
 	sortBy := q.Get("sort_by")
 	nearBy := q.Get("near_by") == "true"
 	hasLat := q.Get("lat") != ""
@@ -50,7 +72,6 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := r.Context()
 	if nearBy || hasLat || hasLon {
 		if !isValidCoordinate(refLat, refLon) {
 			// #nosec G706 //nolint:gosec -- floats formatted via %.6f, log injection not possible
@@ -105,6 +126,13 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
+	}
+
+	if req.PhotoURL == "" && req.Photo != "" {
+		req.PhotoURL = req.Photo
+	}
+	if req.CoverageRadiusKM == 0 && req.CoverageRadius > 0 {
+		req.CoverageRadiusKM = req.CoverageRadius
 	}
 
 	if !isValidCoordinate(req.Latitude, req.Longitude) {
@@ -197,6 +225,7 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		ID: generateID(), TenantID: req.OwnerID, Name: req.Name, Category: req.Category,
 		BasePrice: req.TenantBasePrice, TenantBasePrice: req.TenantBasePrice,
 		TenantPricePerKM: req.TenantPricePerKM, Latitude: req.Latitude, Longitude: req.Longitude,
+		Location: models.NewGeoJSONPoint(req.Latitude, req.Longitude),
 		PhotoURL: req.PhotoURL, Address: req.Address, WorkingHours: req.WorkingHours,
 		CoverageRadiusKM: req.CoverageRadiusKM,
 		ScheduleMode:     req.ScheduleMode, OpenTime: req.OpenTime, CloseTime: req.CloseTime,
@@ -212,6 +241,9 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("[USER] Service created: id=%s name=%s", svc.ID, svc.Name)
+	if isLocalPath(svc.PhotoURL) {
+		svc.PhotoURL = ""
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"message": "service created", "service": svc})
 }
 
@@ -224,6 +256,13 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInvalidJSON, "invalid request body", err)
 		return
+	}
+
+	if req.PhotoURL == nil && req.Photo != nil {
+		req.PhotoURL = req.Photo
+	}
+	if req.CoverageRadiusKM == nil && req.CoverageRadius != nil {
+		req.CoverageRadiusKM = req.CoverageRadius
 	}
 
 	if (req.Latitude != nil || req.Longitude != nil) &&
