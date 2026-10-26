@@ -726,6 +726,44 @@ func (u *UserService) fetchUserPhone(ctx context.Context, userID string) string 
 	return strings.TrimSpace(user.Phone)
 }
 
+// fetchUserName retrieves a user's display name or username via internal S2S call.
+func (u *UserService) fetchUserName(ctx context.Context, userID string) string {
+	if userID == "" || u.authServiceURL == "" || u.internalServiceToken == "" {
+		return ""
+	}
+	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, url.QueryEscape(userID))
+	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("X-Internal-Token", u.internalServiceToken)
+	resp, err := u.authClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	var user struct {
+		Username    string `json:"username"`
+		DisplayName string `json:"display_name"`
+		Name        string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return ""
+	}
+	name := user.DisplayName
+	if name == "" {
+		name = user.Username
+	}
+	if name == "" {
+		name = user.Name
+	}
+	return strings.TrimSpace(name)
+}
+
 func (u *UserService) verifyEmployeeAssignment(employeeID, ownerID string) (bool, error) {
 	url := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, employeeID)
 	// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config

@@ -438,11 +438,13 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 			proposedBy = "customer"
 		}
 
+		customerName := u.fetchUserName(ctx, req.UserID)
 		job := &models.Job{
 			ID:                       generateID(),
 			OwnerID:                  req.OwnerID,
 			EmployeeID:               "",
 			UserID:                   req.UserID,
+			CustomerName:             customerName,
 			ServiceID:                req.ServiceID,
 			Status:                   initialStatus,
 			Location:                 req.Location,
@@ -549,9 +551,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		Latitude:  empLoc.Latitude,
 		Longitude: empLoc.Longitude,
 	}
+	customerName := u.fetchUserName(ctx, req.UserID)
 	job := &models.Job{
 		ID: generateID(), OwnerID: req.OwnerID, EmployeeID: req.EmployeeID,
 		UserID:                   req.UserID,
+		CustomerName:             customerName,
 		ServiceID:                req.ServiceID,
 		Status:                   initialStatus,
 		Location:                 req.Location,
@@ -1040,12 +1044,29 @@ func (u *UserService) v2PhoneLookup(ctx context.Context, cache map[string]string
 	return p
 }
 
+// v2CustomerNameLookup memoizes per-request S2S customer name reads for legacy jobs
+// in owner job views.
+func (u *UserService) v2CustomerNameLookup(ctx context.Context, cache map[string]string, userID string) string {
+	if userID == "" {
+		return ""
+	}
+	if name, ok := cache[userID]; ok {
+		return name
+	}
+	name := u.fetchUserName(ctx, userID)
+	cache[userID] = name
+	return name
+}
+
 // v2OwnerDTOWithCourierPhone / v2CustomerDTOWithCourierPhone implement the
 // ADR-0028 §2.11 contact window for the job-detail endpoints: CourierPhone
 // (the assigned courier's phone via S2S) appears on owner/customer dtos
 // only while the job is active; the DTO's omitempty drops it otherwise.
 func v2OwnerDTOWithCourierPhone(u *UserService, ctx context.Context, j *models.Job) models.OwnerJobResponse {
 	dto := models.NewOwnerJobResponse(j)
+	if dto.CustomerName == "" && j.UserID != "" {
+		dto.CustomerName = u.fetchUserName(ctx, j.UserID)
+	}
 	if j.Status == models.JobStatusActive && j.EmployeeID != "" {
 		dto.CourierPhone = u.fetchUserPhone(ctx, j.EmployeeID)
 	}
@@ -1305,6 +1326,7 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 	resps := make([]models.OwnerJobResponse, 0, len(jobs))
 	now := time.Now()
 	phoneCache := map[string]string{}
+	nameCache := map[string]string{}
 	for _, j := range jobs {
 		if activeOnly {
 			isActiveStatus := j.Status == models.JobStatusActive
@@ -1314,6 +1336,9 @@ func (u *UserService) GetOwnerJobs(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		dto := models.NewOwnerJobResponse(j)
+		if dto.CustomerName == "" && j.UserID != "" {
+			dto.CustomerName = u.v2CustomerNameLookup(r.Context(), nameCache, j.UserID)
+		}
 		if j.Status == models.JobStatusActive && j.EmployeeID != "" {
 			dto.CourierPhone = u.v2PhoneLookup(r.Context(), phoneCache, j.EmployeeID)
 		}
