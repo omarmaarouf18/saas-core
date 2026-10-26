@@ -73,7 +73,8 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
    - `flutter build apk --release`: the **universal** APK (all three ABIs, ~60 MB), kept as `build/universal/app-release.apk`.
    - `flutter build apk --release --split-per-abi`: one APK per ABI, `app-armeabi-v7a-release.apk` (~19 MB), `app-arm64-v8a-release.apk` (~21 MB, most phones) and `app-x86_64-release.apk` (~23 MB, emulators / x86 Chromebooks).
    - `API_BASE_URL` defaults to `https://api.logiclinkeg.tech/api/v1` if the repository variable `vars.API_BASE_URL` is not set.
-   - Android version codes: the universal APK gets the build number; split APKs get the ABI offset plus the build number (arm64-v8a `2000 + n`), so a phone that installed a split APK cannot later install the universal one of the same or an older run (Android refuses the lower version code); updating split → split or from any 1.x build works.
+   - **Version-code rule**: the universal APK's Android version code is the build number `n`; Flutter gives each split APK an ABI offset (armeabi-v7a `1000 + n`, arm64-v8a `2000 + n`, x86_64 `4000 + n`). Android refuses to install a lower version code over a higher one ("App not installed"), so a phone that installed a split cannot take the universal APK of any earlier, current or (until `n` passes the offset) later run.
+   - **One channel**: the default download (`apk_url` on the website) and the in-app update (api-gateway `download_url`, `releases/latest/download/app-release.apk`) are always the **universal** `app-release.apk`. Split APKs are for manual install only, and a phone that installed a split must keep installing splits of the same ABI. Guarded twice: the workflow's jq check refuses to publish an `app-release.json` whose `apk_url` is not the universal file, and saas-core `scripts/test_apk_channel.sh` (run by `make check`) checks `build-apk.yml` and the gateway default.
 5. **Artifact Upload**: `actions/upload-artifact@v4` attaches the three split APKs and the universal `app-release.apk` as artifact `app-release-<short_sha>`.
 6. **GitHub Release**: tag `app-release-<short_sha>` on `omarmaarouf18/quick-delivery-mobile` with all four APKs. `app-release.apk` keeps the pre-2.0 single-APK name, so `releases/latest/download/app-release.apk` (the api-gateway default `download_url` and the app's fallback link) always installs on any phone.
 7. **Website** (`omarmaarouf18/logiclink`, GitHub App token): writes `app-release.json`:
@@ -83,7 +84,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
      "full_version": "2.0.0+57",
      "build_number": "57",
      "build_sha": "<short_sha>",
-     "apk_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/app-release-<sha>/app-arm64-v8a-release.apk",
+     "apk_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/app-release-<sha>/app-release.apk",
      "apk_urls": {
        "armeabi-v7a": ".../app-armeabi-v7a-release.apk",
        "arm64-v8a": ".../app-arm64-v8a-release.apk",
@@ -91,11 +92,11 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
        "universal": ".../app-release.apk"
      },
      "build_date": "<UTC ISO date>",
-     "size_mb": "<arm64-v8a APK size>"
+     "size_mb": "<universal APK size>"
    }
    ```
-   `apk_url` is the arm64-v8a APK (unchanged key, new target); `apk_urls` and `full_version` / `build_number` are new.
-8. **Job Summary**: version, artifact name, short commit SHA, target API Base URL.
+   `apk_url` is the universal `app-release.apk`, the same file as `apk_urls.universal` and the in-app update (see the version-code rule in step 4); the per-ABI `apk_urls` are optional smaller downloads for manual install. `apk_urls` and `full_version` / `build_number` are new in 2.0.0.
+8. **Job Summary**: version, artifact name, short commit SHA, target API Base URL, and the one-channel note for the website team.
 
 ---
 
@@ -104,7 +105,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 1. Navigate to [omarmaarouf18/quick-delivery-mobile/actions](https://github.com/omarmaarouf18/quick-delivery-mobile/actions), or the **Releases** page.
 2. Select the latest **Build Android APK** workflow run.
 3. Scroll down to the **Artifacts** section and download `app-release-<sha>`.
-4. Install `app-arm64-v8a-release.apk` on a current phone, `app-armeabi-v7a-release.apk` on an old 32-bit phone, or `app-release.apk` (universal) when unsure.
+4. Install `app-release.apk` (universal): it is what the website and the in-app update hand out, so later updates install over it. Install a split (`app-arm64-v8a-release.apk` on a current phone, `app-armeabi-v7a-release.apk` on an old 32-bit phone) only on a phone that will keep getting split APKs of the same ABI by hand; it cannot take the universal update.
 
 ---
 

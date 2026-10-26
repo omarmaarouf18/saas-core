@@ -40,7 +40,6 @@ flutter:
 
   assets:
     - assets/fonts/
-    - assets/branding/qd_logo.svg
 
   # Redesign A type family (FE-DS). Bundled, never fetched at runtime;
   # SIL OFL 1.1, license in assets/fonts/IBMPlexSansArabic-OFL.txt.

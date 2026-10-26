@@ -30,9 +30,12 @@ void main() {
       expect(wf, contains('app-$abi-release.apk'), reason: abi);
       expect(wf, contains('"$abi":'), reason: 'apk_urls.$abi');
     }
-    // apk_url stays, now the arm64-v8a APK; the old name is a universal
-    // APK (a plain, non-split build) so any phone can install it.
-    expect(wf, contains(r'apk_url=${BASE}/app-arm64-v8a-release.apk'));
+    // apk_url (the website's default download) is the universal
+    // app-release.apk (a plain, non-split build), the same file the
+    // api-gateway update gate links: split APKs have higher version codes,
+    // so a phone with a split could not install the gate's update.
+    expect(wf, contains(r'apk_url=${BASE}/app-release.apk'));
+    expect(wf, isNot(contains(r'apk_url=${BASE}/app-arm64-v8a-release.apk')));
     expect(wf, contains(r'flutter build apk --release "${DEFINES[@]}"'));
     expect(wf, contains('build/universal/app-release.apk'));
     expect(wf, contains('"universal":'));

@@ -32,7 +32,7 @@ The QuickDelivery color palette balances enterprise-grade industrial reliability
 ## 2. Logo & Logotype Usage Rules
 
 ### Asset & Emblem Specs
-* **Asset Location**: [`frontend/assets/branding/qd_logo.svg`](../../frontend/assets/branding/qd_logo.svg)
+* **Asset Location**: none in the app since 2.0.0. The old `frontend/assets/branding/qd_logo.svg` (shown only by the removed pre-2.0 OTP screen) was deleted in FE-APK-CHANNEL; it is still in git history.
 * **Logotype Variant**: "QD" stylized monogram badge rendered on authentication screens (`login_screen.dart`, `signup_screen.dart`).
 
 ### Clear-Space & Sizing Rules
