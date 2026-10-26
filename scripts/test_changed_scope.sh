@@ -3,6 +3,10 @@
 # scripts/test_changed_scope.sh — regression tests for scripts/changed-scope.sh.
 #
 #   bash scripts/test_changed_scope.sh
+#   CHANGED_SCOPE_SCRIPT=<path> bash scripts/test_changed_scope.sh  # test another copy
+#
+# Run by every gate run (.githooks/pre-push "script-tests" stage, so
+# `make check`, `make ci-full` and real pushes).
 #
 # FE-CLEANUP: with many changed paths the scope listing (first 20 paths on
 # stderr) used `... | head -n 20 | ...` under `set -o pipefail`. head exits
@@ -15,7 +19,7 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-SCRIPT="$ROOT/scripts/changed-scope.sh"
+SCRIPT="${CHANGED_SCOPE_SCRIPT:-$ROOT/scripts/changed-scope.sh}"
 fails=0
 
 check() { # check <name> <condition result 0|1> <detail>

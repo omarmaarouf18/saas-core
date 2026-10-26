@@ -189,6 +189,21 @@ else
 fi
 stage_end
 
+# 0b. Script regression tests (FE-APK-CHANNEL): every run, they take well
+# under a second. scripts/test_changed_scope.sh guards the scope script this
+# gate depends on (the FE-CLEANUP SIGPIPE exit 141 on long diffs);
+# scripts/test_apk_channel.sh keeps the website download and the in-app
+# update on the same universal APK.
+stage_begin script-tests
+for t in scripts/test_changed_scope.sh scripts/test_apk_channel.sh; do
+  echo "-- $t --"
+  bash "$t" || {
+    echo "BLOCKED: $t failed"
+    exit 1
+  }
+done
+stage_end
+
 # 1. Verify Go formatting: the whole repo on a full run, otherwise the
 # scoped module directories (plus tests/contracts when in scope).
 if [ "$SCOPE_MODE" = "full" ] || [ -n "$SCOPE_GO_MODULES" ] || [ "$SCOPE_CONTRACTS" = 1 ]; then
