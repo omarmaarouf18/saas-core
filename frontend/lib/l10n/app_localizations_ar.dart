@@ -2219,7 +2219,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownSvcPhotoNote =>
-      'العملا هيشوفوا أول حرف من اسم الخدمة دلوقتي. رفع الصورة جاي قريب.';
+      'العملا هيشوفوا الصورة دي على كارت خدمتك. JPEG أو PNG، لحد 5 ميجا.';
 
   @override
   String get ownSvcName => 'اسم الخدمة زي ما العميل هيشوفه';
@@ -3545,4 +3545,52 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get roleUnsupportedBody =>
       'ادخل بحساب عميل أو صاحب شغل أو مندوب. حسابات الموظفين بتستخدم لوحة التحكم على الويب.';
+
+  @override
+  String get ownSvcPhotoSheetTitle => 'صورة الخدمة';
+
+  @override
+  String get ownSvcPhotoAdd => 'ضيف صورة';
+
+  @override
+  String get ownSvcPhotoReplace => 'غيّر الصورة';
+
+  @override
+  String get ownSvcPhotoRemove => 'شيل الصورة';
+
+  @override
+  String get ownSvcPhotoCamera => 'صوّر دلوقتي';
+
+  @override
+  String get ownSvcPhotoGallery => 'اختار من الصور';
+
+  @override
+  String ownSvcPhotoUploading(int percent) {
+    return 'بنرفع الصورة… $percent٪';
+  }
+
+  @override
+  String get ownSvcPhotoPending => 'الصورة جاهزة. هتتضاف لخدمتك لما تدوس احفظ.';
+
+  @override
+  String get ownSvcPhotoErrUnavailable =>
+      'رفع الصور مش متاح دلوقتي. جرّب تاني بعدين.';
+
+  @override
+  String get ownSvcPhotoErrFormat => 'استخدم صورة JPEG أو PNG.';
+
+  @override
+  String get ownSvcPhotoErrTooLarge =>
+      'الصورة دي أكبر من 5 ميجا. اختار صورة أصغر.';
+
+  @override
+  String get ownSvcPhotoErrRejected =>
+      'مقدرناش نستخدم الصورة دي. جرّب صورة تانية.';
+
+  @override
+  String get ownSvcPhotoErrNetwork =>
+      'الصورة مترفعتش. اتأكد من النت وجرّب تاني.';
+
+  @override
+  String get ownSvcPhotoErrRemove => 'مقدرناش نشيل الصورة. جرّب تاني.';
 }

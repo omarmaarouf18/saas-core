@@ -21,6 +21,7 @@ import 'providers/map_tracking_provider.dart';
 import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/service_photo_store.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
 import 'ui/qd_licenses.dart';
@@ -72,7 +73,11 @@ void main() {
         ChangeNotifierProvider(
             create: (_) => EmployeeLocationProvider(apiClient)),
       ],
-      child: const MyApp(),
+      // Service photos load with the JWT and are cached for every page.
+      child: ServicePhotoScope(
+        store: ServicePhotoStore(apiClient),
+        child: const MyApp(),
+      ),
     ),
   );
 }

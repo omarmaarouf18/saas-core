@@ -2244,7 +2244,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownSvcPhotoNote =>
-      'Customers see the first letter of your service name for now. Photo upload is coming.';
+      'Customers see this photo on your card. JPEG or PNG, up to 5 MB.';
 
   @override
   String get ownSvcName => 'Service name as customers see it';
@@ -3596,4 +3596,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get roleUnsupportedBody =>
       'Sign in with a customer, business or courier account. Staff accounts use the web console.';
+
+  @override
+  String get ownSvcPhotoSheetTitle => 'Service photo';
+
+  @override
+  String get ownSvcPhotoAdd => 'Add photo';
+
+  @override
+  String get ownSvcPhotoReplace => 'Change photo';
+
+  @override
+  String get ownSvcPhotoRemove => 'Remove photo';
+
+  @override
+  String get ownSvcPhotoCamera => 'Take a photo';
+
+  @override
+  String get ownSvcPhotoGallery => 'Choose from photos';
+
+  @override
+  String ownSvcPhotoUploading(int percent) {
+    return 'Uploading… $percent%';
+  }
+
+  @override
+  String get ownSvcPhotoPending =>
+      'Photo ready. It is added to your service when you tap Save.';
+
+  @override
+  String get ownSvcPhotoErrUnavailable =>
+      'Photo upload is unavailable right now. Try again later.';
+
+  @override
+  String get ownSvcPhotoErrFormat => 'Use a JPEG or PNG photo.';
+
+  @override
+  String get ownSvcPhotoErrTooLarge =>
+      'This photo is over 5 MB. Choose a smaller one.';
+
+  @override
+  String get ownSvcPhotoErrRejected =>
+      'This photo couldn\'t be used. Try another one.';
+
+  @override
+  String get ownSvcPhotoErrNetwork =>
+      'The photo wasn\'t uploaded. Check your connection and try again.';
+
+  @override
+  String get ownSvcPhotoErrRemove =>
+      'We couldn\'t remove the photo. Try again.';
 }

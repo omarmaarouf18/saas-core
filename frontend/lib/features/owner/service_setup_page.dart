@@ -5,12 +5,14 @@ import '../../core/error_messages.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
+import '../../providers/service_photo_store.dart';
 import '../../ui/qd_ui.dart';
 import '../customer/customer_location.dart';
 import '../customer/picker_page.dart';
 import 'owner_nav.dart';
 import 'owner_sheets.dart';
 import 'owner_widgets.dart';
+import 'service_photo_section.dart';
 import 'service_rules.dart';
 
 typedef ServicePlacePicker = Future<PickedPlace?> Function(
@@ -27,18 +29,23 @@ typedef ServiceTimePicker = Future<TimeOfDay?> Function(
 /// schedule are prefilled, an untouched schedule is not sent (ADR-0025),
 /// the same field rules, a KYB banner while not approved, and on success
 /// the profile is re-read, a notice is shown and the page closes.
-/// Changed: no photo picker (there is no upload endpoint, `photo_url`
-/// stored a local path), the initial-letter tile instead and `photo_url` is
-/// never sent; the free-text working hours field is gone (its stored value
-/// is kept); a first save is POST + PUT (see [saveService]).
+/// Changed: the photo is uploaded to the service photo endpoint
+/// (FE-BE-GAPS, [ServicePhotoSection]) and `photo_url` only ever holds the
+/// key the server returned, never a device path; the free-text working
+/// hours field is gone (its stored value is kept); a first save is POST +
+/// PUT (see [saveService]).
 class OwnerServicePage extends StatefulWidget {
-  const OwnerServicePage({super.key, this.pickPlace, this.pickTime});
+  const OwnerServicePage(
+      {super.key, this.pickPlace, this.pickTime, this.photoPicker});
 
   /// Location picker (tests); default: the redesigned picker (A-Picker).
   final ServicePlacePicker? pickPlace;
 
   /// Time picker (tests); default: [showTimePicker].
   final ServiceTimePicker? pickTime;
+
+  /// Photo picker (tests); default: the camera / photo library.
+  final ServicePhotoPicker? photoPicker;
 
   static Future<void> open(BuildContext context) => Navigator.of(context)
       .push<void>(MaterialPageRoute(builder: (_) => const OwnerServicePage()));
@@ -61,6 +68,12 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
   double? _lat;
   double? _lon;
   ServiceHours _hours = ServiceHours();
+
+  /// The stored photo key (`photo_url`) of the service.
+  String? _photoUrl;
+
+  /// A photo uploaded before the service exists: sent on the first save.
+  String? _pendingPhotoKey;
 
   /// Field problems are shown once a save was tried, then kept live.
   bool _tried = false;
@@ -133,6 +146,27 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
       _lon = lon;
     }
     _hours = ServiceHours.fromService(svc);
+    final photo = svc['photo_url']?.toString();
+    _photoUrl = isStoredPhotoKey(photo) ? photo : null;
+  }
+
+  void _photoChanged(String? key) {
+    setState(() {
+      if (_serviceId == null) {
+        _pendingPhotoKey = key;
+      } else {
+        _photoUrl = key;
+      }
+    });
+  }
+
+  /// Clears the stored photo of the existing service.
+  Future<void> _removePhoto() async {
+    final ownerId = context.read<AuthProvider>().user?.id;
+    final id = _serviceId;
+    if (ownerId == null || id == null) return;
+    await context.read<OwnerProvider>().updateOwnerServiceConfig(
+        serviceId: id, ownerId: ownerId, photoUrl: '');
   }
 
   bool get _hasPlace => _lat != null && _lon != null;
@@ -207,11 +241,16 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
       baseFee: parseAmount(_baseFee.text)!,
       perKm: parseAmount(_perKm.text)!,
       schedule: scheduleFieldsOf(_hours),
+      photoUrl: _serviceId == null ? _pendingPhotoKey : null,
     );
     setState(() => _saving = true);
     try {
       _serviceId = await saveService(owner,
           ownerId: ownerId, serviceId: _serviceId, d: draft);
+      if (draft.photoUrl != null) {
+        _photoUrl = draft.photoUrl;
+        _pendingPhotoKey = null;
+      }
       try {
         await auth.fetchUserProfile();
       } catch (_) {}
@@ -327,18 +366,15 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
           // Business.
           QdSectionHeader(title: l10n.ownSvcSectionBusiness),
           gap,
-          Row(
-            children: [
-              QdIconTile.initialOf(_name.text,
-                  key: const Key('own_service_letter'),
-                  size: 56,
-                  tone: QdIconTileTone.gold),
-              const SizedBox(width: QdSpace.x3),
-              Expanded(
-                child: Text(l10n.ownSvcPhotoNote,
-                    style: QdText.secondary.copyWith(color: c.textSecondary)),
-              ),
-            ],
+          ServicePhotoSection(
+            key: const Key('own_service_photo_section'),
+            serviceId: _serviceId,
+            photoUrl: _serviceId == null ? _pendingPhotoKey : _photoUrl,
+            name: _name.text,
+            picker: widget.photoPicker ?? const ServicePhotoPicker(),
+            enabled: !_saving,
+            onKey: _photoChanged,
+            onRemove: _removePhoto,
           ),
           gap,
           QdTextField(

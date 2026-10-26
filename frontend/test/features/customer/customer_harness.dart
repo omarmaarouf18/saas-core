@@ -29,6 +29,8 @@ import 'package:frontend/ui/tokens.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/fake_launcher.dart';
+import '../../helpers/fake_service_photos.dart';
+import 'package:frontend/providers/service_photo_store.dart';
 
 export '../../helpers/fake_launcher.dart';
 
@@ -581,6 +583,7 @@ class CustomerTestDeps {
     FakeChat? chat,
     FakeMapTracking? map,
     FakeLauncher? launcher,
+    this.photos,
   })  : chat = chat ?? FakeChat(),
         launcher = launcher ?? FakeLauncher(),
         map = map ?? FakeMapTracking(),
@@ -598,6 +601,9 @@ class CustomerTestDeps {
   final FakeChat chat;
   final FakeMapTracking map;
   final FakeLauncher launcher;
+
+  /// Service photos (FE-BE-GAPS); null = no [ServicePhotoScope] (initials).
+  final FakeServicePhotoStore? photos;
 }
 
 /// The app around a customer page: the app theme (redesign A, as in
@@ -629,15 +635,18 @@ Widget customerApp(
           nav: deps.nav,
           child: QdLauncherScope(
             launcher: deps.launcher,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: qdLightTheme,
-              darkTheme: qdDarkTheme,
-              themeMode: themeMode,
-              locale: locale,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: home,
+            child: _withPhotos(
+              deps.photos,
+              MaterialApp(
+                debugShowCheckedModeBanner: false,
+                theme: qdLightTheme,
+                darkTheme: qdDarkTheme,
+                themeMode: themeMode,
+                locale: locale,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: home,
+              ),
             ),
           ),
         ),
@@ -645,6 +654,9 @@ Widget customerApp(
     ),
   );
 }
+
+Widget _withPhotos(ServicePhotoStore? photos, Widget child) =>
+    photos == null ? child : ServicePhotoScope(store: photos, child: child);
 
 /// 1x1 transparent PNG.
 final Uint8List _blankPng = Uint8List.fromList(const [
@@ -757,6 +769,7 @@ MarketplaceService service({
   double finalPrice = 37,
   bool? open = true,
   DateTime? reopensAt,
+  String? photoUrl,
 }) =>
     MarketplaceService(
       id: id,
@@ -772,6 +785,7 @@ MarketplaceService service({
       finalPrice: finalPrice,
       isOpenNow: open,
       reopensAt: reopensAt,
+      photoUrl: photoUrl,
     );
 
 Job job({

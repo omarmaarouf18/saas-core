@@ -12,8 +12,9 @@ class MarketplaceService {
   final double finalPrice;
   // Owner-configured public profile fields (exposed by GET /users/services
   // via the embedded Service; nullable because older payloads omit them).
-  // address/photoUrl are parsed and available but not rendered on the
-  // compact marketplace card in this pass (deliberate scope limit).
+  // photoUrl is the stored photo key (FE-BE-GAPS: shown on the card and
+  // the booking page through GET /users/services/{id}/photo); address is
+  // parsed but not rendered on the compact card.
   final String? workingHours;
   final double? coverageRadiusKm;
   final String? address;

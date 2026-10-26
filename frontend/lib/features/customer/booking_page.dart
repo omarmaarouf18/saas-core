@@ -16,6 +16,7 @@ import 'customer_location.dart';
 import 'customer_nav.dart';
 import 'picker_page.dart';
 import 'price_estimate.dart';
+import 'service_photo_tile.dart';
 
 /// Booking page (A-Book): the chosen company, pickup and drop-off (each
 /// opens the picker, with address text and a landmark note), who receives
@@ -356,7 +357,12 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         children: [
           Row(
             children: [
-              QdIconTile.initialOf(service.name, size: 44),
+              ServicePhotoTile(
+                  key: const Key('cust_book_service_photo'),
+                  serviceId: service.id,
+                  photoUrl: service.photoUrl,
+                  name: service.name,
+                  size: 44),
               const SizedBox(width: QdSpace.x3),
               Expanded(
                 child: Column(

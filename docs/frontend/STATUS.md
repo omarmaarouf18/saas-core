@@ -251,6 +251,7 @@
    * `notifications_provider.dart`
    * `map_tracking_provider.dart`
    * `reconciliation_provider.dart`
+   * `service_photo_store.dart` (FE-BE-GAPS: service photos — authenticated load of `GET /users/services/{id}/photo` with an in-memory cache, multipart upload with progress, client JPEG / PNG ≤ 5 MB check; provided by `ServicePhotoScope` in `main.dart`)
  * **Screens / Widgets**: removed in FE-CLEANUP (2.0.0). `frontend/lib/screens/` (33 files, including the debug `ComponentLibraryScreen` and its `/component-library` route) and `frontend/lib/widgets/` (37 files) no longer exist; their replacements are the feature pages below.
  * **Features** (`frontend/lib/features/`, redesign A on `frontend/lib/ui/`; the whole app since 2.0.0, no flags; widget tests and goldens under `frontend/test/features/`; no device run against a backend yet):
 

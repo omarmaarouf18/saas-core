@@ -2801,9 +2801,9 @@
   "@ownSvcSectionBusiness": {
     "description": "FE-OWNER-2 redesigned owner screens."
   },
-  "ownSvcPhotoNote": "Customers see the first letter of your service name for now. Photo upload is coming.",
+  "ownSvcPhotoNote": "Customers see this photo on your card. JPEG or PNG, up to 5 MB.",
   "@ownSvcPhotoNote": {
-    "description": "FE-OWNER-2 redesigned owner screens."
+    "description": "FE-OWNER-2 redesigned owner screens; FE-BE-GAPS photo upload."
   },
   "ownSvcName": "Service name as customers see it",
   "@ownSvcName": {
@@ -4659,5 +4659,66 @@
   "roleUnsupportedBody": "Sign in with a customer, business or courier account. Staff accounts use the web console.",
   "@roleUnsupportedBody": {
     "description": "FE-CLEANUP page for a signed-in role the app has no screens for."
+  },
+  "ownSvcPhotoSheetTitle": "Service photo",
+  "@ownSvcPhotoSheetTitle": {
+    "description": "FE-BE-GAPS item 1: photo source sheet title."
+  },
+  "ownSvcPhotoAdd": "Add photo",
+  "@ownSvcPhotoAdd": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoReplace": "Change photo",
+  "@ownSvcPhotoReplace": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoRemove": "Remove photo",
+  "@ownSvcPhotoRemove": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoCamera": "Take a photo",
+  "@ownSvcPhotoCamera": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoGallery": "Choose from photos",
+  "@ownSvcPhotoGallery": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoUploading": "Uploading… {percent}%",
+  "@ownSvcPhotoUploading": {
+    "description": "FE-BE-GAPS item 1: upload progress.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "ownSvcPhotoPending": "Photo ready. It is added to your service when you tap Save.",
+  "@ownSvcPhotoPending": {
+    "description": "FE-BE-GAPS item 1: uploaded before the service exists."
+  },
+  "ownSvcPhotoErrUnavailable": "Photo upload is unavailable right now. Try again later.",
+  "@ownSvcPhotoErrUnavailable": {
+    "description": "FE-BE-GAPS item 1: 503 / storage not ready."
+  },
+  "ownSvcPhotoErrFormat": "Use a JPEG or PNG photo.",
+  "@ownSvcPhotoErrFormat": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrTooLarge": "This photo is over 5 MB. Choose a smaller one.",
+  "@ownSvcPhotoErrTooLarge": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrRejected": "This photo couldn't be used. Try another one.",
+  "@ownSvcPhotoErrRejected": {
+    "description": "FE-BE-GAPS item 1: server 400."
+  },
+  "ownSvcPhotoErrNetwork": "The photo wasn't uploaded. Check your connection and try again.",
+  "@ownSvcPhotoErrNetwork": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrRemove": "We couldn't remove the photo. Try again.",
+  "@ownSvcPhotoErrRemove": {
+    "description": "FE-BE-GAPS item 1."
   }
 }

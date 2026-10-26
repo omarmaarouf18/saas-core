@@ -4034,10 +4034,10 @@ abstract class AppLocalizations {
   /// **'Service'**
   String get ownSvcSectionBusiness;
 
-  /// FE-OWNER-2 redesigned owner screens.
+  /// FE-OWNER-2 redesigned owner screens; FE-BE-GAPS photo upload.
   ///
   /// In en, this message translates to:
-  /// **'Customers see the first letter of your service name for now. Photo upload is coming.'**
+  /// **'Customers see this photo on your card. JPEG or PNG, up to 5 MB.'**
   String get ownSvcPhotoNote;
 
   /// FE-OWNER-2 redesigned owner screens.
@@ -6427,6 +6427,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in with a customer, business or courier account. Staff accounts use the web console.'**
   String get roleUnsupportedBody;
+
+  /// FE-BE-GAPS item 1: photo source sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Service photo'**
+  String get ownSvcPhotoSheetTitle;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get ownSvcPhotoAdd;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get ownSvcPhotoReplace;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get ownSvcPhotoRemove;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get ownSvcPhotoCamera;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from photos'**
+  String get ownSvcPhotoGallery;
+
+  /// FE-BE-GAPS item 1: upload progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading… {percent}%'**
+  String ownSvcPhotoUploading(int percent);
+
+  /// FE-BE-GAPS item 1: uploaded before the service exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo ready. It is added to your service when you tap Save.'**
+  String get ownSvcPhotoPending;
+
+  /// FE-BE-GAPS item 1: 503 / storage not ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo upload is unavailable right now. Try again later.'**
+  String get ownSvcPhotoErrUnavailable;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPEG or PNG photo.'**
+  String get ownSvcPhotoErrFormat;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is over 5 MB. Choose a smaller one.'**
+  String get ownSvcPhotoErrTooLarge;
+
+  /// FE-BE-GAPS item 1: server 400.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo couldn\'t be used. Try another one.'**
+  String get ownSvcPhotoErrRejected;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo wasn\'t uploaded. Check your connection and try again.'**
+  String get ownSvcPhotoErrNetwork;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t remove the photo. Try again.'**
+  String get ownSvcPhotoErrRemove;
 }
 
 class _AppLocalizationsDelegate

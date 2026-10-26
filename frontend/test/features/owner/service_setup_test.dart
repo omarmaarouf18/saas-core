@@ -243,8 +243,9 @@ void main() {
       expect(find.text('23:00'), findsOneWidget);
       expect(find.text('Example: a 5 km trip shows the customer EGP 42.50.'),
           findsOneWidget);
-      // No photo picker: the letter tile.
-      expect(find.byKey(const Key('own_service_letter')), findsOneWidget);
+      // The stored local path is no photo: the letter placeholder.
+      expect(
+          find.byKey(const Key('service_photo_placeholder')), findsOneWidget);
       expect(find.text('N'), findsOneWidget);
     });
 

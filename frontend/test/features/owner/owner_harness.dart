@@ -24,6 +24,8 @@ import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/fake_launcher.dart';
+import '../../helpers/fake_service_photos.dart';
+import 'package:frontend/providers/service_photo_store.dart';
 import '../customer/customer_harness.dart' show BlankTileProvider;
 
 export '../../helpers/fake_launcher.dart';
@@ -732,6 +734,7 @@ class OwnerTestDeps {
     RecordingOwnerNav? nav,
     FakeOwnerMap? map,
     FakeLauncher? launcher,
+    this.photos,
   })  : auth = auth ?? FakeOwnerAuth(),
         launcher = launcher ?? FakeLauncher(),
         map = map ?? FakeOwnerMap(),
@@ -749,6 +752,9 @@ class OwnerTestDeps {
   final RecordingOwnerNav nav;
   final FakeOwnerMap map;
   final FakeLauncher launcher;
+
+  /// Service photos (FE-BE-GAPS); null = no [ServicePhotoScope] (initials).
+  final FakeServicePhotoStore? photos;
 
   late final OwnerDataController data =
       OwnerDataController(owner, auth, now: () => ownerNow);
@@ -786,21 +792,27 @@ Widget ownerApp(
         tileProvider: BlankTileProvider(),
         child: QdLauncherScope(
           launcher: deps.launcher,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: qdLightTheme,
-            darkTheme: qdDarkTheme,
-            themeMode: themeMode,
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: home,
+          child: _withPhotos(
+            deps.photos,
+            MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: qdLightTheme,
+              darkTheme: qdDarkTheme,
+              themeMode: themeMode,
+              locale: locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: home,
+            ),
           ),
         ),
       ),
     ),
   );
 }
+
+Widget _withPhotos(ServicePhotoStore? photos, Widget child) =>
+    photos == null ? child : ServicePhotoScope(store: photos, child: child);
 
 /// Pumps [home] after one controller refresh, so the page shows loaded data.
 Future<void> pumpOwner(WidgetTester tester, OwnerTestDeps deps, Widget home,

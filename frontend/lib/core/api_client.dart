@@ -21,6 +21,30 @@ class ApiClientException implements Exception {
       "ApiClientException: $message (status: $statusCode, code: $errorCode)";
 }
 
+/// A multipart request that reports how many body bytes have been handed
+/// to the connection.
+class _ProgressMultipartRequest extends http.MultipartRequest {
+  _ProgressMultipartRequest(super.method, super.url, this.onProgress);
+
+  final void Function(int sent, int total) onProgress;
+
+  @override
+  http.ByteStream finalize() {
+    final stream = super.finalize();
+    final total = contentLength;
+    var sent = 0;
+    return http.ByteStream(stream.transform(
+      StreamTransformer<List<int>, List<int>>.fromHandlers(
+        handleData: (chunk, sink) {
+          sent += chunk.length;
+          onProgress(sent, total);
+          sink.add(chunk);
+        },
+      ),
+    ));
+  }
+}
+
 bool bypassBadCertificate(X509Certificate cert, String host, int port) {
   // Strictly gate self-signed trust to local development / debug builds
   return kDebugMode &&
@@ -330,9 +354,16 @@ class ApiClient {
     Map<String, String>? fields,
     Map<String, String>? headers,
     bool isRetry = false,
+
+    /// Called with (bytes sent, total bytes) while the body is streamed
+    /// (FE-BE-GAPS: service photo upload progress). Optional.
+    void Function(int sent, int total)? onProgress,
   }) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+      final uri = Uri.parse('$baseUrl$path');
+      final request = onProgress == null
+          ? http.MultipartRequest('POST', uri)
+          : _ProgressMultipartRequest('POST', uri, onProgress);
       final reqHeaders = _getHeaders(extraHeaders: headers);
       reqHeaders.remove('Content-Type');
       reqHeaders.remove('content-type');
@@ -364,6 +395,7 @@ class ApiClient {
                   fields: fields,
                   headers: headers,
                   isRetry: true,
+                  onProgress: onProgress,
                 ),
         path: path,
       );

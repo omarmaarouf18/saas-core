@@ -322,6 +322,7 @@ class ServiceDraft {
     required this.baseFee,
     required this.perKm,
     this.schedule,
+    this.photoUrl,
   });
 
   final String name;
@@ -333,6 +334,10 @@ class ServiceDraft {
   final double baseFee;
   final double perKm;
   final ScheduleFields? schedule;
+
+  /// A stored photo key to save (uploaded before the service existed);
+  /// null leaves the stored photo as it is.
+  final String? photoUrl;
 }
 
 /// The create worked but the follow-up PUT did not: the service exists
@@ -352,8 +357,8 @@ class ServiceSaveIncomplete implements Exception {
 /// `OwnerProvider.createService` sends only the name, category, prices and
 /// location, so the address, coverage radius and hours would otherwise be
 /// dropped on the first save (O-Service note; the provider and backend fix
-/// is a follow-up). The photo and the free-text working hours are never
-/// sent, so their stored values stay as they are.
+/// is a follow-up). The free-text working hours are never sent; the photo
+/// only as the key an upload returned ([ServiceDraft.photoUrl]).
 Future<String> saveService(
   OwnerProvider owner, {
   required String ownerId,
@@ -375,6 +380,7 @@ Future<String> saveService(
         openTime: d.schedule?.openTime,
         closeTime: d.schedule?.closeTime,
         perDaySchedule: d.schedule?.perDay,
+        photoUrl: d.photoUrl,
       );
 
   if (serviceId != null) {
