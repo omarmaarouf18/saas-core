@@ -170,8 +170,8 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	// note fails fast with a field-specific error, not a booking failure.
 	req.Location.AddressNote = strings.TrimSpace(req.Location.AddressNote)
 	req.Destination.AddressNote = strings.TrimSpace(req.Destination.AddressNote)
-	if len(req.Location.AddressNote) > models.MaxAddressNoteLength ||
-		len(req.Destination.AddressNote) > models.MaxAddressNoteLength {
+	if len([]rune(req.Location.AddressNote)) > models.MaxAddressNoteLength ||
+		len([]rune(req.Destination.AddressNote)) > models.MaxAddressNoteLength {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   "address_note_too_long",
 			"message": fmt.Sprintf("address note must be at most %d characters", models.MaxAddressNoteLength),
