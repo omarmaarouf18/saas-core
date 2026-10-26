@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/core/theme.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/features/owner/owner_controller.dart';
 import 'package:frontend/features/owner/owner_nav.dart';
@@ -755,8 +754,9 @@ class OwnerTestDeps {
       OwnerDataController(owner, auth, now: () => ownerNow);
 }
 
-/// The app around an owner page: app theme (so the pages' own redesign
-/// theme is exercised), providers and the nav scope above the navigator.
+/// The app around an owner page: the app theme (redesign A, as in
+/// main.dart; [themeMode] picks light or dark), providers and the nav
+/// scope above the navigator.
 /// [withData] provides the deps' [OwnerDataController] (pages pushed from a
 /// shell get it from [OwnerNav.push]); the shell creates its own.
 Widget ownerApp(
@@ -764,6 +764,7 @@ Widget ownerApp(
   Widget home, {
   Locale locale = const Locale('en'),
   bool withData = true,
+  ThemeMode themeMode = ThemeMode.light,
 }) {
   return MultiProvider(
     providers: [
@@ -787,13 +788,13 @@ Widget ownerApp(
           launcher: deps.launcher,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: quickDeliveryTheme,
-            darkTheme: quickDeliveryDarkTheme,
-            themeMode: ThemeMode.light,
+            theme: qdLightTheme,
+            darkTheme: qdDarkTheme,
+            themeMode: themeMode,
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: QdThemeScope(child: home),
+            home: home,
           ),
         ),
       ),
@@ -803,9 +804,12 @@ Widget ownerApp(
 
 /// Pumps [home] after one controller refresh, so the page shows loaded data.
 Future<void> pumpOwner(WidgetTester tester, OwnerTestDeps deps, Widget home,
-    {Locale locale = const Locale('en'), bool refresh = true}) async {
+    {Locale locale = const Locale('en'),
+    bool refresh = true,
+    ThemeMode themeMode = ThemeMode.light}) async {
   if (refresh) await deps.data.refresh();
-  await tester.pumpWidget(ownerApp(deps, home, locale: locale));
+  await tester
+      .pumpWidget(ownerApp(deps, home, locale: locale, themeMode: themeMode));
   await tester.pumpAndSettle();
 }
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/error_messages.dart';
 import '../../../l10n/l10n.dart';
 import '../../../ui/qd_ui.dart';
-import '../customer_theme.dart';
 
 /// Cancel-order reason sheet. The reason is required (the provider and the
 /// server reject an empty one); the confirm button stays disabled until
@@ -31,11 +30,9 @@ class CancelOrderSheet extends StatefulWidget {
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(QdRadius.sheet)),
       ),
-      builder: (ctx) => CustomerTheme(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-          child: CancelOrderSheet(onConfirm: onConfirm),
-        ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+        child: CancelOrderSheet(onConfirm: onConfirm),
       ),
     );
   }

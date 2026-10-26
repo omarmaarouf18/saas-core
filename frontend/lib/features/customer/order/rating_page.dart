@@ -8,7 +8,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../ui/qd_ui.dart';
 import '../customer_format.dart';
-import '../customer_theme.dart';
 import 'order_sections.dart';
 
 /// Who the customer rates for [job]: the courier when one was assigned,
@@ -36,8 +35,8 @@ class CustomerRatingPage extends StatefulWidget {
 
   static Future<bool?> open(BuildContext context,
           {required Job job, String? courierName}) =>
-      Navigator.of(context).push<bool>(customerRoute(
-        (_) => CustomerRatingPage(job: job, courierName: courierName),
+      Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => CustomerRatingPage(job: job, courierName: courierName),
       ));
 
   @override

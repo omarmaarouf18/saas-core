@@ -46,3 +46,4 @@ app.*.map.json
 
 # Flutter test golden-failure artifacts (generated on mismatch)
 test/failures/
+test/**/failures/

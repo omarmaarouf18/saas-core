@@ -238,7 +238,7 @@ class _AddressSheet extends StatefulWidget {
     return QdBottomSheet.show<String>(
       context,
       title: title,
-      child: QdThemeScope(child: _AddressSheet(initial: initial)),
+      child: _AddressSheet(initial: initial),
     );
   }
 

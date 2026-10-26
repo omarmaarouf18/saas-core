@@ -37,6 +37,13 @@ List<(String, Color, Color)> textPairs(QdColors c) => [
       ('avatar initial', c.onNavy, c.navy),
       ('warning banner', c.textPrimary, c.warningBg),
       ('danger banner', c.textPrimary, c.dangerBg),
+      // FE-CLEANUP dark review: pairs the pages use beyond the components.
+      ('success on tone card', c.textPrimary, c.successBg),
+      ('secondary on gold tint', c.textSecondary, c.goldTint),
+      ('neutral on gold tint', c.neutral, c.goldTint),
+      ('success text on surface', c.success, c.surface),
+      ('warning text on surface', c.warning, c.surface),
+      ('struck old price', c.textMuted, c.surface),
     ];
 
 void main() {

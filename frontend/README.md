@@ -60,7 +60,8 @@ For detailed per-platform networking setups (including `adb reverse` port forwar
 
 ### Golden Baseline Policy (Flutter Version Contract)
 
-Pixel goldens (`test/goldens/`) are only valid for the Flutter engine build that
+Pixel goldens (`test/features/**/goldens/` for the pages, `test/ui/goldens/` for
+the `/qd-gallery` components) are only valid for the Flutter engine build that
 rendered them. The authoritative version is pinned in
 `.github/workflows/ci.yml` (`flutter-version:`).
 
@@ -76,8 +77,11 @@ environment is what keeps them green; the rule keeps them matched permanently.
 
 Regeneration procedure (CI-rendered, preferred):
 1. Actions tab → "Regenerate Golden Baselines" → Run workflow (your branch).
-2. Download the `ci-rendered-goldens` artifact.
-3. Review the PNGs locally, replace `frontend/test/goldens/`, commit.
+2. Download the `ci-rendered-goldens` artifact (it holds `test/features/**/goldens/`
+   and `test/ui/goldens/`).
+3. Review the PNGs locally, copy them over the same folders, commit.
+
+Locally (same Flutter version): `flutter test --update-goldens test/features test/ui`.
 
 ---
 
@@ -86,11 +90,11 @@ Regeneration procedure (CI-rendered, preferred):
 This repository includes a continuous integration workflow (`.github/workflows/build-apk.yml`) that automatically compiles release APKs:
 
 1. **Trigger**: Executes automatically whenever new commits land on `main` (via automated sync from `saas-core`).
-2. **Build Configuration**: Compiles a release APK (`flutter build apk --release`) injecting `API_BASE_URL` from the GitHub repository variable `vars.API_BASE_URL` (defaulting to `https://api.logiclinkeg.tech/api/v1`).
+2. **Build Configuration**: Flutter pinned to 3.44.6. Builds a universal release APK (`flutter build apk --release`, published as `app-release.apk`) and one APK per ABI (`--split-per-abi`: armeabi-v7a, arm64-v8a, x86_64), both with `--build-number=<run number>`, `API_BASE_URL` from the repository variable `vars.API_BASE_URL` (default `https://api.logiclinkeg.tech/api/v1`) and `APP_VERSION=<pubspec version>+<run number>` (sent as `X-App-Version`).
 3. **Downloading Built APKs**:
    - Navigate to the **Actions** tab in this GitHub repository.
    - Click on the latest **Build Android APK** workflow run.
-   - Scroll down to the **Artifacts** section to download `app-release-<short_sha>.apk`.
+   - Scroll down to the **Artifacts** section to download `app-release-<short_sha>` (the three per-ABI APKs and the universal `app-release.apk`; most phones need `app-arm64-v8a-release.apk`).
    - Production tagged releases are also published under **Releases**.
 
 Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/CI_CD.md](docs/CI_CD.md).
@@ -99,9 +103,9 @@ Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/
 
 ## 4. Building Production Bundles Manually
 
-* **Android Release APK**:
+* **Android Release APKs** (one per ABI, like CI; drop `--split-per-abi` for one universal APK):
   ```bash
-  flutter build apk --release --dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
+  flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
   ```
 * **Android App Bundle (AAB for Google Play)**:
   ```bash
@@ -116,17 +120,11 @@ Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/
 
 ## 5. UI Architecture & Design System
 
-All UI components adhere strictly to the design tokens declared in `lib/core/theme.dart` (`AppColors`, `AppSpacing`, `AppRadius`, `AppElevation`, `AppMotion`, `AppIconSize`, `AppTypography`). Shared UI components reside under `lib/widgets/`:
-* `PrimaryButton` / `SecondaryButton`: Amber Gold primary and outlined secondary action buttons with built-in tap-debounce protection.
-* `ThemedCard`: Styled container cards with elevation and top-accent support.
-* `ThemedTextField`: Standardized text input fields with focus indicators and password toggles.
-* `StatusBadge`: Canonical badge styling across all job, KYC, and worker status types.
-* `EntityAvatar`: Fallback-safe user avatar rendering with role iconography.
-* `OtpPinInput`: 6-digit discrete PIN input with auto-advance and clipboard support.
-* `PillFilterBar`: Horizontal category and status filter bar with badge counts.
-* `RouteTimeline`: 2-point vertical route connector for pickup and dropoff itinerary.
-* `ThemedEmptyState` / `ThemedErrorBanner` / `ThemedLoadingIndicator`: Standardized state feedback components.
-* `ConfirmActionDialog` / `CancelJobDialog`: Standard modal dialogs for critical flows.
+The app is redesign A (2.0.0): pages per role in `lib/features/` (`auth`, `customer`, `owner`, `courier`, `account`, `verification`), built from the design system in `lib/ui/`:
+* `lib/ui/tokens.dart`: colors (`QdColors.light` / `QdColors.dark`), spacing, radii, type, sizes.
+* `lib/ui/qd_theme.dart`: `qdLightTheme` / `qdDarkTheme`, the app-wide theme set in `main.dart`.
+* `lib/ui/components/`: the `Qd*` widgets (buttons, fields, cards, lists, chips, banners, bottom nav, sheets, money, route and map pieces). Import them through `lib/ui/qd_ui.dart`.
+* Debug builds have a component gallery at the `/qd-gallery` route.
 
-For full design system specifications and component catalog, consult **[`docs/frontend/DESIGN_SYSTEM.md`](../docs/frontend/DESIGN_SYSTEM.md)** and **[`docs/frontend/ARCHITECTURE.md`](../docs/frontend/ARCHITECTURE.md)**.
+Full specification: **[`docs/design/DESIGN_SYSTEM.md`](../docs/design/DESIGN_SYSTEM.md)**; the approved mockups and old → new screen map are in [`docs/design/redesign-a/`](../docs/design/redesign-a/).
 

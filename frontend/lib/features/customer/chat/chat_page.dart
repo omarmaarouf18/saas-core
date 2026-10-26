@@ -12,7 +12,6 @@ import '../../../models/support_ticket.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../ui/qd_ui.dart';
-import '../customer_theme.dart';
 
 /// Chat (FE-CUST-2): one component for any chat-service channel. Job chat
 /// uses `job:<id>`; support tickets (FE-AUTH-ACCOUNT) use `ticket:<id>`
@@ -62,8 +61,8 @@ class CustomerChatPage extends StatefulWidget {
   /// Job chat with the courier.
   static Future<void> openJob(BuildContext context,
       {required String jobId, required String title, String? subtitle}) {
-    return Navigator.of(context).push<void>(customerRoute(
-      (_) => CustomerChatPage(
+    return Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => CustomerChatPage(
           channel: 'job:$jobId', title: title, subtitle: subtitle),
     ));
   }
@@ -75,8 +74,8 @@ class CustomerChatPage extends StatefulWidget {
       String? subtitle,
       String? emptyBody,
       ChatAttachmentPicker? pickAttachment}) {
-    return Navigator.of(context).push<void>(customerRoute(
-      (_) => CustomerChatPage(
+    return Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => CustomerChatPage(
         channel: 'ticket:${ticket.id}',
         title: title,
         subtitle: subtitle,

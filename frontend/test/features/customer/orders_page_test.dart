@@ -11,7 +11,7 @@ Future<void> _pumpOrders(WidgetTester tester, CustomerTestDeps deps,
   usePhone(tester);
   await tester.pumpWidget(customerApp(
       deps, CustomerShell(initialIndex: 1, now: () => fixedNow),
-      locale: locale, wrapTheme: false));
+      locale: locale));
   if (settle) await tester.pumpAndSettle();
 }
 

@@ -28,5 +28,4 @@ export 'components/qd_status_chip.dart';
 export 'components/qd_text_field.dart';
 export 'qd_launch.dart';
 export 'qd_theme.dart';
-export 'qd_theme_scope.dart';
 export 'tokens.dart';

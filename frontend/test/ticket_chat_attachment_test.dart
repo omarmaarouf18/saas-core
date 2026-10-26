@@ -1,23 +1,14 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/core/theme.dart';
-import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/notification_model.dart';
-import 'package:frontend/models/support_ticket.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/chat_provider.dart';
-import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
-import 'package:frontend/providers/theme_provider.dart';
-import 'package:frontend/screens/ticket_chat_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:provider/provider.dart';
 
 class MockAuthProviderForTest extends AuthProvider {
   final UserProfile? mockUser;
@@ -111,41 +102,6 @@ class MockNotificationsProviderForTest extends NotificationsProvider {
 
   @override
   Future<void> fetchHistory({bool refresh = false, int limit = 30}) async {}
-}
-
-Widget buildTestApp({
-  required Widget home,
-  required AuthProvider authProvider,
-  required ChatProvider chatProvider,
-}) {
-  final apiClient = ApiClient();
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-      ChangeNotifierProvider<ChatProvider>.value(value: chatProvider),
-      ChangeNotifierProvider<NotificationsProvider>.value(
-        value: MockNotificationsProviderForTest(apiClient),
-      ),
-      ChangeNotifierProvider<ThemeProvider>(
-        create: (_) => ThemeProvider(),
-      ),
-      ChangeNotifierProvider<LocaleProvider>(
-        create: (_) => LocaleProvider(),
-      ),
-    ],
-    child: MaterialApp(
-      locale: const Locale('en'),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: quickDeliveryTheme,
-      home: home,
-    ),
-  );
 }
 
 void main() {
@@ -264,133 +220,4 @@ void main() {
     });
   });
 
-  group('TicketChatScreen Attachment UI', () {
-    late UserProfile testCustomer;
-    late MockAuthProviderForTest authProvider;
-
-    setUp(() {
-      testCustomer = UserProfile(
-        id: 'cust-101',
-        email: 'customer@example.com',
-        username: 'AliceCustomer',
-        role: 'customer',
-      );
-      authProvider = MockAuthProviderForTest(
-        ApiClient(),
-        mockUser: testCustomer,
-      );
-    });
-
-    testWidgets(
-        'renders attach button and triggers onPickAttachment when tapped',
-        (WidgetTester tester) async {
-      final ticket = SupportTicket(
-        id: 'TICKET-ATTACH-1',
-        customerId: 'cust-101',
-        subject: 'Defective part',
-        status: 'in_progress',
-        createdAt: DateTime.now(),
-      );
-
-      final chatProvider = MockChatProviderWithAttachments(ApiClient());
-      bool pickerInvoked = false;
-
-      await tester.pumpWidget(buildTestApp(
-        home: TicketChatScreen(
-          ticket: ticket,
-          onPickAttachment: (context) async {
-            pickerInvoked = true;
-            return const PickedAttachment(
-              filename: 'defect.jpg',
-              bytes: [1, 2, 3, 4],
-            );
-          },
-        ),
-        authProvider: authProvider,
-        chatProvider: chatProvider,
-      ));
-      await tester.pumpAndSettle();
-
-      final attachButton = find.byKey(const Key('ticket_chat_attach_button'));
-      expect(attachButton, findsOneWidget);
-
-      await tester.tap(attachButton);
-      await tester.pumpAndSettle();
-
-      expect(pickerInvoked, isTrue);
-      expect(chatProvider.uploadTicketAttachmentCalled, isTrue);
-      expect(chatProvider.lastUploadedFilename, equals('defect.jpg'));
-      expect(chatProvider.lastUploadedTicketId, equals('TICKET-ATTACH-1'));
-    });
-
-    testWidgets('renders PDF attachment card with document icon and file size',
-        (WidgetTester tester) async {
-      final ticket = SupportTicket(
-        id: 'TICKET-PDF-1',
-        customerId: 'cust-101',
-        subject: 'PDF Invoice',
-        status: 'in_progress',
-        createdAt: DateTime.now(),
-      );
-
-      final messages = [
-        ChatMessage(
-          id: 'msg-pdf-1',
-          channel: 'ticket:TICKET-PDF-1',
-          senderId: 'cust-101',
-          senderUsername: 'AliceCustomer',
-          content: 'Here is the invoice',
-          type: 'attachment',
-          attachmentKey: 'tickets/TICKET-PDF-1/invoice.pdf',
-          attachmentUrl: 'https://example.com/invoice.pdf',
-          attachmentName: 'invoice.pdf',
-          attachmentType: 'application/pdf',
-          attachmentSize: 1048576, // 1.0 MB
-          createdAt: DateTime.now(),
-        ),
-      ];
-
-      final chatProvider = MockChatProviderWithAttachments(
-        ApiClient(),
-        mockMessages: messages,
-      );
-
-      await tester.pumpWidget(buildTestApp(
-        home: TicketChatScreen(ticket: ticket),
-        authProvider: authProvider,
-        chatProvider: chatProvider,
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('invoice.pdf'), findsOneWidget);
-      expect(find.text('1.0 MB'), findsOneWidget);
-      expect(find.text('Here is the invoice'), findsOneWidget);
-      expect(find.byIcon(Icons.picture_as_pdf), findsOneWidget);
-    });
-
-    testWidgets(
-        'does not render attach button or input field when ticket is resolved',
-        (WidgetTester tester) async {
-      final ticket = SupportTicket(
-        id: 'TICKET-RESOLVED-1',
-        customerId: 'cust-101',
-        subject: 'Resolved issue',
-        status: 'resolved',
-        createdAt: DateTime.now(),
-      );
-
-      final chatProvider = MockChatProviderWithAttachments(ApiClient());
-
-      await tester.pumpWidget(buildTestApp(
-        home: TicketChatScreen(ticket: ticket),
-        authProvider: authProvider,
-        chatProvider: chatProvider,
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('ticket_chat_attach_button')), findsNothing);
-      expect(find.byKey(const Key('ticket_chat_input_field')), findsNothing);
-      expect(find.byKey(const Key('ticket_chat_send_button')), findsNothing);
-    });
-  });
 }

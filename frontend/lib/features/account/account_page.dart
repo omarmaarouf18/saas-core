@@ -108,7 +108,7 @@ class _AccountPageState extends State<AccountPage> {
       context,
       title: title,
       // The sheet lives in the navigator overlay, outside the shell theme.
-      child: QdThemeScope(child: Builder(builder: (sheetContext) {
+      child: Builder(builder: (sheetContext) {
         final c = QdColors.of(sheetContext);
         return QdListGroup(children: [
           for (final (value, label) in choices)
@@ -124,7 +124,7 @@ class _AccountPageState extends State<AccountPage> {
               },
             ),
         ]);
-      })),
+      }),
     );
   }
 

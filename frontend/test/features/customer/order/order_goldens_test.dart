@@ -127,6 +127,20 @@ void main() {
     });
   }
 
+  // FE-CLEANUP dark review: the active order, dark, EN-LTR.
+  testWidgets('GOLDEN order active dark en_ltr', (tester) async {
+    final deps = CustomerTestDeps();
+    deps.marketplace.services = [service(name: 'Nile Express')];
+    deps.map.setCourier(30.055, 31.232);
+    await pumpOrder(tester, deps, _views['active']!(en),
+        lookup: FakeCourierLookup({'emp-1': 'Karim'}),
+        themeMode: ThemeMode.dark);
+    expect(tester.takeException(), isNull);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('goldens/ord_active_dark_en_ltr_360x800.png'));
+    await unmountOrder(tester, deps);
+  });
+
   _views.forEach((name, build) {
     for (final locale in bothLocales) {
       final dir = locale == ar ? 'ar_rtl' : 'en_ltr';

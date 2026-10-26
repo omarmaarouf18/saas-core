@@ -1,14 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/audit_labels.dart';
 import 'package:frontend/l10n/app_localizations_ar.dart';
 import 'package:frontend/l10n/app_localizations_en.dart';
-import 'package:frontend/models/user_profile.dart';
-import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/providers/owner_provider.dart';
-import 'package:frontend/screens/employee_screen.dart';
 
 /// F1: the owner audit trail shows friendly localized labels, never the raw
 /// backend action code, and never the client IP.
@@ -73,114 +66,4 @@ void main() {
       expect(humanizeAuditAction('arrived at pickup'), 'Arrived at pickup');
     });
   });
-
-  testWidgets('Audit trail card renders friendly labels with no IP text (F1)',
-      (WidgetTester tester) async {
-    final apiClient = ApiClient();
-    final mockOwner = _MockOwnerProvider(apiClient);
-    mockOwner.mockIsLoading = false;
-    mockOwner.mockAuditLogEntries = [
-      {
-        'action': 'ACCOUNT_SUSPENDED',
-        'timestamp': '2026-09-01T10:00:00Z',
-        'client_ip': '192.168.1.50',
-      },
-      {
-        'action': 'KYC_REVIEWED',
-        'timestamp': '2026-09-02T11:00:00Z',
-        'client_ip': '10.0.0.9',
-      },
-      {
-        'action': 'SOME_NEW_EVENT',
-        'timestamp': '2026-09-03T12:00:00Z',
-        'client_ip': '',
-      },
-    ];
-
-    await tester.pumpWidget(_buildEmployeeScreen(mockOwner));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Audit Trail'));
-    await tester.pumpAndSettle();
-
-    // Friendly labels render...
-    expect(find.text('Account suspended'), findsOneWidget);
-    expect(find.text('Identity review completed'), findsOneWidget);
-    expect(find.text('Some new event'), findsOneWidget);
-
-    // ...raw uppercase codes never do...
-    expect(find.text('ACCOUNT_SUSPENDED'), findsNothing);
-    expect(find.text('KYC_REVIEWED'), findsNothing);
-    expect(find.text('SOME_NEW_EVENT'), findsNothing);
-
-    // ...and no client IP leaks into the owner UI.
-    expect(find.textContaining('192.168.1.50'), findsNothing);
-    expect(find.textContaining('10.0.0.9'), findsNothing);
-    expect(find.textContaining('IP:'), findsNothing);
-  });
-}
-
-class _MockAuthProvider extends AuthProvider {
-  _MockAuthProvider(super.apiClient);
-
-  @override
-  UserProfile? get user => UserProfile(
-        id: 'owner-1',
-        email: 'owner@example.com',
-        username: 'OwnerUser',
-        role: 'owner',
-      );
-
-  @override
-  String? get token => 'test-owner-token';
-
-  @override
-  Future<void> fetchUserProfile() async {}
-}
-
-class _MockOwnerProvider extends OwnerProvider {
-  List<dynamic> mockEmployees = [];
-  bool mockIsLoading = false;
-  String? mockError;
-  List<Map<String, dynamic>> mockAuditLogEntries = [];
-
-  _MockOwnerProvider(super.apiClient);
-
-  @override
-  List<dynamic> get employees => mockEmployees;
-
-  @override
-  bool get isLoading => mockIsLoading;
-
-  @override
-  String? get error => mockError;
-
-  @override
-  List<Map<String, dynamic>> get auditLogEntries => mockAuditLogEntries;
-
-  @override
-  Future<List<dynamic>> fetchEmployees([String? ownerToken]) async =>
-      mockEmployees;
-
-  @override
-  Future<void> fetchAuditLog({
-    String? tenantId,
-    String? requesterToken,
-    String? userId,
-    String? userToken,
-  }) async {}
-}
-
-Widget _buildEmployeeScreen(_MockOwnerProvider ownerProvider) {
-  final apiClient = ApiClient();
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider<AuthProvider>.value(
-          value: _MockAuthProvider(apiClient)),
-      ChangeNotifierProvider<OwnerProvider>.value(value: ownerProvider),
-    ],
-    child: const MaterialApp(
-      home: EmployeeScreen(),
-    ),
-  );
 }

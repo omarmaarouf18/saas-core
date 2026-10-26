@@ -1,10 +1,18 @@
 # Quick Delivery design system — redesign A
 
-This is the design system for the rebuilt UI layer (FE-DS onward). It replaces
-the look described in [docs/frontend/DESIGN_SYSTEM.md](../frontend/DESIGN_SYSTEM.md)
-screen by screen as FE-CUST-1, FE-CUST-2, FE-COURIER and FE-OWNER land. Until
-then both systems live side by side: the old one in `frontend/lib/core/theme.dart`
-+ `frontend/lib/widgets/`, the new one in `frontend/lib/ui/`.
+This is the design system of the app (FE-DS onward). Since 2.0.0 (FE-CLEANUP)
+it is the only one: the old system (`frontend/lib/core/theme.dart`,
+`frontend/lib/widgets/`, described in
+[docs/frontend/DESIGN_SYSTEM.md](../frontend/DESIGN_SYSTEM.md), now a pointer
+here) was deleted with the old screens.
+
+**The theme is app-wide.** `main.dart` sets `MaterialApp.theme: qdLightTheme`
+and `darkTheme: qdDarkTheme` (`themeMode` from `ThemeProvider`: light, dark or
+system). Every page, dialog, sheet and snackbar gets the `QdColors` theme
+extension from there; there are no per-feature theme wrappers any more
+(`QdThemeScope`, `CustomerTheme` and `customerRoute` were removed) and pages are
+pushed with a plain `MaterialPageRoute`. `QdColors.of(context)` falls back to
+the light set only when a bare test app has no Qd theme.
 
 - Approved mockups: [redesign-a/](redesign-a/) (Arabic RTL, 390 px phone). Start
   with [00-SCREEN-MAP.html](redesign-a/00-SCREEN-MAP.html): old screen → new
@@ -14,7 +22,10 @@ then both systems live side by side: the old one in `frontend/lib/core/theme.dar
 - Code: `frontend/lib/ui/tokens.dart` (tokens), `frontend/lib/ui/qd_theme.dart`
   (`ThemeData`), `frontend/lib/ui/components/` (widgets, all prefixed `Qd`).
 - Debug gallery: route `/qd-gallery` (debug builds only) renders every component
-  in every state; goldens in `frontend/test/goldens/qd_gallery_*`.
+  in every state; goldens in `frontend/test/ui/goldens/qd_gallery_*`. Page
+  goldens live in `frontend/test/features/**/goldens/`, light AR-RTL / EN-LTR,
+  plus one dark golden per role shell and per order / job page
+  (`*_dark_en_ltr_360x800.png`).
 
 ## Rules
 
@@ -72,7 +83,12 @@ then both systems live side by side: the old one in `frontend/lib/core/theme.dar
 
 ### Color — dark (`QdColors.dark`)
 
-Defined but **not wired into the app** in FE-DS. Same gold rules.
+Wired app-wide since FE-CLEANUP (`qdDarkTheme`, picked by the app's theme
+mode). Same gold rules. The FE-CLEANUP dark review found no text/background
+pair used by the pages below 4.5:1; `textSecondary` on the tone fills
+(`warningBg` 3.57, `dangerBg` 3.95, `successBg` 3.59) does fail, so text on a
+tone fill uses `textPrimary` (banners, the cancellation-request card). The
+pairs in use are asserted in `frontend/test/ui/tokens_test.dart`.
 
 | Token | Hex |
 |---|---|

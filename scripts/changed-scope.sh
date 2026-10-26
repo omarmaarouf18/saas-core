@@ -251,7 +251,10 @@ else
 	[ "$FRONTEND" -eq 0 ] || KEY="${KEY:+$KEY }frontend"
 	[ -z "$COMPOSE" ] || KEY="${KEY:+$KEY }compose=${COMPOSE// /,}"
 	say "SCOPED gate ($NPATHS changed path(s)): $KEY"
-	sort -u "$PATHS_FILE" | sed '/^$/d' | head -n 20 | sed 's/^/scope:   /' >&2
+	# The first 20 paths. sed reads its whole input: `head -n 20` here exited
+	# early, the writer got SIGPIPE and, under pipefail, the script died with
+	# 141 on long diffs (FE-CLEANUP; scripts/test_changed_scope.sh).
+	sort -u "$PATHS_FILE" | sed '/^$/d' | sed -n '1,20s/^/scope:   /p' >&2
 	[ "$NPATHS" -le 20 ] || say "  ... and $((NPATHS - 20)) more"
 fi
 

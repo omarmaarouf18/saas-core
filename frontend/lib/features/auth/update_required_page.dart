@@ -12,11 +12,11 @@ const String kFallbackDownloadUrl =
 
 /// Forced update (HTTP 426, ADR-0018): no way back into the app.
 ///
-/// The old screen's "update now" button did nothing. The app has no
-/// url_launcher dependency, so this one copies the download link (shown on
-/// the page, selectable) to the clipboard instead of opening it. Versions
-/// are shown only when the server sent them (the old screen showed made-up
-/// defaults).
+/// The main button opens the download link in the browser (url_launcher,
+/// through [QdLauncherScope]); when nothing opens it, the link is copied
+/// instead and a notice says so. The link is also shown (selectable) with
+/// a button that only copies it. Versions are shown only when the server
+/// sent them (the old screen showed made-up defaults).
 class UpdateRequiredPage extends StatelessWidget {
   const UpdateRequiredPage({
     super.key,
@@ -35,6 +35,18 @@ class UpdateRequiredPage extends StatelessWidget {
       ? kFallbackDownloadUrl
       : downloadUrl!.trim();
 
+  Future<void> _download(BuildContext context) {
+    final uri = Uri.tryParse(url);
+    return openOrCopy(
+      context,
+      [if (uri != null && uri.hasScheme) uri],
+      copyText: url,
+      onCopied: () {
+        if (context.mounted) showAuthNotice(context, context.l10n.updCopied);
+      },
+    );
+  }
+
   Future<void> _copy(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: url));
     if (context.mounted) showAuthNotice(context, context.l10n.updCopied);
@@ -52,12 +64,25 @@ class UpdateRequiredPage extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: AuthScaffold(
-        footer: QdButton(
-          key: const Key('update_copy'),
-          label: l10n.updCopy,
-          icon: Icons.copy,
-          fullWidth: true,
-          onPressed: () => _copy(context),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            QdButton(
+              key: const Key('update_download'),
+              label: l10n.updDownload,
+              icon: Icons.download,
+              fullWidth: true,
+              onPressed: () => _download(context),
+            ),
+            const SizedBox(height: QdSpace.x2),
+            QdButton.text(
+              key: const Key('update_copy'),
+              label: l10n.updCopy,
+              icon: Icons.copy,
+              fullWidth: true,
+              onPressed: () => _copy(context),
+            ),
+          ],
         ),
         children: [
           const SizedBox(height: 48),

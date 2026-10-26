@@ -17,6 +17,12 @@ class RecordedLinks {
 
   NotificationLinks get links => NotificationLinks(
         openOrders: (_) => opened.add('orders'),
+        openOrder: (_, id) => opened.add('order:$id'),
+        openTeam: (_) => opened.add('team'),
+        openPlan: (_) => opened.add('plan'),
+        openVerification: (_) => opened.add('verification'),
+        openTask: (_) => opened.add('task'),
+        openJobs: (_) => opened.add('jobs'),
         openTicket: (_, id, {required resolved}) =>
             opened.add('ticket:$id:$resolved'),
         openTickets: (_) => opened.add('tickets'),
@@ -40,28 +46,108 @@ Future<(FakeFeed, RecordedLinks, AccountTestDeps)> _pump(
 
 void main() {
   group('rules', () {
-    test('only customers get links, and only to customer screens', () {
+    NotificationTargetKind kind(String type, String? role, {String? body}) =>
+        notificationTarget(notif('1', type, body: body ?? ''), role).kind;
+
+    test('customers: order types open My orders, nothing else links', () {
       for (final type in kOrderNotificationTypes) {
-        expect(notificationTarget(notif('1', type), 'user').kind,
-            NotificationTargetKind.orders);
+        expect(kind(type, 'user'), NotificationTargetKind.orders);
       }
-      for (final role in ['employee', 'owner', null]) {
+      for (final type in [
+        'job_offer',
+        'job_alert',
+        'kyc_approved',
+        'cancellation_requested',
+        'payout_sent',
+        'x'
+      ]) {
+        expect(kind(type, 'user'), NotificationTargetKind.none, reason: type);
+      }
+    });
+
+    test('owners: order detail by job id, orders, team, plan, verification',
+        () {
+      expect(
+          notificationTarget(
+              notif('1', 'cancellation_requested',
+                  body: 'Courier e1 requested cancellation of job j-42: '
+                      'flat tyre. Respond within 15 minutes.'),
+              'owner'),
+          const NotificationTarget(NotificationTargetKind.order, 'j-42'));
+      expect(
+          notificationTarget(
+              notif('1', 'cancellation_request_expired',
+                  body: 'The cancellation request window lapsed with no '
+                      'response; courier e1 was unassigned and job abc_9 '
+                      'returned to dispatch.'),
+              'owner'),
+          const NotificationTarget(NotificationTargetKind.order, 'abc_9'));
+      expect(kind('dispute_resolved', 'owner', body: 'Refunded.'),
+          NotificationTargetKind.orders);
+      expect(
+          kind('kyc_rejected', 'owner'), NotificationTargetKind.verification);
+      expect(
+          kind('kyc_approved', 'owner'), NotificationTargetKind.verification);
+      expect(
+          kind('subscription_expired', 'owner'), NotificationTargetKind.plan);
+      expect(kind('employee_added', 'owner'), NotificationTargetKind.team);
+      // Courier and customer types never open owner pages.
+      for (final type in [
+        'job_offer',
+        'job_accepted',
+        'cancellation_resolved'
+      ]) {
+        expect(kind(type, 'owner'), NotificationTargetKind.none, reason: type);
+      }
+    });
+
+    test('couriers: offer / current job, my jobs, verification', () {
+      expect(kind('job_offer', 'employee'), NotificationTargetKind.task);
+      expect(kind('job_alert', 'employee'), NotificationTargetKind.task);
+      expect(
+          kind('cancellation_resolved', 'employee',
+              body: 'Your cancellation request for job j1 was declined by the '
+                  'business owner. You remain assigned.'),
+          NotificationTargetKind.task);
+      expect(
+          kind('cancellation_resolved', 'employee',
+              body: 'Your cancellation request for job j1 was approved by the '
+                  'business owner. The job has been cancelled.'),
+          NotificationTargetKind.jobs);
+      expect(kind('dispute_resolved', 'employee'), NotificationTargetKind.jobs);
+      expect(kind('kyc_rejected', 'employee'),
+          NotificationTargetKind.verification);
+      // Owner-only types do nothing for a courier.
+      for (final type in [
+        'cancellation_requested',
+        'subscription_expired',
+        'employee_added',
+        'account_reactivated'
+      ]) {
+        expect(kind(type, 'employee'), NotificationTargetKind.none,
+            reason: type);
+      }
+    });
+
+    test('unknown roles get no links at all', () {
+      for (final role in ['admin', 'reviewer', null]) {
         for (final type in [
           'job_accepted',
           'ticket_resolved',
           'job_offer',
           'kyc_rejected',
-          'payout_completed'
+          'cancellation_requested'
         ]) {
-          expect(notificationTarget(notif('1', type), role),
-              NotificationTarget.none,
+          expect(kind(type, role), NotificationTargetKind.none,
               reason: '$role / $type');
         }
       }
-      for (final type in ['job_offer', 'kyc_approved', 'payout_sent', 'x']) {
-        expect(notificationTarget(notif('1', type), 'user'),
-            NotificationTarget.none);
-      }
+    });
+
+    test('job id from the body', () {
+      expect(jobIdFromBody('You have an incoming job offer for job 65f1a. '),
+          '65f1a');
+      expect(jobIdFromBody('No job here'), isNull);
     });
 
     test('ticket links carry the ticket id from the body', () {
@@ -151,19 +237,49 @@ void main() {
       expect(links.opened.last, 'ticket:tkt-9:true');
 
       // A courier type opens nothing.
-      await tester.scrollUntilVisible(find.text('Server title'), 100);
-      await tester.tap(find.text('Server title'));
+      await tester.scrollUntilVisible(find.text('New job offer'), 100);
+      await tester.tap(find.text('New job offer'));
       await tester.pump(const Duration(milliseconds: 600));
       expect(links.opened.length, 2);
     });
 
-    testWidgets('an owner tapping an order notification goes nowhere',
+    testWidgets('an owner tapping a customer order notification goes nowhere',
         (tester) async {
       final (feed, links, _) = await _pump(tester, list, role: 'owner');
       await tester.tap(find.text('A courier accepted your order'));
       await tester.pump(const Duration(milliseconds: 600));
       expect(feed.calls, contains('markAsRead:n1'));
       expect(links.opened, isEmpty);
+    });
+
+    testWidgets('owner: cancellation request opens that order', (tester) async {
+      final (_, links, _) = await _pump(
+          tester,
+          [
+            notif('o1', 'cancellation_requested',
+                body: 'Courier e1 requested cancellation of job j-7: late.'),
+            notif('o2', 'kyc_rejected',
+                body: 'Your KYB verification was rejected. Reason: blurry'),
+          ],
+          role: 'owner');
+      expect(find.text('A courier asked to cancel a job'), findsOneWidget);
+      await tester.tap(find.text('A courier asked to cancel a job'));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(find.text("Your verification wasn't accepted"));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(links.opened, ['order:j-7', 'verification']);
+    });
+
+    testWidgets('courier: an offer opens the Task tab', (tester) async {
+      final (_, links, _) = await _pump(
+          tester, [notif('c1', 'job_offer', body: 'Offer for job j-1.')],
+          role: 'employee');
+      expect(find.text('New job offer'), findsOneWidget);
+      expect(find.text('Answer it from the Task tab before the time runs out.'),
+          findsOneWidget);
+      await tester.tap(find.text('New job offer'));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(links.opened, ['task']);
     });
 
     testWidgets('mark all read', (tester) async {
@@ -264,20 +380,25 @@ void main() {
     });
   });
 
-  testWidgets('order link closes pushed pages and shows the orders tab',
-      (tester) async {
-    var shown = 0;
+  Future<NotificationLinks> pumpShell(
+      WidgetTester tester, NotificationShellLinks shell) async {
     late NotificationLinks links;
     await tester.pumpWidget(MaterialApp(
-      home: OrdersTabScope(
-        showOrders: () => shown++,
+      home: NotificationShellScope(
+        links: shell,
         child: Builder(builder: (context) {
           links = NotificationLinks.of(context);
           return TextButton(
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (ctx) => TextButton(
-                    onPressed: () => links.openOrders(ctx),
-                    child: const Text('link')))),
+                builder: (ctx) => Builder(
+                    builder: (ctx) => TextButton(
+                        onPressed: () => links.follow(
+                            ctx,
+                            notificationTarget(
+                                notif('x', 'cancellation_requested',
+                                    body: 'cancellation of job j-3: x'),
+                                'owner')),
+                        child: const Text('owner link'))))),
             child: const Text('shell'),
           );
         }),
@@ -285,10 +406,38 @@ void main() {
     ));
     await tester.tap(find.text('shell'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('link'));
+    return links;
+  }
+
+  testWidgets('order link closes pushed pages and shows the orders tab',
+      (tester) async {
+    var shown = 0;
+    final links = await pumpShell(
+        tester, NotificationShellLinks(showOrders: () => shown++));
+    final ctx = tester.element(find.text('owner link'));
+    links.openOrders!(ctx);
     await tester.pumpAndSettle();
     expect(find.text('shell'), findsOneWidget);
-    expect(find.text('link'), findsNothing);
+    expect(find.text('owner link'), findsNothing);
     expect(shown, 1);
+  });
+
+  testWidgets('owner order link closes pushed pages, then opens the order',
+      (tester) async {
+    final opened = <String>[];
+    await pumpShell(tester, NotificationShellLinks(openOrder: opened.add));
+    await tester.tap(find.text('owner link'));
+    await tester.pumpAndSettle();
+    expect(find.text('owner link'), findsNothing);
+    expect(opened, ['j-3']);
+  });
+
+  testWidgets('a link the shell does not offer does nothing', (tester) async {
+    final links = await pumpShell(tester, const NotificationShellLinks());
+    expect(links.openOrders, isNull);
+    expect(links.openTask, isNull);
+    await tester.tap(find.text('owner link'));
+    await tester.pumpAndSettle();
+    expect(find.text('owner link'), findsOneWidget);
   });
 }

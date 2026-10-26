@@ -30,8 +30,8 @@ class TicketsPage extends StatefulWidget {
   /// Passed to the ticket chat (tests).
   final ChatAttachmentPicker? pickAttachment;
 
-  static Future<void> open(BuildContext context) =>
-      Navigator.of(context).push<void>(qdPageRoute((_) => const TicketsPage()));
+  static Future<void> open(BuildContext context) => Navigator.of(context)
+      .push<void>(MaterialPageRoute(builder: (_) => const TicketsPage()));
 
   @override
   State<TicketsPage> createState() => _TicketsPageState();

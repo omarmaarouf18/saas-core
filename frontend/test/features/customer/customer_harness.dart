@@ -6,10 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/core/theme.dart';
+import 'package:frontend/ui/qd_theme.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/customer_nav.dart';
-import 'package:frontend/features/customer/customer_theme.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/chat_message.dart';
@@ -601,14 +600,13 @@ class CustomerTestDeps {
   final FakeLauncher launcher;
 }
 
-/// The app around a customer page: real app theme (so [CustomerTheme] is
-/// exercised), providers, map tiles, locator and nav scopes above the
+/// The app around a customer page: the app theme (redesign A, as in
+/// main.dart), providers, map tiles, locator and nav scopes above the
 /// navigator.
 Widget customerApp(
   CustomerTestDeps deps,
   Widget home, {
   Locale locale = en,
-  bool wrapTheme = true,
   ThemeMode themeMode = ThemeMode.light,
 }) {
   return MultiProvider(
@@ -633,13 +631,13 @@ Widget customerApp(
             launcher: deps.launcher,
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: quickDeliveryTheme,
-              darkTheme: quickDeliveryDarkTheme,
+              theme: qdLightTheme,
+              darkTheme: qdDarkTheme,
               themeMode: themeMode,
               locale: locale,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: wrapTheme ? CustomerTheme(child: home) : home,
+              home: home,
             ),
           ),
         ),

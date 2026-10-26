@@ -68,12 +68,14 @@ void main() {
 
   test('unit/currency labels carry no inline unit text', () {
     final en = _loadArb('app_en.arb')..addAll(_loadArb('app_ar.arb'));
+    // Fields whose unit or currency is the input's suffixText (FE-CLEANUP:
+    // the redesign's labels; the old screens' keys were deleted with them).
+    // "Per km" (ownSvcPerKm) is the rate's name, not an inline unit.
     const unitLabels = [
-      'ownerConfigRadiusLabel',
-      'ownerConfigBasePriceLabel',
-      'ownerConfigPricePerKmLabel',
-      'customerMarketplaceFilterRadius',
-      'walletAmountCredits',
+      'ownSvcRadius',
+      'ownSvcBaseFee',
+      'custFilterDistance',
+      'courCompleteAmountLabel',
     ];
     for (final key in unitLabels) {
       final value = en[key] as String;

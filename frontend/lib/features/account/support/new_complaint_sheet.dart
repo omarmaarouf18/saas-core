@@ -48,8 +48,7 @@ class NewComplaintSheet extends StatefulWidget {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: QdThemeScope(
-            child: NewComplaintSheet(preselectedJobId: preselectedJobId)),
+        child: NewComplaintSheet(preselectedJobId: preselectedJobId),
       ),
     );
   }

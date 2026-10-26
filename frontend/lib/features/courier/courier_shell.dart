@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/employee_jobs_provider.dart';
@@ -9,6 +8,7 @@ import '../../providers/employee_location_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
+import '../account/notifications/notification_rules.dart';
 import 'blocked_page.dart';
 import 'courier_controller.dart';
 import 'courier_rules.dart';
@@ -16,19 +16,8 @@ import 'courier_widgets.dart';
 import 'jobs_page.dart';
 import 'task_page.dart';
 
-/// The courier's root screen: the redesigned [CourierShell] when [redesign]
-/// (default: the `QD_REDESIGN_COURIER` flag) is on, otherwise [legacy] (the
-/// existing EmployeeHomeScreen). [initialIndex] keeps the old tab order:
-/// 0 jobs, 1 history, 2 account.
-Widget courierRootScreen({
-  bool redesign = kRedesignCourier,
-  int initialIndex = 0,
-  required Widget Function() legacy,
-}) =>
-    redesign ? CourierShell(initialIndex: initialIndex.clamp(0, 2)) : legacy();
-
 /// Redesigned courier shell (FE-COURIER): Task / My jobs / Account with a
-/// [QdBottomNav] under the redesign theme, or the blocked screen while the
+/// [QdBottomNav], or the blocked screen while the
 /// account is suspended or paused. A `job_alert` notification refreshes the
 /// jobs and shows a notice, as the old home screen did.
 class CourierShell extends StatefulWidget {
@@ -93,6 +82,13 @@ class _CourierShellState extends State<CourierShell> {
         key: const Key('job_alert_dispatch_snackbar'));
   }
 
+  /// What notification links can show here: the Task tab (offer or
+  /// current job) and My jobs.
+  late final NotificationShellLinks _links = NotificationShellLinks(
+    showTask: () => _select(0),
+    showJobs: () => _select(1),
+  );
+
   void _select(int i) {
     if (i == _index) return;
     setState(() {
@@ -112,10 +108,11 @@ class _CourierShellState extends State<CourierShell> {
 
     return ChangeNotifierProvider<CourierController>.value(
       value: _ctl,
-      child: QdThemeScope(
-        child: blocked
-            ? const CourierBlockedPage()
-            : Builder(
+      child: blocked
+          ? const CourierBlockedPage()
+          : NotificationShellScope(
+              links: _links,
+              child: Builder(
                 builder: (context) => Scaffold(
                   key: const Key('courier_shell'),
                   backgroundColor: QdColors.of(context).surface,
@@ -147,7 +144,7 @@ class _CourierShellState extends State<CourierShell> {
                   ),
                 ),
               ),
-      ),
+            ),
     );
   }
 }

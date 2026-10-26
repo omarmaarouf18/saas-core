@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
-import '../../screens/home_screen.dart';
+import 'launch_splash.dart';
 import 'login_page.dart';
+import 'role_home.dart';
 
-/// Launch router for the redesigned signed-out flow (QD_REDESIGN_AUTH).
-///
-/// Like main.dart's AuthGate it shows [splash] only while the stored session
-/// is restored (AuthProvider.isRestoringSession), then the home screen or
-/// [LoginPage]. AuthProvider.isLoading is also true during every sign-in
-/// request; keying the splash off it would unmount the sign-in page
-/// mid-request, so a sign-in that needs a code would never reach the code
-/// page (HOTFIX-LOGIN).
-class RedesignAuthGate extends StatelessWidget {
-  const RedesignAuthGate({super.key, required this.splash});
+/// Launch router (UX-17): [splash] (default [LaunchSplash]) only while the
+/// stored session is restored (AuthProvider.isRestoringSession), then the
+/// role's home ([RoleHome]) or [LoginPage]. AuthProvider.isLoading is also
+/// true during every sign-in request; keying the splash off it would
+/// unmount the sign-in page mid-request, so a sign-in that needs a code
+/// would never reach the code page (HOTFIX-LOGIN).
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key, this.splash = const LaunchSplash()});
 
   final Widget splash;
 
@@ -22,6 +21,6 @@ class RedesignAuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     if (auth.isRestoringSession) return splash;
-    return auth.isAuthenticated ? const HomeScreen() : const LoginPage();
+    return auth.isAuthenticated ? const RoleHome() : const LoginPage();
   }
 }

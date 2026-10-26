@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
+import '../account/notifications/notification_rules.dart';
+import 'order_detail_page.dart';
 import 'orders_page.dart';
 import 'owner_nav.dart';
 import 'plan_rules.dart';
@@ -14,21 +15,8 @@ import 'owner_controller.dart';
 import 'team_page.dart';
 import 'today_page.dart';
 
-/// The owner's root screen: the redesigned [OwnerShell] when [redesign]
-/// (default: the `QD_REDESIGN_OWNER` flag) is on, otherwise [legacy] (the
-/// existing owner dashboard built by HomeScreen).
-Widget ownerRootScreen(
-        {bool redesign = kRedesignOwner, required Widget Function() legacy}) =>
-    redesign ? const OwnerShell() : legacy();
-
-/// Whether HomeScreen still runs the old owner dashboard fetch (wallet,
-/// subscription, ledger and owner jobs) when it opens. With the redesign
-/// on, the shell and its pages load what they show, so it is skipped.
-bool runLegacyOwnerDashboardFetch({bool redesign = kRedesignOwner}) =>
-    !redesign;
-
 /// Redesigned owner shell (FE-OWNER-1): Today / Orders / Team / Account with
-/// a [QdBottomNav] under the redesign theme. Account is the shared account
+/// a [QdBottomNav]. Account is the shared account
 /// page with the owner rows (FE-OWNER-2b).
 class OwnerShell extends StatefulWidget {
   const OwnerShell({super.key, this.initialIndex = 0, this.now});
@@ -97,9 +85,17 @@ class _OwnerShellState extends State<OwnerShell> {
 
     return ChangeNotifierProvider<OwnerDataController>.value(
       value: _data,
-      child: QdThemeScope(
-        child: Builder(
-          builder: (context) => Scaffold(
+      child: Builder(
+        builder: (context) => NotificationShellScope(
+          // Notification links: the Orders and Team tabs, an order's
+          // detail, the plan page.
+          links: NotificationShellLinks(
+            showOrders: () => _select(1),
+            openOrder: (id) => OwnerOrderDetailPage.open(context, id),
+            showTeam: () => _select(2),
+            openPlan: () => OwnerNavScope.of(context).openSubscription(context),
+          ),
+          child: Scaffold(
             key: const Key('owner_shell'),
             backgroundColor: QdColors.of(context).surface,
             body: IndexedStack(

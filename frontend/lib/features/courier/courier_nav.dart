@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/job.dart';
-import '../../ui/qd_ui.dart';
 import '../account/account_nav.dart';
 import '../account/notifications/notifications_page.dart';
 import '../account/support/tickets_page.dart';
 import '../customer/chat/chat_page.dart';
-import '../customer/customer_theme.dart';
 import '../verification/verification_page.dart';
 import 'courier_format.dart';
 
@@ -18,7 +16,7 @@ class CourierNav {
 
   /// Pushes a redesigned courier page.
   Future<T?> push<T>(BuildContext context, WidgetBuilder page) =>
-      Navigator.of(context).push<T>(qdPageRoute<T>(page));
+      Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: page));
 
   /// Verification (KYE): the page shared with the owner app (FE-OWNER-2b).
   Future<void> openVerification(BuildContext context) =>
@@ -28,8 +26,8 @@ class CourierNav {
   /// the customer app).
   Future<void> openChat(BuildContext context, Job job) {
     final l10n = context.l10n;
-    return Navigator.of(context).push<void>(customerRoute(
-      (_) => CustomerChatPage(
+    return Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => CustomerChatPage(
         channel: 'job:${job.id}',
         title: l10n.courChatTitle,
         subtitle: jobRefIsolated(job),

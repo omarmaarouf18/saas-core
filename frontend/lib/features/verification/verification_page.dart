@@ -36,8 +36,9 @@ class VerificationPage extends StatefulWidget {
 
   final DocumentPicker picker;
 
-  static Future<void> open(BuildContext context) => Navigator.of(context)
-      .push<void>(qdPageRoute<void>((_) => const VerificationPage()));
+  static Future<void> open(BuildContext context) =>
+      Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => const VerificationPage()));
 
   @override
   State<VerificationPage> createState() => _VerificationPageState();

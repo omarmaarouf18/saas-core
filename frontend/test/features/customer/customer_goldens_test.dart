@@ -79,14 +79,25 @@ final Map<String, Widget Function(Locale)> _screens = {
 void main() {
   setUpAll(loadPlexFont);
 
+  // FE-CLEANUP dark review: the shell (Home tab), dark, EN-LTR.
+  testWidgets('GOLDEN customer home dark en_ltr', (tester) async {
+    usePhone(tester);
+    await tester.pumpWidget(customerApp(
+        _deps(en), CustomerShell(now: () => fixedNow),
+        themeMode: ThemeMode.dark));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('goldens/cust_home_dark_en_ltr_360x800.png'));
+  });
+
   _screens.forEach((name, build) {
     for (final locale in bothLocales) {
       final dir = locale == ar ? 'ar_rtl' : 'en_ltr';
       testWidgets('GOLDEN customer $name $dir', (tester) async {
         usePhone(tester);
-        final isShell = name == 'home' || name == 'orders';
-        await tester.pumpWidget(customerApp(_deps(locale), build(locale),
-            locale: locale, wrapTheme: !isShell));
+        await tester.pumpWidget(
+            customerApp(_deps(locale), build(locale), locale: locale));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         await expectLater(

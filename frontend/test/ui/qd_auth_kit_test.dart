@@ -109,21 +109,4 @@ void main() {
       handle.dispose();
     });
   });
-
-  testWidgets('QdThemeScope follows the ambient brightness', (tester) async {
-    late QdColors seen;
-    for (final dark in [false, true]) {
-      await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(brightness: dark ? Brightness.dark : Brightness.light),
-        home: QdThemeScope(
-          child: Builder(builder: (context) {
-            seen = QdColors.of(context);
-            return const SizedBox();
-          }),
-        ),
-      ));
-      await tester.pumpAndSettle();
-      expect(seen, dark ? QdColors.dark : QdColors.light);
-    }
-  });
 }

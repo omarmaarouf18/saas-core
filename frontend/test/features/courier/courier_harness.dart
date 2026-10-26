@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/core/theme.dart';
 import 'package:frontend/features/courier/courier_controller.dart';
 import 'package:frontend/features/courier/courier_nav.dart';
 import 'package:frontend/features/customer/picker_page.dart';
@@ -383,8 +382,9 @@ class CourierTestDeps {
   );
 }
 
-/// The app around a courier page: app theme (so the pages' own redesign
-/// theme is exercised), providers, blank map tiles and the nav scope.
+/// The app around a courier page: the app theme (redesign A, as in
+/// main.dart; [themeMode] picks light or dark), providers, blank map tiles
+/// and the nav scope.
 /// [withController] provides the deps' [CourierController] (the shell
 /// creates its own).
 Widget courierApp(
@@ -392,6 +392,7 @@ Widget courierApp(
   Widget home, {
   Locale locale = const Locale('en'),
   bool withController = true,
+  ThemeMode themeMode = ThemeMode.light,
 }) {
   return MultiProvider(
     providers: [
@@ -414,13 +415,13 @@ Widget courierApp(
           launcher: deps.launcher,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: quickDeliveryTheme,
-            darkTheme: quickDeliveryDarkTheme,
-            themeMode: ThemeMode.light,
+            theme: qdLightTheme,
+            darkTheme: qdDarkTheme,
+            themeMode: themeMode,
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: QdThemeScope(child: home),
+            home: home,
           ),
         ),
       ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Redesign A design tokens (FE-DS). Source of truth for the values:
 /// docs/design/DESIGN_SYSTEM.md. Components in `lib/ui/components/` read
-/// colors through [QdColors.of], so they render with the light set even
-/// under the legacy app theme that does not carry the extension.
+/// colors through [QdColors.of]; the app theme (main.dart: qdLightTheme /
+/// qdDarkTheme) carries them as a theme extension.
 
 /// Bundled font family name (pubspec.yaml `fonts:`), never fetched at runtime.
 const String kQdFontFamily = 'IBMPlexSansArabic';
@@ -167,7 +167,7 @@ class QdColors extends ThemeExtension<QdColors> {
   );
 
   /// The tokens of the nearest theme, or [light] when the theme does not
-  /// carry the extension (the legacy app theme).
+  /// carry the extension (a bare test app).
   static QdColors of(BuildContext context) =>
       Theme.of(context).extension<QdColors>() ?? light;
 
