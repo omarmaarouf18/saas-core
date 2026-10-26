@@ -22,11 +22,14 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
      │  Push to `main`
      ▼
 [.github/workflows/build-apk.yml] (in quick-delivery-mobile)
-     │  1. `subosito/flutter-action` (Flutter stable)
-     │  2. `flutter build apk --release --dart-define=API_BASE_URL=...`
-     │  3. `actions/upload-artifact@v4`
+     │  1. `subosito/flutter-action` (Flutter 3.44.6, pinned)
+     │  2. `flutter build apk --release` (universal) and
+     │     `flutter build apk --release --split-per-abi`, both with
+     │     `--build-number=<run number>`, API_BASE_URL and APP_VERSION
+     │  3. `actions/upload-artifact@v4` + GitHub release + app-release.json
      ▼
-[Artifact: app-release-<sha>.apk] (Downloadable from Actions UI)
+[Artifact app-release-<sha>: app-armeabi-v7a-release.apk,
+ app-arm64-v8a-release.apk, app-x86_64-release.apk, app-release.apk (universal)]
 ```
 
 ---
@@ -60,26 +63,48 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
 1. **Environment Setup**:
    - Checkout code via `actions/checkout@v4`.
    - Set up Java JDK 17 (Temurin distribution) via `actions/setup-java@v4`.
-   - Set up Flutter (stable channel) via `subosito/flutter-action@v2`.
+   - Set up Flutter **3.44.6** via `subosito/flutter-action@v2` (`flutter-version: '3.44.6'`, the same pin as saas-core CI in `.github/workflows/ci.yml`; bump both together, and regenerate goldens in the same change).
 2. **Dependency Resolution**:
    - Executes `flutter pub get`.
-3. **Release Compilation**:
-   - Executes `flutter build apk --release --dart-define=API_BASE_URL="${API_BASE_URL}"`.
-   - The `API_BASE_URL` parameter defaults to `https://api.logiclinkeg.tech/api/v1` if the repository variable `vars.API_BASE_URL` is not set.
-4. **Artifact Upload**:
-   - Uses `actions/upload-artifact@v4` to attach `app-release.apk` to the workflow run.
-   - The artifact is named `app-release-<short_sha>.apk` (e.g. `app-release-1761cfd.apk`).
-5. **Job Summary**:
-   - Writes a GitHub Step Summary displaying the artifact name, short commit SHA, target API Base URL, and download instructions.
+3. **Version** (ADR-0018):
+   - `version` = the semver part of `pubspec.yaml` `version:` (2.0.0); `build_number` = `github.run_number`; `full_version` = `<version>+<build_number>` (e.g. `2.0.0+57`).
+   - `full_version` is compiled in with `--dart-define=APP_VERSION=...` and sent by the app as `X-App-Version` (`lib/core/app_version.dart`). The api-gateway gate strips the `+build` part, so only the semver is compared with `minimum_supported_version`.
+4. **Release Compilation** (both with `--build-number=${{ github.run_number }}`, `--dart-define=API_BASE_URL=...` and `--dart-define=APP_VERSION=...`):
+   - `flutter build apk --release`: the **universal** APK (all three ABIs, ~60 MB), kept as `build/universal/app-release.apk`.
+   - `flutter build apk --release --split-per-abi`: one APK per ABI, `app-armeabi-v7a-release.apk` (~19 MB), `app-arm64-v8a-release.apk` (~21 MB, most phones) and `app-x86_64-release.apk` (~23 MB, emulators / x86 Chromebooks).
+   - `API_BASE_URL` defaults to `https://api.logiclinkeg.tech/api/v1` if the repository variable `vars.API_BASE_URL` is not set.
+   - Android version codes: the universal APK gets the build number; split APKs get the ABI offset plus the build number (arm64-v8a `2000 + n`), so a phone that installed a split APK cannot later install the universal one of the same or an older run (Android refuses the lower version code); updating split → split or from any 1.x build works.
+5. **Artifact Upload**: `actions/upload-artifact@v4` attaches the three split APKs and the universal `app-release.apk` as artifact `app-release-<short_sha>`.
+6. **GitHub Release**: tag `app-release-<short_sha>` on `omarmaarouf18/quick-delivery-mobile` with all four APKs. `app-release.apk` keeps the pre-2.0 single-APK name, so `releases/latest/download/app-release.apk` (the api-gateway default `download_url` and the app's fallback link) always installs on any phone.
+7. **Website** (`omarmaarouf18/logiclink`, GitHub App token): writes `app-release.json`:
+   ```json
+   {
+     "version": "2.0.0",
+     "full_version": "2.0.0+57",
+     "build_number": "57",
+     "build_sha": "<short_sha>",
+     "apk_url": "https://github.com/omarmaarouf18/quick-delivery-mobile/releases/download/app-release-<sha>/app-arm64-v8a-release.apk",
+     "apk_urls": {
+       "armeabi-v7a": ".../app-armeabi-v7a-release.apk",
+       "arm64-v8a": ".../app-arm64-v8a-release.apk",
+       "x86_64": ".../app-x86_64-release.apk",
+       "universal": ".../app-release.apk"
+     },
+     "build_date": "<UTC ISO date>",
+     "size_mb": "<arm64-v8a APK size>"
+   }
+   ```
+   `apk_url` is the arm64-v8a APK (unchanged key, new target); `apk_urls` and `full_version` / `build_number` are new.
+8. **Job Summary**: version, artifact name, short commit SHA, target API Base URL.
 
 ---
 
 ## 4. Downloading Build Artifacts
 
-1. Navigate to [omarmaarouf18/quick-delivery-mobile/actions](https://github.com/omarmaarouf18/quick-delivery-mobile/actions).
+1. Navigate to [omarmaarouf18/quick-delivery-mobile/actions](https://github.com/omarmaarouf18/quick-delivery-mobile/actions), or the **Releases** page.
 2. Select the latest **Build Android APK** workflow run.
-3. Scroll down to the **Artifacts** section at the bottom of the page.
-4. Click on `app-release-<sha>` to download the compiled `.apk` file.
+3. Scroll down to the **Artifacts** section and download `app-release-<sha>`.
+4. Install `app-arm64-v8a-release.apk` on a current phone, `app-armeabi-v7a-release.apk` on an old 32-bit phone, or `app-release.apk` (universal) when unsure.
 
 ---
 

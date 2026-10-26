@@ -179,7 +179,6 @@ Run the app on the Linux host (against the local Docker Compose stack — Linux 
 ```bash
 cd frontend
 flutter run -d linux \
-  --dart-define=QD_REDESIGN_CUSTOMER=true \
   --dart-define=API_BASE_URL=https://localhost:8080/api/v1
 ```
 
