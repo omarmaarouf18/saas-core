@@ -55,7 +55,7 @@ To deliver a premium, modern experience, the app features a curated, high-contra
 
 *   **Primary Palette**: Deep Navy (`#0D1321`) as the primary dark/brand color, Amber Gold (`#FFC107`) as the primary accent/action color.
 *   **Neutral Palette**: Light Gray (`#E5E7EB`) for backgrounds/dividers, White (`#FFFFFF`) for cards/surfaces.
-*   **Typography**: Poppins (Bold / SemiBold / Regular / Medium weights) as the app-wide font family (replacing older placeholders like "Outfit" or "Inter").
+*   **Typography**: IBM Plex Sans Arabic, bundled under `frontend/assets/fonts/` (never fetched at runtime), as the app-wide font family for Arabic and Latin text (replacing Poppins since 2.0.0). Type scale and weights: [docs/design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md).
 *   **Logo/App Icon**: The "qd" wordmark with motion/speed lines preceding the letters, on a rounded-square dark navy background for the app icon.
 *   **Alert Status**: Success Emerald (`#00E676`), Danger Coral (`#FF1744`), and Warning Orange (`#FF7A00`) — chosen to remain visually distinct and avoid clashing with the Amber Gold (`#FFC107`) brand accent.
 *   **Micro-Animations**: Custom page transitions, hero elements on services/jobs, and fade/slide alert indicators using standard Flutter animation components (`AnimatedSwitcher`, `SlideTransition`).
