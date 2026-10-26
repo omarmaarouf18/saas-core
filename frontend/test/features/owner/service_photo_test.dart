@@ -16,20 +16,6 @@ import 'package:http/testing.dart';
 import '../../helpers/fake_service_photos.dart';
 import 'owner_harness.dart';
 
-/// Picker fake: returns [next] for the camera and the library.
-class FakePhotoPicker extends ServicePhotoPicker {
-  FakePhotoPicker(this.next);
-
-  Uint8List? next;
-  final List<ServicePhotoSource> sources = [];
-
-  @override
-  Future<Uint8List?> pick(ServicePhotoSource source) async {
-    sources.add(source);
-    return next;
-  }
-}
-
 Map<String, dynamic> svc({String? photo}) => {
       'id': 'svc-1',
       'tenant_id': 'owner-1',

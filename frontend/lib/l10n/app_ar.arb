@@ -697,7 +697,6 @@
   "ownSvcErrKyb": "لازم أوراق الشغل يتوافق عليها الأول قبل ما تحفظ الخدمة.",
   "ownSvcErrPlan": "حفظ الخدمة محتاج باقة شغالة.",
   "ownSvcErrUnavailable": "ده مش متاح دلوقتي. جرّب كمان شوية.",
-  "ownSvcErrPartial": "الخدمة اتعملت بس شوية تفاصيل متحفظتش. دوس احفظ تاني.",
   "ownSvcCurrency": "ج.م",
   "ownFleetMapLabel": "خريطة أماكن المندوبين",
   "ownFleetFilterLabel": "فلتر",

@@ -438,8 +438,17 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
     required double latitude,
     required double longitude,
     required String ownerId,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+    String? photoUrl,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
   }) async {
-    createCalls.add({
+    createCalls.add(<String, dynamic>{
       'name': name,
       'category': category,
       'tenant_base_price': tenantBasePrice,
@@ -447,7 +456,16 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
       'latitude': latitude,
       'longitude': longitude,
       'owner_id': ownerId,
-    });
+      'address': address,
+      'working_hours': workingHours,
+      'coverage_radius_km': coverageRadiusKm,
+      'photo_url': photoUrl,
+      'schedule_mode': scheduleMode,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'per_day_schedule': perDaySchedule,
+      'timezone': timezone,
+    }..removeWhere((_, v) => v == null));
     if (nextCreateError != null) throw nextCreateError!;
     return nextCreateResponse;
   }

@@ -346,6 +346,7 @@ void main() {
       await tester.pumpAndSettle();
       await save(tester);
 
+      // One POST with every field (USER-AUTH-BE item 2), no follow-up PUT.
       expect(deps.owner.createCalls, [
         {
           'name': 'Nile',
@@ -355,33 +356,22 @@ void main() {
           'latitude': 30.1,
           'longitude': 31.3,
           'owner_id': 'owner-1',
-        }
-      ]);
-      expect(deps.owner.updateCalls, [
-        {
-          'service_id': 'svc-new',
-          'owner_id': 'owner-1',
-          'name': 'Nile',
-          'category': 'delivery',
-          'tenant_base_price': 15.0,
-          'tenant_price_per_km': 3.0,
           'address': 'Maadi, road 9',
           'coverage_radius_km': 6.0,
-          'latitude': 30.1,
-          'longitude': 31.3,
           'schedule_mode': 'same_daily',
           'open_time': '09:00',
           'close_time': '22:30',
         }
       ]);
+      expect(deps.owner.updateCalls, isEmpty);
       expect(find.text('Service saved'), findsOneWidget);
     });
 
-    testWidgets('create worked, PUT failed: says so, next save is a PUT',
+    testWidgets('create failed: error shown, the next save creates again',
         (tester) async {
       usePhone(tester);
       final deps = OwnerTestDeps();
-      deps.owner.nextUpdateError = apiErr(500);
+      deps.owner.nextCreateError = apiErr(500);
       await pumpPage(tester, deps,
           home:
               page(place: const PickedPlace(latitude: 30.1, longitude: 31.3)));
@@ -395,17 +385,12 @@ void main() {
       await save(tester);
 
       expect(find.byKey(const Key('own_service_save_error')), findsOneWidget);
-      expect(
-          find.text(
-              'The service was created but some details weren\'t saved. Tap save again.'),
-          findsOneWidget);
       expect(find.byKey(const Key('own_service_page')), findsOneWidget);
 
-      deps.owner.nextUpdateError = null;
+      deps.owner.nextCreateError = null;
       await save(tester);
-      expect(deps.owner.createCalls, hasLength(1));
-      expect(deps.owner.updateCalls, hasLength(2));
-      expect(deps.owner.updateCalls.last['service_id'], 'svc-new');
+      expect(deps.owner.createCalls, hasLength(2));
+      expect(deps.owner.updateCalls, isEmpty);
     });
 
     testWidgets('KYB not approved: banner, and the 403 is explained',

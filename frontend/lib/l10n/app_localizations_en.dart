@@ -2375,10 +2375,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This is unavailable right now. Try again in a bit.';
 
   @override
-  String get ownSvcErrPartial =>
-      'The service was created but some details weren\'t saved. Tap save again.';
-
-  @override
   String get ownSvcCurrency => 'EGP';
 
   @override

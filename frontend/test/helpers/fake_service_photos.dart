@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/features/owner/service_photo_section.dart';
 import 'package:frontend/providers/service_photo_store.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -123,4 +124,18 @@ Future<void> precacheShownImages(WidgetTester tester) async {
     }
   });
   await tester.pumpAndSettle();
+}
+
+/// Picker fake: returns [next] for the camera and the library.
+class FakePhotoPicker extends ServicePhotoPicker {
+  FakePhotoPicker(this.next);
+
+  Uint8List? next;
+  final List<ServicePhotoSource> sources = [];
+
+  @override
+  Future<Uint8List?> pick(ServicePhotoSource source) async {
+    sources.add(source);
+    return next;
+  }
 }

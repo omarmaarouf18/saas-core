@@ -2973,10 +2973,6 @@
   "@ownSvcErrUnavailable": {
     "description": "FE-OWNER-2 redesigned owner screens."
   },
-  "ownSvcErrPartial": "The service was created but some details weren't saved. Tap save again.",
-  "@ownSvcErrPartial": {
-    "description": "FE-OWNER-2 redesigned owner screens."
-  },
   "ownSvcCurrency": "EGP",
   "@ownSvcCurrency": {
     "description": "FE-OWNER-2 redesigned owner screens."

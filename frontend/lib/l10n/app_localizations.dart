@@ -4283,12 +4283,6 @@ abstract class AppLocalizations {
   /// FE-OWNER-2 redesigned owner screens.
   ///
   /// In en, this message translates to:
-  /// **'The service was created but some details weren\'t saved. Tap save again.'**
-  String get ownSvcErrPartial;
-
-  /// FE-OWNER-2 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
   /// **'EGP'**
   String get ownSvcCurrency;
 

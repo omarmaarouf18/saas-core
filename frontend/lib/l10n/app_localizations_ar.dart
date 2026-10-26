@@ -2345,10 +2345,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownSvcErrUnavailable => 'ده مش متاح دلوقتي. جرّب كمان شوية.';
 
   @override
-  String get ownSvcErrPartial =>
-      'الخدمة اتعملت بس شوية تفاصيل متحفظتش. دوس احفظ تاني.';
-
-  @override
   String get ownSvcCurrency => 'ج.م';
 
   @override

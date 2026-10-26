@@ -32,8 +32,8 @@ typedef ServiceTimePicker = Future<TimeOfDay?> Function(
 /// Changed: the photo is uploaded to the service photo endpoint
 /// (FE-BE-GAPS, [ServicePhotoSection]) and `photo_url` only ever holds the
 /// key the server returned, never a device path; the free-text working
-/// hours field is gone (its stored value is kept); a first save is POST +
-/// PUT (see [saveService]).
+/// hours field is gone (its stored value is kept); a first save is one
+/// POST with every field (see [saveService]).
 class OwnerServicePage extends StatefulWidget {
   const OwnerServicePage(
       {super.key, this.pickPlace, this.pickTime, this.photoPicker});
@@ -246,7 +246,8 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
     setState(() => _saving = true);
     try {
       _serviceId = await saveService(owner,
-          ownerId: ownerId, serviceId: _serviceId, d: draft);
+              ownerId: ownerId, serviceId: _serviceId, d: draft) ??
+          serviceIdOf(ownServiceOf(owner.services, ownerId));
       if (draft.photoUrl != null) {
         _photoUrl = draft.photoUrl;
         _pendingPhotoKey = null;
@@ -259,20 +260,6 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
       showOwnerNotice(context, l10n.ownSvcSaved);
       final nav = Navigator.of(context);
       if (nav.canPop()) nav.pop();
-    } on ServiceSaveIncomplete catch (e) {
-      // The service exists now: the next save must update it, not create
-      // a second one.
-      var id = e.serviceId;
-      if (id == null) {
-        await owner.fetchServices();
-        id = serviceIdOf(ownServiceOf(owner.services, ownerId));
-      }
-      if (!mounted) return;
-      setState(() {
-        _serviceId = id ?? _serviceId;
-        _saving = false;
-        _saveError = l10n.ownSvcErrPartial;
-      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
