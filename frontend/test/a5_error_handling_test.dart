@@ -6,19 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/error_messages.dart';
-import 'package:frontend/core/update_gate.dart';
 import 'package:frontend/l10n/l10n.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/marketplace_service.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/providers/locale_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/providers/marketplace_provider.dart';
 import 'package:frontend/providers/owner_provider.dart';
 import 'package:frontend/screens/customer_marketplace_screen.dart';
 import 'package:frontend/screens/subscription_screen.dart';
-import 'package:frontend/screens/update_required_screen.dart';
 import 'package:frontend/screens/owner_configuration_screen.dart';
 import 'package:frontend/widgets/confirm_action_dialog.dart';
 
@@ -99,36 +96,6 @@ void main() {
       );
       expect(received?['minimum_version'], '2.0.0');
       expect(overrides.requests, isNotEmpty);
-    });
-
-    testWidgets('gate navigates to UpdateRequiredScreen exactly once',
-        (tester) async {
-      final navigatorKey = GlobalKey<NavigatorState>();
-      final gate = UpdateGate(navigatorKey);
-
-      await tester.pumpWidget(MultiProvider(
-          providers: [
-            ChangeNotifierProvider<LocaleProvider>(
-                create: (_) => LocaleProvider()),
-          ],
-          child: MaterialApp(
-            navigatorKey: navigatorKey,
-            home: const Scaffold(body: Center(child: Text('HOME-MARKER'))),
-          )));
-
-      await gate.handle({
-        'minimum_version': '2.0.0',
-        'download_url': 'https://x/app.apk',
-      });
-      await tester.pumpAndSettle();
-
-      expect(find.byType(UpdateRequiredScreen), findsOneWidget);
-
-      // A second failing call during the same session must NOT stack
-      // another gate.
-      await gate.handle({'minimum_version': '2.0.0'});
-      await tester.pumpAndSettle();
-      expect(find.byType(UpdateRequiredScreen), findsOneWidget);
     });
   });
 

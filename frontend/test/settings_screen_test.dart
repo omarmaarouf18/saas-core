@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/features/auth/login_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:frontend/core/api_client.dart';
@@ -16,7 +17,6 @@ import 'package:frontend/providers/chat_provider.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:frontend/screens/customer_tickets_screen.dart';
 import 'package:frontend/screens/settings_screen.dart';
-import 'package:frontend/screens/login_screen.dart';
 import 'package:frontend/widgets/primary_button.dart';
 
 class FakeSecureStorage extends FlutterSecureStorage {
@@ -337,8 +337,7 @@ void main() {
     expect(find.byKey(const Key('my_account_setting_row')), findsNothing);
   });
 
-  testWidgets(
-      '(d) Tapping Logout calls auth.logout and navigates to LoginScreen',
+  testWidgets('(d) Tapping Logout calls auth.logout and navigates to LoginPage',
       (WidgetTester tester) async {
     final themeProvider = ThemeProvider(storage: FakeSecureStorage());
     final user = UserProfile(
@@ -365,7 +364,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(mockAuth.logoutCalled, isTrue);
-    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.byType(LoginPage), findsOneWidget);
   });
 
   testWidgets(

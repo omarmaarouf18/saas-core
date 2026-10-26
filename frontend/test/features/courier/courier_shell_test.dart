@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/core/feature_flags.dart';
 import 'package:frontend/features/courier/courier_shell.dart';
 import 'package:frontend/models/user_profile.dart';
 
@@ -15,22 +14,6 @@ Future<void> _pumpShell(WidgetTester tester, CourierTestDeps deps,
 }
 
 void main() {
-  group('flag', () {
-    test('QD_REDESIGN_COURIER is off by default', () {
-      expect(kRedesignCourier, isFalse);
-    });
-
-    test('root screen: legacy when off, shell when on', () {
-      const legacy = SizedBox(key: Key('legacy'));
-      expect(courierRootScreen(redesign: false, legacy: () => legacy),
-          same(legacy));
-      final on = courierRootScreen(
-          redesign: true, initialIndex: 7, legacy: () => legacy);
-      expect(on, isA<CourierShell>());
-      expect((on as CourierShell).initialIndex, 2);
-    });
-  });
-
   group('shell', () {
     testWidgets('refreshes on open and starts the availability heartbeat',
         (tester) async {

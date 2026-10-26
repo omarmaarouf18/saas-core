@@ -8,11 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/l10n/l10n.dart';
 
 import 'core/api_client.dart';
-import 'core/feature_flags.dart';
-import 'core/update_gate.dart';
 import 'features/auth/auth_gate.dart';
-import 'features/auth/launch_splash.dart';
-import 'features/auth/redesign_update_gate.dart';
+import 'features/auth/update_gate.dart';
 import 'providers/auth_provider.dart';
 import 'providers/owner_provider.dart';
 import 'providers/employee_jobs_provider.dart';
@@ -24,8 +21,6 @@ import 'providers/map_tracking_provider.dart';
 import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/component_library_screen.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
@@ -61,12 +56,9 @@ void main() {
   final apiClient = ApiClient();
 
   // HTTP 426 forced-update gate (QA audit A5): route any upgrade-required
-  // response to the blocking UpdateRequiredScreen instead of letting it
+  // response to the blocking UpdateRequiredPage instead of letting it
   // surface as an unmapped generic error.
-  // FE-AUTH-ACCOUNT: the redesigned screen behind QD_REDESIGN_AUTH.
-  apiClient.onUpdateRequired = kRedesignAuth
-      ? RedesignUpdateGate(appNavigatorKey).handle
-      : UpdateGate(appNavigatorKey).handle;
+  apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
 
   runApp(
     MultiProvider(
@@ -159,31 +151,5 @@ class MyApp extends StatelessWidget {
       },
       home: const AuthGate(),
     );
-  }
-}
-
-/// UX-17: chooses the launch destination from the live AuthProvider state.
-/// While the stored session is being restored (`isRestoringSession`) a
-/// neutral splash is shown, so the login screen is never rendered as a flash
-/// frame before the session verdict exists.
-///
-/// HOTFIX-LOGIN: never key the splash off `isLoading`. It is also true during
-/// every sign-in/sign-up request, and swapping LoginScreen for the splash then
-/// unmounts it mid-request, so a login that needs a code never pushed
-/// OtpScreen.
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // FE-AUTH-ACCOUNT: redesigned signed-out flow behind QD_REDESIGN_AUTH.
-    if (kRedesignAuth) {
-      return const RedesignAuthGate(splash: LaunchSplash());
-    }
-    final auth = Provider.of<AuthProvider>(context);
-    if (auth.isRestoringSession) {
-      return const LaunchSplash();
-    }
-    return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
   }
 }

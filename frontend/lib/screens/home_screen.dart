@@ -33,14 +33,15 @@ import 'subscription_screen.dart';
 import 'owner_configuration_screen.dart';
 import 'owner_history_screen.dart';
 import 'employee_home_screen.dart';
-import '../features/auth/auth_nav.dart';
+import 'customer_home_screen.dart';
+import 'login_screen.dart';
 import '../features/auth/unsupported_role_page.dart';
-import '../features/courier/courier_shell.dart';
-import '../features/customer/customer_shell.dart';
-import '../features/owner/owner_shell.dart';
 import 'owner_reconciliation_queue_screen.dart';
 import 'owner_fleet_map_screen.dart';
 
+/// The pre-redesign app (old dashboards per role). Nothing opens it since
+/// FE-CLEANUP item 3 (RoleHome routes to the new shells); deleted with the
+/// rest of the old UI.
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
   const HomeScreen({super.key, this.initialTabIndex = 0});
@@ -104,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await auth.fetchUserProfile();
     if (!mounted) return;
     // The redesigned owner shell loads its own data (FE-OWNER-2 item 0).
-    if (auth.user?.role == 'owner' && runLegacyOwnerDashboardFetch()) {
+    if (auth.user?.role == 'owner') {
       final ownerProvider = Provider.of<OwnerProvider>(context, listen: false);
       await ownerProvider.fetchDashboardData(auth.token!);
       await ownerProvider.fetchOwnerJobs(auth.token!);
@@ -212,29 +213,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = auth.user;
 
     if (user == null) {
-      // FE-AUTH-ACCOUNT: redesigned sign-in behind QD_REDESIGN_AUTH.
-      return signedOutRootScreen();
+      return const LoginScreen();
     }
 
     if (user.role == 'employee') {
-      // FE-COURIER: redesigned courier shell behind QD_REDESIGN_COURIER.
-      return courierRootScreen(
-        initialIndex: widget.initialTabIndex,
-        legacy: () =>
-            EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex),
-      );
+      return EmployeeHomeScreen(initialTabIndex: widget.initialTabIndex);
     }
     if (user.role == 'user') {
-      // FE-CUST-1: redesigned customer shell behind QD_REDESIGN_CUSTOMER.
-      return customerRootScreen();
+      return const CustomerHomeScreen();
     }
     if (user.role != 'owner') {
       // FE-CLEANUP: roles without mobile screens (staff).
       return const UnsupportedRolePage();
     }
 
-    // FE-OWNER-1: redesigned owner shell behind QD_REDESIGN_OWNER.
-    return ownerRootScreen(legacy: () => _buildOwnerShell(user, l10n));
+    return _buildOwnerShell(user, l10n);
   }
 
   Widget _buildOwnerShell(UserProfile user, AppLocalizations l10n) {

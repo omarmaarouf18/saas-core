@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/marketplace_provider.dart';
-import '../../screens/customer_home_screen.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import '../account/notifications/notification_rules.dart';
@@ -13,12 +11,6 @@ import 'customer_jobs_controller.dart';
 import 'home_page.dart';
 import 'market_page.dart';
 import 'orders_page.dart';
-
-/// The customer's root screen: the redesigned [CustomerShell] when
-/// [redesign] (default: the `QD_REDESIGN_CUSTOMER` flag) is on, otherwise the
-/// existing CustomerHomeScreen.
-Widget customerRootScreen({bool redesign = kRedesignCustomer}) =>
-    redesign ? const CustomerShell() : const CustomerHomeScreen();
 
 /// Redesigned customer shell (FE-CUST-1): Home / My orders / Account with a
 /// [QdBottomNav]. Account is the

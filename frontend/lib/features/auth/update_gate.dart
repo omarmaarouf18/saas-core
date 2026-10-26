@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'update_required_page.dart';
 
-/// HTTP 426 gate for the redesign (QD_REDESIGN_AUTH): same contract as
-/// core/update_gate.dart (replaces the whole stack, shown once per
-/// session, reads `current_version`, `minimum_version` / `min_version`,
-/// `latest_version`, `download_url`) with [UpdateRequiredPage].
-class RedesignUpdateGate {
-  RedesignUpdateGate(this.navigatorKey);
+/// HTTP 426 forced-update gate (ADR-0018, QA audit A5): ApiClient's
+/// `onUpdateRequired` opens [UpdateRequiredPage] with the server's
+/// `current_version`, `minimum_version` / `min_version`, `latest_version`
+/// and `download_url`. It replaces the whole stack (a gated app offers no
+/// way back into un-updated flows) and shows once per session, so later
+/// failing calls do not stack more pages.
+class UpdateGate {
+  UpdateGate(this.navigatorKey);
 
   final GlobalKey<NavigatorState> navigatorKey;
   bool _shown = false;

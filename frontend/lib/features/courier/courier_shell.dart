@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/employee_jobs_provider.dart';
@@ -16,17 +15,6 @@ import 'courier_rules.dart';
 import 'courier_widgets.dart';
 import 'jobs_page.dart';
 import 'task_page.dart';
-
-/// The courier's root screen: the redesigned [CourierShell] when [redesign]
-/// (default: the `QD_REDESIGN_COURIER` flag) is on, otherwise [legacy] (the
-/// existing EmployeeHomeScreen). [initialIndex] keeps the old tab order:
-/// 0 jobs, 1 history, 2 account.
-Widget courierRootScreen({
-  bool redesign = kRedesignCourier,
-  int initialIndex = 0,
-  required Widget Function() legacy,
-}) =>
-    redesign ? CourierShell(initialIndex: initialIndex.clamp(0, 2)) : legacy();
 
 /// Redesigned courier shell (FE-COURIER): Task / My jobs / Account with a
 /// [QdBottomNav], or the blocked screen while the

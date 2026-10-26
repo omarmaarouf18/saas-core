@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend/main.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/theme.dart';
+import 'package:frontend/features/auth/login_page.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/providers/locale_provider.dart';
@@ -83,10 +84,10 @@ void main() {
     // restoring the stored session; settle it before asserting login chrome.
     await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
-    // Verify that the login screen elements render correctly with compact QD logotype & pre-login toggles.
-    expect(find.byKey(const Key('login_qd_logo')), findsOneWidget);
-    expect(find.byKey(const Key('login_theme_toggle_button')), findsOneWidget);
-    expect(find.byKey(const Key('login_lang_toggle_button')), findsOneWidget);
+    // The sign-in page with its pre-login toggles.
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.byKey(const Key('login_theme')), findsOneWidget);
+    expect(find.byKey(const Key('login_language')), findsOneWidget);
   });
 
   testWidgets('Pre-login theme and language toggles invoke shared providers',
@@ -118,17 +119,17 @@ void main() {
     expect(themeProvider.themeMode, ThemeMode.system);
 
     // Tap theme toggle button -> switches to light mode
-    await tester.tap(find.byKey(const Key('login_theme_toggle_button')));
+    await tester.tap(find.byKey(const Key('login_theme')));
     await tester.pump();
     expect(themeProvider.themeMode, ThemeMode.light);
 
     // Tap theme toggle button -> switches to dark mode
-    await tester.tap(find.byKey(const Key('login_theme_toggle_button')));
+    await tester.tap(find.byKey(const Key('login_theme')));
     await tester.pump();
     expect(themeProvider.themeMode, ThemeMode.dark);
 
     // Tap language toggle button -> switches to Arabic
-    await tester.tap(find.byKey(const Key('login_lang_toggle_button')));
+    await tester.tap(find.byKey(const Key('login_language')));
     await tester.pump();
     expect(localeProvider.locale?.languageCode, 'ar');
   });

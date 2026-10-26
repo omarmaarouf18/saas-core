@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/core/feature_flags.dart';
 import 'package:frontend/features/account/account_page.dart';
 import 'package:frontend/features/owner/owner_shell.dart';
 import 'package:frontend/features/verification/verification_page.dart';
@@ -9,50 +8,6 @@ import 'package:frontend/screens/settings_screen.dart';
 import 'owner_harness.dart';
 
 void main() {
-  group('QD_REDESIGN_OWNER', () {
-    test('is off by default', () {
-      expect(kRedesignOwner, isFalse);
-    });
-
-    testWidgets('off: the legacy owner dashboard is built', (tester) async {
-      var legacyBuilt = 0;
-      final w = ownerRootScreen(
-        redesign: false,
-        legacy: () {
-          legacyBuilt++;
-          return const Text('legacy dashboard');
-        },
-      );
-      expect(w, isA<Text>());
-      expect(legacyBuilt, 1);
-    });
-
-    testWidgets('on: OwnerShell, the legacy builder is not called',
-        (tester) async {
-      var legacyBuilt = 0;
-      final w = ownerRootScreen(
-        redesign: true,
-        legacy: () {
-          legacyBuilt++;
-          return const SizedBox();
-        },
-      );
-      expect(w, isA<OwnerShell>());
-      expect(legacyBuilt, 0);
-    });
-
-    testWidgets('default follows the flag (off in tests)', (tester) async {
-      final w = ownerRootScreen(legacy: () => const Text('legacy'));
-      expect(w, isA<Text>());
-    });
-
-    test('HomeScreen skips the old dashboard fetch only when on', () {
-      expect(runLegacyOwnerDashboardFetch(redesign: false), isTrue);
-      expect(runLegacyOwnerDashboardFetch(redesign: true), isFalse);
-      expect(runLegacyOwnerDashboardFetch(), isTrue);
-    });
-  });
-
   group('OwnerShell', () {
     OwnerTestDeps deps0() {
       final deps = OwnerTestDeps();

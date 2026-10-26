@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/feature_flags.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
@@ -15,19 +14,6 @@ import 'plan_rules.dart';
 import 'owner_controller.dart';
 import 'team_page.dart';
 import 'today_page.dart';
-
-/// The owner's root screen: the redesigned [OwnerShell] when [redesign]
-/// (default: the `QD_REDESIGN_OWNER` flag) is on, otherwise [legacy] (the
-/// existing owner dashboard built by HomeScreen).
-Widget ownerRootScreen(
-        {bool redesign = kRedesignOwner, required Widget Function() legacy}) =>
-    redesign ? const OwnerShell() : legacy();
-
-/// Whether HomeScreen still runs the old owner dashboard fetch (wallet,
-/// subscription, ledger and owner jobs) when it opens. With the redesign
-/// on, the shell and its pages load what they show, so it is skipped.
-bool runLegacyOwnerDashboardFetch({bool redesign = kRedesignOwner}) =>
-    !redesign;
 
 /// Redesigned owner shell (FE-OWNER-1): Today / Orders / Team / Account with
 /// a [QdBottomNav]. Account is the shared account

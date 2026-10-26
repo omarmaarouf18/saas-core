@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/features/auth/redesign_update_gate.dart';
+import 'package:frontend/features/auth/update_gate.dart';
 import 'package:frontend/features/auth/update_required_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/ui/qd_launch.dart';
@@ -110,7 +110,7 @@ void main() {
       (tester) async {
     usePhone(tester);
     final key = GlobalKey<NavigatorState>();
-    final gate = RedesignUpdateGate(key);
+    final gate = UpdateGate(key);
     await tester.pumpWidget(MaterialApp(
       navigatorKey: key,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
