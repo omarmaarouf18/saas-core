@@ -2948,7 +2948,37 @@ func (a *Auth) ResendOTP(w http.ResponseWriter, r *http.Request) {
 
 	user := a.store.GetByEmail(ctx, req.Email)
 	if user != nil {
-		// Existing user records in DB are already confirmed accounts.
+		// If user has an active, unverified 2FA login challenge, generate and dispatch a new OTP.
+		if user.OTPCode != "" && !user.OTPVerified && user.EffectiveAccountStatus() != models.AccountStatusSuspended && user.IsActive {
+			otpCode, err := generate6DigitOTP()
+			if err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to generate OTP", err)
+				return
+			}
+			if err := a.store.SetOTP(ctx, user.Email, otpCode); err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to set OTP", err)
+				return
+			}
+			if err := a.dispatcher.Dispatch(user.Email, otpCode); err != nil {
+				log.Printf("[AUTH] OTP resend dispatch error via %s: %v", a.dispatcher.Name(), err)
+			}
+			if a.isLocal {
+				log.Printf("[AUTH] OTP generated for 2FA login resend: email=%s code=%s dispatcher=%s",
+					user.Email, otpCode, a.dispatcher.Name())
+				genericResponse["dev_otp"] = otpCode
+			} else {
+				log.Printf("[AUTH] OTP generated for 2FA login resend: email=%s dispatcher=%s",
+					user.Email, a.dispatcher.Name())
+			}
+			a.limiter.RecordFailure(clientIP)
+			a.limiter.RecordFailure(req.Email)
+			writeJSON(w, http.StatusOK, genericResponse)
+			return
+		}
+
+		// Existing user without pending login challenge: record limiter failure and return generic response
+		a.limiter.RecordFailure(clientIP)
+		a.limiter.RecordFailure(req.Email)
 		writeJSON(w, http.StatusOK, genericResponse)
 		return
 	}
