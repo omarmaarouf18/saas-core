@@ -8,7 +8,6 @@ import '../../ui/qd_ui.dart';
 import 'booking_page.dart';
 import 'customer_format.dart';
 import 'customer_location.dart';
-import 'customer_theme.dart';
 import 'picker_page.dart';
 import 'price_estimate.dart';
 
@@ -62,8 +61,8 @@ class CustomerMarketPage extends StatefulWidget {
 
   static Future<void> open(BuildContext context,
           {String? category, PickedPlace? pickup}) =>
-      Navigator.of(context).push<void>(customerRoute(
-        (_) => CustomerMarketPage(category: category, pickup: pickup),
+      Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => CustomerMarketPage(category: category, pickup: pickup),
       ));
 
   @override
@@ -145,9 +144,7 @@ class _CustomerMarketPageState extends State<CustomerMarketPage> {
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(QdRadius.sheet)),
       ),
-      builder: (_) => CustomerTheme(
-        child: _FilterSheet(radius: _radius, place: _place),
-      ),
+      builder: (_) => _FilterSheet(radius: _radius, place: _place),
     );
     if (result == null || !mounted) return;
     setState(() {

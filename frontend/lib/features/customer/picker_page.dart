@@ -8,7 +8,6 @@ import '../../l10n/l10n.dart';
 import '../../ui/qd_ui.dart';
 import 'booking_rules.dart';
 import 'customer_location.dart';
-import 'customer_theme.dart';
 
 /// Max landmark note length, as the old picker dialog and the backend.
 const int kAddressNoteMaxLength = 500;
@@ -62,8 +61,8 @@ class CustomerPickerPage extends StatefulWidget {
     PickedPlace? initial,
     bool showNote = true,
   }) =>
-      Navigator.of(context).push<PickedPlace>(customerRoute(
-        (_) => CustomerPickerPage(
+      Navigator.of(context).push<PickedPlace>(MaterialPageRoute(
+        builder: (_) => CustomerPickerPage(
             title: title, initial: initial, showNote: showNote),
       ));
 

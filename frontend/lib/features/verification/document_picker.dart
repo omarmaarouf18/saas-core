@@ -58,28 +58,26 @@ Future<DocumentSource?> showDocumentSourceSheet(
     context,
     title: l10n.vrfSourceTitle(slotTitle),
     // The sheet lives in the navigator overlay, outside the page theme.
-    child: QdThemeScope(
-      child: Builder(builder: (sheetContext) {
-        Widget tile(DocumentSource s, IconData icon, String title,
-                {String? subtitle}) =>
-            QdListTile(
-              key: Key('vrf_source_${s.name}'),
-              icon: icon,
-              title: title,
-              subtitle: subtitle,
-              onTap: () => Navigator.of(sheetContext).pop(s),
-            );
-        return QdListGroup(children: [
-          tile(DocumentSource.camera, Icons.photo_camera_outlined,
-              l10n.vrfSourceCamera),
-          tile(DocumentSource.gallery, Icons.photo_library_outlined,
-              l10n.vrfSourceGallery),
-          tile(DocumentSource.file, Icons.attach_file, l10n.vrfSourceFile,
-              subtitle: allowPdf
-                  ? l10n.vrfSourceFileHintPdf
-                  : l10n.vrfSourceFileHintPhoto),
-        ]);
-      }),
-    ),
+    child: Builder(builder: (sheetContext) {
+      Widget tile(DocumentSource s, IconData icon, String title,
+              {String? subtitle}) =>
+          QdListTile(
+            key: Key('vrf_source_${s.name}'),
+            icon: icon,
+            title: title,
+            subtitle: subtitle,
+            onTap: () => Navigator.of(sheetContext).pop(s),
+          );
+      return QdListGroup(children: [
+        tile(DocumentSource.camera, Icons.photo_camera_outlined,
+            l10n.vrfSourceCamera),
+        tile(DocumentSource.gallery, Icons.photo_library_outlined,
+            l10n.vrfSourceGallery),
+        tile(DocumentSource.file, Icons.attach_file, l10n.vrfSourceFile,
+            subtitle: allowPdf
+                ? l10n.vrfSourceFileHintPdf
+                : l10n.vrfSourceFileHintPhoto),
+      ]);
+    }),
   );
 }

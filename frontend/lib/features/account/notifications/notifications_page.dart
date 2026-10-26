@@ -36,8 +36,8 @@ class NotificationsPage extends StatefulWidget {
   /// switch to its tabs, see [NotificationShellScope]).
   static Future<void> open(BuildContext context) {
     final links = NotificationLinks.of(context);
-    return Navigator.of(context)
-        .push<void>(qdPageRoute((_) => NotificationsPage(links: links)));
+    return Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => NotificationsPage(links: links)));
   }
 
   @override
@@ -88,32 +88,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final provider = context.read<NotificationsProvider>();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => QdThemeScope(
-        child: Builder(builder: (ctx) {
-          final c = QdColors.of(ctx);
-          return AlertDialog(
-            backgroundColor: c.surface,
-            title: Text(l10n.ntfClearTitle,
-                style: QdText.header.copyWith(color: c.textPrimary)),
-            content: Text(l10n.ntfClearBody,
-                style: QdText.body.copyWith(color: c.textSecondary)),
-            actions: [
-              QdButton.text(
-                key: const Key('ntf_clear_cancel'),
-                label: l10n.acctCancel,
-                small: true,
-                onPressed: () => Navigator.of(ctx).pop(false),
-              ),
-              QdButton.destructive(
-                key: const Key('ntf_clear_confirm'),
-                label: l10n.ntfClear,
-                small: true,
-                onPressed: () => Navigator.of(ctx).pop(true),
-              ),
-            ],
-          );
-        }),
-      ),
+      builder: (ctx) => Builder(builder: (ctx) {
+        final c = QdColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: c.surface,
+          title: Text(l10n.ntfClearTitle,
+              style: QdText.header.copyWith(color: c.textPrimary)),
+          content: Text(l10n.ntfClearBody,
+              style: QdText.body.copyWith(color: c.textSecondary)),
+          actions: [
+            QdButton.text(
+              key: const Key('ntf_clear_cancel'),
+              label: l10n.acctCancel,
+              small: true,
+              onPressed: () => Navigator.of(ctx).pop(false),
+            ),
+            QdButton.destructive(
+              key: const Key('ntf_clear_confirm'),
+              label: l10n.ntfClear,
+              small: true,
+              onPressed: () => Navigator.of(ctx).pop(true),
+            ),
+          ],
+        );
+      }),
     );
     if (ok == true && mounted) await provider.clearAll();
   }

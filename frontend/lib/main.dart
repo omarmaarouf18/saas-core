@@ -10,7 +10,6 @@ import 'package:frontend/l10n/l10n.dart';
 import 'core/api_client.dart';
 import 'core/feature_flags.dart';
 import 'core/update_gate.dart';
-import 'core/theme.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/auth/launch_splash.dart';
 import 'features/auth/redesign_update_gate.dart';
@@ -31,7 +30,7 @@ import 'screens/component_library_screen.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
 import 'ui/qd_licenses.dart';
-import 'ui/qd_theme_scope.dart';
+import 'ui/qd_theme.dart';
 
 class DevHttpOverrides extends HttpOverrides {
   @override
@@ -113,8 +112,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: appNavigatorKey,
       title: 'Quick Delivery',
-      theme: quickDeliveryTheme,
-      darkTheme: quickDeliveryDarkTheme,
+      // Redesign A, app-wide (FE-CLEANUP): every page, dialog and sheet
+      // gets the QdColors extension from here.
+      theme: qdLightTheme,
+      darkTheme: qdDarkTheme,
       themeMode: themeProvider.themeMode,
       locale: localeProvider.locale,
       localizationsDelegates: const [
@@ -177,12 +178,11 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     // FE-AUTH-ACCOUNT: redesigned signed-out flow behind QD_REDESIGN_AUTH.
     if (kRedesignAuth) {
-      return const RedesignAuthGate(
-          splash: QdThemeScope(child: LaunchSplash()));
+      return const RedesignAuthGate(splash: LaunchSplash());
     }
     final auth = Provider.of<AuthProvider>(context);
     if (auth.isRestoringSession) {
-      return const QdThemeScope(child: LaunchSplash());
+      return const LaunchSplash();
     }
     return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
   }

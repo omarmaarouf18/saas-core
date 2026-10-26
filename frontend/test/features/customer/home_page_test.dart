@@ -10,8 +10,8 @@ import 'customer_harness.dart';
 Future<void> _pumpShell(WidgetTester tester, CustomerTestDeps deps,
     {Locale locale = en, bool settle = true}) async {
   usePhone(tester);
-  await tester.pumpWidget(customerApp(deps, CustomerShell(now: () => fixedNow),
-      locale: locale, wrapTheme: false));
+  await tester.pumpWidget(
+      customerApp(deps, CustomerShell(now: () => fixedNow), locale: locale));
   if (settle) await tester.pumpAndSettle();
 }
 

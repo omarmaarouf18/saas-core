@@ -14,7 +14,6 @@ import 'booking_rules.dart';
 import 'customer_format.dart';
 import 'customer_location.dart';
 import 'customer_nav.dart';
-import 'customer_theme.dart';
 import 'picker_page.dart';
 import 'price_estimate.dart';
 
@@ -43,8 +42,8 @@ class CustomerBookingPage extends StatefulWidget {
 
   static Future<void> open(BuildContext context,
           {required MarketplaceService service, required PickedPlace pickup}) =>
-      Navigator.of(context).push<void>(customerRoute(
-        (_) => CustomerBookingPage(service: service, pickup: pickup),
+      Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => CustomerBookingPage(service: service, pickup: pickup),
       ));
 
   @override

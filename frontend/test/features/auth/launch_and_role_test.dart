@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/auth/launch_splash.dart';
 import 'package:frontend/features/auth/unsupported_role_page.dart';
-import 'package:frontend/ui/qd_theme_scope.dart';
 
 import 'auth_harness.dart';
 
@@ -11,8 +10,7 @@ void main() {
       (tester) async {
     usePhone(tester);
     final deps = AuthTestDeps();
-    await tester
-        .pumpWidget(authApp(deps, const QdThemeScope(child: LaunchSplash())));
+    await tester.pumpWidget(authApp(deps, const LaunchSplash()));
     expect(find.byKey(const Key('auth_splash_screen')), findsOneWidget);
     expect(find.text('Quick Delivery'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);

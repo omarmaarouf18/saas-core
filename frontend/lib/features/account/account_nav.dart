@@ -16,7 +16,7 @@ class AccountNav {
 
   /// Pushes a redesigned account page.
   Future<T?> push<T>(BuildContext context, WidgetBuilder page) =>
-      Navigator.of(context).push<T>(qdPageRoute<T>(page));
+      Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: page));
 
   Future<void> openNotifications(BuildContext context) =>
       NotificationsPage.open(context);

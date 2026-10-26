@@ -97,62 +97,60 @@ Future<void> showVerificationRejectedDialog(BuildContext context,
     {String? reason}) {
   return showDialog<void>(
     context: context,
-    builder: (ctx) => QdThemeScope(
-      child: Builder(builder: (ctx) {
-        final l10n = AppLocalizations.of(ctx)!;
-        final c = QdColors.of(ctx);
-        return AlertDialog(
-          key: const Key('vrf_rejected_dialog'),
-          backgroundColor: c.surface,
-          icon: ExcludeSemantics(
-            child: Container(
-              width: QdSize.iconTile,
-              height: QdSize.iconTile,
-              decoration: BoxDecoration(
-                color: c.dangerBg,
-                borderRadius: BorderRadius.circular(QdRadius.sm),
-              ),
-              child: Icon(Icons.block, size: QdSize.icon, color: c.danger),
+    builder: (ctx) => Builder(builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx)!;
+      final c = QdColors.of(ctx);
+      return AlertDialog(
+        key: const Key('vrf_rejected_dialog'),
+        backgroundColor: c.surface,
+        icon: ExcludeSemantics(
+          child: Container(
+            width: QdSize.iconTile,
+            height: QdSize.iconTile,
+            decoration: BoxDecoration(
+              color: c.dangerBg,
+              borderRadius: BorderRadius.circular(QdRadius.sm),
             ),
+            child: Icon(Icons.block, size: QdSize.icon, color: c.danger),
           ),
-          title: Text(l10n.vrfStateRejectedTitle,
-              style: QdText.header.copyWith(color: c.textPrimary)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                reason == null
-                    ? l10n.vrfRejectedNoReason
-                    : l10n.vrfRejectedReason(reason),
-                key: const Key('vrf_rejected_reason'),
-                style: QdText.body.copyWith(color: c.textPrimary),
-              ),
-              const SizedBox(height: QdSpace.x2),
-              Text(l10n.vrfRejectedHint,
-                  style: QdText.secondary.copyWith(color: c.textSecondary)),
-            ],
-          ),
-          actions: [
-            QdButton.text(
-              key: const Key('vrf_rejected_close'),
-              label: l10n.acctClose,
-              small: true,
-              onPressed: () => Navigator.of(ctx).pop(),
+        ),
+        title: Text(l10n.vrfStateRejectedTitle,
+            style: QdText.header.copyWith(color: c.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              reason == null
+                  ? l10n.vrfRejectedNoReason
+                  : l10n.vrfRejectedReason(reason),
+              key: const Key('vrf_rejected_reason'),
+              style: QdText.body.copyWith(color: c.textPrimary),
             ),
-            QdButton(
-              key: const Key('vrf_rejected_open'),
-              label: l10n.vrfRejectedOpen,
-              small: true,
-              onPressed: () {
-                final nav = Navigator.of(ctx);
-                nav.pop();
-                VerificationPage.open(nav.context);
-              },
-            ),
+            const SizedBox(height: QdSpace.x2),
+            Text(l10n.vrfRejectedHint,
+                style: QdText.secondary.copyWith(color: c.textSecondary)),
           ],
-        );
-      }),
-    ),
+        ),
+        actions: [
+          QdButton.text(
+            key: const Key('vrf_rejected_close'),
+            label: l10n.acctClose,
+            small: true,
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          QdButton(
+            key: const Key('vrf_rejected_open'),
+            label: l10n.vrfRejectedOpen,
+            small: true,
+            onPressed: () {
+              final nav = Navigator.of(ctx);
+              nav.pop();
+              VerificationPage.open(nav.context);
+            },
+          ),
+        ],
+      );
+    }),
   );
 }

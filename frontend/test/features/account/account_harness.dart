@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/account/account_nav.dart';
 import 'package:frontend/models/notification_model.dart';
 import 'package:frontend/providers/notifications_provider.dart';
-import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_harness.dart';
@@ -51,12 +50,12 @@ class AccountTestDeps extends AuthTestDeps {
   final RecordingAccountNav accountNav = RecordingAccountNav();
 }
 
-/// An account page inside the auth test app, under the redesign theme (in
-/// the app it sits in the customer shell, which provides it).
+/// An account page inside the auth test app (the app theme, as in
+/// main.dart).
 Widget accountApp(AccountTestDeps deps, Widget page, {Locale locale = en}) =>
     authApp(
       deps,
-      AccountNavScope(nav: deps.accountNav, child: QdThemeScope(child: page)),
+      AccountNavScope(nav: deps.accountNav, child: page),
       locale: locale,
     );
 

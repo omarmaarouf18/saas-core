@@ -4,7 +4,7 @@ import '../../../l10n/l10n.dart';
 import '../../../ui/qd_ui.dart';
 
 /// Page frame of the signed-out screens (A-Login, A-Signup, A-OTP): white
-/// page under the redesign theme, 24 dp sides, an optional back button
+/// page, 24 dp sides, an optional back button
 /// and header actions on one row, the content, and a footer pinned to the
 /// bottom when the content is short (scrolls with it when long).
 class AuthScaffold extends StatelessWidget {
@@ -25,62 +25,60 @@ class AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return QdThemeScope(
-      child: Builder(builder: (context) {
-        final c = QdColors.of(context);
-        final header = onBack == null && actions.isEmpty
-            ? null
-            : Row(
-                children: [
-                  if (onBack != null)
-                    // The mockups start the back button 12 dp into the
-                    // gutter so its glyph lines up with the text below.
-                    Transform.translate(
-                      offset: Offset(
-                          Directionality.of(context) == TextDirection.rtl
-                              ? 12
-                              : -12,
-                          0),
-                      child: IconButton(
-                        key: const Key('auth_back'),
-                        onPressed: onBack,
-                        tooltip: context.l10n.authBack,
-                        icon: Icon(Icons.arrow_back, color: c.textPrimary),
-                      ),
+    return Builder(builder: (context) {
+      final c = QdColors.of(context);
+      final header = onBack == null && actions.isEmpty
+          ? null
+          : Row(
+              children: [
+                if (onBack != null)
+                  // The mockups start the back button 12 dp into the
+                  // gutter so its glyph lines up with the text below.
+                  Transform.translate(
+                    offset: Offset(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? 12
+                            : -12,
+                        0),
+                    child: IconButton(
+                      key: const Key('auth_back'),
+                      onPressed: onBack,
+                      tooltip: context.l10n.authBack,
+                      icon: Icon(Icons.arrow_back, color: c.textPrimary),
                     ),
-                  const Spacer(),
-                  ...actions,
-                ],
-              );
-        return Scaffold(
-          backgroundColor: c.surface,
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    // 440 dp of content plus the 24 dp sides.
-                    constraints: BoxConstraints(
-                      maxWidth: 488,
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                            QdSpace.x6, QdSpace.x5, QdSpace.x6, 28),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (header != null) header,
-                            ...children,
-                            if (footer != null) ...[
-                              const Spacer(),
-                              const SizedBox(height: QdSpace.x6),
-                              footer!,
-                            ],
+                  ),
+                const Spacer(),
+                ...actions,
+              ],
+            );
+      return Scaffold(
+        backgroundColor: c.surface,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  // 440 dp of content plus the 24 dp sides.
+                  constraints: BoxConstraints(
+                    maxWidth: 488,
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          QdSpace.x6, QdSpace.x5, QdSpace.x6, 28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (header != null) header,
+                          ...children,
+                          if (footer != null) ...[
+                            const Spacer(),
+                            const SizedBox(height: QdSpace.x6),
+                            footer!,
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -88,9 +86,9 @@ class AuthScaffold extends StatelessWidget {
               ),
             ),
           ),
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 }
 

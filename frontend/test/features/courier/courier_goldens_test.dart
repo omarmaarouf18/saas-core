@@ -9,7 +9,8 @@ import 'package:frontend/models/job.dart';
 import 'courier_harness.dart';
 
 // Golden snapshots of the FE-COURIER pages, 360x800, light, AR-RTL and
-// EN-LTR, with the bundled Plex font. Regenerate with:
+// EN-LTR (plus the shell and the current job in dark, EN-LTR), with the
+// bundled Plex font. Regenerate with:
 //   flutter test --update-goldens test/features/courier/courier_goldens_test.dart
 
 String _t(Locale l, String en, String ar) => l.languageCode == 'ar' ? ar : en;
@@ -46,23 +47,48 @@ Future<void> _golden(
   _Act? act,
   CourierTestDeps? deps,
   bool withController = true,
+  ThemeMode themeMode = ThemeMode.light,
 }) async {
   usePhone(tester);
   final d = deps ?? CourierTestDeps();
   d.notifications.notifications = [notification('n1', type: 'chat')];
   setup?.call(d, locale);
   if (withController) await d.controller.refresh();
-  await tester.pumpWidget(
-      courierApp(d, page, locale: locale, withController: withController));
+  await tester.pumpWidget(courierApp(d, page,
+      locale: locale, withController: withController, themeMode: themeMode));
   await tester.pumpAndSettle();
   if (act != null) await act(tester);
-  final dir = locale.languageCode == 'ar' ? 'ar_rtl' : 'en_ltr';
+  final dir = (themeMode == ThemeMode.dark ? 'dark_' : '') +
+      (locale.languageCode == 'ar' ? 'ar_rtl' : 'en_ltr');
   await expectLater(find.byType(MaterialApp),
       matchesGoldenFile('goldens/cour_${name}_${dir}_360x800.png'));
 }
 
 void main() {
   setUpAll(loadPlexFont);
+
+  // FE-CLEANUP dark review: the shell and the current job, dark, EN-LTR.
+  testWidgets('GOLDEN idle dark en_ltr', (tester) async {
+    await _golden(
+      tester,
+      'idle',
+      const Locale('en'),
+      CourierShell(now: () => courierNow),
+      withController: false,
+      themeMode: ThemeMode.dark,
+      deps: CourierTestDeps(
+          auth: FakeCourierAuth(kyeStatus: 'pending_super_admin_approval')),
+    );
+  });
+
+  testWidgets('GOLDEN active deliver dark en_ltr', (tester) async {
+    await _golden(
+        tester, 'active_deliver', const Locale('en'), const CourierTaskPage(),
+        themeMode: ThemeMode.dark, setup: (d, l) {
+      d.location.lastKnownPosition = position(30.0500, 31.2300);
+      d.jobs.seed([_active(l, request: 'pending')]);
+    });
+  });
 
   for (final l in bothLocales) {
     final dir = l.languageCode == 'ar' ? 'ar_rtl' : 'en_ltr';

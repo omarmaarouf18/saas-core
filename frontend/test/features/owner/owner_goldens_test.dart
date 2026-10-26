@@ -11,7 +11,8 @@ import 'package:frontend/features/owner/today_page.dart';
 import 'owner_harness.dart';
 
 // Golden snapshots of the FE-OWNER-1 owner pages, 360x800, light, AR-RTL
-// and EN-LTR, with the bundled Plex font. Regenerate with:
+// and EN-LTR (plus the shell and the order detail in dark, EN-LTR), with
+// the bundled Plex font. Regenerate with:
 //   flutter test --update-goldens test/features/owner/owner_goldens_test.dart
 
 typedef _Setup = void Function(OwnerTestDeps deps, Locale locale);
@@ -211,6 +212,29 @@ void main() {
       );
     });
   }
+
+  // FE-CLEANUP dark review: the shell and the order detail, dark, EN-LTR.
+  testWidgets('GOLDEN owner shell dark en_ltr', (tester) async {
+    usePhone(tester);
+    final deps = OwnerTestDeps();
+    _todayData(deps, const Locale('en'));
+    await tester.pumpWidget(ownerApp(deps, OwnerShell(now: () => ownerNow),
+        withData: false, themeMode: ThemeMode.dark));
+    await tester.pumpAndSettle();
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('goldens/own_shell_dark_en_ltr_360x800.png'));
+  });
+
+  testWidgets('GOLDEN owner order dark en_ltr', (tester) async {
+    usePhone(tester);
+    final deps = OwnerTestDeps();
+    _orderWithRequest(deps, const Locale('en'));
+    await pumpOwner(
+        tester, deps, const OwnerOrderDetailPage(jobId: 'a1b2c3d4e5f6'),
+        themeMode: ThemeMode.dark);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('goldens/own_order_dark_en_ltr_360x800.png'));
+  });
 
   _sheets.forEach((name, entry) {
     for (final locale in bothLocales) {

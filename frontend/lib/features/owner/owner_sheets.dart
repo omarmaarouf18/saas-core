@@ -5,9 +5,8 @@ import '../../l10n/l10n.dart';
 import '../../ui/qd_ui.dart';
 
 /// Sheets and notices shared by the redesigned owner pages (FE-OWNER-1).
-/// Sheets open in the root navigator's overlay, outside the page's theme
-/// and providers, so each one is wrapped in [QdThemeScope] and gets what
-/// it needs through its constructor.
+/// Sheets open in the root navigator's overlay, outside the page's
+/// providers, so each one gets what it needs through its constructor.
 
 /// A SnackBar notice, with a retry action when [onRetry] is given.
 void showOwnerNotice(BuildContext context, String message,
@@ -41,11 +40,9 @@ Future<T?> showOwnerSheet<T>(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(QdRadius.sheet)),
     ),
-    builder: (ctx) => QdThemeScope(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: Builder(builder: builder),
-      ),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+      child: Builder(builder: builder),
     ),
   );
 }

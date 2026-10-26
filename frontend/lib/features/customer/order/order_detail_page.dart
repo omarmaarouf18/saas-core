@@ -6,7 +6,6 @@ import '../../../models/job.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../ui/qd_ui.dart';
-import '../customer_theme.dart';
 import 'active_view.dart';
 import 'closed_views.dart';
 import 'completed_view.dart';
@@ -41,8 +40,8 @@ class OrderDetailPage extends StatefulWidget {
   /// booking pages so "back" returns to the shell.
   static Future<void> open(BuildContext context, Job job,
       {bool replaceStack = false}) {
-    final route = customerRoute<void>(
-      (_) => OrderDetailPage(jobId: job.id, initialJob: job),
+    final route = MaterialPageRoute<void>(
+      builder: (_) => OrderDetailPage(jobId: job.id, initialJob: job),
     );
     final nav = Navigator.of(context);
     if (replaceStack) return nav.pushAndRemoveUntil(route, (r) => r.isFirst);

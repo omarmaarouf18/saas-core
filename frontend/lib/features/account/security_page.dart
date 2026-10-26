@@ -52,32 +52,30 @@ class _SecurityPageState extends State<SecurityPage> {
     final l10n = context.l10n;
     return showDialog<bool>(
       context: context,
-      builder: (ctx) => QdThemeScope(
-        child: Builder(builder: (ctx) {
-          final c = QdColors.of(ctx);
-          return AlertDialog(
-            backgroundColor: c.surface,
-            title: Text(l10n.acctTwoFactorOffTitle,
-                style: QdText.header.copyWith(color: c.textPrimary)),
-            content: Text(l10n.acctTwoFactorOffBody,
-                style: QdText.body.copyWith(color: c.textSecondary)),
-            actions: [
-              QdButton.text(
-                key: const Key('two_factor_off_cancel'),
-                label: l10n.acctCancel,
-                small: true,
-                onPressed: () => Navigator.of(ctx).pop(false),
-              ),
-              QdButton.destructive(
-                key: const Key('two_factor_off_confirm'),
-                label: l10n.acctTwoFactorTurnOff,
-                small: true,
-                onPressed: () => Navigator.of(ctx).pop(true),
-              ),
-            ],
-          );
-        }),
-      ),
+      builder: (ctx) => Builder(builder: (ctx) {
+        final c = QdColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: c.surface,
+          title: Text(l10n.acctTwoFactorOffTitle,
+              style: QdText.header.copyWith(color: c.textPrimary)),
+          content: Text(l10n.acctTwoFactorOffBody,
+              style: QdText.body.copyWith(color: c.textSecondary)),
+          actions: [
+            QdButton.text(
+              key: const Key('two_factor_off_cancel'),
+              label: l10n.acctCancel,
+              small: true,
+              onPressed: () => Navigator.of(ctx).pop(false),
+            ),
+            QdButton.destructive(
+              key: const Key('two_factor_off_confirm'),
+              label: l10n.acctTwoFactorTurnOff,
+              small: true,
+              onPressed: () => Navigator.of(ctx).pop(true),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -128,7 +126,7 @@ class _PasswordDialog extends StatefulWidget {
   static Future<bool?> show(BuildContext context) => showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const QdThemeScope(child: _PasswordDialog()),
+        builder: (_) => const _PasswordDialog(),
       );
 
   @override

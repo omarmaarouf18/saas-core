@@ -25,11 +25,9 @@ Future<bool?> _showSheet(BuildContext context, WidgetBuilder builder) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(QdRadius.sheet)),
     ),
-    builder: (ctx) => QdThemeScope(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: Builder(builder: builder),
-      ),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+      child: Builder(builder: builder),
     ),
   );
 }

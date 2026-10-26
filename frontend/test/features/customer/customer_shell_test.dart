@@ -23,9 +23,8 @@ void main() {
     testWidgets('flag off: role user still gets the old CustomerHomeScreen',
         (tester) async {
       usePhone(tester);
-      await tester.pumpWidget(customerApp(
-          CustomerTestDeps(), const HomeScreen(),
-          wrapTheme: false));
+      await tester
+          .pumpWidget(customerApp(CustomerTestDeps(), const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.byType(CustomerHomeScreen), findsOneWidget);
       expect(find.byType(CustomerShell), findsNothing);
@@ -35,8 +34,7 @@ void main() {
   testWidgets('three tabs; switching tabs refreshes orders', (tester) async {
     usePhone(tester);
     final deps = CustomerTestDeps();
-    await tester
-        .pumpWidget(customerApp(deps, const CustomerShell(), wrapTheme: false));
+    await tester.pumpWidget(customerApp(deps, const CustomerShell()));
     await tester.pumpAndSettle();
     final nav = find.byKey(const Key('customer_shell_nav'));
     expect(
@@ -60,7 +58,6 @@ void main() {
       await tester.pumpWidget(customerApp(
         CustomerTestDeps(),
         const CustomerShell(),
-        wrapTheme: false,
         themeMode: dark ? ThemeMode.dark : ThemeMode.light,
       ));
       await tester.pumpAndSettle();

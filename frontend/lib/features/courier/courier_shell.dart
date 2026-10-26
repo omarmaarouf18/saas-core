@@ -29,7 +29,7 @@ Widget courierRootScreen({
     redesign ? CourierShell(initialIndex: initialIndex.clamp(0, 2)) : legacy();
 
 /// Redesigned courier shell (FE-COURIER): Task / My jobs / Account with a
-/// [QdBottomNav] under the redesign theme, or the blocked screen while the
+/// [QdBottomNav], or the blocked screen while the
 /// account is suspended or paused. A `job_alert` notification refreshes the
 /// jobs and shows a notice, as the old home screen did.
 class CourierShell extends StatefulWidget {
@@ -120,45 +120,43 @@ class _CourierShellState extends State<CourierShell> {
 
     return ChangeNotifierProvider<CourierController>.value(
       value: _ctl,
-      child: QdThemeScope(
-        child: blocked
-            ? const CourierBlockedPage()
-            : NotificationShellScope(
-                links: _links,
-                child: Builder(
-                  builder: (context) => Scaffold(
-                    key: const Key('courier_shell'),
-                    backgroundColor: QdColors.of(context).surface,
-                    body: IndexedStack(
-                      index: _index,
-                      children: [
-                        lazy(0, () => const CourierTaskPage()),
-                        lazy(1, () => const CourierJobsPage()),
-                        lazy(2, () => const AccountPage()),
-                      ],
-                    ),
-                    bottomNavigationBar: QdBottomNav(
-                      key: const Key('courier_shell_nav'),
-                      currentIndex: _index,
-                      onTap: _select,
-                      items: [
-                        QdNavItem(
-                            icon: Icons.inventory_2_outlined,
-                            activeIcon: Icons.inventory_2,
-                            label: l10n.courNavTask),
-                        QdNavItem(
-                            icon: Icons.format_list_bulleted,
-                            label: l10n.courNavJobs),
-                        QdNavItem(
-                            icon: Icons.person_outline,
-                            activeIcon: Icons.person,
-                            label: l10n.courNavAccount),
-                      ],
-                    ),
+      child: blocked
+          ? const CourierBlockedPage()
+          : NotificationShellScope(
+              links: _links,
+              child: Builder(
+                builder: (context) => Scaffold(
+                  key: const Key('courier_shell'),
+                  backgroundColor: QdColors.of(context).surface,
+                  body: IndexedStack(
+                    index: _index,
+                    children: [
+                      lazy(0, () => const CourierTaskPage()),
+                      lazy(1, () => const CourierJobsPage()),
+                      lazy(2, () => const AccountPage()),
+                    ],
+                  ),
+                  bottomNavigationBar: QdBottomNav(
+                    key: const Key('courier_shell_nav'),
+                    currentIndex: _index,
+                    onTap: _select,
+                    items: [
+                      QdNavItem(
+                          icon: Icons.inventory_2_outlined,
+                          activeIcon: Icons.inventory_2,
+                          label: l10n.courNavTask),
+                      QdNavItem(
+                          icon: Icons.format_list_bulleted,
+                          label: l10n.courNavJobs),
+                      QdNavItem(
+                          icon: Icons.person_outline,
+                          activeIcon: Icons.person,
+                          label: l10n.courNavAccount),
+                    ],
                   ),
                 ),
               ),
-      ),
+            ),
     );
   }
 }

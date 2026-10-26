@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../ui/qd_ui.dart';
 import '../account/notifications/notifications_page.dart';
 import '../account/support/tickets_page.dart';
 import '../verification/verification_page.dart';
@@ -14,17 +13,17 @@ import 'wallet_page.dart';
 
 /// Navigation for the redesigned owner pages (FE-OWNER-1).
 ///
-/// New pages are pushed with [push], which renders them under the redesign
-/// theme and re-provides the shell's [OwnerDataController] (pushed routes
-/// live in the navigator overlay, outside the shell's providers). Tests
+/// New pages are pushed with [push], which re-provides the shell's
+/// [OwnerDataController] (pushed routes live in the navigator overlay,
+/// outside the shell's providers). Tests
 /// swap this through [OwnerNavScope] to record hand-offs.
 class OwnerNav {
   const OwnerNav();
 
   Future<T?> push<T>(BuildContext context, WidgetBuilder page) {
     final data = context.read<OwnerDataController>();
-    return Navigator.of(context).push<T>(qdPageRoute<T>(
-      (_) => ChangeNotifierProvider<OwnerDataController>.value(
+    return Navigator.of(context).push<T>(MaterialPageRoute<T>(
+      builder: (_) => ChangeNotifierProvider<OwnerDataController>.value(
         value: data,
         child: Builder(builder: page),
       ),

@@ -31,6 +31,7 @@ Future<void> pumpOrder(
   DateTime Function()? now,
   FakeCourierLookup? lookup,
   bool settle = true,
+  ThemeMode themeMode = ThemeMode.light,
 }) async {
   usePhone(tester);
   deps.marketplace.nextStatus ??= job;
@@ -41,6 +42,7 @@ Future<void> pumpOrder(
       OrderDetailPage(
           jobId: job.id, initialJob: job, now: now ?? () => fixedNow),
       locale: locale,
+      themeMode: themeMode,
     ),
   ));
   if (settle) {

@@ -38,7 +38,7 @@ class EmailChangeSheet extends StatefulWidget {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: const QdThemeScope(child: EmailChangeSheet()),
+        child: const EmailChangeSheet(),
       ),
     );
   }

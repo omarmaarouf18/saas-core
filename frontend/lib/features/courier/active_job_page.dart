@@ -118,22 +118,20 @@ class _CourierActiveJobPageState extends State<CourierActiveJobPage> {
     await QdBottomSheet.show<void>(
       context,
       title: l10n.courOtherJobsTitle,
-      child: QdThemeScope(
-        child: Builder(
-          builder: (sheet) => QdListGroup(children: [
-            for (final j in running)
-              QdListTile(
-                key: Key('courier_running_${j.id}'),
-                title: placeOf(l10n, j.destination ?? j.location).title,
-                subtitle: jobRef(j),
-                badge: _PhaseChip(job: j),
-                onTap: () {
-                  ctl.select(j.id);
-                  Navigator.of(sheet).pop();
-                },
-              ),
-          ]),
-        ),
+      child: Builder(
+        builder: (sheet) => QdListGroup(children: [
+          for (final j in running)
+            QdListTile(
+              key: Key('courier_running_${j.id}'),
+              title: placeOf(l10n, j.destination ?? j.location).title,
+              subtitle: jobRef(j),
+              badge: _PhaseChip(job: j),
+              onTap: () {
+                ctl.select(j.id);
+                Navigator.of(sheet).pop();
+              },
+            ),
+        ]),
       ),
     );
   }

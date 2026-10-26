@@ -18,9 +18,8 @@ void main() {
   testWidgets('QD_REDESIGN_CUSTOMER on: the Account tab is AccountPage',
       (tester) async {
     usePhone(tester);
-    await tester.pumpWidget(customerApp(
-        CustomerTestDeps(), const CustomerShell(),
-        wrapTheme: false));
+    await tester
+        .pumpWidget(customerApp(CustomerTestDeps(), const CustomerShell()));
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(
         of: find.byKey(const Key('customer_shell_nav')),
@@ -35,8 +34,7 @@ void main() {
     // Default test viewport: the old LoginScreen overflows at 360 dp with
     // the test font (pre-existing, not part of this task).
     final deps = CustomerTestDeps()..auth.user = null;
-    await tester
-        .pumpWidget(customerApp(deps, const HomeScreen(), wrapTheme: false));
+    await tester.pumpWidget(customerApp(deps, const HomeScreen()));
     await tester.pump();
     expect(find.byType(LoginScreen), findsOneWidget);
   });

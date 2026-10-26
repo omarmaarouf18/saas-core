@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/core/theme.dart';
+import 'package:frontend/ui/qd_theme.dart';
 import 'package:frontend/features/auth/auth_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/user_profile.dart';
@@ -330,8 +330,8 @@ class AuthTestDeps {
   final List<SingleChildWidget> extra = [];
 }
 
-/// The app around an auth page: the old app theme (pages bring their own
-/// redesign theme), providers, the nav scope, and the locale from the
+/// The app around an auth page: the app theme (redesign A, as in
+/// main.dart), providers, the nav scope, and the locale from the
 /// locale provider when one was set (language switch), else [locale].
 Widget authApp(AuthTestDeps deps, Widget home, {Locale locale = en}) {
   return MultiProvider(
@@ -346,8 +346,8 @@ Widget authApp(AuthTestDeps deps, Widget home, {Locale locale = en}) {
       child: Consumer2<LocaleProvider, ThemeProvider>(
         builder: (context, l, t, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: quickDeliveryTheme,
-          darkTheme: quickDeliveryDarkTheme,
+          theme: qdLightTheme,
+          darkTheme: qdDarkTheme,
           themeMode: t.themeMode,
           locale: l.locale ?? locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,

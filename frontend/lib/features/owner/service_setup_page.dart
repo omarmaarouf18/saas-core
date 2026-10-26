@@ -41,7 +41,7 @@ class OwnerServicePage extends StatefulWidget {
   final ServiceTimePicker? pickTime;
 
   static Future<void> open(BuildContext context) => Navigator.of(context)
-      .push<void>(qdPageRoute((_) => const OwnerServicePage()));
+      .push<void>(MaterialPageRoute(builder: (_) => const OwnerServicePage()));
 
   @override
   State<OwnerServicePage> createState() => _OwnerServicePageState();
@@ -151,8 +151,8 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
     final initial =
         _hasPlace ? PickedPlace(latitude: _lat!, longitude: _lon!) : null;
     final pick = widget.pickPlace ??
-        (ctx, init) => Navigator.of(ctx).push<PickedPlace>(qdPageRoute(
-              (_) => CustomerPickerPage(
+        (ctx, init) => Navigator.of(ctx).push<PickedPlace>(MaterialPageRoute(
+              builder: (_) => CustomerPickerPage(
                 title: ctx.l10n.ownSvcPickerTitle,
                 initial: init,
                 showNote: false,
