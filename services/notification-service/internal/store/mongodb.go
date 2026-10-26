@@ -26,6 +26,7 @@ type Notification struct {
 	TenantID    string    `json:"tenant_id" bson:"tenant_id"`
 	UserID      string    `json:"user_id,omitempty" bson:"user_id,omitempty"`
 	UserIDs     []string  `json:"user_ids,omitempty" bson:"user_ids,omitempty"`
+	JobID       string    `json:"job_id,omitempty" bson:"job_id,omitempty"`
 	Global      bool      `json:"global" bson:"global"`
 	Title       string    `json:"title" bson:"title"`
 	Body        string    `json:"body" bson:"body"`

@@ -33,6 +33,7 @@ type Notification struct {
 	TenantID  string    `json:"tenant_id"`         // scope to tenant
 	UserID    string    `json:"user_id,omitempty"` // target user ID if single recipient
 	UserIDs   []string  `json:"user_ids,omitempty"`
+	JobID     string    `json:"job_id,omitempty"`
 	Global    bool      `json:"global"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
@@ -51,6 +52,7 @@ func (n Notification) ToClient() ClientNotification {
 		Type:      n.Type,
 		TenantID:  n.TenantID,
 		UserID:    n.UserID,
+		JobID:     n.JobID,
 		Title:     n.Title,
 		Body:      n.Body,
 		Timestamp: n.Timestamp,
@@ -63,6 +65,7 @@ type ClientNotification struct {
 	Type      string    `json:"type"`
 	TenantID  string    `json:"tenant_id"`
 	UserID    string    `json:"user_id,omitempty"`
+	JobID     string    `json:"job_id,omitempty"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
@@ -391,6 +394,9 @@ func (h *SSEHub) dispatchPush(n Notification) {
 		"id":        n.ID,
 		"type":      n.Type,
 		"tenant_id": n.TenantID,
+	}
+	if n.JobID != "" {
+		dataMap["job_id"] = n.JobID
 	}
 
 	for _, userID := range targetUserIDs {
