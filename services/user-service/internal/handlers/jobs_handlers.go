@@ -2551,9 +2551,16 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 				"code":    "job_not_found",
 				"message": "job not found",
 			})
+		case strings.Contains(msg, "job_state_changed"):
+			// Lost the CAS race: the job left the heading_to_pickup window
+			// between the read above and the update (BE-GAPS-FIX item 2).
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job state changed during pickup",
+				"code":    "job_state_changed",
+				"message": "job state changed during pickup",
+			})
 		default:
-			// Anything else (including losing the CAS race against an
-			// exit-from-active) is a concurrent-state conflict.
+			// Anything else (a store failure) stays a generic conflict.
 			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "job state changed during pickup", err)
 		}
 		return
