@@ -4945,5 +4945,18 @@
   "courJobGone": "This job no longer exists.",
   "@courJobGone": {
     "description": "FE-BE-GAPS item 6: job_not_found."
+  },
+  "authResendTooMany": "Too many codes sent. You can ask for a new one in {seconds} seconds.",
+  "@authResendTooMany": {
+    "description": "FE-BE-GAPS item 8: 429 on resend.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "authResendTooManyNoTime": "Too many codes sent. Wait a few minutes, then ask again.",
+  "@authResendTooManyNoTime": {
+    "description": "FE-BE-GAPS item 8: 429 without a wait."
   }
 }

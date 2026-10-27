@@ -3754,4 +3754,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courJobGone => 'الطلب ده مبقاش موجود.';
+
+  @override
+  String authResendTooMany(int seconds) {
+    return 'اتبعت أكواد كتير. تقدر تطلب كود جديد بعد $seconds ثانية.';
+  }
+
+  @override
+  String get authResendTooManyNoTime =>
+      'اتبعت أكواد كتير. استنى كام دقيقة وبعدين اطلب تاني.';
 }

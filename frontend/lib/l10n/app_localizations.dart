@@ -6769,6 +6769,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This job no longer exists.'**
   String get courJobGone;
+
+  /// FE-BE-GAPS item 8: 429 on resend.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes sent. You can ask for a new one in {seconds} seconds.'**
+  String authResendTooMany(int seconds);
+
+  /// FE-BE-GAPS item 8: 429 without a wait.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes sent. Wait a few minutes, then ask again.'**
+  String get authResendTooManyNoTime;
 }
 
 class _AppLocalizationsDelegate

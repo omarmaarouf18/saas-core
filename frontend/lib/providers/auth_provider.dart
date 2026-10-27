@@ -319,11 +319,14 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> resendOtp(String email) async {
     _isLoading = true;
     _error = null;
+    _lastErrorStatusCode = null;
     _lastErrorCode = null;
     _lastErrorReason = null;
     notifyListeners();
 
     try {
+      // One endpoint for both flows: a pending sign-up, or a pending 2FA
+      // sign-in challenge (USER-AUTH-BE item 6).
       final res = await apiClient.post('/auth/resend-otp', {
         'email': email,
       });
@@ -331,6 +334,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Resend OTP error: $e');
       _error = _fail(e);
+      // FE-BE-GAPS: the code screen words a 429 lockout itself.
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return null;
     } finally {
       _isLoading = false;

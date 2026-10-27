@@ -10,9 +10,15 @@ import 'auth_scaffold.dart';
 class OtpOutcome {
   const OtpOutcome.success({this.devOtp})
       : error = null,
-        retryable = true;
-  const OtpOutcome.failure(String this.error, {this.retryable = true})
+        retryable = true,
+        waitSeconds = null;
+  const OtpOutcome.failure(String this.error,
+      {this.retryable = true, this.waitSeconds})
       : devOtp = null;
+
+  /// A lockout's wait (429 "try again in N seconds"): the resend countdown
+  /// restarts with it, so "send again" comes back when the server allows.
+  final int? waitSeconds;
 
   /// Failure text, null on success.
   final String? error;
@@ -95,9 +101,9 @@ class _OtpCodeFormState extends State<OtpCodeForm> {
   static String? _clean(String? v) => v == null || v.isEmpty ? null : v;
 
   // Counted down in ticks (not wall-clock time) so tests can drive it.
-  void _startCooldown() {
+  void _startCooldown([int? seconds]) {
     _timer?.cancel();
-    _secondsLeft = widget.cooldownSeconds;
+    _secondsLeft = seconds ?? widget.cooldownSeconds;
     if (_secondsLeft <= 0) return;
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
@@ -147,6 +153,8 @@ class _OtpCodeFormState extends State<OtpCodeForm> {
       } else {
         _failure = outcome;
         _failureFromResend = true;
+        final wait = outcome.waitSeconds;
+        if (wait != null && wait > 0) _startCooldown(wait);
       }
     });
     if (outcome.ok && mounted) {

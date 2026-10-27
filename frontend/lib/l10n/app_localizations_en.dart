@@ -3810,4 +3810,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courJobGone => 'This job no longer exists.';
+
+  @override
+  String authResendTooMany(int seconds) {
+    return 'Too many codes sent. You can ask for a new one in $seconds seconds.';
+  }
+
+  @override
+  String get authResendTooManyNoTime =>
+      'Too many codes sent. Wait a few minutes, then ask again.';
 }

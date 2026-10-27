@@ -54,6 +54,24 @@ void main() {
       expect(deps.nav.homes, 0);
     });
 
+    testWidgets('2FA challenge: "send again" resends the sign-in code',
+        (tester) async {
+      final deps = AuthTestDeps();
+      await _pump(tester, deps, const LoginPage());
+      await _fillLogin(tester);
+      await tester.tap(find.byKey(const Key('login_submit')));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 60));
+      await tester.tap(find.byKey(const Key('otp_resend')));
+      await tester.pump();
+      // POST /auth/resend-otp for the challenge's email (USER-AUTH-BE
+      // item 6 resends a pending login challenge, not only a sign-up).
+      expect(deps.auth.calls,
+          ['login:mona@example.com', 'resendOtp:mona@example.com']);
+      expect(find.text('We sent you a new code.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 60));
+    });
+
     testWidgets('no second step: goes home', (tester) async {
       final deps = AuthTestDeps()..auth.loginAuthenticates = true;
       await _pump(tester, deps, const LoginPage());
