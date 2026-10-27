@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../l10n/app_localizations.dart';
+import '../../../l10n/l10n.dart';
 import '../../../models/notification_model.dart';
 import '../../../models/support_ticket.dart';
 import '../../verification/verification_page.dart';
@@ -36,35 +36,77 @@ enum NotificationTargetKind {
 
   /// Support: the ticket list.
   tickets,
+
+  /// The exact job [NotificationTarget.id] (the payload's `job_id`), for
+  /// the signed-in role: customer → the order page, owner → the order
+  /// detail, courier → the offer / current job (Task) or My jobs. Where
+  /// the shell cannot open a job, [NotificationTarget.fallback] is used.
+  job,
 }
 
 class NotificationTarget {
-  const NotificationTarget(this.kind, [this.id]);
+  const NotificationTarget(this.kind, [this.id, this.fallback]);
 
   static const none = NotificationTarget(NotificationTargetKind.none);
 
   final NotificationTargetKind kind;
 
   /// The ticket id ([NotificationTargetKind.ticket]) or the job id
-  /// ([NotificationTargetKind.order]).
+  /// ([NotificationTargetKind.order], [NotificationTargetKind.job]).
   final String? id;
+
+  /// For [NotificationTargetKind.job]: where the link led before job ids
+  /// were sent (by type alone).
+  final NotificationTarget? fallback;
 
   @override
   bool operator ==(Object other) =>
-      other is NotificationTarget && other.kind == kind && other.id == id;
+      other is NotificationTarget &&
+      other.kind == kind &&
+      other.id == id &&
+      other.fallback == fallback;
 
   @override
-  int get hashCode => Object.hash(kind, id);
+  int get hashCode => Object.hash(kind, id, fallback);
 
   @override
-  String toString() => 'NotificationTarget($kind, $id)';
+  String toString() => 'NotificationTarget($kind, $id'
+      '${fallback == null ? '' : ', fallback: $fallback'})';
 }
+
+/// Stable event types about one job (USER-AUTH-BE item 7 and the types
+/// the services sent before). With a `job_id` they open that job. Not all
+/// are emitted today (see the FE-BE-GAPS worklog): `job_booked`,
+/// `job_in_transit`, `job_delivered` and `job_completed` are listed by the
+/// backend task but no service sends them yet; they route the same way
+/// when they come.
+const Set<String> kJobEventTypes = {
+  'job_booked',
+  'job_accepted',
+  'job_picked_up',
+  'job_in_transit',
+  'job_delivered',
+  'job_completed',
+  'job_cancelled',
+  'job_unavailable',
+  'job_update',
+  'job_offer',
+  'job_alert',
+  'cancellation_requested',
+  'cancellation_request_expired',
+  'cancellation_resolved',
+  'dispute_resolved',
+};
 
 /// Customer notification types that are about an order. The payload has no
 /// job id (notification-service does not store one), so they open My
 /// orders.
 const Set<String> kOrderNotificationTypes = {
+  'job_booked',
   'job_accepted',
+  'job_picked_up',
+  'job_in_transit',
+  'job_delivered',
   'job_unavailable',
   'job_cancelled',
   'job_completed',
@@ -104,6 +146,20 @@ const Set<String> kCourierTaskNotificationTypes = {'job_offer', 'job_alert'};
 /// a courier page, and a role the app does not know gets none (the old
 /// screen linked whatever the role).
 NotificationTarget notificationTarget(NotificationModel n, String? role) {
+  final byType = _targetByType(n, role);
+  final jobId = n.jobId;
+  if (byType == NotificationTarget.none &&
+      !(role == 'user' || role == 'owner' || role == 'employee')) {
+    return byType;
+  }
+  if (jobId != null && kJobEventTypes.contains(n.type)) {
+    return NotificationTarget(NotificationTargetKind.job, jobId, byType);
+  }
+  return byType;
+}
+
+/// The link by type alone (no job id, or a type that is not about a job).
+NotificationTarget _targetByType(NotificationModel n, String? role) {
   if (role != 'user' && role != 'owner' && role != 'employee') {
     return NotificationTarget.none;
   }
@@ -191,6 +247,14 @@ String? ticketIdFromBody(String body) {
       return (l10n.ntfCancelledTitle, l10n.ntfOrdersBody);
     case 'job_completed':
       return (l10n.ntfCompletedTitle, l10n.ntfOrdersBody);
+    case 'job_picked_up':
+      return (l10n.ntfPickedUpTitle, l10n.ntfPickedUpBody);
+    case 'job_booked':
+      return (l10n.ntfBookedTitle, n.body);
+    case 'job_in_transit':
+      return (l10n.ntfInTransitTitle, n.body);
+    case 'job_delivered':
+      return (l10n.ntfDeliveredTitle, n.body);
     case 'ticket_resolved':
       // The resolution note follows "has been resolved: ".
       final i = n.body.indexOf('resolved: ');
@@ -237,6 +301,19 @@ List<(DateTime, List<NotificationModel>)> groupByDay(
   return groups;
 }
 
+/// "We couldn't open that order": a job link whose job is gone, is not the
+/// user's, or could not be loaded. The shell then shows its order list.
+void showJobNotFoundNotice(BuildContext context) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      key: const Key('ntf_job_missing'),
+      content: Text(context.l10n.ntfJobNotFound),
+    ));
+}
+
 /// What the signed-in role's shell can show for a notification link.
 /// Each shell provides its own through [NotificationShellScope]; a link the
 /// shell does not offer does nothing.
@@ -248,10 +325,17 @@ class NotificationShellLinks {
     this.openPlan,
     this.showTask,
     this.showJobs,
+    this.openJob,
   });
 
   /// Customer: the My orders tab. Owner: the Orders tab.
   final VoidCallback? showOrders;
+
+  /// Opens one job for this role (FE-BE-GAPS): customer → its order page,
+  /// owner → its order detail, courier → Task (offer / current job) or My
+  /// jobs. Each shell checks the job exists and is the user's, and says so
+  /// when it is not.
+  final void Function(String jobId)? openJob;
 
   /// Owner: the order detail of a job id.
   final void Function(String jobId)? openOrder;
@@ -300,6 +384,7 @@ class NotificationLinks {
     this.openJobs,
     this.openTicket,
     this.openTickets,
+    this.openJob,
   });
 
   /// Links for a notifications page opened from [context] (inside a role
@@ -313,7 +398,14 @@ class NotificationLinks {
             show();
           };
     final openOrder = shell?.openOrder;
+    final openJob = shell?.openJob;
     return NotificationLinks(
+      openJob: openJob == null
+          ? null
+          : (ctx, id) {
+              Navigator.of(ctx).popUntil((route) => route.isFirst);
+              openJob(id);
+            },
       openOrders: backTo(shell?.showOrders),
       openOrder: openOrder == null
           ? null
@@ -353,6 +445,9 @@ class NotificationLinks {
       {required bool resolved})? openTicket;
   final void Function(BuildContext context)? openTickets;
 
+  /// The exact job (see [NotificationShellLinks.openJob]).
+  final void Function(BuildContext context, String jobId)? openJob;
+
   /// Follows [target] from [context] (the notifications page).
   void follow(BuildContext context, NotificationTarget target,
       {bool resolved = false}) {
@@ -375,6 +470,13 @@ class NotificationLinks {
         openTicket?.call(context, target.id!, resolved: resolved);
       case NotificationTargetKind.tickets:
         openTickets?.call(context);
+      case NotificationTargetKind.job:
+        final open = openJob;
+        if (open != null) {
+          open(context, target.id!);
+        } else if (target.fallback != null) {
+          follow(context, target.fallback!, resolved: resolved);
+        }
       case NotificationTargetKind.none:
         break;
     }

@@ -1268,7 +1268,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get acctAddressesNote =>
-      'العناوين بتتحفظ كنص، من غير مكان على الخريطة.';
+      'كل عنوان ليه مكان على الخريطة، فبيملا الاستلام أو التسليم بلمسة واحدة وانت بتطلب.';
 
   @override
   String get acctAddressesEmpty => 'مفيش عناوين محفوظة لسه';
@@ -1758,7 +1758,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownOrdersTitle => 'الطلبات';
 
   @override
-  String get ownOrdersSearchHint => 'رقم الطلب أو اسم المندوب';
+  String get ownOrdersSearchHint => 'رقم الطلب أو اسم العميل أو المندوب';
 
   @override
   String get ownClearSearch => 'امسح البحث';
@@ -1953,18 +1953,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownEmpIdCheck => 'التحقق من الهوية';
-
-  @override
-  String get ownKyeApproved => 'متراجع ومقبول';
-
-  @override
-  String get ownKyePending => 'بيتراجع';
-
-  @override
-  String get ownKyeRejected => 'مرفوض';
-
-  @override
-  String get ownKyeMissing => 'المستندات ناقصة';
 
   @override
   String get ownEmpCurrentOrder => 'المهمة الحالية';
@@ -2219,7 +2207,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownSvcPhotoNote =>
-      'العملا هيشوفوا أول حرف من اسم الخدمة دلوقتي. رفع الصورة جاي قريب.';
+      'العملا هيشوفوا الصورة دي على كارت خدمتك. JPEG أو PNG، لحد 5 ميجا.';
 
   @override
   String get ownSvcName => 'اسم الخدمة زي ما العميل هيشوفه';
@@ -2343,10 +2331,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownSvcErrUnavailable => 'ده مش متاح دلوقتي. جرّب كمان شوية.';
-
-  @override
-  String get ownSvcErrPartial =>
-      'الخدمة اتعملت بس شوية تفاصيل متحفظتش. دوس احفظ تاني.';
 
   @override
   String get ownSvcCurrency => 'ج.م';
@@ -3545,4 +3529,238 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get roleUnsupportedBody =>
       'ادخل بحساب عميل أو صاحب شغل أو مندوب. حسابات الموظفين بتستخدم لوحة التحكم على الويب.';
+
+  @override
+  String get ownSvcPhotoSheetTitle => 'صورة الخدمة';
+
+  @override
+  String get ownSvcPhotoAdd => 'ضيف صورة';
+
+  @override
+  String get ownSvcPhotoReplace => 'غيّر الصورة';
+
+  @override
+  String get ownSvcPhotoRemove => 'شيل الصورة';
+
+  @override
+  String get ownSvcPhotoCamera => 'صوّر دلوقتي';
+
+  @override
+  String get ownSvcPhotoGallery => 'اختار من الصور';
+
+  @override
+  String ownSvcPhotoUploading(int percent) {
+    return 'بنرفع الصورة… $percent٪';
+  }
+
+  @override
+  String get ownSvcPhotoPending => 'الصورة جاهزة. هتتضاف لخدمتك لما تدوس احفظ.';
+
+  @override
+  String get ownSvcPhotoErrUnavailable =>
+      'رفع الصور مش متاح دلوقتي. جرّب تاني بعدين.';
+
+  @override
+  String get ownSvcPhotoErrFormat => 'استخدم صورة JPEG أو PNG.';
+
+  @override
+  String get ownSvcPhotoErrTooLarge =>
+      'الصورة دي أكبر من 5 ميجا. اختار صورة أصغر.';
+
+  @override
+  String get ownSvcPhotoErrRejected =>
+      'مقدرناش نستخدم الصورة دي. جرّب صورة تانية.';
+
+  @override
+  String get ownSvcPhotoErrNetwork =>
+      'الصورة مترفعتش. اتأكد من النت وجرّب تاني.';
+
+  @override
+  String get ownSvcPhotoErrRemove => 'مقدرناش نشيل الصورة. جرّب تاني.';
+
+  @override
+  String get addrLabelTitle => 'الاسم';
+
+  @override
+  String get addrLabelHome => 'البيت';
+
+  @override
+  String get addrLabelWork => 'الشغل';
+
+  @override
+  String get addrLabelOther => 'مكان تاني';
+
+  @override
+  String get addrLabelCustom => 'سمّي المكان ده';
+
+  @override
+  String get addrLabelCustomHint => 'مثلاً: بيت ماما، الجيم';
+
+  @override
+  String get addrPin => 'المكان على الخريطة';
+
+  @override
+  String get addrPinMissing => 'مطلوب';
+
+  @override
+  String get addrPinSet => 'متحدد على الخريطة';
+
+  @override
+  String get addrPinTitle => 'حدد المكان';
+
+  @override
+  String get addrErrLabel => 'اختار أو اكتب اسم';
+
+  @override
+  String addrErrTooLong(int max) {
+    return 'اكتب $max حرف بالكتير';
+  }
+
+  @override
+  String get addrErrPin => 'حدد المكان على الخريطة';
+
+  @override
+  String get addrLegacyTitle => 'لسه مش على الخريطة';
+
+  @override
+  String get addrLegacyBody =>
+      'العناوين القديمة دي ملهاش مكان على الخريطة. حدد مكانها عشان تستخدمها وانت بتطلب.';
+
+  @override
+  String get addrLegacyPin => 'حدده';
+
+  @override
+  String addrLegacyPinFor(String address) {
+    return 'حدد $address على الخريطة';
+  }
+
+  @override
+  String get addrDropLegacyTitle => 'العناوين القديمة هتتشال';
+
+  @override
+  String addrDropLegacyBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count عناوين قديمة من غير مكان على الخريطة هتتشال لما تحفظ. حددها الأول لو عايز تحتفظ بيها.',
+      one:
+          'عنوان قديم من غير مكان على الخريطة هيتشال لما تحفظ. حدده الأول لو عايز تحتفظ بيه.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addrDropLegacyConfirm => 'احفظ برضه';
+
+  @override
+  String get custSavedPlaces => 'أماكنك المحفوظة';
+
+  @override
+  String get custSavedNeedsPin =>
+      'ملوش مكان على الخريطة: حرّك الخريطة عليه وبعدين أكّد';
+
+  @override
+  String custSavedUse(String label, String address) {
+    return 'استخدم $label: $address';
+  }
+
+  @override
+  String ownForCustomer(String name) {
+    return 'لـ $name';
+  }
+
+  @override
+  String ownKyeBodyApproved(String name) {
+    return 'مستندات $name اتراجعت واتقبلت.';
+  }
+
+  @override
+  String ownKyeBodyPending(String name) {
+    return '$name رفع مستنداته. فريقنا بيراجعها.';
+  }
+
+  @override
+  String ownKyeBodyRejected(String name) {
+    return 'مستندات $name متقبلتش. يقدر يرفع مستندات جديدة من صفحة التحقق في تطبيق المندوب.';
+  }
+
+  @override
+  String ownKyeBodyMissing(String name) {
+    return '$name لسه مرفعش مستنداته. بيرفعها من صفحة التحقق في تطبيق المندوب.';
+  }
+
+  @override
+  String ownKyeChipFor(String status) {
+    return 'التحقق من الهوية: $status';
+  }
+
+  @override
+  String get ntfJobNotFound =>
+      'مقدرناش نفتح الطلب ده. ممكن يكون اتشال، أو مش على حسابك.';
+
+  @override
+  String get ntfPushView => 'اعرض';
+
+  @override
+  String get ntfPickedUpTitle => 'طلبك اتستلم';
+
+  @override
+  String get ntfPickedUpBody => 'المندوب استلمه وفي الطريق لمكان التسليم.';
+
+  @override
+  String get ntfBookedTitle => 'الطلب اتعمل';
+
+  @override
+  String get ntfInTransitTitle => 'طلبك في الطريق';
+
+  @override
+  String get ntfDeliveredTitle => 'طلبك وصل';
+
+  @override
+  String get bookErrAddressRequired => 'اكتب عنوان المكان ده.';
+
+  @override
+  String get bookErrNameRequired => 'اكتب اسم المستلم.';
+
+  @override
+  String get bookErrPhoneRequired => 'اكتب رقم تليفون المستلم.';
+
+  @override
+  String get bookErrPackageRequired => 'ضيف تفاصيل الشحنة.';
+
+  @override
+  String get bookErrRequired => 'ده مطلوب.';
+
+  @override
+  String get bookErrCoordinates =>
+      'مكان الاستلام أو التسليم مش صحيح. حدده تاني على الخريطة.';
+
+  @override
+  String get bookErrPayment => 'الدفع كاش عند الاستلام بس هو المتاح دلوقتي.';
+
+  @override
+  String get bookErrDuplicate =>
+      'طلبك لسه بيتبعت. استنى شوية وبعدين شوف طلباتي.';
+
+  @override
+  String get bookErrUnavailable => 'الطلب مش متاح دلوقتي. جرّب كمان شوية.';
+
+  @override
+  String get bookErrNoCourier => 'مفيش مندوب متاح قريب دلوقتي. جرّب كمان شوية.';
+
+  @override
+  String get courPickupChanged => 'الطلب ده اتغير. حدّثناه.';
+
+  @override
+  String get courJobGone => 'الطلب ده مبقاش موجود.';
+
+  @override
+  String authResendTooMany(int seconds) {
+    return 'اتبعت أكواد كتير. تقدر تطلب كود جديد بعد $seconds ثانية.';
+  }
+
+  @override
+  String get authResendTooManyNoTime =>
+      'اتبعت أكواد كتير. استنى كام دقيقة وبعدين اطلب تاني.';
 }

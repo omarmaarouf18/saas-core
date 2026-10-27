@@ -2384,10 +2384,10 @@ abstract class AppLocalizations {
   /// **'{count} of 10'**
   String acctAddressCount(int count);
 
-  /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
+  /// FE-AUTH-ACCOUNT; FE-BE-GAPS saved addresses with coordinates.
   ///
   /// In en, this message translates to:
-  /// **'Addresses are saved as text, without a map pin.'**
+  /// **'Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.'**
   String get acctAddressesNote;
 
   /// FE-AUTH-ACCOUNT redesigned customer account (A-Settings).
@@ -3236,10 +3236,10 @@ abstract class AppLocalizations {
   /// **'Orders'**
   String get ownOrdersTitle;
 
-  /// FE-OWNER-1 redesigned owner screens.
+  /// FE-OWNER-1; FE-BE-GAPS: customer name is searchable.
   ///
   /// In en, this message translates to:
-  /// **'Order number or courier name'**
+  /// **'Order number, customer or courier'**
   String get ownOrdersSearchHint;
 
   /// FE-OWNER-1 redesigned owner screens.
@@ -3589,30 +3589,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID check'**
   String get ownEmpIdCheck;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Approved'**
-  String get ownKyeApproved;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Under review'**
-  String get ownKyePending;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejected'**
-  String get ownKyeRejected;
-
-  /// FE-OWNER-1 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'Documents missing'**
-  String get ownKyeMissing;
 
   /// FE-OWNER-1 redesigned owner screens.
   ///
@@ -4034,10 +4010,10 @@ abstract class AppLocalizations {
   /// **'Service'**
   String get ownSvcSectionBusiness;
 
-  /// FE-OWNER-2 redesigned owner screens.
+  /// FE-OWNER-2 redesigned owner screens; FE-BE-GAPS photo upload.
   ///
   /// In en, this message translates to:
-  /// **'Customers see the first letter of your service name for now. Photo upload is coming.'**
+  /// **'Customers see this photo on your card. JPEG or PNG, up to 5 MB.'**
   String get ownSvcPhotoNote;
 
   /// FE-OWNER-2 redesigned owner screens.
@@ -4279,12 +4255,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is unavailable right now. Try again in a bit.'**
   String get ownSvcErrUnavailable;
-
-  /// FE-OWNER-2 redesigned owner screens.
-  ///
-  /// In en, this message translates to:
-  /// **'The service was created but some details weren\'t saved. Tap save again.'**
-  String get ownSvcErrPartial;
 
   /// FE-OWNER-2 redesigned owner screens.
   ///
@@ -6427,6 +6397,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in with a customer, business or courier account. Staff accounts use the web console.'**
   String get roleUnsupportedBody;
+
+  /// FE-BE-GAPS item 1: photo source sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Service photo'**
+  String get ownSvcPhotoSheetTitle;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get ownSvcPhotoAdd;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get ownSvcPhotoReplace;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get ownSvcPhotoRemove;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get ownSvcPhotoCamera;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from photos'**
+  String get ownSvcPhotoGallery;
+
+  /// FE-BE-GAPS item 1: upload progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading… {percent}%'**
+  String ownSvcPhotoUploading(int percent);
+
+  /// FE-BE-GAPS item 1: uploaded before the service exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo ready. It is added to your service when you tap Save.'**
+  String get ownSvcPhotoPending;
+
+  /// FE-BE-GAPS item 1: 503 / storage not ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo upload is unavailable right now. Try again later.'**
+  String get ownSvcPhotoErrUnavailable;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPEG or PNG photo.'**
+  String get ownSvcPhotoErrFormat;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is over 5 MB. Choose a smaller one.'**
+  String get ownSvcPhotoErrTooLarge;
+
+  /// FE-BE-GAPS item 1: server 400.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo couldn\'t be used. Try another one.'**
+  String get ownSvcPhotoErrRejected;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'The photo wasn\'t uploaded. Check your connection and try again.'**
+  String get ownSvcPhotoErrNetwork;
+
+  /// FE-BE-GAPS item 1.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t remove the photo. Try again.'**
+  String get ownSvcPhotoErrRemove;
+
+  /// FE-BE-GAPS item 3: saved address label chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get addrLabelTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get addrLabelHome;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get addrLabelWork;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get addrLabelOther;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this place'**
+  String get addrLabelCustom;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mum\'s house, the gym'**
+  String get addrLabelCustomHint;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Place on the map'**
+  String get addrPin;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get addrPinMissing;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned on the map'**
+  String get addrPinSet;
+
+  /// FE-BE-GAPS item 3: picker title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin the place'**
+  String get addrPinTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or write a name'**
+  String get addrErrLabel;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} characters'**
+  String addrErrTooLong(int max);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin the place on the map'**
+  String get addrErrPin;
+
+  /// FE-BE-GAPS item 3: old string-only addresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on the map yet'**
+  String get addrLegacyTitle;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'These older addresses have no map pin. Pin one to use it when you book.'**
+  String get addrLegacyBody;
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin it'**
+  String get addrLegacyPin;
+
+  /// FE-BE-GAPS item 3: button semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin {address} on the map'**
+  String addrLegacyPinFor(String address);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Older addresses will be removed'**
+  String get addrDropLegacyTitle;
+
+  /// FE-BE-GAPS item 3: the server rebuilds frequent_addresses from saved_addresses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 older address without a map pin will be removed when you save. Pin it first to keep it.} other{{count} older addresses without a map pin will be removed when you save. Pin them first to keep them.}}'**
+  String addrDropLegacyBody(int count);
+
+  /// FE-BE-GAPS item 3.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get addrDropLegacyConfirm;
+
+  /// FE-BE-GAPS item 3: picker list.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved places'**
+  String get custSavedPlaces;
+
+  /// FE-BE-GAPS item 3: legacy string chosen in the picker.
+  ///
+  /// In en, this message translates to:
+  /// **'No map pin yet: move the map to it, then confirm'**
+  String get custSavedNeedsPin;
+
+  /// FE-BE-GAPS item 3: chip semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {label}: {address}'**
+  String custSavedUse(String label, String address);
+
+  /// FE-BE-GAPS item 4: Today request row, the customer.
+  ///
+  /// In en, this message translates to:
+  /// **'For {name}'**
+  String ownForCustomer(String name);
+
+  /// FE-BE-GAPS item 4: ID check sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s ID documents were checked and accepted.'**
+  String ownKyeBodyApproved(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} uploaded their ID documents. Our team is reviewing them.'**
+  String ownKyeBodyPending(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s documents weren\'t accepted. They can upload new ones from Verification in the courier app.'**
+  String ownKyeBodyRejected(String name);
+
+  /// FE-BE-GAPS item 4.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hasn\'t uploaded ID documents yet. They upload them from Verification in the courier app.'**
+  String ownKyeBodyMissing(String name);
+
+  /// FE-BE-GAPS item 4: team row chip semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'ID check: {status}'**
+  String ownKyeChipFor(String status);
+
+  /// FE-BE-GAPS item 5: a notification's job cannot be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open that order. It may have been removed, or it isn\'t on your account.'**
+  String get ntfJobNotFound;
+
+  /// FE-BE-GAPS item 5: action on a push received while the app is open.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get ntfPushView;
+
+  /// FE-BE-GAPS item 5: job_picked_up.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was picked up'**
+  String get ntfPickedUpTitle;
+
+  /// FE-BE-GAPS item 5.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier has it and is on the way to the drop-off.'**
+  String get ntfPickedUpBody;
+
+  /// FE-BE-GAPS item 5: job_booked.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed'**
+  String get ntfBookedTitle;
+
+  /// FE-BE-GAPS item 5: job_in_transit.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is on the way'**
+  String get ntfInTransitTitle;
+
+  /// FE-BE-GAPS item 5: job_delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ntfDeliveredTitle;
+
+  /// FE-BE-GAPS item 6: address_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the address of this stop.'**
+  String get bookErrAddressRequired;
+
+  /// FE-BE-GAPS item 6: recipient_name_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the recipient\'s name.'**
+  String get bookErrNameRequired;
+
+  /// FE-BE-GAPS item 6: recipient_phone_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the recipient\'s phone number.'**
+  String get bookErrPhoneRequired;
+
+  /// FE-BE-GAPS item 6: package_details_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the package details.'**
+  String get bookErrPackageRequired;
+
+  /// FE-BE-GAPS item 6.
+  ///
+  /// In en, this message translates to:
+  /// **'This is required.'**
+  String get bookErrRequired;
+
+  /// FE-BE-GAPS item 6: invalid_coordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'The pickup or drop-off point isn\'t valid. Pick it again on the map.'**
+  String get bookErrCoordinates;
+
+  /// FE-BE-GAPS item 6: payment_method_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Only cash on delivery is available right now.'**
+  String get bookErrPayment;
+
+  /// FE-BE-GAPS item 6: duplicate_request_in_progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is still being sent. Wait a moment, then check My orders.'**
+  String get bookErrDuplicate;
+
+  /// FE-BE-GAPS item 6: service_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordering is unavailable right now. Try again in a bit.'**
+  String get bookErrUnavailable;
+
+  /// FE-BE-GAPS item 6: employee_location_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is available nearby right now. Try again soon.'**
+  String get bookErrNoCourier;
+
+  /// FE-BE-GAPS item 6: job_not_active / job_state_changed.
+  ///
+  /// In en, this message translates to:
+  /// **'This job changed. We refreshed it.'**
+  String get courPickupChanged;
+
+  /// FE-BE-GAPS item 6: job_not_found.
+  ///
+  /// In en, this message translates to:
+  /// **'This job no longer exists.'**
+  String get courJobGone;
+
+  /// FE-BE-GAPS item 8: 429 on resend.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes sent. You can ask for a new one in {seconds} seconds.'**
+  String authResendTooMany(int seconds);
+
+  /// FE-BE-GAPS item 8: 429 without a wait.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes sent. Wait a few minutes, then ask again.'**
+  String get authResendTooManyNoTime;
 }
 
 class _AppLocalizationsDelegate

@@ -31,8 +31,10 @@ class OwnerEmployee {
   final bool isActive;
   final DateTime? createdAt;
 
-  /// The courier's ID-check status. `/auth/employees` does not return it
-  /// today, so it is null and not shown; read only if the payload has it.
+  /// The courier's ID-check status (`kye_status` of `/auth/employees`,
+  /// USER-AUTH-BE item 4: approved / pending_super_admin_approval /
+  /// rejected / none). Null when an older server leaves it out; shown as
+  /// "none" then (see [kyeStateOf]).
   final String? kyeStatus;
 
   String get displayName =>
@@ -90,22 +92,43 @@ class OwnerDistanceReview {
 
 /// Owner-only job fields the shared [Job] model does not parse.
 class OwnerJobExtras {
-  const OwnerJobExtras({this.actualCashAmount, this.distanceReview});
+  const OwnerJobExtras(
+      {this.actualCashAmount, this.distanceReview, this.customerName});
 
   /// Cash the courier recorded at completion (COD).
   final double? actualCashAmount;
   final OwnerDistanceReview? distanceReview;
 
+  /// The customer's name as snapshotted at booking (`customer_name`,
+  /// USER-AUTH-BE item 3); null when the server has none (old jobs whose
+  /// lookup failed). Pages fall back to the "Customer #ref" text.
+  final String? customerName;
+
   static const none = OwnerJobExtras();
 
   factory OwnerJobExtras.fromJson(Map<String, dynamic>? json) {
     if (json == null) return none;
+    final name = json['customer_name']?.toString().trim() ?? '';
     return OwnerJobExtras(
       actualCashAmount: (json['actual_cash_amount'] as num?)?.toDouble(),
       distanceReview: OwnerDistanceReview.fromJson(json['distance_review']),
+      customerName: name.isEmpty ? null : name,
     );
   }
 }
+
+/// A courier's ID check (KYE) as the owner sees it.
+enum KyeState { approved, pending, rejected, none }
+
+/// `kye_status` → state. Anything under review (`pending`,
+/// `pending_super_admin_approval`) is pending; empty, `none` and unknown
+/// values are none.
+KyeState kyeStateOf(String? status) => switch (_norm(status)) {
+      'approved' => KyeState.approved,
+      'pending' || 'pending_super_admin_approval' => KyeState.pending,
+      'rejected' => KyeState.rejected,
+      _ => KyeState.none,
+    };
 
 enum OwnerOrdersTab { ongoing, done, cancelled }
 
@@ -285,12 +308,17 @@ bool ownerJobIsRide(List<dynamic> services, Job job) => services.any((s) =>
     (s['id'] ?? s['service_id']) == job.serviceId &&
     (s['category'] as String?)?.trim().toLowerCase() == 'transport');
 
-/// Search by order id (with or without the "#QD-" prefix) or courier name.
-bool orderMatchesQuery(Job job, String query, String? courierName) {
+/// Search by order id (with or without the "#QD-" prefix), courier name
+/// or customer name (`customer_name`, when the server has it).
+bool orderMatchesQuery(Job job, String query, String? courierName,
+    {String? customerName}) {
   final q = query.trim().toLowerCase();
   if (q.isEmpty) return true;
   final ref = q.replaceFirst(RegExp(r'^#?qd-'), '').replaceFirst('#', '');
   if (ref.isNotEmpty && job.id.toLowerCase().contains(ref)) return true;
+  if (customerName != null && customerName.toLowerCase().contains(q)) {
+    return true;
+  }
   return courierName != null && courierName.toLowerCase().contains(q);
 }
 

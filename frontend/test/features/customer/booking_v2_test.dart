@@ -116,7 +116,12 @@ void main() {
     await _dropoff(tester);
     await _tapVisible(tester, find.text('Someone else'));
     await _type(tester, 'cust_book_recipient_name', 'Mahmoud');
-    await _tapVisible(tester, find.text("I'm the recipient"));
+    // The toggle is above the field now: scroll back up to it.
+    await tester.scrollUntilVisible(find.text("I'm the recipient"), -200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("I'm the recipient"));
+    await tester.pumpAndSettle();
     await _submit(tester);
     expect(deps.marketplace.bookCalls.single.args['recipientName'], isNull);
   });

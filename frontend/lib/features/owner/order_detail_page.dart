@@ -260,7 +260,7 @@ class _OwnerOrderDetailPageState extends State<OwnerOrderDetailPage> {
             OwnerInfoGroup(rows: [
               OwnerInfoRow(
                 label: l10n.ownRowCustomer,
-                value: l10n.ownCustomerRef(shortRefIsolated(job.userId)),
+                value: ownerCustomerLabel(l10n, job, data.extrasOf(job.id)),
               ),
               OwnerInfoRow(
                 label: l10n.ownRowCourier,

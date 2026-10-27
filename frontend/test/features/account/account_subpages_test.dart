@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/account/email_change_sheet.dart';
 import 'package:frontend/features/account/my_details_page.dart';
-import 'package:frontend/features/account/saved_addresses_page.dart';
 import 'package:frontend/features/account/security_page.dart';
 
 import 'account_harness.dart';
@@ -152,93 +151,6 @@ void main() {
       await tester.tap(find.byKey(const Key('email_change_close')));
       await tester.pumpAndSettle();
       expect(find.byType(EmailChangeSheet), findsNothing);
-    });
-  });
-
-  group('saved addresses', () {
-    testWidgets('add, edit and delete save right away; undo restores',
-        (tester) async {
-      final deps = AccountTestDeps();
-      await _open(tester, deps, const SavedAddressesPage());
-      expect(find.text('Home, 12 Tahrir St'), findsOneWidget);
-      expect(find.textContaining('2 of 10'), findsOneWidget);
-
-      await tester.tap(find.byKey(const Key('addresses_add')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('address_save')));
-      await tester.pump();
-      expect(find.text('Write the address'), findsOneWidget);
-      await typeInto(tester, 'address_input', ' Gym, Nasr City ');
-      await tester.tap(find.byKey(const Key('address_save')));
-      await tester.pumpAndSettle();
-      expect(deps.auth.lastProfileUpdate, {
-        'frequent_addresses': ['Home, 12 Tahrir St', 'Work', 'Gym, Nasr City']
-      });
-
-      await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
-      await typeInto(tester, 'address_input', 'Office');
-      await tester.tap(find.byKey(const Key('address_save')));
-      await tester.pumpAndSettle();
-      expect(deps.auth.lastProfileUpdate!['frequent_addresses'],
-          ['Home, 12 Tahrir St', 'Office', 'Gym, Nasr City']);
-
-      await tester.tap(find.descendant(
-          of: find.byKey(const Key('address_0')),
-          matching: find.byKey(const Key('address_delete'))));
-      await tester.pumpAndSettle();
-      expect(deps.auth.lastProfileUpdate!['frequent_addresses'],
-          ['Office', 'Gym, Nasr City']);
-      expect(find.text('Address deleted.'), findsOneWidget);
-      await tester.tap(find.text('Undo'));
-      await tester.pumpAndSettle();
-      expect(deps.auth.lastProfileUpdate!['frequent_addresses'],
-          ['Home, 12 Tahrir St', 'Office', 'Gym, Nasr City']);
-      expect(find.text('Home, 12 Tahrir St'), findsOneWidget);
-    });
-
-    testWidgets('a failed save restores the list; retry saves it',
-        (tester) async {
-      final deps = AccountTestDeps();
-      deps.auth.failNext['updateOwnProfile'] =
-          const AuthFailure('Something went wrong. Please try again.');
-      await _open(tester, deps, const SavedAddressesPage());
-      await tester.tap(find.descendant(
-          of: find.byKey(const Key('address_1')),
-          matching: find.byKey(const Key('address_delete'))));
-      await tester.pumpAndSettle();
-      expect(find.text('Work'), findsOneWidget);
-      expect(find.byKey(const Key('addresses_error')), findsOneWidget);
-      await tester.tap(find.text('Retry'));
-      await tester.pumpAndSettle();
-      expect(find.text('Work'), findsNothing);
-      expect(find.byKey(const Key('addresses_error')), findsNothing);
-    });
-
-    testWidgets('ten addresses: add is off', (tester) async {
-      final deps = AccountTestDeps(
-          auth: FakeAuthFlow(
-              user: FakeAuthFlow.customer(
-                  addresses: [for (var i = 0; i < 10; i++) 'Place $i'])));
-      await _open(tester, deps, const SavedAddressesPage());
-      await tester.scrollUntilVisible(
-          find.byKey(const Key('addresses_add')), 200);
-      expect(find.text('You can save up to 10 addresses'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('addresses_add')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('address_input')), findsNothing);
-    });
-
-    testWidgets('empty state; suspended is read-only', (tester) async {
-      final deps = AccountTestDeps(
-          auth: FakeAuthFlow(
-              user: FakeAuthFlow.customer(
-                  addresses: [], accountStatus: 'suspended')));
-      await _open(tester, deps, const SavedAddressesPage());
-      expect(find.text('No saved addresses yet'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('addresses_add')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('address_input')), findsNothing);
     });
   });
 

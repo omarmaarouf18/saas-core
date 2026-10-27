@@ -24,6 +24,8 @@ import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/fake_launcher.dart';
+import '../../helpers/fake_service_photos.dart';
+import 'package:frontend/providers/service_photo_store.dart';
 import '../customer/customer_harness.dart' show BlankTileProvider;
 
 export '../../helpers/fake_launcher.dart';
@@ -436,8 +438,17 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
     required double latitude,
     required double longitude,
     required String ownerId,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+    String? photoUrl,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
   }) async {
-    createCalls.add({
+    createCalls.add(<String, dynamic>{
       'name': name,
       'category': category,
       'tenant_base_price': tenantBasePrice,
@@ -445,7 +456,16 @@ class FakeOwner extends ChangeNotifier implements OwnerProvider {
       'latitude': latitude,
       'longitude': longitude,
       'owner_id': ownerId,
-    });
+      'address': address,
+      'working_hours': workingHours,
+      'coverage_radius_km': coverageRadiusKm,
+      'photo_url': photoUrl,
+      'schedule_mode': scheduleMode,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'per_day_schedule': perDaySchedule,
+      'timezone': timezone,
+    }..removeWhere((_, v) => v == null));
     if (nextCreateError != null) throw nextCreateError!;
     return nextCreateResponse;
   }
@@ -732,6 +752,7 @@ class OwnerTestDeps {
     RecordingOwnerNav? nav,
     FakeOwnerMap? map,
     FakeLauncher? launcher,
+    this.photos,
   })  : auth = auth ?? FakeOwnerAuth(),
         launcher = launcher ?? FakeLauncher(),
         map = map ?? FakeOwnerMap(),
@@ -749,6 +770,9 @@ class OwnerTestDeps {
   final RecordingOwnerNav nav;
   final FakeOwnerMap map;
   final FakeLauncher launcher;
+
+  /// Service photos (FE-BE-GAPS); null = no [ServicePhotoScope] (initials).
+  final FakeServicePhotoStore? photos;
 
   late final OwnerDataController data =
       OwnerDataController(owner, auth, now: () => ownerNow);
@@ -786,21 +810,27 @@ Widget ownerApp(
         tileProvider: BlankTileProvider(),
         child: QdLauncherScope(
           launcher: deps.launcher,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: qdLightTheme,
-            darkTheme: qdDarkTheme,
-            themeMode: themeMode,
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: home,
+          child: _withPhotos(
+            deps.photos,
+            MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: qdLightTheme,
+              darkTheme: qdDarkTheme,
+              themeMode: themeMode,
+              locale: locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: home,
+            ),
           ),
         ),
       ),
     ),
   );
 }
+
+Widget _withPhotos(ServicePhotoStore? photos, Widget child) =>
+    photos == null ? child : ServicePhotoScope(store: photos, child: child);
 
 /// Pumps [home] after one controller refresh, so the page shows loaded data.
 Future<void> pumpOwner(WidgetTester tester, OwnerTestDeps deps, Widget home,

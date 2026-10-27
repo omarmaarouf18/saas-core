@@ -1,3 +1,7 @@
+import '../../core/api_client.dart';
+import '../../core/api_error_codes.dart';
+import '../../core/error_messages.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 import '../../models/user_profile.dart';
 
@@ -192,4 +196,33 @@ CourierDayStats todayStats(Iterable<Job> jobs, DateTime now) {
     }
   }
   return CourierDayStats(completed: count, cash: cash, estimated: estimated);
+}
+
+/// The notice for a failed pickup confirmation (`POST /users/jobs/pickup`),
+/// by the stable code (USER-AUTH-BE item 10): already picked up; the job
+/// changed (`job_not_active`, `job_state_changed`, `conflict` from a lost
+/// race); not the assigned courier; gone. An unknown code shows the
+/// server's text; no code falls back to the status as before.
+String pickupErrorText(AppLocalizations l10n, Object e) {
+  final code = stableErrorCode(e);
+  switch (code) {
+    case 'already_picked_up':
+      return l10n.courPickupAlready;
+    case 'job_not_active' || 'job_state_changed' || 'conflict':
+      return l10n.courPickupChanged;
+    case 'access_denied' || 'role_mismatch':
+      return l10n.courNotYours;
+    case 'job_not_found':
+      return l10n.courJobGone;
+    case null:
+      break;
+    default:
+      return serverErrorText(e) ?? friendlyErrorMessage(e);
+  }
+  final status = e is ApiClientException ? e.statusCode : null;
+  return switch (status) {
+    409 => l10n.courPickupAlready,
+    403 || 404 => l10n.courNotYours,
+    _ => friendlyErrorMessage(e),
+  };
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
 import '../tokens.dart';
 
@@ -9,6 +10,9 @@ import '../tokens.dart';
 /// [obscure] turns it into a password field with a visibility toggle.
 /// [ltr] forces left-to-right input (phone, email, OTP) inside an RTL
 /// screen; the text still sits on the reading-start side like the mockups.
+/// [maxRunes] limits the text to that many characters as the server counts
+/// them (code points, not bytes) and shows a "12 / 250" counter at the end
+/// of the helper / error row (FE-BE-GAPS).
 class QdTextField extends StatefulWidget {
   const QdTextField({
     super.key,
@@ -29,6 +33,7 @@ class QdTextField extends StatefulWidget {
     this.focusNode,
     this.maxLines = 1,
     this.suffixText,
+    this.maxRunes,
   });
 
   final String label;
@@ -51,12 +56,18 @@ class QdTextField extends StatefulWidget {
   /// Unit shown inside the field at its end ("km").
   final String? suffixText;
 
+  /// Character limit with a live counter; null = none.
+  final int? maxRunes;
+
   @override
   State<QdTextField> createState() => _QdTextFieldState();
 }
 
 class _QdTextFieldState extends State<QdTextField> {
   bool _hidden = true;
+
+  /// Text length for the counter when no controller is given.
+  int _typed = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -118,8 +129,17 @@ class _QdTextFieldState extends State<QdTextField> {
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
             autofillHints: widget.autofillHints,
-            inputFormatters: widget.inputFormatters,
-            onChanged: widget.onChanged,
+            inputFormatters: [
+              ...?widget.inputFormatters,
+              if (widget.maxRunes != null)
+                RuneLimitingTextInputFormatter(widget.maxRunes!),
+            ],
+            onChanged: (v) {
+              if (widget.maxRunes != null && widget.controller == null) {
+                setState(() => _typed = runeLength(v));
+              }
+              widget.onChanged?.call(v);
+            },
             onSubmitted: widget.onSubmitted,
             maxLines: widget.obscure ? 1 : widget.maxLines,
             textDirection: fieldDirection,
@@ -152,20 +172,55 @@ class _QdTextFieldState extends State<QdTextField> {
             ),
           ),
         ),
-        if (hasError || widget.helperText != null) ...[
+        if (hasError ||
+            widget.helperText != null ||
+            widget.maxRunes != null) ...[
           const SizedBox(height: 6),
-          Semantics(
-            liveRegion: hasError,
-            child: Text(
-              hasError ? widget.errorText! : widget.helperText!,
-              style: QdText.caption.copyWith(
-                color: hasError ? c.danger : c.textSecondary,
-                fontWeight: hasError ? FontWeight.w500 : FontWeight.w400,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: hasError || widget.helperText != null
+                    ? Semantics(
+                        liveRegion: hasError,
+                        child: Text(
+                          hasError ? widget.errorText! : widget.helperText!,
+                          style: QdText.caption.copyWith(
+                            color: hasError ? c.danger : c.textSecondary,
+                            fontWeight:
+                                hasError ? FontWeight.w500 : FontWeight.w400,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
-            ),
+              if (widget.maxRunes != null) _counter(c),
+            ],
           ),
         ],
       ],
+    );
+  }
+
+  Widget _counter(QdColors c) {
+    final max = widget.maxRunes!;
+    Widget text(int n) => Padding(
+          padding: const EdgeInsetsDirectional.only(start: QdSpace.x2),
+          child: Text(
+            '$n / $max',
+            key: const Key('qd_text_field_counter'),
+            textDirection: TextDirection.ltr,
+            style: QdText.caption.copyWith(
+              color: n >= max ? c.warning : c.textSecondary,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        );
+    final controller = widget.controller;
+    if (controller == null) return text(_typed);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (_, v, __) => text(runeLength(v.text)),
     );
   }
 }

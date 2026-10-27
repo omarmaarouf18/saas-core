@@ -10,6 +10,7 @@ import 'customer_format.dart';
 import 'customer_location.dart';
 import 'picker_page.dart';
 import 'price_estimate.dart';
+import 'service_photo_tile.dart';
 
 enum MarketSort { nearest, cheapest }
 
@@ -367,8 +368,10 @@ class _ServiceCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              QdIconTile.initialOf(
-                service.name,
+              ServicePhotoTile(
+                serviceId: service.id,
+                photoUrl: service.photoUrl,
+                name: service.name,
                 size: 52,
                 tone: closed ? QdIconTileTone.disabled : QdIconTileTone.muted,
               ),

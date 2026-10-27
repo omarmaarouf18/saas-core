@@ -9,6 +9,7 @@ import 'package:frontend/features/account/security_page.dart';
 import 'package:frontend/features/account/support/tickets_page.dart';
 import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/notification_model.dart';
+import 'package:frontend/models/saved_address.dart';
 import 'package:frontend/models/support_ticket.dart';
 import 'package:frontend/providers/notifications_provider.dart';
 import 'package:provider/provider.dart';
@@ -32,12 +33,34 @@ FakeAuthFlow _auth(Locale l, {bool suspended = false}) => FakeAuthFlow(
         suspensionReason: suspended
             ? _t(l, 'Unpaid fees on two orders', 'رسوم متأخرة على طلبين')
             : null,
+        saved: savedFixture(l),
         addresses: [
-          _t(l, 'Home, 12 Tahrir St, Dokki', 'البيت، 12 شارع التحرير، الدقي'),
-          _t(l, 'Work, Smart Village B7', 'الشغل، القرية الذكية B7'),
+          for (final a in savedFixture(l)) a.address,
+          _t(l, 'Gym, Nasr City', 'الجيم، مدينة نصر'),
         ],
       ).copyWith(username: _t(l, 'Mona Ali', 'منى علي')),
     );
+
+/// Two pinned addresses (FE-BE-GAPS); the account above also keeps one
+/// old string-only address.
+List<SavedAddress> savedFixture(Locale l) => [
+      SavedAddress(
+        id: 'addr-home',
+        label: 'Home',
+        address: _t(l, '12 Tahrir St, Dokki', '12 شارع التحرير، الدقي'),
+        addressNote:
+            _t(l, 'Floor 3, the blue door', 'الدور التالت، الباب الأزرق'),
+        latitude: 30.0444,
+        longitude: 31.2357,
+      ),
+      SavedAddress(
+        id: 'addr-work',
+        label: 'Work',
+        address: _t(l, 'Smart Village B7', 'القرية الذكية B7'),
+        latitude: 30.075,
+        longitude: 31.02,
+      ),
+    ];
 
 List<NotificationModel> _notifications(Locale l) => [
       notif('n1', 'job_accepted'),

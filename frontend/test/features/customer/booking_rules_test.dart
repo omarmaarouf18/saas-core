@@ -110,10 +110,12 @@ void main() {
       });
     });
 
-    test('landmark note: the server counts bytes (500)', () {
+    test('landmark note: 500 characters, Arabic counted as characters', () {
       expect(validateBooking(BookingExtras(pickupNote: 'a' * 500)), isEmpty);
-      // 300 Arabic letters = 600 UTF-8 bytes.
-      expect(validateBooking(BookingExtras(dropoffNote: 'ش' * 300)), {
+      // 500 Arabic letters are 1000 UTF-8 bytes: allowed (USER-AUTH-BE
+      // item 9 counts runes).
+      expect(validateBooking(BookingExtras(dropoffNote: 'ش' * 500)), isEmpty);
+      expect(validateBooking(BookingExtras(dropoffNote: 'ش' * 501)), {
         BookingField.route: const BookingError(BookingProblem.noteTooLong),
       });
     });

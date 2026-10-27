@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/error_messages.dart';
 import '../../l10n/l10n.dart';
 import '../../models/marketplace_service.dart';
 import '../../providers/auth_provider.dart';
@@ -16,6 +15,7 @@ import 'customer_location.dart';
 import 'customer_nav.dart';
 import 'picker_page.dart';
 import 'price_estimate.dart';
+import 'service_photo_tile.dart';
 
 /// Booking page (A-Book): the chosen company, pickup and drop-off (each
 /// opens the picker, with address text and a landmark note), who receives
@@ -193,7 +193,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           _fieldErrors = {field.key: field.value};
           _error = l10n.bookFixFields;
         } else {
-          _error = l10n.custBookingFailed(friendlyErrorMessage(e));
+          _error = l10n.custBookingFailed(bookingBannerText(l10n, e));
         }
       });
     }
@@ -242,9 +242,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           errorText: _errorOf(BookingField.recipientName),
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.name],
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(kRecipientNameMaxLength),
-          ],
+          maxRunes: kRecipientNameMaxLength,
           onChanged: (_) => _clearError(BookingField.recipientName),
         ),
         const SizedBox(height: QdSpace.x3),
@@ -275,9 +273,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           enabled: !_submitting,
           errorText: _errorOf(BookingField.recipientNotes),
           maxLines: 2,
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(kRecipientNotesMaxLength),
-          ],
+          maxRunes: kRecipientNotesMaxLength,
           onChanged: (_) => _clearError(BookingField.recipientNotes),
         ),
       ],
@@ -323,9 +319,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         enabled: !_submitting,
         errorText: _errorOf(BookingField.packageNotes),
         maxLines: 2,
-        inputFormatters: [
-          LengthLimitingTextInputFormatter(kPackageNotesMaxLength),
-        ],
+        maxRunes: kPackageNotesMaxLength,
         onChanged: (_) => _clearError(BookingField.packageNotes),
       ),
     ];
@@ -356,7 +350,12 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         children: [
           Row(
             children: [
-              QdIconTile.initialOf(service.name, size: 44),
+              ServicePhotoTile(
+                  key: const Key('cust_book_service_photo'),
+                  serviceId: service.id,
+                  photoUrl: service.photoUrl,
+                  name: service.name,
+                  size: 44),
               const SizedBox(width: QdSpace.x3),
               Expanded(
                 child: Column(

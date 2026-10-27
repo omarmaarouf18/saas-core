@@ -9,6 +9,7 @@ import '../../providers/notifications_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import '../account/notifications/notification_rules.dart';
+import '../account/notifications/push_tap_handler.dart';
 import 'blocked_page.dart';
 import 'courier_controller.dart';
 import 'courier_rules.dart';
@@ -87,7 +88,26 @@ class _CourierShellState extends State<CourierShell> {
   late final NotificationShellLinks _links = NotificationShellLinks(
     showTask: () => _select(0),
     showJobs: () => _select(1),
+    openJob: _openJob,
   );
+
+  /// A job link: the offer or a current job opens Task, a finished one My
+  /// jobs (it has no page of its own); a job that is not in the courier's
+  /// list (taken by someone else, expired, not theirs) opens My jobs with
+  /// a notice.
+  Future<void> _openJob(String jobId) async {
+    await _ctl.refresh();
+    if (!mounted) return;
+    final job = _ctl.jobs.where((j) => j.id == jobId).firstOrNull;
+    if (job == null) {
+      _select(1);
+      showJobNotFoundNotice(context);
+      return;
+    }
+    final onTask =
+        _ctl.offer?.id == jobId || _ctl.running.any((j) => j.id == jobId);
+    _select(onTask ? 0 : 1);
+  }
 
   void _select(int i) {
     if (i == _index) return;
@@ -112,35 +132,37 @@ class _CourierShellState extends State<CourierShell> {
           ? const CourierBlockedPage()
           : NotificationShellScope(
               links: _links,
-              child: Builder(
-                builder: (context) => Scaffold(
-                  key: const Key('courier_shell'),
-                  backgroundColor: QdColors.of(context).surface,
-                  body: IndexedStack(
-                    index: _index,
-                    children: [
-                      lazy(0, () => const CourierTaskPage()),
-                      lazy(1, () => const CourierJobsPage()),
-                      lazy(2, () => const AccountPage()),
-                    ],
-                  ),
-                  bottomNavigationBar: QdBottomNav(
-                    key: const Key('courier_shell_nav'),
-                    currentIndex: _index,
-                    onTap: _select,
-                    items: [
-                      QdNavItem(
-                          icon: Icons.inventory_2_outlined,
-                          activeIcon: Icons.inventory_2,
-                          label: l10n.courNavTask),
-                      QdNavItem(
-                          icon: Icons.format_list_bulleted,
-                          label: l10n.courNavJobs),
-                      QdNavItem(
-                          icon: Icons.person_outline,
-                          activeIcon: Icons.person,
-                          label: l10n.courNavAccount),
-                    ],
+              child: PushTapHandler(
+                child: Builder(
+                  builder: (context) => Scaffold(
+                    key: const Key('courier_shell'),
+                    backgroundColor: QdColors.of(context).surface,
+                    body: IndexedStack(
+                      index: _index,
+                      children: [
+                        lazy(0, () => const CourierTaskPage()),
+                        lazy(1, () => const CourierJobsPage()),
+                        lazy(2, () => const AccountPage()),
+                      ],
+                    ),
+                    bottomNavigationBar: QdBottomNav(
+                      key: const Key('courier_shell_nav'),
+                      currentIndex: _index,
+                      onTap: _select,
+                      items: [
+                        QdNavItem(
+                            icon: Icons.inventory_2_outlined,
+                            activeIcon: Icons.inventory_2,
+                            label: l10n.courNavTask),
+                        QdNavItem(
+                            icon: Icons.format_list_bulleted,
+                            label: l10n.courNavJobs),
+                        QdNavItem(
+                            icon: Icons.person_outline,
+                            activeIcon: Icons.person,
+                            label: l10n.courNavAccount),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -324,6 +324,10 @@ class OwnerProvider extends ChangeNotifier {
 
   // ---------------------------------------------------------------------------
   // API Call: Create Service (KYC Gated on backend)
+  // USER-AUTH-BE item 2: POST persists every field PUT does (address,
+  // coverage radius, working hours, photo key, structured schedule), so a
+  // new service is saved in one request. Optional fields are sent only
+  // when given; an empty schedule mode means "no schedule" and is omitted.
   // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>> createService({
     required String name,
@@ -333,6 +337,15 @@ class OwnerProvider extends ChangeNotifier {
     required double latitude,
     required double longitude,
     required String ownerId,
+    String? address,
+    String? workingHours,
+    double? coverageRadiusKm,
+    String? photoUrl,
+    String? scheduleMode,
+    String? openTime,
+    String? closeTime,
+    List<Map<String, dynamic>>? perDaySchedule,
+    String? timezone,
   }) async {
     _isLoading = true;
     _error = null;
@@ -347,6 +360,18 @@ class OwnerProvider extends ChangeNotifier {
         'tenant_price_per_km': tenantPricePerKM,
         'latitude': latitude,
         'longitude': longitude,
+        if (address != null && address.isNotEmpty) 'address': address,
+        if (workingHours != null && workingHours.isNotEmpty)
+          'working_hours': workingHours,
+        if (coverageRadiusKm != null) 'coverage_radius_km': coverageRadiusKm,
+        if (photoUrl != null && photoUrl.isNotEmpty) 'photo_url': photoUrl,
+        if (scheduleMode != null && scheduleMode.isNotEmpty) ...{
+          'schedule_mode': scheduleMode,
+          if (openTime != null) 'open_time': openTime,
+          if (closeTime != null) 'close_time': closeTime,
+          if (perDaySchedule != null) 'per_day_schedule': perDaySchedule,
+        },
+        if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
       });
       await fetchServices();
       return res;

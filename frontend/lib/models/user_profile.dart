@@ -1,9 +1,15 @@
+import 'saved_address.dart';
+
 class UserProfile {
   final String id;
   final String email;
   final String username;
   final String? phone;
   final List<String>? frequentAddresses;
+
+  /// Places with coordinates (ADR-0028 §2.8); empty when the account has
+  /// none (the server omits the key then).
+  final List<SavedAddress> savedAddresses;
   final String role;
   final String? tenantId;
   final String? kycStatus;
@@ -23,6 +29,7 @@ class UserProfile {
     required this.username,
     this.phone,
     this.frequentAddresses,
+    this.savedAddresses = const [],
     required this.role,
     this.tenantId,
     this.kycStatus,
@@ -46,6 +53,12 @@ class UserProfile {
           .toList();
     }
 
+    final saved = <SavedAddress>[
+      if (json['saved_addresses'] is List)
+        for (final e in json['saved_addresses'] as List)
+          if (e is Map) SavedAddress.fromJson(Map<String, dynamic>.from(e)),
+    ];
+
     final twoFactorRaw = json['two_factor_enabled'];
     final bool twoFactorEnabled = twoFactorRaw is bool ? twoFactorRaw : true;
 
@@ -55,6 +68,7 @@ class UserProfile {
       username: json['username'] ?? '',
       phone: json['phone'],
       frequentAddresses: addresses,
+      savedAddresses: saved,
       role: json['role'] ?? '',
       tenantId: json['tenant_id'],
       kycStatus: json['kyc_status'],
@@ -76,6 +90,7 @@ class UserProfile {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    List<SavedAddress>? savedAddresses,
     String? role,
     String? tenantId,
     String? kycStatus,
@@ -95,6 +110,7 @@ class UserProfile {
       username: username ?? this.username,
       phone: phone ?? this.phone,
       frequentAddresses: frequentAddresses ?? this.frequentAddresses,
+      savedAddresses: savedAddresses ?? this.savedAddresses,
       role: role ?? this.role,
       tenantId: tenantId ?? this.tenantId,
       kycStatus: kycStatus ?? this.kycStatus,

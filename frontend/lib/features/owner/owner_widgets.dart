@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../../ui/qd_ui.dart';
+import 'owner_rules.dart';
 
 /// Small layout pieces shared by the redesigned owner pages (FE-OWNER-1).
 
@@ -231,4 +232,58 @@ class OwnerKybBanner extends StatelessWidget {
       onAction: onOpen,
     );
   }
+}
+
+/// The courier's ID check (KYE) chip, worded like the verification pages:
+/// Verified / Under review / Not accepted / Not uploaded.
+QdStatusChip kyeChip(AppLocalizations l10n, KyeState s, {Key? key}) =>
+    switch (s) {
+      KyeState.approved => QdStatusChip(
+          key: key, label: l10n.acctKyeApproved, tone: QdTone.success),
+      KyeState.pending => QdStatusChip(
+          key: key, label: l10n.acctKyePending, tone: QdTone.warning),
+      KyeState.rejected => QdStatusChip(
+          key: key, label: l10n.acctKyeRejected, tone: QdTone.danger),
+      KyeState.none => QdStatusChip(
+          key: key, label: l10n.acctKyeMissing, tone: QdTone.neutral),
+    };
+
+String kyeLabel(AppLocalizations l10n, KyeState s) => switch (s) {
+      KyeState.approved => l10n.acctKyeApproved,
+      KyeState.pending => l10n.acctKyePending,
+      KyeState.rejected => l10n.acctKyeRejected,
+      KyeState.none => l10n.acctKyeMissing,
+    };
+
+/// The member's verification as an owner can see it: the state and what
+/// it means. Owners cannot open a courier's documents (only reviewers
+/// can, `/auth/kyb-kye/user-documents`); the courier uploads them from
+/// their own app.
+Future<void> showKyeSheet(BuildContext context, OwnerEmployee e) {
+  final l10n = context.l10n;
+  final state = kyeStateOf(e.kyeStatus);
+  final name = e.displayName;
+  final body = switch (state) {
+    KyeState.approved => l10n.ownKyeBodyApproved(name),
+    KyeState.pending => l10n.ownKyeBodyPending(name),
+    KyeState.rejected => l10n.ownKyeBodyRejected(name),
+    KyeState.none => l10n.ownKyeBodyMissing(name),
+  };
+  return QdBottomSheet.show<void>(
+    context,
+    title: l10n.ownEmpIdCheck,
+    child: Builder(builder: (sheet) {
+      final c = QdColors.of(sheet);
+      return Column(
+        key: const Key('own_kye_sheet'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          kyeChip(l10n, state),
+          const SizedBox(height: QdSpace.x3),
+          Text(body, style: QdText.body.copyWith(color: c.textSecondary)),
+        ],
+      );
+    }),
+  );
 }

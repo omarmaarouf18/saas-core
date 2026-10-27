@@ -20,19 +20,39 @@ import 'team_sheets.dart';
 /// orders, current order, all their orders, the fleet map, and freeze /
 /// unfreeze behind the owner's password (`POST /auth/employee/toggle`).
 class OwnerEmployeePage extends StatefulWidget {
-  const OwnerEmployeePage({super.key, required this.employeeId});
+  const OwnerEmployeePage(
+      {super.key, required this.employeeId, this.showIdCheck = false});
 
   final String employeeId;
 
-  static Future<void> open(BuildContext context, String employeeId) =>
+  /// Opens the ID check sheet on arrival (the team row's KYE chip).
+  final bool showIdCheck;
+
+  static Future<void> open(BuildContext context, String employeeId,
+          {bool showIdCheck = false}) =>
       OwnerNavScope.of(context).push<void>(
-          context, (_) => OwnerEmployeePage(employeeId: employeeId));
+          context,
+          (_) => OwnerEmployeePage(
+              employeeId: employeeId, showIdCheck: showIdCheck));
 
   @override
   State<OwnerEmployeePage> createState() => _OwnerEmployeePageState();
 }
 
 class _OwnerEmployeePageState extends State<OwnerEmployeePage> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showIdCheck) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final e =
+            context.read<OwnerDataController>().employeeById(widget.employeeId);
+        if (e != null) showKyeSheet(context, e);
+      });
+    }
+  }
+
   Future<void> _toggle(OwnerEmployee e) async {
     final l10n = context.l10n;
     final owner = context.read<OwnerProvider>();
@@ -155,14 +175,14 @@ class _OwnerEmployeePageState extends State<OwnerEmployeePage> {
                 style: QdText.caption.copyWith(color: c.textSecondary)),
             const SizedBox(height: QdSpace.x4),
             QdListGroup(children: [
-              // /auth/employees does not return the ID-check status today;
-              // the row appears only if the payload ever carries it.
-              if (e.kyeStatus != null)
-                QdListTile(
-                  key: const Key('own_employee_kye'),
-                  title: l10n.ownEmpIdCheck,
-                  value: _kyeLabel(l10n, e.kyeStatus!),
-                ),
+              // kye_status of /auth/employees (USER-AUTH-BE item 4).
+              QdListTile(
+                key: const Key('own_employee_kye'),
+                title: l10n.ownEmpIdCheck,
+                badge: kyeChip(l10n, kyeStateOf(e.kyeStatus)),
+                chevron: true,
+                onTap: () => showKyeSheet(context, e),
+              ),
               QdListTile(
                 key: const Key('own_employee_current'),
                 title: l10n.ownEmpCurrentOrder,
@@ -245,11 +265,3 @@ class _CountTile extends StatelessWidget {
     );
   }
 }
-
-String _kyeLabel(AppLocalizations l10n, String status) =>
-    switch (status.trim().toLowerCase()) {
-      'approved' => l10n.ownKyeApproved,
-      'pending' || 'pending_super_admin_approval' => l10n.ownKyePending,
-      'rejected' => l10n.ownKyeRejected,
-      _ => l10n.ownKyeMissing,
-    };

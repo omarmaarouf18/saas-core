@@ -212,6 +212,7 @@
  The following Dart implementation files are currently active in the codebase and tracked by the structural drift check:
   * **Core**:
    * `api_client.dart`
+   * `api_error_codes.dart` (FE-BE-GAPS: stable error `code` and server text of an API error)
    * `app_version.dart` (`X-App-Version` value: `APP_VERSION` dart-define, default the pubspec semver)
    * `audit_labels.dart`
    * `constants.dart`
@@ -221,6 +222,7 @@
    * `location_permission.dart`
    * `password_policy.dart`
    * `provider_connection_cleanup.dart`
+   * `text_limits.dart` (FE-BE-GAPS: server text limits in runes, rune-limiting input formatter)
  * **Models**:
    * `user_profile.dart`
    * `job.dart`
@@ -231,6 +233,7 @@
    * `reconciliation_job.dart`
    * `payout_request.dart`
    * `support_ticket.dart`
+   * `saved_address.dart` (FE-BE-GAPS: `saved_addresses` entry with label, address, note and coordinates; ADR-0028 §2.8)
  * **Theme / design system** (`frontend/lib/ui/`, redesign A): `tokens.dart`, `qd_theme.dart` (`qdLightTheme` / `qdDarkTheme`, the app theme in `main.dart`), `qd_ui.dart` (barrel), `qd_launch.dart`, `qd_licenses.dart`, `components/qd_*.dart`, debug gallery `gallery/qd_gallery_screen.dart` (`/qd-gallery`, debug builds only).
  * **L10n** (`frontend/lib/l10n/`):
    * `l10n.dart` (null-safe `context.l10n` extension + `appL10n` helper)
@@ -239,6 +242,7 @@
    * `app_localizations_ar.dart` (generated)
  * **Services**:
    * `push_notification_service.dart`
+   * `notification_tap_router.dart` (FE-BE-GAPS: push taps from Firebase Messaging — cold start, background, foreground — held for the role shells)
  * **Providers**:
    * `theme_provider.dart`
    * `locale_provider.dart`
@@ -251,16 +255,17 @@
    * `notifications_provider.dart`
    * `map_tracking_provider.dart`
    * `reconciliation_provider.dart`
+   * `service_photo_store.dart` (FE-BE-GAPS: service photos — authenticated load of `GET /users/services/{id}/photo` with an in-memory cache, multipart upload with progress, client JPEG / PNG ≤ 5 MB check; provided by `ServicePhotoScope` in `main.dart`)
  * **Screens / Widgets**: removed in FE-CLEANUP (2.0.0). `frontend/lib/screens/` (33 files, including the debug `ComponentLibraryScreen` and its `/component-library` route) and `frontend/lib/widgets/` (37 files) no longer exist; their replacements are the feature pages below.
  * **Features** (`frontend/lib/features/`, redesign A on `frontend/lib/ui/`; the whole app since 2.0.0, no flags; widget tests and goldens under `frontend/test/features/`; no device run against a backend yet):
 
    | Area | Status | What it holds | Worklogs |
    | :--- | :--- | :--- | :--- |
    | `features/auth/` | Shipped (2.0.0) | Launch gate + splash (`auth_gate.dart`, `launch_splash.dart`), role routing (`role_home.dart`: customer / owner / courier shell, `unsupported_role_page.dart` for staff roles), sign in, sign up, code entry, password reset, forced update (`update_gate.dart`, `update_required_page.dart`: opens the download link, copies it as fallback) | FE-AUTH-ACCOUNT, HOTFIX-LOGIN, FE-CLEANUP |
-   | `features/customer/` | Shipped (2.0.0) | Customer shell, home, market, booking, place picker, orders, order detail (searching / proposal / active / completed / closed), chat, rating | FE-CUST-1, FE-CUST-2, FE-V2-CONSUME |
-   | `features/account/` | Shipped (2.0.0) | Account page (every role), my details, saved addresses (customer only), security / 2FA, email change, support tickets, notifications (one page for every role, role-checked links: customer → My orders / tickets; owner → order detail / Orders / Team / plan / verification; courier → offer or current job / My jobs / verification) | FE-AUTH-ACCOUNT, FE-OWNER-1, FE-CLEANUP |
-   | `features/owner/` | Shipped (2.0.0) | Owner shell, Today, orders, order detail, payment review, team, courier page, service setup, fleet map, activity log, wallet, plan | FE-OWNER-1, FE-OWNER-2b, FE-V2-CONSUME |
-   | `features/courier/` | Shipped (2.0.0) | Courier shell, offer, current job, negotiation, my jobs, blocked (suspended / paused) page | FE-COURIER, FE-V2-CONSUME |
+   | `features/customer/` | Shipped (2.0.0) | Customer shell, home, market (company photo), booking (server error codes on their field, character counters), place picker (saved places first), orders, order detail (searching / proposal / active / completed / closed), chat, rating | FE-CUST-1, FE-CUST-2, FE-V2-CONSUME, FE-BE-GAPS |
+   | `features/account/` | Shipped (2.0.0) | Account page (every role), my details, saved addresses (customer only; label, address, note and map pin, `saved_addresses`), security / 2FA, email change, support tickets, notifications (one page for every role, role-checked links: a `job_id` opens that job — customer → its order, owner → its order detail, courier → offer / current job / My jobs; otherwise customer → My orders / tickets; owner → order detail / Orders / Team / plan / verification; courier → offer or current job / My jobs / verification; push taps follow the same links) | FE-AUTH-ACCOUNT, FE-OWNER-1, FE-CLEANUP, FE-BE-GAPS |
+   | `features/owner/` | Shipped (2.0.0) | Owner shell, Today, orders (customer name), order detail (customer name), payment review, team (courier ID check chip), courier page, service setup (photo upload, one-request create), fleet map, activity log, wallet, plan | FE-OWNER-1, FE-OWNER-2b, FE-V2-CONSUME, FE-BE-GAPS |
+   | `features/courier/` | Shipped (2.0.0) | Courier shell, offer, current job (pickup errors by code), negotiation, my jobs, blocked (suspended / paused) page | FE-COURIER, FE-V2-CONSUME, FE-BE-GAPS |
    | `features/verification/` | Shipped (2.0.0) | KYB / KYE verification page (owner and courier), document picker, verification-rejected dialog host (`rejection_dialog_host.dart`, live `kyc_rejected` notification) | FE-OWNER-2b, FE-CLEANUP |
 
    Release: pubspec `2.0.0`; CI builds one APK per ABI (armeabi-v7a, arm64-v8a, x86_64) plus a universal `app-release.apk` with Flutter pinned to 3.44.6 (see [frontend/docs/CI_CD.md](../../frontend/docs/CI_CD.md)).
@@ -269,7 +274,7 @@
 
 ## Known Gaps & Limitations
 
-*   **2.0.0 (FE-CLEANUP)**: the old-screen entries further down (audits, golden coverage of the 30 old screens, the old notifications screen's mock reply and job-status deep-link stub) describe deleted code and are kept as history. Open for the redesign: owner and courier notification bodies are the services' English text (titles are localized) and job links read the job id from the body (no `job_id` in the payload); team / plan links wait for `employee_*` / `subscription_*` notification types no service sends yet; no device run against a backend.
+*   **2.0.0 (FE-CLEANUP)**: the old-screen entries further down (audits, golden coverage of the 30 old screens, the old notifications screen's mock reply and job-status deep-link stub) describe deleted code and are kept as history. Open for the redesign: owner and courier notification bodies are the services' English text (titles are localized); team / plan links wait for `employee_*` / `subscription_*` notification types no service sends yet; no device run against a backend. **FE-BE-GAPS** closed the job-id part (`job_id` links open the exact job, list and push taps); push taps only work once Firebase is initialized in the app (no `Firebase.initializeApp()` / `google-services.json` today), and `job_booked`, `job_in_transit`, `job_delivered` are routed but not sent by any service yet (see docs/worklog/FE-BE-GAPS.md).
 
 *   **UX Pattern Audit (2026-09-25)**: Mapped weak areas across all 31 production screens to named design patterns in [docs/frontend/UI_UX_AUDIT_2026-09.md](UI_UX_AUDIT_2026-09.md). 62 new findings (11 P1 / 39 P2 / 12 P3), zero duplication of `UI_UX_AUDIT.md`, `UI_UX_BEHAVIOR_AUDIT.md`, or roadmap phases (non-duplication verified against all three docs plus fixed-commit history). **Auth group (A1–A10) remediated**: inline error banners (login/signup/OTP), OTP auto-submit contract, KYC refresh error/busy/focal, reset-flow back links + resend demotion — full `flutter test` 619/619 green. **Customer group (C1–C10) remediated**: failure-vs-empty distinction (chat history flags + banners, per-card rating retry, rating status-check banner, send retry parity), home activity skeleton with three exclusive states, ticket-dialog dismiss locks, shared pending pulse dot, single retry CTA — full `flutter test` 638/638 green. **Employee/Owner group (E1–E26) remediated**: confirmation dialogs for high-stakes cancellations and worker freeze/unfreeze with upfront consequences and decision-specific feedback, persistent inline error banners on audit trail tab and fleet map, actionable empty states with one-tap recovery across roster/history/recon/fleet map, 44px minimum touch targets on shared PillFilterBar/fleet filter pills/details toggle, form validation separation and progressive disclosure on owner config with autovalidateMode on shared ThemedTextField, stale-while-revalidate fleet map with non-blocking revalidation and refresh signals, focal roster elevation, removal of static mock maintenance chip, and card-geometry-matched skeleton loaders across roster/history/recon queue — full `flutter test` 672/672 green, 58/58 goldens byte-identical. Extracted norms codified in [docs/frontend/UX_PATTERNS.md](UX_PATTERNS.md) (Rules 1–4 Auth; Rules 5–7 Customer; Rules 8–14 Employee/Owner: high-stakes confirmation, actionable filtered empty states, 44px touch targets, form validation separation, stale-while-revalidate telemetry, focal hierarchy elevation, card-geometry skeleton loaders; Rule 6 invariance confirmed). **Shared/Settings group (S1–S16) remediated**: notifications empty-state gated on history loading, subscription billing confirmations with consequence copy, first-paint hydration gating on subscription/wallet via isDashboardHydrated, stored-error surfacing on my-account load and 2FA-disable with 429-lockout discrimination, payout cache preservation plus unified wallet refreshAll, email-change dialog dismiss locks matching money dialogs, my-account address inline validation/empty state/delete-with-undo (shared focusNode + snackbar-action additions), 2FA-enable switch busy lock, notification dismiss target restored to 44px — full `flutter test` 695/695 green, goldens byte-identical. Extracted norms codified in [docs/frontend/UX_PATTERNS.md](UX_PATTERNS.md) (Rules 15–21 Shared/Settings: first-paint hydration, section loading-vs-empty gates, stored-error discrimination, billing confirmation, cache preservation + one refresh routine, interaction locks, inline field ownership + undo + zero-states). **Full 62-finding audit COMPLETE (A 5P1/5P2 + C 3P2/7P3 + E 3P1/20P2/3P3 + S 4P1/10P2/2P3 = 62/62 fixed, 0 deferred; §5 Q1–Q11 open questions and §4 verified-OK items intentionally untouched).**
 

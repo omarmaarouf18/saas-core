@@ -9,6 +9,7 @@ import '../../providers/theme_provider.dart';
 import '../../ui/qd_ui.dart';
 import 'account_nav.dart';
 import 'my_details_page.dart';
+import 'saved_address_rules.dart';
 import 'saved_addresses_page.dart';
 import 'security_page.dart';
 
@@ -250,7 +251,8 @@ class _AccountPageState extends State<AccountPage> {
                     key: const Key('account_addresses'),
                     icon: Icons.location_on_outlined,
                     title: l10n.acctSavedAddresses,
-                    value: '${user?.frequentAddresses?.length ?? 0}',
+                    value:
+                        '${(user?.savedAddresses.length ?? 0) + legacyAddressesOf(user).length}',
                     chevron: true,
                     onTap: () => nav.push<void>(
                         context, (_) => const SavedAddressesPage()),

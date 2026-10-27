@@ -101,9 +101,8 @@ void main() {
 
   testWidgets('resend failure: its own banner, retry resends', (tester) async {
     final deps = AuthTestDeps();
-    deps.auth.failNext['resendOtp'] = const AuthFailure(
-        'too many attempts for this email. Please try again in 60 seconds.',
-        status: 429);
+    deps.auth.failNext['resendOtp'] =
+        const AuthFailure('Something went wrong.', status: 500);
     await _pump(tester, deps);
     await tester.pump(const Duration(seconds: 60));
     await tester.tap(find.byKey(const Key('otp_resend')));
@@ -130,5 +129,51 @@ void main() {
     expect(tester.getCenter(find.text('1')).dx,
         lessThan(tester.getCenter(find.text('6')).dx));
     await tester.pump(const Duration(seconds: 60));
+  });
+
+  testWidgets('resend lockout (429): localized wait, no retry, countdown',
+      (tester) async {
+    final deps = AuthTestDeps();
+    deps.auth.failNext['resendOtp'] = const AuthFailure(
+        'too many attempts for this email. Please try again in 90 seconds.',
+        status: 429);
+    await _pump(tester, deps);
+    await tester.pump(const Duration(seconds: 60));
+    await tester.tap(find.byKey(const Key('otp_resend')));
+    await tester.pump();
+    expect(find.byKey(const Key('otp_lockout')), findsOneWidget);
+    expect(
+        find.text(
+            'Too many codes sent. You can ask for a new one in 90 seconds.'),
+        findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+    // The countdown restarts with the server's wait.
+    expect(find.byKey(const Key('otp_resend')), findsNothing);
+    expect(find.textContaining('1:30'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 90));
+    expect(find.byKey(const Key('otp_resend')), findsOneWidget);
+  });
+
+  testWidgets('lockout wording in Arabic', (tester) async {
+    final deps = AuthTestDeps();
+    deps.auth.failNext['resendOtp'] = const AuthFailure(
+        'too many attempts from this IP. Please try again in 45 seconds.',
+        status: 429);
+    usePhone(tester);
+    await tester.pumpWidget(authApp(
+        deps, const OtpPage(email: 'mona@example.com'),
+        locale: const Locale('ar')));
+    await tester.pump(const Duration(seconds: 60));
+    await tester.tap(find.byKey(const Key('otp_resend')));
+    await tester.pump();
+    expect(find.text('اتبعت أكواد كتير. تقدر تطلب كود جديد بعد 45 ثانية.'),
+        findsOneWidget);
+    await tester.pump(const Duration(seconds: 45));
+  });
+
+  test('lockoutSeconds reads the server wait', () {
+    expect(lockoutSeconds('Please try again in 60 seconds.'), 60);
+    expect(lockoutSeconds('try again in 1 second'), 1);
+    expect(lockoutSeconds('locked'), isNull);
   });
 }

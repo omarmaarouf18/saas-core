@@ -26,6 +26,7 @@ class RecordedLinks {
         openTicket: (_, id, {required resolved}) =>
             opened.add('ticket:$id:$resolved'),
         openTickets: (_) => opened.add('tickets'),
+        openJob: (_, id) => opened.add('job:$id'),
       );
 }
 
@@ -241,6 +242,23 @@ void main() {
       await tester.tap(find.text('New job offer'));
       await tester.pump(const Duration(milliseconds: 600));
       expect(links.opened.length, 2);
+    });
+
+    testWidgets('a list tap with job_id opens that job (FE-BE-GAPS)',
+        (tester) async {
+      final withJob = NotificationModel(
+        id: 'nj',
+        type: 'job_picked_up',
+        tenantId: 't',
+        jobId: 'job-42',
+        title: 'Courier Picked Up',
+        body: 'Your package was picked up.',
+        timestamp: now.subtract(const Duration(minutes: 2)),
+      );
+      final (_, links, _) = await _pump(tester, [withJob]);
+      await tester.tap(find.text('Your order was picked up'));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(links.opened, ['job:job-42']);
     });
 
     testWidgets('an owner tapping a customer order notification goes nowhere',

@@ -322,6 +322,7 @@ class ServiceDraft {
     required this.baseFee,
     required this.perKm,
     this.schedule,
+    this.photoUrl,
   });
 
   final String name;
@@ -333,28 +334,22 @@ class ServiceDraft {
   final double baseFee;
   final double perKm;
   final ScheduleFields? schedule;
+
+  /// A stored photo key to save (uploaded before the service existed);
+  /// null leaves the stored photo as it is.
+  final String? photoUrl;
 }
 
-/// The create worked but the follow-up PUT did not: the service exists
-/// with only the fields the POST carried. [serviceId] is null when the
-/// create response had no id.
-class ServiceSaveIncomplete implements Exception {
-  const ServiceSaveIncomplete(this.serviceId, this.cause);
-
-  final String? serviceId;
-  final Object? cause;
-}
-
-/// Saves [d] and returns the service id.
+/// Saves [d] and returns the service id (null when a create response
+/// carried none; the caller re-reads the list).
 ///
-/// An existing service gets one PUT with every field. A new one is created
-/// with `POST /users/services` and then gets the same PUT:
-/// `OwnerProvider.createService` sends only the name, category, prices and
-/// location, so the address, coverage radius and hours would otherwise be
-/// dropped on the first save (O-Service note; the provider and backend fix
-/// is a follow-up). The photo and the free-text working hours are never
-/// sent, so their stored values stay as they are.
-Future<String> saveService(
+/// An existing service gets one PUT with every field. A new one is one
+/// `POST /users/services` with every field too (USER-AUTH-BE item 2: the
+/// create handler persists the address, coverage radius, schedule and
+/// photo key like PUT; the old "create, then PUT the rest" is gone). The
+/// free-text working hours are never sent; the photo only as the key an
+/// upload returned ([ServiceDraft.photoUrl]).
+Future<String?> saveService(
   OwnerProvider owner, {
   required String ownerId,
   required String? serviceId,
@@ -375,6 +370,7 @@ Future<String> saveService(
         openTime: d.schedule?.openTime,
         closeTime: d.schedule?.closeTime,
         perDaySchedule: d.schedule?.perDay,
+        photoUrl: d.photoUrl,
       );
 
   if (serviceId != null) {
@@ -389,17 +385,17 @@ Future<String> saveService(
     latitude: d.latitude,
     longitude: d.longitude,
     ownerId: ownerId,
+    address: d.address,
+    coverageRadiusKm: d.radiusKm,
+    photoUrl: d.photoUrl,
+    scheduleMode: d.schedule?.mode,
+    openTime: d.schedule?.openTime,
+    closeTime: d.schedule?.closeTime,
+    perDaySchedule: d.schedule?.perDay,
   );
   final created = res['service'];
-  final id =
-      serviceIdOf(created is Map ? Map<String, dynamic>.from(created) : null);
-  if (id == null) throw const ServiceSaveIncomplete(null, null);
-  try {
-    await put(id);
-  } catch (e) {
-    throw ServiceSaveIncomplete(id, e);
-  }
-  return id;
+  return serviceIdOf(
+      created is Map ? Map<String, dynamic>.from(created) : null);
 }
 
 enum ServiceSaveFailure { kybNotApproved, paidPlanRequired, unavailable, other }

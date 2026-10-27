@@ -5,6 +5,7 @@ import '../core/error_messages.dart';
 import '../core/password_policy.dart';
 import '../l10n/app_localizations_en.dart';
 import '../models/user_profile.dart';
+import '../models/saved_address.dart';
 import '../services/push_notification_service.dart';
 
 /// B2: server text reaches the auth banner ONLY for 429 lockouts (the
@@ -318,11 +319,14 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> resendOtp(String email) async {
     _isLoading = true;
     _error = null;
+    _lastErrorStatusCode = null;
     _lastErrorCode = null;
     _lastErrorReason = null;
     notifyListeners();
 
     try {
+      // One endpoint for both flows: a pending sign-up, or a pending 2FA
+      // sign-in challenge (USER-AUTH-BE item 6).
       final res = await apiClient.post('/auth/resend-otp', {
         'email': email,
       });
@@ -330,6 +334,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Resend OTP error: $e');
       _error = _fail(e);
+      // FE-BE-GAPS: the code screen words a 429 lockout itself.
+      _lastErrorStatusCode = e is ApiClientException ? e.statusCode : null;
       return null;
     } finally {
       _isLoading = false;
@@ -579,6 +585,7 @@ class AuthProvider extends ChangeNotifier {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    List<SavedAddress>? savedAddresses,
     bool? twoFactorEnabled,
     String? password,
   }) async {
@@ -594,6 +601,12 @@ class AuthProvider extends ChangeNotifier {
       if (phone != null) body['phone'] = phone;
       if (frequentAddresses != null) {
         body['frequent_addresses'] = frequentAddresses;
+      }
+      // The whole list; the server re-derives frequent_addresses from it.
+      if (savedAddresses != null) {
+        body['saved_addresses'] = [
+          for (final a in savedAddresses) a.toJson(),
+        ];
       }
       if (twoFactorEnabled != null) {
         body['two_factor_enabled'] = twoFactorEnabled;

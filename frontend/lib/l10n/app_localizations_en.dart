@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctAddressesNote =>
-      'Addresses are saved as text, without a map pin.';
+      'Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.';
 
   @override
   String get acctAddressesEmpty => 'No saved addresses yet';
@@ -1784,7 +1784,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownOrdersTitle => 'Orders';
 
   @override
-  String get ownOrdersSearchHint => 'Order number or courier name';
+  String get ownOrdersSearchHint => 'Order number, customer or courier';
 
   @override
   String get ownClearSearch => 'Clear search';
@@ -1980,18 +1980,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownEmpIdCheck => 'ID check';
-
-  @override
-  String get ownKyeApproved => 'Approved';
-
-  @override
-  String get ownKyePending => 'Under review';
-
-  @override
-  String get ownKyeRejected => 'Rejected';
-
-  @override
-  String get ownKyeMissing => 'Documents missing';
 
   @override
   String get ownEmpCurrentOrder => 'Current order';
@@ -2244,7 +2232,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownSvcPhotoNote =>
-      'Customers see the first letter of your service name for now. Photo upload is coming.';
+      'Customers see this photo on your card. JPEG or PNG, up to 5 MB.';
 
   @override
   String get ownSvcName => 'Service name as customers see it';
@@ -2373,10 +2361,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ownSvcErrUnavailable =>
       'This is unavailable right now. Try again in a bit.';
-
-  @override
-  String get ownSvcErrPartial =>
-      'The service was created but some details weren\'t saved. Tap save again.';
 
   @override
   String get ownSvcCurrency => 'EGP';
@@ -3596,4 +3580,243 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get roleUnsupportedBody =>
       'Sign in with a customer, business or courier account. Staff accounts use the web console.';
+
+  @override
+  String get ownSvcPhotoSheetTitle => 'Service photo';
+
+  @override
+  String get ownSvcPhotoAdd => 'Add photo';
+
+  @override
+  String get ownSvcPhotoReplace => 'Change photo';
+
+  @override
+  String get ownSvcPhotoRemove => 'Remove photo';
+
+  @override
+  String get ownSvcPhotoCamera => 'Take a photo';
+
+  @override
+  String get ownSvcPhotoGallery => 'Choose from photos';
+
+  @override
+  String ownSvcPhotoUploading(int percent) {
+    return 'Uploading… $percent%';
+  }
+
+  @override
+  String get ownSvcPhotoPending =>
+      'Photo ready. It is added to your service when you tap Save.';
+
+  @override
+  String get ownSvcPhotoErrUnavailable =>
+      'Photo upload is unavailable right now. Try again later.';
+
+  @override
+  String get ownSvcPhotoErrFormat => 'Use a JPEG or PNG photo.';
+
+  @override
+  String get ownSvcPhotoErrTooLarge =>
+      'This photo is over 5 MB. Choose a smaller one.';
+
+  @override
+  String get ownSvcPhotoErrRejected =>
+      'This photo couldn\'t be used. Try another one.';
+
+  @override
+  String get ownSvcPhotoErrNetwork =>
+      'The photo wasn\'t uploaded. Check your connection and try again.';
+
+  @override
+  String get ownSvcPhotoErrRemove =>
+      'We couldn\'t remove the photo. Try again.';
+
+  @override
+  String get addrLabelTitle => 'Name';
+
+  @override
+  String get addrLabelHome => 'Home';
+
+  @override
+  String get addrLabelWork => 'Work';
+
+  @override
+  String get addrLabelOther => 'Other';
+
+  @override
+  String get addrLabelCustom => 'Name this place';
+
+  @override
+  String get addrLabelCustomHint => 'e.g. Mum\'s house, the gym';
+
+  @override
+  String get addrPin => 'Place on the map';
+
+  @override
+  String get addrPinMissing => 'Required';
+
+  @override
+  String get addrPinSet => 'Pinned on the map';
+
+  @override
+  String get addrPinTitle => 'Pin the place';
+
+  @override
+  String get addrErrLabel => 'Choose or write a name';
+
+  @override
+  String addrErrTooLong(int max) {
+    return 'Use at most $max characters';
+  }
+
+  @override
+  String get addrErrPin => 'Pin the place on the map';
+
+  @override
+  String get addrLegacyTitle => 'Not on the map yet';
+
+  @override
+  String get addrLegacyBody =>
+      'These older addresses have no map pin. Pin one to use it when you book.';
+
+  @override
+  String get addrLegacyPin => 'Pin it';
+
+  @override
+  String addrLegacyPinFor(String address) {
+    return 'Pin $address on the map';
+  }
+
+  @override
+  String get addrDropLegacyTitle => 'Older addresses will be removed';
+
+  @override
+  String addrDropLegacyBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count older addresses without a map pin will be removed when you save. Pin them first to keep them.',
+      one:
+          '1 older address without a map pin will be removed when you save. Pin it first to keep it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addrDropLegacyConfirm => 'Save anyway';
+
+  @override
+  String get custSavedPlaces => 'Saved places';
+
+  @override
+  String get custSavedNeedsPin =>
+      'No map pin yet: move the map to it, then confirm';
+
+  @override
+  String custSavedUse(String label, String address) {
+    return 'Use $label: $address';
+  }
+
+  @override
+  String ownForCustomer(String name) {
+    return 'For $name';
+  }
+
+  @override
+  String ownKyeBodyApproved(String name) {
+    return '$name\'s ID documents were checked and accepted.';
+  }
+
+  @override
+  String ownKyeBodyPending(String name) {
+    return '$name uploaded their ID documents. Our team is reviewing them.';
+  }
+
+  @override
+  String ownKyeBodyRejected(String name) {
+    return '$name\'s documents weren\'t accepted. They can upload new ones from Verification in the courier app.';
+  }
+
+  @override
+  String ownKyeBodyMissing(String name) {
+    return '$name hasn\'t uploaded ID documents yet. They upload them from Verification in the courier app.';
+  }
+
+  @override
+  String ownKyeChipFor(String status) {
+    return 'ID check: $status';
+  }
+
+  @override
+  String get ntfJobNotFound =>
+      'We couldn\'t open that order. It may have been removed, or it isn\'t on your account.';
+
+  @override
+  String get ntfPushView => 'View';
+
+  @override
+  String get ntfPickedUpTitle => 'Your order was picked up';
+
+  @override
+  String get ntfPickedUpBody =>
+      'The courier has it and is on the way to the drop-off.';
+
+  @override
+  String get ntfBookedTitle => 'Order placed';
+
+  @override
+  String get ntfInTransitTitle => 'Your order is on the way';
+
+  @override
+  String get ntfDeliveredTitle => 'Your order was delivered';
+
+  @override
+  String get bookErrAddressRequired => 'Write the address of this stop.';
+
+  @override
+  String get bookErrNameRequired => 'Write the recipient\'s name.';
+
+  @override
+  String get bookErrPhoneRequired => 'Write the recipient\'s phone number.';
+
+  @override
+  String get bookErrPackageRequired => 'Add the package details.';
+
+  @override
+  String get bookErrRequired => 'This is required.';
+
+  @override
+  String get bookErrCoordinates =>
+      'The pickup or drop-off point isn\'t valid. Pick it again on the map.';
+
+  @override
+  String get bookErrPayment => 'Only cash on delivery is available right now.';
+
+  @override
+  String get bookErrDuplicate =>
+      'Your order is still being sent. Wait a moment, then check My orders.';
+
+  @override
+  String get bookErrUnavailable =>
+      'Ordering is unavailable right now. Try again in a bit.';
+
+  @override
+  String get bookErrNoCourier =>
+      'No courier is available nearby right now. Try again soon.';
+
+  @override
+  String get courPickupChanged => 'This job changed. We refreshed it.';
+
+  @override
+  String get courJobGone => 'This job no longer exists.';
+
+  @override
+  String authResendTooMany(int seconds) {
+    return 'Too many codes sent. You can ask for a new one in $seconds seconds.';
+  }
+
+  @override
+  String get authResendTooManyNoTime =>
+      'Too many codes sent. Wait a few minutes, then ask again.';
 }

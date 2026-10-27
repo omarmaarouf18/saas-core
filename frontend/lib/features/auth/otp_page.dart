@@ -17,6 +17,19 @@ import 'widgets/otp_code_form.dart';
 /// verifies on its own, verify and resend failures each get their own
 /// retry, a resend success says so, and success replaces the stack with
 /// the home screen. New: a 60 s countdown before resend is offered.
+///
+/// The same page serves the 2FA sign-in challenge (from the login page)
+/// and sign-up; "send it again" calls `POST /auth/resend-otp`, which since
+/// USER-AUTH-BE item 6 resends the login challenge code too (it said "no
+/// pending registration" before). A 429 shows the wait in the app
+/// language and restarts the countdown with it (FE-BE-GAPS).
+/// The seconds of a lockout message ("... try again in 60 seconds."), or
+/// null when it has none.
+int? lockoutSeconds(String message) {
+  final m = RegExp(r'(\d+)\s*seconds?').firstMatch(message);
+  return m == null ? null : int.tryParse(m.group(1)!);
+}
+
 class OtpPage extends StatelessWidget {
   const OtpPage({super.key, required this.email, this.devOtp});
 
@@ -44,6 +57,19 @@ class OtpPage extends StatelessWidget {
     Future<OtpOutcome> resend() async {
       final dev = await auth.resendOtp(email);
       if (auth.error != null) {
+        if (auth.lastErrorStatusCode == 429) {
+          // Too many sends for this email or device: no retry button (it
+          // only extends the lockout); the countdown waits it out.
+          final wait = lockoutSeconds(auth.lastErrorReason ?? auth.error!);
+          return OtpOutcome.failure(
+              context.mounted
+                  ? (wait == null
+                      ? context.l10n.authResendTooManyNoTime
+                      : context.l10n.authResendTooMany(wait))
+                  : auth.error!,
+              retryable: false,
+              waitSeconds: wait);
+        }
         return OtpOutcome.failure(
             (context.mounted ? authErrorText(context.l10n, auth) : null) ??
                 auth.error!);

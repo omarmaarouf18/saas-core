@@ -1482,9 +1482,9 @@
       }
     }
   },
-  "acctAddressesNote": "Addresses are saved as text, without a map pin.",
+  "acctAddressesNote": "Each address has a map pin, so it fills the pickup or drop-off in one tap when you book.",
   "@acctAddressesNote": {
-    "description": "FE-AUTH-ACCOUNT redesigned customer account (A-Settings)."
+    "description": "FE-AUTH-ACCOUNT; FE-BE-GAPS saved addresses with coordinates."
   },
   "acctAddressesEmpty": "No saved addresses yet",
   "@acctAddressesEmpty": {
@@ -2164,9 +2164,9 @@
   "@ownOrdersTitle": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
-  "ownOrdersSearchHint": "Order number or courier name",
+  "ownOrdersSearchHint": "Order number, customer or courier",
   "@ownOrdersSearchHint": {
-    "description": "FE-OWNER-1 redesigned owner screens."
+    "description": "FE-OWNER-1; FE-BE-GAPS: customer name is searchable."
   },
   "ownClearSearch": "Clear search",
   "@ownClearSearch": {
@@ -2450,22 +2450,6 @@
   },
   "ownEmpIdCheck": "ID check",
   "@ownEmpIdCheck": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeApproved": "Approved",
-  "@ownKyeApproved": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyePending": "Under review",
-  "@ownKyePending": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeRejected": "Rejected",
-  "@ownKyeRejected": {
-    "description": "FE-OWNER-1 redesigned owner screens."
-  },
-  "ownKyeMissing": "Documents missing",
-  "@ownKyeMissing": {
     "description": "FE-OWNER-1 redesigned owner screens."
   },
   "ownEmpCurrentOrder": "Current order",
@@ -2801,9 +2785,9 @@
   "@ownSvcSectionBusiness": {
     "description": "FE-OWNER-2 redesigned owner screens."
   },
-  "ownSvcPhotoNote": "Customers see the first letter of your service name for now. Photo upload is coming.",
+  "ownSvcPhotoNote": "Customers see this photo on your card. JPEG or PNG, up to 5 MB.",
   "@ownSvcPhotoNote": {
-    "description": "FE-OWNER-2 redesigned owner screens."
+    "description": "FE-OWNER-2 redesigned owner screens; FE-BE-GAPS photo upload."
   },
   "ownSvcName": "Service name as customers see it",
   "@ownSvcName": {
@@ -2971,10 +2955,6 @@
   },
   "ownSvcErrUnavailable": "This is unavailable right now. Try again in a bit.",
   "@ownSvcErrUnavailable": {
-    "description": "FE-OWNER-2 redesigned owner screens."
-  },
-  "ownSvcErrPartial": "The service was created but some details weren't saved. Tap save again.",
-  "@ownSvcErrPartial": {
     "description": "FE-OWNER-2 redesigned owner screens."
   },
   "ownSvcCurrency": "EGP",
@@ -4659,5 +4639,324 @@
   "roleUnsupportedBody": "Sign in with a customer, business or courier account. Staff accounts use the web console.",
   "@roleUnsupportedBody": {
     "description": "FE-CLEANUP page for a signed-in role the app has no screens for."
+  },
+  "ownSvcPhotoSheetTitle": "Service photo",
+  "@ownSvcPhotoSheetTitle": {
+    "description": "FE-BE-GAPS item 1: photo source sheet title."
+  },
+  "ownSvcPhotoAdd": "Add photo",
+  "@ownSvcPhotoAdd": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoReplace": "Change photo",
+  "@ownSvcPhotoReplace": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoRemove": "Remove photo",
+  "@ownSvcPhotoRemove": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoCamera": "Take a photo",
+  "@ownSvcPhotoCamera": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoGallery": "Choose from photos",
+  "@ownSvcPhotoGallery": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoUploading": "Uploading… {percent}%",
+  "@ownSvcPhotoUploading": {
+    "description": "FE-BE-GAPS item 1: upload progress.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "ownSvcPhotoPending": "Photo ready. It is added to your service when you tap Save.",
+  "@ownSvcPhotoPending": {
+    "description": "FE-BE-GAPS item 1: uploaded before the service exists."
+  },
+  "ownSvcPhotoErrUnavailable": "Photo upload is unavailable right now. Try again later.",
+  "@ownSvcPhotoErrUnavailable": {
+    "description": "FE-BE-GAPS item 1: 503 / storage not ready."
+  },
+  "ownSvcPhotoErrFormat": "Use a JPEG or PNG photo.",
+  "@ownSvcPhotoErrFormat": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrTooLarge": "This photo is over 5 MB. Choose a smaller one.",
+  "@ownSvcPhotoErrTooLarge": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrRejected": "This photo couldn't be used. Try another one.",
+  "@ownSvcPhotoErrRejected": {
+    "description": "FE-BE-GAPS item 1: server 400."
+  },
+  "ownSvcPhotoErrNetwork": "The photo wasn't uploaded. Check your connection and try again.",
+  "@ownSvcPhotoErrNetwork": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "ownSvcPhotoErrRemove": "We couldn't remove the photo. Try again.",
+  "@ownSvcPhotoErrRemove": {
+    "description": "FE-BE-GAPS item 1."
+  },
+  "addrLabelTitle": "Name",
+  "@addrLabelTitle": {
+    "description": "FE-BE-GAPS item 3: saved address label chooser."
+  },
+  "addrLabelHome": "Home",
+  "@addrLabelHome": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelWork": "Work",
+  "@addrLabelWork": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelOther": "Other",
+  "@addrLabelOther": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelCustom": "Name this place",
+  "@addrLabelCustom": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLabelCustomHint": "e.g. Mum's house, the gym",
+  "@addrLabelCustomHint": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPin": "Place on the map",
+  "@addrPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinMissing": "Required",
+  "@addrPinMissing": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinSet": "Pinned on the map",
+  "@addrPinSet": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrPinTitle": "Pin the place",
+  "@addrPinTitle": {
+    "description": "FE-BE-GAPS item 3: picker title."
+  },
+  "addrErrLabel": "Choose or write a name",
+  "@addrErrLabel": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrErrTooLong": "Use at most {max} characters",
+  "@addrErrTooLong": {
+    "description": "FE-BE-GAPS item 3.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "addrErrPin": "Pin the place on the map",
+  "@addrErrPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyTitle": "Not on the map yet",
+  "@addrLegacyTitle": {
+    "description": "FE-BE-GAPS item 3: old string-only addresses."
+  },
+  "addrLegacyBody": "These older addresses have no map pin. Pin one to use it when you book.",
+  "@addrLegacyBody": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyPin": "Pin it",
+  "@addrLegacyPin": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrLegacyPinFor": "Pin {address} on the map",
+  "@addrLegacyPinFor": {
+    "description": "FE-BE-GAPS item 3: button semantics.",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "addrDropLegacyTitle": "Older addresses will be removed",
+  "@addrDropLegacyTitle": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "addrDropLegacyBody": "{count, plural, =1{1 older address without a map pin will be removed when you save. Pin it first to keep it.} other{{count} older addresses without a map pin will be removed when you save. Pin them first to keep them.}}",
+  "@addrDropLegacyBody": {
+    "description": "FE-BE-GAPS item 3: the server rebuilds frequent_addresses from saved_addresses.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addrDropLegacyConfirm": "Save anyway",
+  "@addrDropLegacyConfirm": {
+    "description": "FE-BE-GAPS item 3."
+  },
+  "custSavedPlaces": "Saved places",
+  "@custSavedPlaces": {
+    "description": "FE-BE-GAPS item 3: picker list."
+  },
+  "custSavedNeedsPin": "No map pin yet: move the map to it, then confirm",
+  "@custSavedNeedsPin": {
+    "description": "FE-BE-GAPS item 3: legacy string chosen in the picker."
+  },
+  "custSavedUse": "Use {label}: {address}",
+  "@custSavedUse": {
+    "description": "FE-BE-GAPS item 3: chip semantics.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "ownForCustomer": "For {name}",
+  "@ownForCustomer": {
+    "description": "FE-BE-GAPS item 4: Today request row, the customer.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyApproved": "{name}'s ID documents were checked and accepted.",
+  "@ownKyeBodyApproved": {
+    "description": "FE-BE-GAPS item 4: ID check sheet.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyPending": "{name} uploaded their ID documents. Our team is reviewing them.",
+  "@ownKyeBodyPending": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyRejected": "{name}'s documents weren't accepted. They can upload new ones from Verification in the courier app.",
+  "@ownKyeBodyRejected": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeBodyMissing": "{name} hasn't uploaded ID documents yet. They upload them from Verification in the courier app.",
+  "@ownKyeBodyMissing": {
+    "description": "FE-BE-GAPS item 4.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ownKyeChipFor": "ID check: {status}",
+  "@ownKyeChipFor": {
+    "description": "FE-BE-GAPS item 4: team row chip semantics.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "ntfJobNotFound": "We couldn't open that order. It may have been removed, or it isn't on your account.",
+  "@ntfJobNotFound": {
+    "description": "FE-BE-GAPS item 5: a notification's job cannot be opened."
+  },
+  "ntfPushView": "View",
+  "@ntfPushView": {
+    "description": "FE-BE-GAPS item 5: action on a push received while the app is open."
+  },
+  "ntfPickedUpTitle": "Your order was picked up",
+  "@ntfPickedUpTitle": {
+    "description": "FE-BE-GAPS item 5: job_picked_up."
+  },
+  "ntfPickedUpBody": "The courier has it and is on the way to the drop-off.",
+  "@ntfPickedUpBody": {
+    "description": "FE-BE-GAPS item 5."
+  },
+  "ntfBookedTitle": "Order placed",
+  "@ntfBookedTitle": {
+    "description": "FE-BE-GAPS item 5: job_booked."
+  },
+  "ntfInTransitTitle": "Your order is on the way",
+  "@ntfInTransitTitle": {
+    "description": "FE-BE-GAPS item 5: job_in_transit."
+  },
+  "ntfDeliveredTitle": "Your order was delivered",
+  "@ntfDeliveredTitle": {
+    "description": "FE-BE-GAPS item 5: job_delivered."
+  },
+  "bookErrAddressRequired": "Write the address of this stop.",
+  "@bookErrAddressRequired": {
+    "description": "FE-BE-GAPS item 6: address_required."
+  },
+  "bookErrNameRequired": "Write the recipient's name.",
+  "@bookErrNameRequired": {
+    "description": "FE-BE-GAPS item 6: recipient_name_required."
+  },
+  "bookErrPhoneRequired": "Write the recipient's phone number.",
+  "@bookErrPhoneRequired": {
+    "description": "FE-BE-GAPS item 6: recipient_phone_required."
+  },
+  "bookErrPackageRequired": "Add the package details.",
+  "@bookErrPackageRequired": {
+    "description": "FE-BE-GAPS item 6: package_details_required."
+  },
+  "bookErrRequired": "This is required.",
+  "@bookErrRequired": {
+    "description": "FE-BE-GAPS item 6."
+  },
+  "bookErrCoordinates": "The pickup or drop-off point isn't valid. Pick it again on the map.",
+  "@bookErrCoordinates": {
+    "description": "FE-BE-GAPS item 6: invalid_coordinates."
+  },
+  "bookErrPayment": "Only cash on delivery is available right now.",
+  "@bookErrPayment": {
+    "description": "FE-BE-GAPS item 6: payment_method_unavailable."
+  },
+  "bookErrDuplicate": "Your order is still being sent. Wait a moment, then check My orders.",
+  "@bookErrDuplicate": {
+    "description": "FE-BE-GAPS item 6: duplicate_request_in_progress."
+  },
+  "bookErrUnavailable": "Ordering is unavailable right now. Try again in a bit.",
+  "@bookErrUnavailable": {
+    "description": "FE-BE-GAPS item 6: service_unavailable."
+  },
+  "bookErrNoCourier": "No courier is available nearby right now. Try again soon.",
+  "@bookErrNoCourier": {
+    "description": "FE-BE-GAPS item 6: employee_location_unavailable."
+  },
+  "courPickupChanged": "This job changed. We refreshed it.",
+  "@courPickupChanged": {
+    "description": "FE-BE-GAPS item 6: job_not_active / job_state_changed."
+  },
+  "courJobGone": "This job no longer exists.",
+  "@courJobGone": {
+    "description": "FE-BE-GAPS item 6: job_not_found."
+  },
+  "authResendTooMany": "Too many codes sent. You can ask for a new one in {seconds} seconds.",
+  "@authResendTooMany": {
+    "description": "FE-BE-GAPS item 8: 429 on resend.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "authResendTooManyNoTime": "Too many codes sent. Wait a few minutes, then ask again.",
+  "@authResendTooManyNoTime": {
+    "description": "FE-BE-GAPS item 8: 429 without a wait."
   }
 }

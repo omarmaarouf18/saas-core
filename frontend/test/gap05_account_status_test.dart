@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/models/saved_address.dart';
 import 'package:frontend/models/user_profile.dart';
 import 'package:frontend/providers/auth_provider.dart';
 
@@ -21,6 +22,7 @@ class MockAuthProviderForAccountStatus extends AuthProvider {
     String? username,
     String? phone,
     List<String>? frequentAddresses,
+    List<SavedAddress>? savedAddresses,
     bool? twoFactorEnabled,
     String? password,
   }) async =>
