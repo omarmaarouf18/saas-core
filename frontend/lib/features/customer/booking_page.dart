@@ -242,9 +242,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           errorText: _errorOf(BookingField.recipientName),
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.name],
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(kRecipientNameMaxLength),
-          ],
+          maxRunes: kRecipientNameMaxLength,
           onChanged: (_) => _clearError(BookingField.recipientName),
         ),
         const SizedBox(height: QdSpace.x3),
@@ -275,9 +273,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           enabled: !_submitting,
           errorText: _errorOf(BookingField.recipientNotes),
           maxLines: 2,
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(kRecipientNotesMaxLength),
-          ],
+          maxRunes: kRecipientNotesMaxLength,
           onChanged: (_) => _clearError(BookingField.recipientNotes),
         ),
       ],
@@ -323,9 +319,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         enabled: !_submitting,
         errorText: _errorOf(BookingField.packageNotes),
         maxLines: 2,
-        inputFormatters: [
-          LengthLimitingTextInputFormatter(kPackageNotesMaxLength),
-        ],
+        maxRunes: kPackageNotesMaxLength,
         onChanged: (_) => _clearError(BookingField.packageNotes),
       ),
     ];

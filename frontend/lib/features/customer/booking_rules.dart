@@ -1,8 +1,7 @@
-import 'dart:convert';
-
 import '../../core/api_client.dart';
 import '../../core/api_error_codes.dart';
 import '../../core/error_messages.dart';
+import '../../core/text_limits.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 
@@ -11,19 +10,16 @@ import '../../models/job.dart';
 /// (JOB-V2-BE). Every field is optional; empty input sends nothing, so the
 /// old booking request is unchanged when nothing is typed.
 
-/// `location.address` / `destination.address`, runes (server: 250).
-const int kAddressMaxLength = 250;
+/// Limits in characters (runes), as the server counts them since
+/// USER-AUTH-BE item 9 (it counted the note in UTF-8 bytes before).
 
-/// `address_note`: the server counts UTF-8 bytes, not characters
-/// (`len(req.Location.AddressNote) > 500` in TrackJob), so 500 Arabic
-/// letters are refused. The picker keeps its 500-character input cap; this
-/// check catches what the server would refuse.
-const int kAddressNoteMaxBytes = 500;
+/// `location.address` / `destination.address` (server: 250).
+const int kAddressMaxLength = kAddressTextMaxRunes;
 
-const int kRecipientNameMaxLength = 100;
+const int kRecipientNameMaxLength = kNameMaxRunes;
 const int kRecipientPhoneMaxLength = 20;
-const int kRecipientNotesMaxLength = 200;
-const int kPackageNotesMaxLength = 200;
+const int kRecipientNotesMaxLength = kNotesMaxRunes;
+const int kPackageNotesMaxLength = kNotesMaxRunes;
 
 /// Package sizes the server accepts; "not specified" sends no size.
 const List<String> kPackageSizes = ['small', 'medium', 'large'];
@@ -54,7 +50,7 @@ bool validRecipientPhone(String phone) {
   return _egyptianMobile.hasMatch(p) || _e164.hasMatch(p);
 }
 
-int _runes(String s) => s.trim().runes.length;
+int _runes(String s) => runeLength(s.trim());
 
 enum BookingField {
   /// An address or landmark note on the route (the server's codes do not
@@ -163,7 +159,7 @@ Map<BookingField, BookingError> validateBooking(BookingExtras b) {
   }
   if (!errors.containsKey(BookingField.route)) {
     for (final n in [b.pickupNote, b.dropoffNote]) {
-      if (n != null && utf8.encode(n.trim()).length > kAddressNoteMaxBytes) {
+      if (n != null && _runes(n) > kAddressNoteMaxRunes) {
         errors[BookingField.route] =
             const BookingError(BookingProblem.noteTooLong);
       }
