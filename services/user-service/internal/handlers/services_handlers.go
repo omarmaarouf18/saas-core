@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/storage"
 	"github.com/project/user-service/internal/models"
 	"github.com/project/user-service/internal/store"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -471,6 +473,11 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.PhotoURL != nil && *req.PhotoURL != existing.PhotoURL {
+		// Removed (photo_url: "") or replaced: the old object goes too.
+		u.deleteServicePhotoObject(r.Context(), existing, existing.PhotoURL)
+	}
+
 	log.Printf("[USER] Service updated: id=%s name=%s owner=%s", updated.ID, updated.Name, updated.TenantID) // #nosec G706 -- updated.Name is owner-controlled service metadata, not attacker-controlled external input path
 	writeJSON(w, http.StatusOK, map[string]any{"message": "service updated", "service": updated})
 }
@@ -512,7 +519,7 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if u.storage == nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		writePhotoStorageUnavailable(w, r, nil)
 		return
 	}
 
@@ -684,7 +691,7 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := u.storage.Upload(r.Context(), key, bytes.NewReader(cleanBuf.Bytes()), mimeType); err != nil {
-		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to store photo", err)
+		writePhotoStorageUnavailable(w, r, err)
 		return
 	}
 
@@ -693,6 +700,10 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update service photo", err)
 			return
 		}
+		if existingService.PhotoURL != key {
+			// e.g. photo.jpg replaced by photo.png: drop the old object.
+			u.deleteServicePhotoObject(r.Context(), existingService, existingService.PhotoURL)
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -700,6 +711,43 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 		"photo_url": key,
 		"key":       key,
 	})
+}
+
+// ErrCodePhotoStorageUnavailable is the one stable code for "service photo
+// storage cannot be used right now": storage was never initialized, or
+// writing the object failed (BE-GAPS-FIX item 3). Always 503.
+const ErrCodePhotoStorageUnavailable = "photo_storage_unavailable"
+
+// writePhotoStorageUnavailable answers 503 photo_storage_unavailable. The
+// underlying error (paths, I/O detail) is logged, never returned.
+func writePhotoStorageUnavailable(w http.ResponseWriter, r *http.Request, err error) {
+	if err == nil {
+		err = errors.New("storage not initialized")
+	}
+	handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, ErrCodePhotoStorageUnavailable, "photo storage unavailable", err)
+}
+
+// deleteServicePhotoObject removes a service photo object that the service
+// no longer references (BE-GAPS-FIX item 4). Only keys this tenant wrote are
+// touched: services/<service id>/... (upload for an existing service) or
+// services/<owner id>/... (upload before the service existed). Any other
+// key — another tenant's, a legacy device path — is left alone, so an
+// owner cannot delete objects by pointing photo_url at them. Best effort:
+// the field is already updated, a failed delete is only logged.
+func (u *UserService) deleteServicePhotoObject(ctx context.Context, svc *models.Service, key string) {
+	if svc == nil || key == "" || isLocalPath(key) {
+		return
+	}
+	if !strings.HasPrefix(key, "services/"+svc.ID+"/") && !strings.HasPrefix(key, "services/"+svc.TenantID+"/") {
+		return
+	}
+	deleter, ok := u.storage.(storage.Deleter)
+	if !ok {
+		return
+	}
+	if err := deleter.Delete(ctx, key); err != nil {
+		log.Printf("[USER] Failed to delete old photo of service %s: %v", svc.ID, err) // #nosec G706 -- service ID is server-generated
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -713,7 +761,7 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if u.storage == nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		writePhotoStorageUnavailable(w, r, nil)
 		return
 	}
 

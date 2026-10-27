@@ -481,6 +481,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 
 		jobRecorded = true
 		u.saveIdempotencyKey(resolvedUserID, idempotencyKey, job.ID)
+		u.notifyOwnerJobBooked(job)
 
 		if initialStatus == models.JobStatusPendingDispatch {
 			u.sendJobOfferNotification(job, currentOfferedID)
@@ -593,6 +594,7 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.broadcastJobAlert(job, svc)
+	u.notifyOwnerJobBooked(job)
 
 	// For transport category jobs, skip escrow locking entirely during TrackJob regardless of payment method.
 	if isTransport {
@@ -973,6 +975,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("[USER] COD Job %s completed: actual_cash_collected=%.2f logged (0%% platform commission)", job.ID, cashAmount)
+		u.notifyCustomerJobDelivered(job)
 		resp := map[string]any{
 			"message":              "COD job completed and collection recorded (0% platform commission)",
 			"job_id":               job.ID,
@@ -1028,6 +1031,7 @@ func (u *UserService) CompleteJob(w http.ResponseWriter, r *http.Request) {
 	net := amount
 
 	log.Printf("[USER] Job %s completed: released=%.2f fee=0.00 net_to_tenant=%.2f (zero-commission release)", job.ID, amount, net)
+	u.notifyCustomerJobDelivered(job)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message": "job completed — escrow released (0% platform commission)",
 		"job_id":  job.ID, "total_amount": amount,
@@ -2547,9 +2551,16 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 				"code":    "job_not_found",
 				"message": "job not found",
 			})
+		case strings.Contains(msg, "job_state_changed"):
+			// Lost the CAS race: the job left the heading_to_pickup window
+			// between the read above and the update (BE-GAPS-FIX item 2).
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error":   "job state changed during pickup",
+				"code":    "job_state_changed",
+				"message": "job state changed during pickup",
+			})
 		default:
-			// Anything else (including losing the CAS race against an
-			// exit-from-active) is a concurrent-state conflict.
+			// Anything else (a store failure) stays a generic conflict.
 			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "job state changed during pickup", err)
 		}
 		return
@@ -2557,7 +2568,10 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 
 	// Fire-and-forget customer notification reusing the shared job-party
 	// notification helper.
-	u.notifyCancellationParty(job, job.UserID, "user", "job_picked_up", "Courier Picked Up", "Your package was picked up and is heading to the destination.")
+	// Customer pool roles as for every customer event: notification-service
+	// puts customer connections in the "client" pool, so "user" alone was
+	// never delivered (BE-GAPS-FIX item 1).
+	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventPickedUp, "Courier Picked Up", "Your package was picked up and is heading to the destination.")
 
 	refreshed := u.store.GetJob(ctx, job.ID)
 	if refreshed == nil {
@@ -3318,6 +3332,7 @@ func (u *UserService) executeJobCancellation(ctx context.Context, job *models.Jo
 
 	// Audit-log job cancellation
 	handlerutil.ShipSecurityEvent(ctx, "JOB_CANCELLED", "user-service", actorID, job.OwnerID, fmt.Sprintf("cancelled job %s, reason: %s", job.ID, reason), clientIP)
+	u.notifyCustomerJobCancelled(job, actorID)
 
 	return nil
 }
@@ -3549,17 +3564,67 @@ func (u *UserService) checkLazyCancellationRequestExpiry(ctx context.Context, jo
 	return true
 }
 
-// notifyCancellationParty sends a fire-and-forget job notification reusing
-// the broadcastCourierAccepted POST /notifications/send shape (goroutine +
-// panic guard + internal token). No new notification system.
+// Stable job lifecycle event types sent as the notification `type` (the
+// app routes on it; notification-service mirrors it as `event_type` for
+// every notification that carries a job_id). There is no separate
+// in-transit step: "picked up" (sub_status picked_up) is the on-the-way
+// state, so job_in_transit is not emitted (BE-GAPS-FIX item 1).
+const (
+	JobEventBooked    = "job_booked"
+	JobEventAccepted  = "job_accepted"
+	JobEventPickedUp  = "job_picked_up"
+	JobEventDelivered = "job_delivered"
+	JobEventCancelled = "job_cancelled"
+)
+
+// notifyCancellationParty sends a fire-and-forget job notification to one
+// recipient in one role pool (see notifyJobEvent).
 func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, notifType, title, body string) {
+	u.notifyJobEvent(job, userID, []string{role}, notifType, title, body)
+}
+
+// notifyOwnerJobBooked tells the owner a customer booked one of their
+// services (BE-GAPS-FIX item 1).
+func (u *UserService) notifyOwnerJobBooked(job *models.Job) {
+	if job == nil {
+		return
+	}
+	u.notifyJobEvent(job, job.OwnerID, []string{"owner"}, JobEventBooked,
+		"New Booking", fmt.Sprintf("A customer booked job %s.", job.ID))
+}
+
+// notifyCustomerJobDelivered tells the customer the courier completed the
+// job (BE-GAPS-FIX item 1).
+func (u *UserService) notifyCustomerJobDelivered(job *models.Job) {
+	if job == nil {
+		return
+	}
+	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventDelivered,
+		"Delivered", fmt.Sprintf("Job %s was delivered.", job.ID))
+}
+
+// notifyCustomerJobCancelled tells the customer their job was cancelled by
+// someone else (owner, approved courier request, system). A customer who
+// cancels their own job gets nothing (BE-GAPS-FIX item 1).
+func (u *UserService) notifyCustomerJobCancelled(job *models.Job, actorID string) {
+	if job == nil || actorID == job.UserID {
+		return
+	}
+	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventCancelled,
+		"Booking Cancelled", fmt.Sprintf("Job %s was cancelled.", job.ID))
+}
+
+// notifyJobEvent sends a fire-and-forget job notification reusing the
+// broadcastCourierAccepted POST /notifications/send shape (goroutine +
+// panic guard + internal token). No new notification system.
+func (u *UserService) notifyJobEvent(job *models.Job, userID string, roles []string, notifType, title, body string) {
 	if job == nil || userID == "" {
 		return
 	}
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("[USER] Recovered from panic in notifyCancellationParty: %v", r)
+				log.Printf("[USER] Recovered from panic in notifyJobEvent: %v", r)
 			}
 		}()
 
@@ -3570,7 +3635,7 @@ func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, not
 			"job_id":    job.ID,
 			"title":     title,
 			"body":      body,
-			"roles":     []string{role},
+			"roles":     roles,
 		}
 
 		bodyBytes, err := json.Marshal(payload)

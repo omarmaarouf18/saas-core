@@ -53,10 +53,22 @@ func (n Notification) ToClient() ClientNotification {
 		TenantID:  n.TenantID,
 		UserID:    n.UserID,
 		JobID:     n.JobID,
+		EventType: JobEventType(n.Type, n.JobID),
 		Title:     n.Title,
 		Body:      n.Body,
 		Timestamp: n.Timestamp,
 	}
+}
+
+// JobEventType is the stable `event_type` of a notification: the same
+// value as `type` for every notification about one job (it carries a
+// job_id), empty otherwise. Derived, never stored, so history written
+// before the field existed carries it too (BE-GAPS-FIX item 1).
+func JobEventType(notifType, jobID string) string {
+	if jobID == "" {
+		return ""
+	}
+	return notifType
 }
 
 // ClientNotification is the wire shape delivered to SSE clients.
@@ -66,6 +78,7 @@ type ClientNotification struct {
 	TenantID  string    `json:"tenant_id"`
 	UserID    string    `json:"user_id,omitempty"`
 	JobID     string    `json:"job_id,omitempty"`
+	EventType string    `json:"event_type,omitempty"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
@@ -397,6 +410,7 @@ func (h *SSEHub) dispatchPush(n Notification) {
 	}
 	if n.JobID != "" {
 		dataMap["job_id"] = n.JobID
+		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
 	}
 
 	for _, userID := range targetUserIDs {

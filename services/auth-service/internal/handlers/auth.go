@@ -1392,6 +1392,10 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			addr.Label = strings.TrimSpace(addr.Label)
+			if addr.Label == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "label is required for saved address"})
+				return
+			}
 			if len([]rune(addr.Label)) > 100 {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "label cannot exceed 100 characters"})
 				return

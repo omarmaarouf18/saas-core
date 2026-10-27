@@ -299,6 +299,30 @@ All HTTP endpoints registered across the services are listed below, cross-refere
 | **`GET /users/wallet/payout/requests`** | `user-service` | Owner JWT | Retrieves historical payout requests for authenticated tenant owner. | Reads `payout_requests` collection. |
 <!-- GENERATED:ENDPOINTS:END -->
 
+### Contract notes: job events, stable codes, service photos (BE-GAPS-FIX)
+
+Hand-written (the table above is generated). Details and the corrected USER-AUTH-BE claims: ADR-0028, Implementation Notes.
+
+* **Job notification events** (`POST /notifications/send` from user-service; SSE `GET /notifications/stream`, `GET /notifications/history`, FCM data). `type` is the stable event; every notification about one job carries `job_id` and `event_type` (same value as `type`, derived by notification-service, so older history items have it too). Notifications without a job carry no `event_type`.
+
+  | `type` | Sent when | Recipient |
+  | :--- | :--- | :--- |
+  | `job_booked` | `POST /users/jobs/track` creates the job (any initial status) | owner |
+  | `job_offer` | cascade offers the job to a courier | that courier |
+  | `job_alert` | booking pre-assigned to a courier (`/notifications/broadcast/job-alert`) | that courier (history: tenant roles) |
+  | `job_accepted` | courier accepts | customer |
+  | `job_picked_up` | `POST /users/jobs/pickup` (this is the on-the-way state: there is no separate in-transit step and no `job_in_transit`) | customer |
+  | `job_delivered` | `POST /users/jobs/complete` succeeds (COD or escrow) | customer |
+  | `job_cancelled` | the job is cancelled by the owner, an approved courier cancellation request, or the system (escrow lock failure); not when the customer cancels it themselves | customer |
+  | `job_unavailable` | no courier available | customer |
+  | `cancellation_requested`, `cancellation_request_expired`, `cancellation_resolved`, `dispute_resolved` | ADR-0027 / reconciliation | owner / courier / parties |
+
+* **`POST /users/jobs/pickup`**: losing the pickup race (the job left `heading_to_pickup` between the read and the update) is `409 {"error": "job state changed during pickup", "message": ..., "code": "job_state_changed"}`. Other pickup codes: `job_id_required`, `unauthorized`, `role_mismatch`, `job_not_found`, `job_not_active`, `access_denied`, `already_picked_up`.
+* **`POST /users/jobs/track`**: recipient, package and address text fields are optional (ADR-0028 §2.1, §2.2, §2.7). Field codes: `address_too_long`, `address_note_too_long`, `recipient_name_too_long`, `recipient_phone_invalid`, `recipient_notes_too_long`, `package_size_invalid`, `package_notes_too_long`. No `*_required` code is sent.
+* **Service photo storage unavailable**: `POST /users/services/photo` (and `/{id}/photo`) and `GET /users/services/photo` answer `503 {"error": "photo storage unavailable", "code": "photo_storage_unavailable"}` when storage was never initialized or a write fails.
+* **Service photo removal**: `PUT /users/services` with `photo_url: ""` clears the field and deletes the stored object; replacing the photo (another `photo_url`, or an upload under a different key) deletes the old object. Only keys under `services/<service id>/` or `services/<owner id>/` are deleted, and only by the owning tenant.
+* **Saved addresses** (`PUT` / `PATCH /auth/user`): `label` is required (non-empty after trimming, 400 `label is required for saved address`) and at most 100 runes.
+
 ### Standalone Operations (CLI Tool)
 * **`onboard-agent` CLI** (`services/chat-service/cmd/onboard-agent/main.go`):
   * **Caller Permissions**: Standard Linux CLI execution with MongoDB credentials. Not exposed as an HTTP endpoint.

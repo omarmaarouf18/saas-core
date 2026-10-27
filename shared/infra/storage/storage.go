@@ -7,6 +7,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,15 @@ type Storage interface {
 	ValidateSignedURLToken(tokenStr string) (string, error)
 	ValidateSignedURLTokenWithClaims(tokenStr string) (*DocClaims, error)
 	OpenFile(key string) (io.ReadCloser, error)
+}
+
+// Deleter is implemented by storages that can remove a stored object. It is
+// separate from Storage so existing implementations stay valid; callers
+// type-assert for it.
+type Deleter interface {
+	// Delete removes the object stored under key. Deleting a key that does
+	// not exist is not an error.
+	Delete(ctx context.Context, key string) error
 }
 
 // LocalStorage implements Storage using local disk with AES-256-GCM encryption at rest.
@@ -277,4 +287,25 @@ func (l *LocalStorage) OpenFile(key string) (io.ReadCloser, error) {
 	}
 
 	return io.NopCloser(bytes.NewReader(plaintext)), nil
+}
+
+// Delete removes the encrypted file stored under key. The key must resolve
+// to a file strictly inside the base directory; a missing file is not an
+// error.
+func (l *LocalStorage) Delete(ctx context.Context, key string) error {
+	absBase, err := filepath.Abs(l.baseDir)
+	if err != nil {
+		return fmt.Errorf("storage: invalid base directory: %w", err)
+	}
+	absDest, err := filepath.Abs(filepath.Join(l.baseDir, filepath.Clean(key)))
+	if err != nil {
+		return fmt.Errorf("storage: invalid destination path: %w", err)
+	}
+	if !strings.HasPrefix(absDest, absBase+string(filepath.Separator)) {
+		return fmt.Errorf("storage: directory traversal detected")
+	}
+	if err := os.Remove(absDest); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("storage: failed to delete file: %w", err)
+	}
+	return nil
 }
