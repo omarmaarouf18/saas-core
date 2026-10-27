@@ -575,6 +575,7 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 			TenantID:  it.TenantID,
 			UserID:    it.UserID,
 			JobID:     it.JobID,
+			EventType: hub.JobEventType(it.Type, it.JobID),
 			Title:     it.Title,
 			Body:      it.Body,
 			Timestamp: it.Timestamp,
@@ -602,6 +603,7 @@ type notificationHistoryItem struct {
 	TenantID  string    `json:"tenant_id"`
 	UserID    string    `json:"user_id,omitempty"`
 	JobID     string    `json:"job_id,omitempty"`
+	EventType string    `json:"event_type,omitempty"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
