@@ -16,7 +16,7 @@ Owner-only procedures for the production backup. The scripts and units live in
 | :--- | :--- |
 | Schedule | daily at 03:30 Africa/Cairo, plus up to 20 min random delay (`quickdelivery-backup.timer`); a run missed while the VM was off happens at next boot |
 | Mongo | `mongodump --archive --gzip` of every database, run in a short-lived `mongo:7` sidecar container that shares `saas-mongo`'s network (own 192 MiB memory cap; `--numParallelCollections=1`) |
-| Volumes | `tar.gz` of `saas_platform_documents_data` (KYC/KYB/KYE documents: **personal data**) and `saas_platform_attachments_data` (ticket attachments), plus `caddy_data` (TLS certs, nice-to-have) when present, read through a read-only mount |
+| Volumes | `tar.gz` of `saas_platform_documents_data` (KYC/KYB/KYE documents: **personal data**), `saas_platform_attachments_data` (ticket attachments) and `saas_platform_service_photos_data` (service photos, PROD-PHOTO-STORAGE), plus `caddy_data` (TLS certs, nice-to-have) when present, read through a read-only mount |
 | Secrets | `/home/deploybot/.env` (holds `DOCUMENT_ENCRYPTION_KEY`, without which the volume backups are unreadable), copied byte for byte into `env-<stamp>.age`; its contents are never logged. A required artifact: a run without it fails (see "The secrets file in the backup" below) |
 | Encryption | every artifact streamed into [`age`](https://age-encryption.org) to the public key in `backup-recipient.pub`. The private key is only on the owner's machine/offline media, **never on the VM** |
 | Off-host | Azure Blob Storage, container in `quickdelivery-rg`, blob names `<vm hostname>/<UTC stamp>/<file>`, uploaded with plain `curl` (Put Blob) and a SAS that can only **create/write**: a compromised VM cannot read, list or delete old backups |
@@ -32,6 +32,7 @@ Files of one run (`<stamp>` = `YYYYMMDDTHHMMSSZ`, UTC):
 mongo-<stamp>.archive.gz.age
 saas_platform_documents_data-<stamp>.tar.gz.age
 saas_platform_attachments_data-<stamp>.tar.gz.age
+saas_platform_service_photos_data-<stamp>.tar.gz.age
 caddy_data-<stamp>.tar.gz.age
 env-<stamp>.age
 SHA256SUMS
@@ -39,7 +40,7 @@ SHA256SUMS
 
 ### The secrets file in the backup (`env-<stamp>.age`)
 
-Documents and attachments are stored AES-256-GCM encrypted with
+Documents, attachments and service photos are stored AES-256-GCM encrypted with
 `DOCUMENT_ENCRYPTION_KEY` (`shared/infra/storage`), which lives only in
 `/home/deploybot/.env`. **Without that key the volume backups cannot be
 read.** Since OPS-BACKUP-ENV every run therefore also stores the whole `.env`
@@ -68,6 +69,26 @@ days, or later under immutability).
 
 Because the backups hold every production secret, a leaked age private key
 means a leaked `.env`: follow "If the age private key may have leaked" below.
+
+### Service photos volume (PROD-PHOTO-STORAGE)
+
+`saas_platform_service_photos_data` is a **required** volume: a run fails with
+`required volume saas_platform_service_photos_data does not exist` when it is
+missing. The volume is created by the first deploy whose compose file mounts it
+(`docker compose up -d`). So, for the release that adds it:
+
+1. Deploy the release first, then check the volume exists:
+   `docker volume inspect saas_platform_service_photos_data`.
+2. Only then update the backup on the VM (step 6: `scp` the backup directory
+   again and re-run `sudo ~/quickdelivery-backup/install.sh`, which also runs
+   one backup now).
+3. Check that run logged an `ok: saas_platform_service_photos_data-<stamp>.tar.gz.age`
+   line (`journalctl -u quickdelivery-backup.service --since -1h`).
+
+If you install the new backup.sh before the deploy, the nightly run fails
+until the deploy has happened; to skip the volume temporarily, set
+`VOLUMES=saas_platform_documents_data saas_platform_attachments_data` in
+`/etc/quickdelivery-backup/backup.env`, and remove that line after the deploy.
 
 ### What is NOT in the backup
 
@@ -260,7 +281,12 @@ the top of `backup.sh`.
    It verifies `SHA256SUMS` and restores Mongo into a throwaway `mongo:7`
    container (no published ports, removed at the end). It prints one
    `<db>.<collection> <count>` line per collection, then extracts each volume
-   into a temp dir, prints file counts and sizes, and deletes the temp dir. For
+   into a temp dir, prints file counts and sizes, and deletes the temp dir. At
+   the end it prints a volume count report, one
+   `volume <name> <files> files <bytes> bytes` line per volume, and a
+   `WARNING: <stamp> has no backup of volume <name>` line for each of
+   documents, attachments and service photos that is missing from the run
+   (expected only for runs taken before that volume existed). For
    `env-<stamp>.age` it decrypts to a mode-600 temp file, prints its path, size
    and line count (compare them with `stat -c %s` and `wc -l` of
    `/home/deploybot/.env` on the VM), and deletes the file. `-k` keeps the container, the dirs and the secrets file; they contain
@@ -498,8 +524,24 @@ commands in a root shell (`sudo -i`).
      --entrypoint tar mongo:7 -C /dst -xzf /in.tar.gz
    ```
 
-   Same for `saas_platform_attachments_data`. The files are only readable with
-   the production `DOCUMENT_ENCRYPTION_KEY` from the time they were written.
+   Same for `saas_platform_attachments_data`. For
+   `saas_platform_service_photos_data` add `--numeric-owner`, so the files stay
+   owned by the user-service `appuser` (uid 100, gid 101) whatever names the
+   tar image knows, then check the owner:
+
+   ```bash
+   mv /tmp/saas_platform_service_photos_data.tar.gz /var/backups/quickdelivery/restore/
+   docker run --rm --network none -v saas_platform_service_photos_data:/dst \
+     -v /var/backups/quickdelivery/restore/saas_platform_service_photos_data.tar.gz:/in.tar.gz:ro \
+     --entrypoint tar mongo:7 --numeric-owner -C /dst -xzf /in.tar.gz
+   docker run --rm --network none -v saas_platform_service_photos_data:/p:ro --entrypoint ls mongo:7 -lnd /p /p/services
+   ```
+
+   (`/p/services` exists once any photo was uploaded.) Both lines must show
+   `100 101` (the `uid gid` that
+   `docker exec saas-user-service id` prints after step 6). The files are only
+   readable with the production `DOCUMENT_ENCRYPTION_KEY` from the time they
+   were written.
 
 6. **Start the app** and check it:
 

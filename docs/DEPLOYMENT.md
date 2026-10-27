@@ -184,7 +184,9 @@ INTERNAL_SERVICE_TOKEN=<GENERATE_STRONG_SECRET>
 # AES-256 Key for OTP encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
 OTP_AES_KEY=<GENERATE_64_HEX_CHARS>
 
-# AES-256 Key for KYB/KYE document encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
+# AES-256 Key for KYB/KYE documents, chat attachments and service photos at rest
+# (64 hex chars / 32 bytes via `openssl rand -hex 32`). user-service refuses to start in
+# production without a valid one (PROD-PHOTO-STORAGE). Never change it while data exists.
 DOCUMENT_ENCRYPTION_KEY=<GENERATE_64_HEX_CHARS>
 
 # Optional Third-Party Services
@@ -459,6 +461,59 @@ docker compose exec mongo mongodump \
 
 docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
 ```
+
+### Step 9.3: Service photos (PROD-PHOTO-STORAGE)
+
+Owner service photos are stored AES-256-GCM encrypted by `user-service` in the
+named volume `saas_platform_service_photos_data`, mounted at
+`/app/data/service_photos` (`STORAGE_BASE_DIR`). The key is the same
+`DOCUMENT_ENCRYPTION_KEY` that auth-service (documents) and chat-service
+(attachments) use. With an empty or invalid key `user-service` fails its
+`--check-env` pre-flight and refuses to start in production; outside
+production it starts and photo upload/read answer
+`503 photo_storage_unavailable`. A photo is never stored unencrypted.
+
+**Before the release** (on the VM, `/home/deploybot/.env`):
+
+```bash
+# Prints "64 hex" for a usable key; never prints the key itself.
+sudo awk 'index($0,"DOCUMENT_ENCRYPTION_KEY=")==1 { v=substr($0,25); gsub(/^["\x27]|["\x27]$/,"",v); print length(v), (v ~ /^[0-9A-Fa-f]+$/ ? "hex" : "NOT hex") }' /home/deploybot/.env
+sudo grep -c '^APP_ENV=production$' /home/deploybot/.env   # expect 1
+```
+
+If the first line is not `64 hex`, stop: do **not** generate a new key, the
+existing documents and attachments are encrypted with the current one. Find
+the right value in your password manager copy of `.env` (see
+[runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md)). Nothing else is
+needed in `.env`: the compose file sets `STORAGE_BASE_DIR` itself.
+
+Optional pre-flight with the new image (the CD pipeline runs the same check):
+
+```bash
+docker run --rm --env-file /home/deploybot/.env -e TLS_CERT_PATH=/x -e TLS_KEY_PATH=/x -e TLS_CA_PATH=/x \
+  ghcr.io/omarmaarouf18/saas-core-user-service:<new tag> --check-env
+# expect: PREFLIGHT OK: user-service config validated (and no PREFLIGHT WARNING line)
+```
+
+**After the deploy**, check the volume, then that a photo survives a redeploy:
+
+```bash
+docker volume inspect saas_platform_service_photos_data --format '{{.Name}} {{.Mountpoint}}'
+docker exec saas-user-service sh -c 'id; ls -ldn /app/data/service_photos'   # uid 100 owns the dir
+```
+
+1. In the app, as an owner on a paid plan, upload a test photo for a service
+   and open it (the service card shows it).
+2. List the stored objects (encrypted bytes, nothing readable):
+   `docker run --rm --network none -v saas_platform_service_photos_data:/p:ro --entrypoint find mongo:7 /p -type f`
+3. Recreate the container: `cd /opt/saas-platform && docker compose up -d --force-recreate user-service`.
+4. Open the service again: the photo is still there, and step 2 lists the same file.
+5. Remove the test photo in the app (its object is deleted from the volume).
+
+**Backup and restore**: the daily backup includes this volume; deploy the
+release before updating the backup scripts on the VM. Restore steps:
+[runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md), "Service photos
+volume" and "Restore into production", step 5.
 
 ---
 
