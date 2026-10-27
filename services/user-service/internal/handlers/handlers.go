@@ -260,9 +260,16 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client, sto
 		digitalPaymentsEnabled:     cfg.DigitalPaymentsEnabled,
 	}
 
-	if len(stor) > 0 && stor[0] != nil {
+	encKeyErr := config.ValidateDocumentEncryptionKey(cfg.DocumentEncryptionKey)
+	switch {
+	case len(stor) > 0 && stor[0] != nil:
 		u.storage = stor[0]
-	} else {
+	case encKeyErr != nil:
+		// Fail closed: never store a service photo unencrypted or under a
+		// throwaway key that is gone after a restart. u.storage stays nil,
+		// so photo upload/read answer 503 photo_storage_unavailable.
+		log.Printf("[USER] Service photo storage disabled: %v", encKeyErr)
+	default:
 		storageBaseDir := ""
 		if cfg != nil {
 			storageBaseDir = cfg.StorageBaseDir

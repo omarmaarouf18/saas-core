@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -30,6 +31,9 @@ type Config struct {
 	StorageBaseDir         string
 	StorageBaseURL         string
 	DocumentEncryptionKey  string
+	// Warnings are non-fatal config problems for --check-env to report
+	// (e.g. an unusable DOCUMENT_ENCRYPTION_KEY outside production).
+	Warnings []string
 }
 
 func Load() (*Config, error) {
@@ -120,6 +124,16 @@ func Load() (*Config, error) {
 		storageBaseURL = "/api/v1"
 	}
 	docEncKey := os.Getenv("DOCUMENT_ENCRYPTION_KEY")
+	var warnings []string
+	if err := ValidateDocumentEncryptionKey(docEncKey); err != nil {
+		// Service photos are never stored unencrypted or under a throwaway
+		// key: without a valid key photo upload/read answer 503
+		// photo_storage_unavailable. Production refuses to start.
+		if appEnv == "production" {
+			return nil, fmt.Errorf("config: %v; service photos cannot be stored encrypted", err)
+		}
+		warnings = append(warnings, fmt.Sprintf("%v; service photo upload and read will answer 503 photo_storage_unavailable", err))
+	}
 
 	return &Config{
 		AppEnv:                 appEnv,
@@ -141,7 +155,24 @@ func Load() (*Config, error) {
 		StorageBaseDir:         storageBaseDir,
 		StorageBaseURL:         storageBaseURL,
 		DocumentEncryptionKey:  docEncKey,
+		Warnings:               warnings,
 	}, nil
+}
+
+// ValidateDocumentEncryptionKey checks that hexKey is a usable AES-256 key:
+// exactly 64 hex characters (32 bytes). The error never contains the key.
+func ValidateDocumentEncryptionKey(hexKey string) error {
+	if hexKey == "" {
+		return errors.New("DOCUMENT_ENCRYPTION_KEY is empty")
+	}
+	keyBytes, err := hex.DecodeString(hexKey)
+	if err != nil {
+		return errors.New("DOCUMENT_ENCRYPTION_KEY is not a valid hex string")
+	}
+	if len(keyBytes) != 32 {
+		return fmt.Errorf("DOCUMENT_ENCRYPTION_KEY must be 32 bytes (64 hex characters), got %d bytes", len(keyBytes))
+	}
+	return nil
 }
 
 // parseBoolEnv parses an optional boolean env var. Empty means unset.

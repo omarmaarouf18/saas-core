@@ -38,10 +38,13 @@ func main() {
 	// --check-env: validate config and exit without starting the server.
 	// Used by the CD pipeline pre-flight to verify env vars before deployment.
 	if len(os.Args) > 1 && os.Args[1] == "--check-env" {
-		_, err := config.Load()
+		cfg, err := config.Load()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "PREFLIGHT FAILED: %v\n", err)
 			os.Exit(1)
+		}
+		for _, w := range cfg.Warnings {
+			fmt.Fprintf(os.Stderr, "PREFLIGHT WARNING: %s\n", w)
 		}
 		fmt.Println("PREFLIGHT OK: user-service config validated")
 		os.Exit(0)
