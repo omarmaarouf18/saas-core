@@ -14,7 +14,12 @@ class ApiClientException implements Exception {
   /// this for policy-specific messaging (e.g. SEC-03's `weak_password`).
   final String? errorCode;
 
-  ApiClientException(this.message, {this.statusCode, this.errorCode});
+  /// The server's human text (`message`, else a string `error`), for
+  /// showing an error whose code the app does not know (FE-BE-GAPS).
+  final String? serverMessage;
+
+  ApiClientException(this.message,
+      {this.statusCode, this.errorCode, this.serverMessage});
 
   @override
   String toString() =>
@@ -466,6 +471,7 @@ class ApiClient {
       errorMsg ?? 'Request failed',
       statusCode: response.statusCode,
       errorCode: _extractErrorCode(body),
+      serverMessage: _extractServerMessage(body),
     );
   }
 
@@ -481,6 +487,15 @@ class ApiClient {
       }
       final code = body['code'];
       if (code is String) return code;
+    }
+    return null;
+  }
+
+  static String? _extractServerMessage(dynamic body) {
+    if (body is! Map) return null;
+    for (final k in const ['message', 'error']) {
+      final v = body[k];
+      if (v is String && v.trim().isNotEmpty) return v.trim();
     }
     return null;
   }

@@ -3716,4 +3716,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ntfDeliveredTitle => 'طلبك وصل';
+
+  @override
+  String get bookErrAddressRequired => 'اكتب عنوان المكان ده.';
+
+  @override
+  String get bookErrNameRequired => 'اكتب اسم المستلم.';
+
+  @override
+  String get bookErrPhoneRequired => 'اكتب رقم تليفون المستلم.';
+
+  @override
+  String get bookErrPackageRequired => 'ضيف تفاصيل الشحنة.';
+
+  @override
+  String get bookErrRequired => 'ده مطلوب.';
+
+  @override
+  String get bookErrCoordinates =>
+      'مكان الاستلام أو التسليم مش صحيح. حدده تاني على الخريطة.';
+
+  @override
+  String get bookErrPayment => 'الدفع كاش عند الاستلام بس هو المتاح دلوقتي.';
+
+  @override
+  String get bookErrDuplicate =>
+      'طلبك لسه بيتبعت. استنى شوية وبعدين شوف طلباتي.';
+
+  @override
+  String get bookErrUnavailable => 'الطلب مش متاح دلوقتي. جرّب كمان شوية.';
+
+  @override
+  String get bookErrNoCourier => 'مفيش مندوب متاح قريب دلوقتي. جرّب كمان شوية.';
+
+  @override
+  String get courPickupChanged => 'الطلب ده اتغير. حدّثناه.';
+
+  @override
+  String get courJobGone => 'الطلب ده مبقاش موجود.';
 }

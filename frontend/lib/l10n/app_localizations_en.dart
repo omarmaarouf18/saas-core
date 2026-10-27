@@ -3770,4 +3770,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ntfDeliveredTitle => 'Your order was delivered';
+
+  @override
+  String get bookErrAddressRequired => 'Write the address of this stop.';
+
+  @override
+  String get bookErrNameRequired => 'Write the recipient\'s name.';
+
+  @override
+  String get bookErrPhoneRequired => 'Write the recipient\'s phone number.';
+
+  @override
+  String get bookErrPackageRequired => 'Add the package details.';
+
+  @override
+  String get bookErrRequired => 'This is required.';
+
+  @override
+  String get bookErrCoordinates =>
+      'The pickup or drop-off point isn\'t valid. Pick it again on the map.';
+
+  @override
+  String get bookErrPayment => 'Only cash on delivery is available right now.';
+
+  @override
+  String get bookErrDuplicate =>
+      'Your order is still being sent. Wait a moment, then check My orders.';
+
+  @override
+  String get bookErrUnavailable =>
+      'Ordering is unavailable right now. Try again in a bit.';
+
+  @override
+  String get bookErrNoCourier =>
+      'No courier is available nearby right now. Try again soon.';
+
+  @override
+  String get courPickupChanged => 'This job changed. We refreshed it.';
+
+  @override
+  String get courJobGone => 'This job no longer exists.';
 }

@@ -1189,5 +1189,17 @@
   "ntfPickedUpBody": "المندوب استلمه وفي الطريق لمكان التسليم.",
   "ntfBookedTitle": "الطلب اتعمل",
   "ntfInTransitTitle": "طلبك في الطريق",
-  "ntfDeliveredTitle": "طلبك وصل"
+  "ntfDeliveredTitle": "طلبك وصل",
+  "bookErrAddressRequired": "اكتب عنوان المكان ده.",
+  "bookErrNameRequired": "اكتب اسم المستلم.",
+  "bookErrPhoneRequired": "اكتب رقم تليفون المستلم.",
+  "bookErrPackageRequired": "ضيف تفاصيل الشحنة.",
+  "bookErrRequired": "ده مطلوب.",
+  "bookErrCoordinates": "مكان الاستلام أو التسليم مش صحيح. حدده تاني على الخريطة.",
+  "bookErrPayment": "الدفع كاش عند الاستلام بس هو المتاح دلوقتي.",
+  "bookErrDuplicate": "طلبك لسه بيتبعت. استنى شوية وبعدين شوف طلباتي.",
+  "bookErrUnavailable": "الطلب مش متاح دلوقتي. جرّب كمان شوية.",
+  "bookErrNoCourier": "مفيش مندوب متاح قريب دلوقتي. جرّب كمان شوية.",
+  "courPickupChanged": "الطلب ده اتغير. حدّثناه.",
+  "courJobGone": "الطلب ده مبقاش موجود."
 }

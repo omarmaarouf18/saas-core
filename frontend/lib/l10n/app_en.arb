@@ -4897,5 +4897,53 @@
   "ntfDeliveredTitle": "Your order was delivered",
   "@ntfDeliveredTitle": {
     "description": "FE-BE-GAPS item 5: job_delivered."
+  },
+  "bookErrAddressRequired": "Write the address of this stop.",
+  "@bookErrAddressRequired": {
+    "description": "FE-BE-GAPS item 6: address_required."
+  },
+  "bookErrNameRequired": "Write the recipient's name.",
+  "@bookErrNameRequired": {
+    "description": "FE-BE-GAPS item 6: recipient_name_required."
+  },
+  "bookErrPhoneRequired": "Write the recipient's phone number.",
+  "@bookErrPhoneRequired": {
+    "description": "FE-BE-GAPS item 6: recipient_phone_required."
+  },
+  "bookErrPackageRequired": "Add the package details.",
+  "@bookErrPackageRequired": {
+    "description": "FE-BE-GAPS item 6: package_details_required."
+  },
+  "bookErrRequired": "This is required.",
+  "@bookErrRequired": {
+    "description": "FE-BE-GAPS item 6."
+  },
+  "bookErrCoordinates": "The pickup or drop-off point isn't valid. Pick it again on the map.",
+  "@bookErrCoordinates": {
+    "description": "FE-BE-GAPS item 6: invalid_coordinates."
+  },
+  "bookErrPayment": "Only cash on delivery is available right now.",
+  "@bookErrPayment": {
+    "description": "FE-BE-GAPS item 6: payment_method_unavailable."
+  },
+  "bookErrDuplicate": "Your order is still being sent. Wait a moment, then check My orders.",
+  "@bookErrDuplicate": {
+    "description": "FE-BE-GAPS item 6: duplicate_request_in_progress."
+  },
+  "bookErrUnavailable": "Ordering is unavailable right now. Try again in a bit.",
+  "@bookErrUnavailable": {
+    "description": "FE-BE-GAPS item 6: service_unavailable."
+  },
+  "bookErrNoCourier": "No courier is available nearby right now. Try again soon.",
+  "@bookErrNoCourier": {
+    "description": "FE-BE-GAPS item 6: employee_location_unavailable."
+  },
+  "courPickupChanged": "This job changed. We refreshed it.",
+  "@courPickupChanged": {
+    "description": "FE-BE-GAPS item 6: job_not_active / job_state_changed."
+  },
+  "courJobGone": "This job no longer exists.",
+  "@courJobGone": {
+    "description": "FE-BE-GAPS item 6: job_not_found."
   }
 }

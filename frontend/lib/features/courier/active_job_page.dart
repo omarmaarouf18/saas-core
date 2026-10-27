@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api_client.dart';
-import '../../core/error_messages.dart';
 import '../../l10n/l10n.dart';
 import '../../models/job.dart';
 import '../../providers/employee_location_provider.dart';
@@ -54,12 +53,7 @@ class _CourierActiveJobPageState extends State<CourierActiveJobPage> {
     } catch (e) {
       if (!mounted) return;
       final status = e is ApiClientException ? e.statusCode : null;
-      final message = switch (status) {
-        409 => l10n.courPickupAlready,
-        403 || 404 => l10n.courNotYours,
-        _ => friendlyErrorMessage(e),
-      };
-      showCourierNotice(context, message,
+      showCourierNotice(context, pickupErrorText(l10n, e),
           key: const Key('courier_pickup_error'),
           actionLabel: status == null || status >= 500 ? l10n.retry : null,
           onAction: _pickup);

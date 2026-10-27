@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import '../../core/api_client.dart';
+import '../../core/api_error_codes.dart';
+import '../../core/error_messages.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 
@@ -65,7 +67,15 @@ enum BookingField {
   packageNotes,
 }
 
-enum BookingProblem { tooLong, invalidPhone, invalidSize, noteTooLong }
+enum BookingProblem {
+  tooLong,
+  invalidPhone,
+  invalidSize,
+  noteTooLong,
+
+  /// The server says a value is required (`*_required` codes).
+  missing,
+}
 
 class BookingError {
   const BookingError(this.problem, [this.max]);
@@ -187,14 +197,24 @@ Map<BookingField, BookingError> validateBooking(BookingExtras b) {
   return errors;
 }
 
-/// The field a booking 400 is about, from the server's stable code
-/// (JOB-V2-BE `validateV2BookingFields` and TrackJob's note check). The
-/// body is `{"error": "<code>", "message": ...}`; ApiClient keeps a plain
-/// string `error` as the exception message.
+/// The field a booking error is about, from the server's stable code
+/// (USER-AUTH-BE item 10: `{"error": msg, "message": msg, "code": code}`;
+/// older bodies put the code in `error`). The `*_required` codes are
+/// listed by the backend task but not sent by TrackJob today (every v2
+/// field is optional there); they are mapped so they land on their field
+/// if they come. Null when the code is not about a field.
 MapEntry<BookingField, BookingError>? serverBookingError(Object e) {
   if (e is! ApiClientException || e.statusCode != 400) return null;
-  final code = (e.errorCode ?? e.message).trim();
+  final code = stableErrorCode(e);
   return switch (code) {
+    'address_required' =>
+      const MapEntry(BookingField.route, BookingError(BookingProblem.missing)),
+    'recipient_name_required' => const MapEntry(
+        BookingField.recipientName, BookingError(BookingProblem.missing)),
+    'recipient_phone_required' => const MapEntry(
+        BookingField.recipientPhone, BookingError(BookingProblem.missing)),
+    'package_details_required' => const MapEntry(
+        BookingField.packageSize, BookingError(BookingProblem.missing)),
     'address_too_long' => const MapEntry(BookingField.route,
         BookingError(BookingProblem.tooLong, kAddressMaxLength)),
     'address_note_too_long' => const MapEntry(
@@ -223,7 +243,33 @@ String bookingErrorText(
       BookingProblem.noteTooLong => l10n.bookErrNoteTooLong,
       BookingProblem.invalidPhone => l10n.bookErrPhone,
       BookingProblem.invalidSize => l10n.bookErrSize,
+      BookingProblem.missing => switch (field) {
+          BookingField.route => l10n.bookErrAddressRequired,
+          BookingField.recipientName => l10n.bookErrNameRequired,
+          BookingField.recipientPhone => l10n.bookErrPhoneRequired,
+          BookingField.packageSize => l10n.bookErrPackageRequired,
+          _ => l10n.bookErrRequired,
+        },
     };
+
+/// The banner text for a booking error that is not about one field: a
+/// localized message for the stable codes the booking handlers send, the
+/// server's own text for a code the app does not know, else the usual
+/// friendly message (network, timeout, no body).
+String bookingBannerText(AppLocalizations l10n, Object e) {
+  final code = stableErrorCode(e);
+  final known = switch (code) {
+    'invalid_coordinates' => l10n.bookErrCoordinates,
+    'payment_method_unavailable' => l10n.bookErrPayment,
+    'duplicate_request_in_progress' => l10n.bookErrDuplicate,
+    'service_unavailable' => l10n.bookErrUnavailable,
+    'employee_location_unavailable' => l10n.bookErrNoCourier,
+    _ => null,
+  };
+  if (known != null) return known;
+  if (code != null) return serverErrorText(e) ?? friendlyErrorMessage(e);
+  return friendlyErrorMessage(e);
+}
 
 /// Label of a package size ("not specified" for null / unknown).
 String packageSizeLabel(AppLocalizations l10n, String? size) =>

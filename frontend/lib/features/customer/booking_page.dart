@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/error_messages.dart';
 import '../../l10n/l10n.dart';
 import '../../models/marketplace_service.dart';
 import '../../providers/auth_provider.dart';
@@ -194,7 +193,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           _fieldErrors = {field.key: field.value};
           _error = l10n.bookFixFields;
         } else {
-          _error = l10n.custBookingFailed(friendlyErrorMessage(e));
+          _error = l10n.custBookingFailed(bookingBannerText(l10n, e));
         }
       });
     }

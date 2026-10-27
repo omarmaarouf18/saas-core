@@ -6697,6 +6697,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your order was delivered'**
   String get ntfDeliveredTitle;
+
+  /// FE-BE-GAPS item 6: address_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the address of this stop.'**
+  String get bookErrAddressRequired;
+
+  /// FE-BE-GAPS item 6: recipient_name_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the recipient\'s name.'**
+  String get bookErrNameRequired;
+
+  /// FE-BE-GAPS item 6: recipient_phone_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the recipient\'s phone number.'**
+  String get bookErrPhoneRequired;
+
+  /// FE-BE-GAPS item 6: package_details_required.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the package details.'**
+  String get bookErrPackageRequired;
+
+  /// FE-BE-GAPS item 6.
+  ///
+  /// In en, this message translates to:
+  /// **'This is required.'**
+  String get bookErrRequired;
+
+  /// FE-BE-GAPS item 6: invalid_coordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'The pickup or drop-off point isn\'t valid. Pick it again on the map.'**
+  String get bookErrCoordinates;
+
+  /// FE-BE-GAPS item 6: payment_method_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Only cash on delivery is available right now.'**
+  String get bookErrPayment;
+
+  /// FE-BE-GAPS item 6: duplicate_request_in_progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is still being sent. Wait a moment, then check My orders.'**
+  String get bookErrDuplicate;
+
+  /// FE-BE-GAPS item 6: service_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordering is unavailable right now. Try again in a bit.'**
+  String get bookErrUnavailable;
+
+  /// FE-BE-GAPS item 6: employee_location_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No courier is available nearby right now. Try again soon.'**
+  String get bookErrNoCourier;
+
+  /// FE-BE-GAPS item 6: job_not_active / job_state_changed.
+  ///
+  /// In en, this message translates to:
+  /// **'This job changed. We refreshed it.'**
+  String get courPickupChanged;
+
+  /// FE-BE-GAPS item 6: job_not_found.
+  ///
+  /// In en, this message translates to:
+  /// **'This job no longer exists.'**
+  String get courJobGone;
 }
 
 class _AppLocalizationsDelegate
