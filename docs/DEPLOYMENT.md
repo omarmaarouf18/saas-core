@@ -192,6 +192,10 @@ DOCUMENT_ENCRYPTION_KEY=<GENERATE_64_HEX_CHARS>
 # Optional Third-Party Services
 RESEND_API_KEY=re_your_live_key_here
 RESEND_FROM_EMAIL=Quick Delivery <noreply@yourdomain.com>
+# FCM push: base64 of the Firebase service-account key. Never paste it here by hand:
+# install it with the commands in step 9.4.
+FCM_SERVICE_ACCOUNT_JSON_B64=
+FCM_PROJECT_ID=<firebase project id>
 ```
 
 ### Step 5.3: Generate Internal mTLS Certificates
@@ -514,6 +518,62 @@ docker exec saas-user-service sh -c 'id; ls -ldn /app/data/service_photos'   # u
 release before updating the backup scripts on the VM. Restore steps:
 [runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md), "Service photos
 volume" and "Restore into production", step 5.
+
+### Step 9.4: FCM push credentials
+
+`notification-service` sends push notifications with a Firebase
+service-account key, passed as `FCM_SERVICE_ACCOUNT_JSON_B64` (the key file,
+base64-encoded on one line) plus `FCM_PROJECT_ID` (optional: it defaults to
+the key's `project_id`). The compose file passes both from
+`/home/deploybot/.env`. A missing or broken key never stops the service: push
+is disabled and the reason is logged. The older raw-JSON variables
+`FCM_SERVICE_ACCOUNT_JSON` / `FCM_CREDENTIALS_JSON` are still read when set in
+the container, but the compose file does not pass them.
+
+> [!WARNING]
+> Push delivery is not verified end to end: as of PROD-PHOTO-STORAGE the FCM
+> client sends no OAuth access token to Google, so Google rejects the sends
+> even with a valid key. The steps below install the key and prove it is
+> loaded; actual delivery needs the follow-up recorded in
+> `docs/worklog/PROD-PHOTO-STORAGE.md`.
+
+1. In the Firebase console: Project settings → Service accounts → Generate new
+   private key. It downloads `<project>-firebase-adminsdk-<id>.json`. Keep the
+   original in your password manager, not in a synced folder.
+2. Copy it to the VM (`<you>@<vm>` is your SSH login):
+
+   ```bash
+   scp ~/Downloads/<project>-firebase-adminsdk-<id>.json <you>@<vm>:/tmp/fcm.json
+   ```
+
+3. On the VM, append it to `.env` without it ever reaching the screen, the
+   shell history or a command line (`ps`), then destroy the copy:
+
+   ```bash
+   chmod 600 /tmp/fcm.json
+   sudo grep -c '^FCM_SERVICE_ACCOUNT_JSON_B64=' /home/deploybot/.env   # must print 0; else delete that line first (sudoedit)
+   { printf 'FCM_SERVICE_ACCOUNT_JSON_B64='; base64 -w0 /tmp/fcm.json; echo; } | sudo tee -a /home/deploybot/.env >/dev/null
+   echo 'FCM_PROJECT_ID=<firebase project id>' | sudo tee -a /home/deploybot/.env >/dev/null
+   shred -u /tmp/fcm.json
+   sudo stat -c '%U %a' /home/deploybot/.env   # still: deploybot 600
+   sudo awk -F= '$1=="FCM_SERVICE_ACCOUNT_JSON_B64" { print "key length:", length($0) - length($1) - 1 }' /home/deploybot/.env
+   ```
+
+   The last line prints only a length (a few thousand characters), never the
+   key. Delete the downloaded file on your machine too once your password
+   manager holds the original.
+4. Redeploy (re-run the deploy workflow, or step 7.3 by hand). The CD
+   pre-flight (`--check-env`) and the container log both print the push status.
+5. Verify from the log line, never from the key:
+
+   ```bash
+   docker logs saas-notification-service 2>&1 | grep -E '\[CONFIG\] push (enabled|disabled)' | tail -n 1
+   ```
+
+   Expected: `[CONFIG] push enabled (project <firebase project id>)`. A
+   `push disabled: <reason>` line names what is wrong (`not valid base64`,
+   `not valid JSON`, `not a service-account key`, `no FCM_PROJECT_ID and no
+   project_id`, or no key at all): fix `.env` and redeploy.
 
 ---
 

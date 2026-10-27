@@ -1,8 +1,13 @@
 package config
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -20,6 +25,10 @@ type Config struct {
 	FCMServiceAccountJSON string
 	FCMProjectID          string
 	FCMEndpointURL        string
+	// FCMStatus is the one-line push status logged by Load (startup and
+	// --check-env): "push enabled (project X)" or "push disabled: <reason>".
+	// It never contains credential material.
+	FCMStatus string
 }
 
 func Load() (*Config, error) {
@@ -81,12 +90,8 @@ func Load() (*Config, error) {
 		allowedOrigin = "http://localhost:3000"
 	}
 
-	fcmServiceAccountJSON := os.Getenv("FCM_SERVICE_ACCOUNT_JSON")
-	if fcmServiceAccountJSON == "" {
-		fcmServiceAccountJSON = os.Getenv("FCM_CREDENTIALS_JSON")
-	}
-	fcmProjectID := os.Getenv("FCM_PROJECT_ID")
-	fcmEndpointURL := os.Getenv("FCM_ENDPOINT_URL")
+	fcmServiceAccountJSON, fcmProjectID, fcmEndpointURL, fcmStatus := loadFCM()
+	log.Printf("[CONFIG] %s", fcmStatus)
 
 	return &Config{
 		Port:                  port,
@@ -103,5 +108,81 @@ func Load() (*Config, error) {
 		FCMServiceAccountJSON: fcmServiceAccountJSON,
 		FCMProjectID:          fcmProjectID,
 		FCMEndpointURL:        fcmEndpointURL,
+		FCMStatus:             fcmStatus,
 	}, nil
+}
+
+// serviceAccount holds the fields of a Google service-account key file that
+// FCM needs; any other field is ignored.
+type serviceAccount struct {
+	Type        string `json:"type"`
+	ProjectID   string `json:"project_id"`
+	ClientEmail string `json:"client_email"`
+	PrivateKey  string `json:"private_key"`
+}
+
+// loadFCM reads the FCM settings. The service-account key comes from, in
+// order: FCM_SERVICE_ACCOUNT_JSON, FCM_CREDENTIALS_JSON (raw JSON), or
+// FCM_SERVICE_ACCOUNT_JSON_B64 (base64 of the key file, decoded here).
+// FCM_PROJECT_ID defaults to the key's project_id. A missing or unusable
+// key disables push (credentials and project are cleared, so the FCM
+// client stays disabled) without failing startup, unless FCM_ENDPOINT_URL
+// points at an internal relay, which needs no key. Reasons never include
+// key material.
+func loadFCM() (saJSON, projectID, endpointURL, status string) {
+	endpointURL = strings.TrimSpace(os.Getenv("FCM_ENDPOINT_URL"))
+	projectID = strings.TrimSpace(os.Getenv("FCM_PROJECT_ID"))
+
+	saJSON = os.Getenv("FCM_SERVICE_ACCOUNT_JSON")
+	if saJSON == "" {
+		saJSON = os.Getenv("FCM_CREDENTIALS_JSON")
+	}
+	source := "FCM_SERVICE_ACCOUNT_JSON"
+	var reason string
+	if saJSON == "" {
+		if b64 := os.Getenv("FCM_SERVICE_ACCOUNT_JSON_B64"); b64 != "" {
+			source = "FCM_SERVICE_ACCOUNT_JSON_B64"
+			decoded, err := decodeBase64(b64)
+			if err != nil {
+				reason = "FCM_SERVICE_ACCOUNT_JSON_B64 is not valid base64"
+			} else {
+				saJSON = string(decoded)
+			}
+		}
+	}
+
+	if reason == "" && saJSON != "" {
+		var sa serviceAccount
+		switch {
+		case json.Unmarshal([]byte(saJSON), &sa) != nil:
+			reason = source + " is not valid JSON"
+		case sa.Type != "service_account" || sa.ClientEmail == "" || sa.PrivateKey == "":
+			reason = source + " is not a service-account key (needs type service_account, client_email, private_key)"
+		case projectID == "" && sa.ProjectID == "":
+			reason = "no FCM_PROJECT_ID and no project_id in " + source
+		case projectID == "":
+			projectID = sa.ProjectID
+		}
+	}
+	if reason == "" && saJSON == "" {
+		reason = "no FCM service-account key (set FCM_SERVICE_ACCOUNT_JSON_B64)"
+	}
+
+	switch {
+	case endpointURL != "":
+		return saJSON, projectID, endpointURL, "push enabled (internal relay FCM_ENDPOINT_URL)"
+	case reason != "":
+		return "", "", "", "push disabled: " + reason
+	}
+	return saJSON, projectID, "", fmt.Sprintf("push enabled (project %s)", projectID)
+}
+
+// decodeBase64 decodes standard base64, padded or not, ignoring whitespace
+// and line breaks (`base64` wraps its output at 76 columns by default).
+func decodeBase64(s string) ([]byte, error) {
+	s = strings.Join(strings.Fields(s), "")
+	if b, err := base64.StdEncoding.DecodeString(s); err == nil {
+		return b, nil
+	}
+	return base64.RawStdEncoding.DecodeString(s)
 }
