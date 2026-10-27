@@ -512,7 +512,7 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if u.storage == nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		writePhotoStorageUnavailable(w, r, nil)
 		return
 	}
 
@@ -684,7 +684,7 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := u.storage.Upload(r.Context(), key, bytes.NewReader(cleanBuf.Bytes()), mimeType); err != nil {
-		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to store photo", err)
+		writePhotoStorageUnavailable(w, r, err)
 		return
 	}
 
@@ -702,6 +702,20 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+// ErrCodePhotoStorageUnavailable is the one stable code for "service photo
+// storage cannot be used right now": storage was never initialized, or
+// writing the object failed (BE-GAPS-FIX item 3). Always 503.
+const ErrCodePhotoStorageUnavailable = "photo_storage_unavailable"
+
+// writePhotoStorageUnavailable answers 503 photo_storage_unavailable. The
+// underlying error (paths, I/O detail) is logged, never returned.
+func writePhotoStorageUnavailable(w http.ResponseWriter, r *http.Request, err error) {
+	if err == nil {
+		err = errors.New("storage not initialized")
+	}
+	handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, ErrCodePhotoStorageUnavailable, "photo storage unavailable", err)
+}
+
 // ---------------------------------------------------------------------------
 // GET /users/services/photo or GET /users/services/{id}/photo
 // ---------------------------------------------------------------------------
@@ -713,7 +727,7 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if u.storage == nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage not initialized"})
+		writePhotoStorageUnavailable(w, r, nil)
 		return
 	}
 
