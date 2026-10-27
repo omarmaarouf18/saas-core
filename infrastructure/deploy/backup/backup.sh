@@ -6,7 +6,8 @@
 # What it backs up, every run, into one directory per run under BACKUP_DIR:
 #   mongo-<stamp>.archive.gz.age        mongodump --archive --gzip of every database
 #   <volume>-<stamp>.tar.gz.age         tar.gz of each named volume (documents,
-#                                       attachments; caddy_data when present)
+#                                       attachments, service photos; caddy_data
+#                                       when present)
 #   env-<stamp>.age                     the production secrets file ENV_FILE
 #                                       (holds DOCUMENT_ENCRYPTION_KEY: without
 #                                       it the volume backups cannot be read)
@@ -27,7 +28,8 @@
 #   DUMP_IMAGE        image for the dump/tar sidecars   (the image of MONGO_CONTAINER)
 #   DUMP_MEMORY       memory cap of the mongodump sidecar         (192m)
 #   VOLUMES           named volumes that must exist  (saas_platform_documents_data
-#                                                     saas_platform_attachments_data)
+#                                                     saas_platform_attachments_data
+#                                                     saas_platform_service_photos_data)
 #   OPTIONAL_VOLUMES  named volumes backed up when present        (caddy_data)
 #   ENV_FILE          production secrets file, required   (/home/deploybot/.env)
 #   BACKUP_DIR        local encrypted copies          (/var/backups/quickdelivery)
@@ -66,7 +68,7 @@ SELF_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 MONGO_CONTAINER="${MONGO_CONTAINER:-saas-mongo}"
 DUMP_IMAGE="${DUMP_IMAGE:-}"
 DUMP_MEMORY="${DUMP_MEMORY:-192m}"
-VOLUMES="${VOLUMES:-saas_platform_documents_data saas_platform_attachments_data}"
+VOLUMES="${VOLUMES:-saas_platform_documents_data saas_platform_attachments_data saas_platform_service_photos_data}"
 OPTIONAL_VOLUMES="${OPTIONAL_VOLUMES-caddy_data}"
 ENV_FILE="${ENV_FILE:-/home/deploybot/.env}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/quickdelivery}"

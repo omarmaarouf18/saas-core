@@ -30,14 +30,21 @@
 #                            only its path, size and line count (never any of
 #                            its contents, not even variable names)
 # If a SHA256SUMS file sits next to a file, its checksum is verified first.
+# At the end, a volume count report prints one line per restored volume:
+#   "volume <name> <files> files <bytes> bytes"
+# and, for every run directory given, a WARNING for each EXPECTED_VOLUMES
+# entry with no backup in that directory (older runs predate a volume).
 #
-# Settings (environment): RESTORE_IMAGE (mongo:7), RESTORE_TMP (${TMPDIR:-/tmp}).
+# Settings (environment): RESTORE_IMAGE (mongo:7), RESTORE_TMP (${TMPDIR:-/tmp}),
+# EXPECTED_VOLUMES (saas_platform_documents_data saas_platform_attachments_data
+# saas_platform_service_photos_data).
 set -euo pipefail
 export LC_ALL=C
 umask 077
 
 RESTORE_IMAGE="${RESTORE_IMAGE:-mongo:7}"
 RESTORE_TMP="${RESTORE_TMP:-${TMPDIR:-/tmp}}"
+EXPECTED_VOLUMES="${EXPECTED_VOLUMES-saas_platform_documents_data saas_platform_attachments_data saas_platform_service_photos_data}"
 
 # One line per collection, sorted: "<db>.<collection> <count>". System
 # databases (admin, config, local) and system.* collections are skipped;
@@ -93,8 +100,10 @@ done
 
 # Expand run directories into their .age files.
 FILES=()
+RUN_DIRS=()
 for a in "$@"; do
 	if [ -d "$a" ]; then
+		RUN_DIRS+=("$a")
 		while IFS= read -r f; do FILES+=("$f"); done < <(find "$a" -maxdepth 1 -type f -name '*.age' | sort)
 	elif [ -f "$a" ]; then
 		FILES+=("$a")
@@ -107,6 +116,7 @@ done
 CONTAINERS=()
 DIRS=()
 SECRETS=()
+VOLUME_REPORT=()
 cleanup() {
 	local rc=$?
 	if [ "$KEEP" -eq 0 ]; then
@@ -164,6 +174,8 @@ restore_volume() { # restore_volume <file>
 	n_dirs="$(find "$dir" -mindepth 1 -type d | wc -l)"
 	bytes="$(find "$dir" -type f -printf '%s\n' | awk '{ s += $1 } END { print s + 0 }')"
 	say "volume: $n_files files, $n_dirs dirs, $bytes bytes ($(human "$bytes")) in total"
+	# <volume>-<YYYYmmddTHHMMSSZ>.tar.gz.age -> <volume>
+	VOLUME_REPORT+=("volume $(basename "$f" | sed -E 's/-[0-9]{8}T[0-9]{6}Z\.tar\.gz\.age$//') $n_files files $bytes bytes")
 	while IFS= read -r entry; do
 		if [ -d "$dir/$entry" ]; then
 			printf '  %s/ %s files %s bytes\n' "$entry" \
@@ -194,5 +206,16 @@ for f in "${FILES[@]}"; do
 	env-*.age) restore_env "$f" ;;
 	*) die "unknown artifact type (expected mongo-*.archive.gz.age, env-*.age or *.tar.gz.age): $f" ;;
 	esac
+done
+if [ "${#VOLUME_REPORT[@]}" -gt 0 ]; then
+	say "volume count report (volume <name> <files> files <bytes> bytes)"
+	printf '%s\n' "${VOLUME_REPORT[@]}"
+fi
+for d in "${RUN_DIRS[@]}"; do
+	for v in $EXPECTED_VOLUMES; do
+		if ! find "$d" -maxdepth 1 -type f -name "$v-*.tar.gz.age" | grep -q .; then
+			say "WARNING: $(basename "$d") has no backup of volume $v"
+		fi
+	done
 done
 say "restore test finished: ${#FILES[@]} file(s)"
