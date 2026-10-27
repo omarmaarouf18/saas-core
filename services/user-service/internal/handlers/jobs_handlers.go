@@ -2568,7 +2568,10 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 
 	// Fire-and-forget customer notification reusing the shared job-party
 	// notification helper.
-	u.notifyCancellationParty(job, job.UserID, "user", "job_picked_up", "Courier Picked Up", "Your package was picked up and is heading to the destination.")
+	// Customer pool roles as for every customer event: notification-service
+	// puts customer connections in the "client" pool, so "user" alone was
+	// never delivered (BE-GAPS-FIX item 1).
+	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventPickedUp, "Courier Picked Up", "Your package was picked up and is heading to the destination.")
 
 	refreshed := u.store.GetJob(ctx, job.ID)
 	if refreshed == nil {

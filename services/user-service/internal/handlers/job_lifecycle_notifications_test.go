@@ -166,7 +166,8 @@ func TestJobLifecycleNotifications_StableEventsWithJobID(t *testing.T) {
 	assertOneNotif(t, capture.waitFor(t, jobID, JobEventAccepted, 1), JobEventAccepted, custID, "client")
 
 	post(u.PickupJob, "/users/jobs/pickup", tokenEmp, map[string]any{"job_id": jobID})
-	assertOneNotif(t, capture.waitFor(t, jobID, JobEventPickedUp, 1), JobEventPickedUp, custID, "user")
+	// "client" is the pool notification-service puts customers in.
+	assertOneNotif(t, capture.waitFor(t, jobID, JobEventPickedUp, 1), JobEventPickedUp, custID, "client")
 
 	post(u.CompleteJob, "/users/jobs/complete", tokenEmp, map[string]any{"job_id": jobID, "cash_collected": true})
 	assertOneNotif(t, capture.waitFor(t, jobID, JobEventDelivered, 1), JobEventDelivered, custID, "client")
