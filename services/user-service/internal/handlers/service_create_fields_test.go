@@ -83,7 +83,7 @@ func TestServiceCreate_SavesAndReturnsEveryField(t *testing.T) {
 		"tenant_price_per_km": 3.0,
 		"latitude":            30.0444,
 		"longitude":           31.2357,
-		"photo_url":           "services/owner1/store.jpg",
+		"photo_url":           "services/create-fields-owner/photo_a1.jpg",
 		"address":             "456 Tahrir Square, Downtown, Cairo",
 		"working_hours":       "Daily 8am-10pm",
 		"coverage_radius_km":  25.5,
@@ -130,8 +130,8 @@ func TestServiceCreate_SavesAndReturnsEveryField(t *testing.T) {
 	if svc.OpenTime != "08:00" || svc.CloseTime != "22:00" {
 		t.Errorf("create resp open/close time = %s-%s, want 08:00-22:00", svc.OpenTime, svc.CloseTime)
 	}
-	if svc.PhotoURL != "services/owner1/store.jpg" {
-		t.Errorf("create resp photo_url = %q, want 'services/owner1/store.jpg'", svc.PhotoURL)
+	if svc.PhotoURL != "services/create-fields-owner/photo_a1.jpg" {
+		t.Errorf("create resp photo_url = %q, want 'services/create-fields-owner/photo_a1.jpg'", svc.PhotoURL)
 	}
 	if svc.Timezone != "Africa/Cairo" {
 		t.Errorf("create resp timezone = %q, want 'Africa/Cairo'", svc.Timezone)
@@ -172,8 +172,8 @@ func TestServiceCreate_SavesAndReturnsEveryField(t *testing.T) {
 	if retrieved.OpenTime != "08:00" || retrieved.CloseTime != "22:00" {
 		t.Errorf("retrieved open/close time = %s-%s, want 08:00-22:00", retrieved.OpenTime, retrieved.CloseTime)
 	}
-	if retrieved.PhotoURL != "services/owner1/store.jpg" {
-		t.Errorf("retrieved photo_url = %q, want 'services/owner1/store.jpg'", retrieved.PhotoURL)
+	if retrieved.PhotoURL != "services/create-fields-owner/photo_a1.jpg" {
+		t.Errorf("retrieved photo_url = %q, want 'services/create-fields-owner/photo_a1.jpg'", retrieved.PhotoURL)
 	}
 	if retrieved.Timezone != "Africa/Cairo" {
 		t.Errorf("retrieved timezone = %q, want 'Africa/Cairo'", retrieved.Timezone)
@@ -197,7 +197,7 @@ func TestServiceCreate_SavesAndReturnsEveryField(t *testing.T) {
 		"tenant_price_per_km": 4.0,
 		"latitude":            30.0444,
 		"longitude":           31.2357,
-		"photo":               "services/owner1/alias_store.jpg",
+		"photo":               "services/create-fields-owner/photo_a2.jpg",
 		"coverage_radius":     18.0,
 		"address":             "789 Pyramids Rd, Giza",
 	}
@@ -214,8 +214,8 @@ func TestServiceCreate_SavesAndReturnsEveryField(t *testing.T) {
 		Service models.Service `json:"service"`
 	}
 	_ = json.Unmarshal(aliasRec.Body.Bytes(), &aliasResp)
-	if aliasResp.Service.PhotoURL != "services/owner1/alias_store.jpg" {
-		t.Errorf("alias photo = %q, want 'services/owner1/alias_store.jpg'", aliasResp.Service.PhotoURL)
+	if aliasResp.Service.PhotoURL != "services/create-fields-owner/photo_a2.jpg" {
+		t.Errorf("alias photo = %q, want 'services/create-fields-owner/photo_a2.jpg'", aliasResp.Service.PhotoURL)
 	}
 	if aliasResp.Service.CoverageRadiusKM != 18.0 {
 		t.Errorf("alias coverage_radius = %v, want 18.0", aliasResp.Service.CoverageRadiusKM)

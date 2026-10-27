@@ -125,7 +125,7 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 			TenantPricePerKM: 3.5,
 			Latitude:         30.0444,
 			Longitude:        31.2357,
-			PhotoURL:         "https://cdn.example.com/services/express.jpg",
+			PhotoURL:         "services/" + ownerID1 + "/photo_1.jpg",
 			Address:          "123 Commerce St, Cairo, Egypt",
 			WorkingHours:     "8:00 AM - 8:00 PM",
 			CoverageRadiusKM: 25.0,
@@ -149,8 +149,8 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 			t.Fatalf("Expected service object in response, got %v", resp)
 		}
 
-		if svcMap["photo_url"] != "https://cdn.example.com/services/express.jpg" {
-			t.Errorf("Expected photo_url 'https://cdn.example.com/services/express.jpg', got %v", svcMap["photo_url"])
+		if svcMap["photo_url"] != "services/"+ownerID1+"/photo_1.jpg" {
+			t.Errorf("Expected photo_url %q, got %v", "services/"+ownerID1+"/photo_1.jpg", svcMap["photo_url"])
 		}
 		if svcMap["address"] != "123 Commerce St, Cairo, Egypt" {
 			t.Errorf("Expected address '123 Commerce St, Cairo, Egypt', got %v", svcMap["address"])
@@ -224,7 +224,7 @@ func TestService_OwnerConfigurationAndUpdates(t *testing.T) {
 		serviceID := svcC["id"].(string)
 
 		// Update via PUT /users/services
-		newPhoto := "https://cdn.example.com/services/updated.png"
+		newPhoto := "services/" + serviceID + "/photo_2.png"
 		newAddress := "456 Industrial Zone, Giza, Egypt"
 		newHours := "10:00 AM - 6:00 PM"
 		newRadius := 30.0

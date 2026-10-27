@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -223,6 +224,11 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isOwnPhotoKey(req.PhotoURL, req.OwnerID) {
+		writeInvalidPhotoURL(w, r, req.OwnerID)
+		return
+	}
+
 	svc := &models.Service{
 		ID: generateID(), TenantID: req.OwnerID, Name: req.Name, Category: req.Category,
 		BasePrice: req.TenantBasePrice, TenantBasePrice: req.TenantBasePrice,
@@ -396,6 +402,12 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 		updateFields["location"] = models.NewGeoJSONPoint(newLat, newLon)
 	}
 	if req.PhotoURL != nil {
+		// Resending the stored value unchanged is always fine (it may be a
+		// legacy value written before this guard).
+		if *req.PhotoURL != existing.PhotoURL && !isOwnPhotoKey(*req.PhotoURL, existing.ID, existing.TenantID) {
+			writeInvalidPhotoURL(w, r, req.OwnerID)
+			return
+		}
 		updateFields["photo_url"] = *req.PhotoURL
 	}
 	if req.Address != nil {
@@ -711,6 +723,43 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 		"photo_url": key,
 		"key":       key,
 	})
+}
+
+// ErrCodeInvalidPhotoURL: photo_url on POST/PUT /users/services is neither
+// empty nor a key this tenant's photo upload produced. Always 400.
+const ErrCodeInvalidPhotoURL = "invalid_photo_url"
+
+// photoKeyName is the file part of a key the photo upload writes:
+// photo.<ext> / photo_<n>.<ext> (older uploads) and photo_<hex>.<ext>.
+var photoKeyName = regexp.MustCompile(`^photo(_[0-9A-Za-z]+)?\.(jpg|png)$`)
+
+// isOwnPhotoKey reports whether photoURL may be written to a service's
+// photo_url: empty (no photo), or services/<scope>/<photo file> for one of
+// the given scopes (the service ID and/or its tenant ID) — the same prefix
+// rule deleteServicePhotoObject uses. Anything else (another tenant's key,
+// a URL, a device path, a traversal) is rejected, so photo_url can never
+// point at an object this tenant did not upload.
+func isOwnPhotoKey(photoURL string, scopes ...string) bool {
+	if photoURL == "" {
+		return true
+	}
+	for _, scope := range scopes {
+		if scope == "" {
+			continue
+		}
+		name, ok := strings.CutPrefix(photoURL, "services/"+scope+"/")
+		if ok && photoKeyName.MatchString(name) {
+			return true
+		}
+	}
+	return false
+}
+
+// writeInvalidPhotoURL answers 400 invalid_photo_url and records the
+// attempt as a security event (it may be probing another tenant's key).
+func writeInvalidPhotoURL(w http.ResponseWriter, r *http.Request, ownerID string) {
+	handlerutil.ShipSecurityEvent(r.Context(), "INVALID_PHOTO_URL", "user-service", ownerID, "", "photo_url is not a key of this tenant's photo upload", handlerutil.GetClientIP(r))
+	handlerutil.WriteSafeError(w, r, http.StatusBadRequest, ErrCodeInvalidPhotoURL, "photo_url must be empty or a key returned by the photo upload", nil)
 }
 
 // ErrCodePhotoStorageUnavailable is the one stable code for "service photo
