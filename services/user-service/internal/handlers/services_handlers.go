@@ -18,7 +18,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/storage"
@@ -695,12 +694,14 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var key string
+	// Every upload gets a new random key (PROD-PHOTO-STORAGE item 7): a
+	// replaced photo never reuses the old key, so clients and caches that
+	// key on photo_url always see the new image.
+	scope := ownerID
 	if existingService != nil {
-		key = fmt.Sprintf("services/%s/photo.%s", existingService.ID, ext)
-	} else {
-		key = fmt.Sprintf("services/%s/photo_%d.%s", ownerID, time.Now().UnixNano(), ext)
+		scope = existingService.ID
 	}
+	key := fmt.Sprintf("services/%s/photo_%s.%s", scope, generateID(), ext)
 
 	if err := u.storage.Upload(r.Context(), key, bytes.NewReader(cleanBuf.Bytes()), mimeType); err != nil {
 		writePhotoStorageUnavailable(w, r, err)
@@ -712,10 +713,9 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to update service photo", err)
 			return
 		}
-		if existingService.PhotoURL != key {
-			// e.g. photo.jpg replaced by photo.png: drop the old object.
-			u.deleteServicePhotoObject(r.Context(), existingService, existingService.PhotoURL)
-		}
+		// The key is always new, so a previous photo is always replaced:
+		// drop its object (BE-GAPS-FIX delete path, this tenant's keys only).
+		u.deleteServicePhotoObject(r.Context(), existingService, existingService.PhotoURL)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
