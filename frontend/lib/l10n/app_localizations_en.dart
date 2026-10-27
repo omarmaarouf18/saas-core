@@ -3747,4 +3747,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String ownKyeChipFor(String status) {
     return 'ID check: $status';
   }
+
+  @override
+  String get ntfJobNotFound =>
+      'We couldn\'t open that order. It may have been removed, or it isn\'t on your account.';
+
+  @override
+  String get ntfPushView => 'View';
+
+  @override
+  String get ntfPickedUpTitle => 'Your order was picked up';
+
+  @override
+  String get ntfPickedUpBody =>
+      'The courier has it and is on the way to the drop-off.';
+
+  @override
+  String get ntfBookedTitle => 'Order placed';
+
+  @override
+  String get ntfInTransitTitle => 'Your order is on the way';
+
+  @override
+  String get ntfDeliveredTitle => 'Your order was delivered';
 }

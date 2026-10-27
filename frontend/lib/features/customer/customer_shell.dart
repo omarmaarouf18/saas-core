@@ -7,7 +7,9 @@ import '../../providers/marketplace_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import '../account/notifications/notification_rules.dart';
+import '../account/notifications/push_tap_handler.dart';
 import 'customer_jobs_controller.dart';
+import 'customer_nav.dart';
 import 'home_page.dart';
 import 'market_page.dart';
 import 'orders_page.dart';
@@ -59,9 +61,30 @@ class _CustomerShellState extends State<CustomerShell> {
     if (i != 2) _jobs.refresh();
   }
 
-  /// What notification links can show here: the My orders tab.
-  late final NotificationShellLinks _links =
-      NotificationShellLinks(showOrders: () => _select(1));
+  /// What notification links can show here: the My orders tab, or one
+  /// order by its job id.
+  late final NotificationShellLinks _links = NotificationShellLinks(
+    showOrders: () => _select(1),
+    openJob: _openJob,
+  );
+
+  /// Opens the order page of [jobId] after loading it
+  /// (`GET /users/jobs/get`, which refuses another customer's job). A job
+  /// that cannot be loaded leaves the customer on My orders with a notice.
+  Future<void> _openJob(String jobId) async {
+    final token = context.read<AuthProvider>().token;
+    final marketplace = context.read<MarketplaceProvider>();
+    final nav = CustomerNavScope.of(context);
+    final job =
+        token == null ? null : await marketplace.fetchJobStatus(jobId, token);
+    if (!mounted) return;
+    if (job == null || (job.id.isNotEmpty && job.id != jobId)) {
+      _select(1);
+      showJobNotFoundNotice(context);
+      return;
+    }
+    await nav.openOrder(context, job);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,40 +97,42 @@ class _CustomerShellState extends State<CustomerShell> {
       // Notification links to an order switch to the My orders tab.
       child: NotificationShellScope(
         links: _links,
-        child: Scaffold(
-          key: const Key('customer_shell'),
-          body: IndexedStack(
-            index: _index,
-            children: [
-              lazy(0, () => const CustomerHomePage()),
-              lazy(
-                1,
-                () => CustomerOrdersPage(
-                  now: widget.now,
-                  onBrowseServices: () => CustomerMarketPage.open(context),
+        child: PushTapHandler(
+          child: Scaffold(
+            key: const Key('customer_shell'),
+            body: IndexedStack(
+              index: _index,
+              children: [
+                lazy(0, () => const CustomerHomePage()),
+                lazy(
+                  1,
+                  () => CustomerOrdersPage(
+                    now: widget.now,
+                    onBrowseServices: () => CustomerMarketPage.open(context),
+                  ),
                 ),
-              ),
-              lazy(2, () => const AccountPage()),
-            ],
-          ),
-          bottomNavigationBar: QdBottomNav(
-            key: const Key('customer_shell_nav'),
-            currentIndex: _index,
-            onTap: _select,
-            items: [
-              QdNavItem(
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: l10n.custNavHome),
-              QdNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long,
-                  label: l10n.custNavOrders),
-              QdNavItem(
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: l10n.custNavAccount),
-            ],
+                lazy(2, () => const AccountPage()),
+              ],
+            ),
+            bottomNavigationBar: QdBottomNav(
+              key: const Key('customer_shell_nav'),
+              currentIndex: _index,
+              onTap: _select,
+              items: [
+                QdNavItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home,
+                    label: l10n.custNavHome),
+                QdNavItem(
+                    icon: Icons.receipt_long_outlined,
+                    activeIcon: Icons.receipt_long,
+                    label: l10n.custNavOrders),
+                QdNavItem(
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    label: l10n.custNavAccount),
+              ],
+            ),
           ),
         ),
       ),

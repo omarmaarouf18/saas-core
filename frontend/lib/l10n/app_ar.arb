@@ -1182,5 +1182,12 @@
   "ownKyeBodyPending": "{name} رفع مستنداته. فريقنا بيراجعها.",
   "ownKyeBodyRejected": "مستندات {name} متقبلتش. يقدر يرفع مستندات جديدة من صفحة التحقق في تطبيق المندوب.",
   "ownKyeBodyMissing": "{name} لسه مرفعش مستنداته. بيرفعها من صفحة التحقق في تطبيق المندوب.",
-  "ownKyeChipFor": "التحقق من الهوية: {status}"
+  "ownKyeChipFor": "التحقق من الهوية: {status}",
+  "ntfJobNotFound": "مقدرناش نفتح الطلب ده. ممكن يكون اتشال، أو مش على حسابك.",
+  "ntfPushView": "اعرض",
+  "ntfPickedUpTitle": "طلبك اتستلم",
+  "ntfPickedUpBody": "المندوب استلمه وفي الطريق لمكان التسليم.",
+  "ntfBookedTitle": "الطلب اتعمل",
+  "ntfInTransitTitle": "طلبك في الطريق",
+  "ntfDeliveredTitle": "طلبك وصل"
 }

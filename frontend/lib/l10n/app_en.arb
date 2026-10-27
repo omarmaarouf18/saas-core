@@ -4869,5 +4869,33 @@
         "type": "String"
       }
     }
+  },
+  "ntfJobNotFound": "We couldn't open that order. It may have been removed, or it isn't on your account.",
+  "@ntfJobNotFound": {
+    "description": "FE-BE-GAPS item 5: a notification's job cannot be opened."
+  },
+  "ntfPushView": "View",
+  "@ntfPushView": {
+    "description": "FE-BE-GAPS item 5: action on a push received while the app is open."
+  },
+  "ntfPickedUpTitle": "Your order was picked up",
+  "@ntfPickedUpTitle": {
+    "description": "FE-BE-GAPS item 5: job_picked_up."
+  },
+  "ntfPickedUpBody": "The courier has it and is on the way to the drop-off.",
+  "@ntfPickedUpBody": {
+    "description": "FE-BE-GAPS item 5."
+  },
+  "ntfBookedTitle": "Order placed",
+  "@ntfBookedTitle": {
+    "description": "FE-BE-GAPS item 5: job_booked."
+  },
+  "ntfInTransitTitle": "Your order is on the way",
+  "@ntfInTransitTitle": {
+    "description": "FE-BE-GAPS item 5: job_in_transit."
+  },
+  "ntfDeliveredTitle": "Your order was delivered",
+  "@ntfDeliveredTitle": {
+    "description": "FE-BE-GAPS item 5: job_delivered."
   }
 }

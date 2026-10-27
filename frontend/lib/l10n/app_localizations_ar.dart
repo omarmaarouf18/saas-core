@@ -3694,4 +3694,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String ownKyeChipFor(String status) {
     return 'التحقق من الهوية: $status';
   }
+
+  @override
+  String get ntfJobNotFound =>
+      'مقدرناش نفتح الطلب ده. ممكن يكون اتشال، أو مش على حسابك.';
+
+  @override
+  String get ntfPushView => 'اعرض';
+
+  @override
+  String get ntfPickedUpTitle => 'طلبك اتستلم';
+
+  @override
+  String get ntfPickedUpBody => 'المندوب استلمه وفي الطريق لمكان التسليم.';
+
+  @override
+  String get ntfBookedTitle => 'الطلب اتعمل';
+
+  @override
+  String get ntfInTransitTitle => 'طلبك في الطريق';
+
+  @override
+  String get ntfDeliveredTitle => 'طلبك وصل';
 }

@@ -6,6 +6,10 @@ class NotificationModel {
   /// Present when the sender targets a specific user (e.g. KYC review
   /// outcomes per ADR-0021). Null for tenant-wide broadcasts.
   final String? userId;
+
+  /// The job the notification is about (`job_id`, USER-AUTH-BE item 7);
+  /// null for other notifications and older payloads.
+  final String? jobId;
   final String title;
   final String body;
   final DateTime timestamp;
@@ -16,6 +20,7 @@ class NotificationModel {
     required this.type,
     required this.tenantId,
     this.userId,
+    this.jobId,
     required this.title,
     required this.body,
     required this.timestamp,
@@ -28,6 +33,7 @@ class NotificationModel {
       type: json['type'] as String? ?? 'system',
       tenantId: json['tenant_id'] as String? ?? '',
       userId: json['user_id'] as String?,
+      jobId: _nonEmpty(json['job_id']),
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
       timestamp: json['timestamp'] != null
@@ -37,12 +43,33 @@ class NotificationModel {
     );
   }
 
+  static String? _nonEmpty(Object? v) {
+    final s = v?.toString().trim() ?? '';
+    return s.isEmpty ? null : s;
+  }
+
+  /// A push message's data (FCM sends strings: `id`, `type`, `tenant_id`,
+  /// `job_id`) with the shown [title] and [body].
+  factory NotificationModel.fromPushData(Map<String, dynamic> data,
+          {String title = '', String body = ''}) =>
+      NotificationModel(
+        id: data['id']?.toString() ?? '',
+        type: _nonEmpty(data['type']) ?? 'system',
+        tenantId: data['tenant_id']?.toString() ?? '',
+        userId: _nonEmpty(data['user_id']),
+        jobId: _nonEmpty(data['job_id']),
+        title: title,
+        body: body,
+        timestamp: DateTime.now(),
+      );
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'type': type,
       'tenant_id': tenantId,
       if (userId != null) 'user_id': userId,
+      if (jobId != null) 'job_id': jobId,
       'title': title,
       'body': body,
       'timestamp': timestamp.toIso8601String(),

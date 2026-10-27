@@ -6655,6 +6655,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID check: {status}'**
   String ownKyeChipFor(String status);
+
+  /// FE-BE-GAPS item 5: a notification's job cannot be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open that order. It may have been removed, or it isn\'t on your account.'**
+  String get ntfJobNotFound;
+
+  /// FE-BE-GAPS item 5: action on a push received while the app is open.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get ntfPushView;
+
+  /// FE-BE-GAPS item 5: job_picked_up.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was picked up'**
+  String get ntfPickedUpTitle;
+
+  /// FE-BE-GAPS item 5.
+  ///
+  /// In en, this message translates to:
+  /// **'The courier has it and is on the way to the drop-off.'**
+  String get ntfPickedUpBody;
+
+  /// FE-BE-GAPS item 5: job_booked.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed'**
+  String get ntfBookedTitle;
+
+  /// FE-BE-GAPS item 5: job_in_transit.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is on the way'**
+  String get ntfInTransitTitle;
+
+  /// FE-BE-GAPS item 5: job_delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order was delivered'**
+  String get ntfDeliveredTitle;
 }
 
 class _AppLocalizationsDelegate
