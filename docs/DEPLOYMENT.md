@@ -184,12 +184,18 @@ INTERNAL_SERVICE_TOKEN=<GENERATE_STRONG_SECRET>
 # AES-256 Key for OTP encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
 OTP_AES_KEY=<GENERATE_64_HEX_CHARS>
 
-# AES-256 Key for KYB/KYE document encryption at rest (64 hex chars / 32 bytes via `openssl rand -hex 32`)
+# AES-256 Key for KYB/KYE documents, chat attachments and service photos at rest
+# (64 hex chars / 32 bytes via `openssl rand -hex 32`). user-service refuses to start in
+# production without a valid one (PROD-PHOTO-STORAGE). Never change it while data exists.
 DOCUMENT_ENCRYPTION_KEY=<GENERATE_64_HEX_CHARS>
 
 # Optional Third-Party Services
 RESEND_API_KEY=re_your_live_key_here
 RESEND_FROM_EMAIL=Quick Delivery <noreply@yourdomain.com>
+# FCM push: base64 of the Firebase service-account key. Never paste it here by hand:
+# install it with the commands in step 9.4.
+FCM_SERVICE_ACCOUNT_JSON_B64=
+FCM_PROJECT_ID=<firebase project id>
 ```
 
 ### Step 5.3: Generate Internal mTLS Certificates
@@ -459,6 +465,115 @@ docker compose exec mongo mongodump \
 
 docker cp saas-mongo:/data/db/backup_$(date +%F).archive /opt/backups/
 ```
+
+### Step 9.3: Service photos (PROD-PHOTO-STORAGE)
+
+Owner service photos are stored AES-256-GCM encrypted by `user-service` in the
+named volume `saas_platform_service_photos_data`, mounted at
+`/app/data/service_photos` (`STORAGE_BASE_DIR`). The key is the same
+`DOCUMENT_ENCRYPTION_KEY` that auth-service (documents) and chat-service
+(attachments) use. With an empty or invalid key `user-service` fails its
+`--check-env` pre-flight and refuses to start in production; outside
+production it starts and photo upload/read answer
+`503 photo_storage_unavailable`. A photo is never stored unencrypted.
+
+**Before the release** (on the VM, `/home/deploybot/.env`):
+
+```bash
+# Prints "64 hex" for a usable key; never prints the key itself.
+sudo awk 'index($0,"DOCUMENT_ENCRYPTION_KEY=")==1 { v=substr($0,25); gsub(/^["\x27]|["\x27]$/,"",v); print length(v), (v ~ /^[0-9A-Fa-f]+$/ ? "hex" : "NOT hex") }' /home/deploybot/.env
+sudo grep -c '^APP_ENV=production$' /home/deploybot/.env   # expect 1
+```
+
+If the first line is not `64 hex`, stop: do **not** generate a new key, the
+existing documents and attachments are encrypted with the current one. Find
+the right value in your password manager copy of `.env` (see
+[runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md)). Nothing else is
+needed in `.env`: the compose file sets `STORAGE_BASE_DIR` itself.
+
+Optional pre-flight with the new image (the CD pipeline runs the same check):
+
+```bash
+docker run --rm --env-file /home/deploybot/.env -e TLS_CERT_PATH=/x -e TLS_KEY_PATH=/x -e TLS_CA_PATH=/x \
+  ghcr.io/omarmaarouf18/saas-core-user-service:<new tag> --check-env
+# expect: PREFLIGHT OK: user-service config validated (and no PREFLIGHT WARNING line)
+```
+
+**After the deploy**, check the volume, then that a photo survives a redeploy:
+
+```bash
+docker volume inspect saas_platform_service_photos_data --format '{{.Name}} {{.Mountpoint}}'
+docker exec saas-user-service sh -c 'id; ls -ldn /app/data/service_photos'   # uid 100 owns the dir
+```
+
+1. In the app, as an owner on a paid plan, upload a test photo for a service
+   and open it (the service card shows it).
+2. List the stored objects (encrypted bytes, nothing readable):
+   `docker run --rm --network none -v saas_platform_service_photos_data:/p:ro --entrypoint find mongo:7 /p -type f`
+3. Recreate the container: `cd /opt/saas-platform && docker compose up -d --force-recreate user-service`.
+4. Open the service again: the photo is still there, and step 2 lists the same file.
+5. Remove the test photo in the app (its object is deleted from the volume).
+
+**Backup and restore**: the daily backup includes this volume; deploy the
+release before updating the backup scripts on the VM. Restore steps:
+[runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md), "Service photos
+volume" and "Restore into production", step 5.
+
+### Step 9.4: FCM push credentials
+
+`notification-service` sends push notifications with a Firebase
+service-account key, passed as `FCM_SERVICE_ACCOUNT_JSON_B64` (the key file,
+base64-encoded on one line) plus `FCM_PROJECT_ID` (optional: it defaults to
+the key's `project_id`). The compose file passes both from
+`/home/deploybot/.env`. A missing or broken key never stops the service: push
+is disabled and the reason is logged. The older raw-JSON variables
+`FCM_SERVICE_ACCOUNT_JSON` / `FCM_CREDENTIALS_JSON` are still read when set in
+the container, but the compose file does not pass them.
+
+> [!WARNING]
+> Push delivery is not verified end to end: as of PROD-PHOTO-STORAGE the FCM
+> client sends no OAuth access token to Google, so Google rejects the sends
+> even with a valid key. The steps below install the key and prove it is
+> loaded; actual delivery needs the follow-up recorded in
+> `docs/worklog/PROD-PHOTO-STORAGE.md`.
+
+1. In the Firebase console: Project settings → Service accounts → Generate new
+   private key. It downloads `<project>-firebase-adminsdk-<id>.json`. Keep the
+   original in your password manager, not in a synced folder.
+2. Copy it to the VM (`<you>@<vm>` is your SSH login):
+
+   ```bash
+   scp ~/Downloads/<project>-firebase-adminsdk-<id>.json <you>@<vm>:/tmp/fcm.json
+   ```
+
+3. On the VM, append it to `.env` without it ever reaching the screen, the
+   shell history or a command line (`ps`), then destroy the copy:
+
+   ```bash
+   chmod 600 /tmp/fcm.json
+   sudo grep -c '^FCM_SERVICE_ACCOUNT_JSON_B64=' /home/deploybot/.env   # must print 0; else delete that line first (sudoedit)
+   { printf 'FCM_SERVICE_ACCOUNT_JSON_B64='; base64 -w0 /tmp/fcm.json; echo; } | sudo tee -a /home/deploybot/.env >/dev/null
+   echo 'FCM_PROJECT_ID=<firebase project id>' | sudo tee -a /home/deploybot/.env >/dev/null
+   shred -u /tmp/fcm.json
+   sudo stat -c '%U %a' /home/deploybot/.env   # still: deploybot 600
+   sudo awk -F= '$1=="FCM_SERVICE_ACCOUNT_JSON_B64" { print "key length:", length($0) - length($1) - 1 }' /home/deploybot/.env
+   ```
+
+   The last line prints only a length (a few thousand characters), never the
+   key. Delete the downloaded file on your machine too once your password
+   manager holds the original.
+4. Redeploy (re-run the deploy workflow, or step 7.3 by hand). The CD
+   pre-flight (`--check-env`) and the container log both print the push status.
+5. Verify from the log line, never from the key:
+
+   ```bash
+   docker logs saas-notification-service 2>&1 | grep -E '\[CONFIG\] push (enabled|disabled)' | tail -n 1
+   ```
+
+   Expected: `[CONFIG] push enabled (project <firebase project id>)`. A
+   `push disabled: <reason>` line names what is wrong (`not valid base64`,
+   `not valid JSON`, `not a service-account key`, `no FCM_PROJECT_ID and no
+   project_id`, or no key at all): fix `.env` and redeploy.
 
 ---
 

@@ -110,7 +110,7 @@ func TestOwnerConfigurationSave_ReproLiveError(t *testing.T) {
 		"category":            "delivery",
 		"tenant_base_price":   15.0,
 		"tenant_price_per_km": 2.0,
-		"photo_url":           "https://example.com/photo.png",
+		"photo_url":           "services/" + ownerID + "/photo_1.png",
 		"address":             "123 Street",
 		"working_hours":       "9am-5pm",
 		"coverage_radius_km":  25.0,

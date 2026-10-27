@@ -15,7 +15,10 @@
 #      copies; nothing in the log or in `ps` during the run contains the SAS
 #      signature, the Mongo password or a value from the fake .env
 #   2. restore.sh of the UPLOADED copies: per-collection document counts equal
-#      the source exactly; restored volume files equal the source (sha256);
+#      the source exactly; restored volume files equal the source (sha256)
+#      for documents, attachments and service photos; the volume count report
+#      matches the source file counts and a run directory missing an expected
+#      volume is flagged with a WARNING;
 #      the secrets file is decrypted to a mode-600 file, nothing of its
 #      contents (not even a variable name) is printed, it is deleted without
 #      -k, and with -k it is kept and equal to the source
@@ -47,6 +50,7 @@ WORK="$(mktemp -d)"
 MONGO="$ID-mongo"
 VOL_DOCS="$ID-documents"
 VOL_ATT="$ID-attachments"
+VOL_PH="$ID-service_photos"
 FAKE_PID=""
 PING_PID=""
 PING_SECRET=""
@@ -56,7 +60,7 @@ cleanup() {
 	[ -z "$FAKE_PID" ] || kill "$FAKE_PID" 2>/dev/null || true
 	[ -z "$PING_PID" ] || kill "$PING_PID" 2>/dev/null || true
 	docker rm -f "$MONGO" >/dev/null 2>&1 || true
-	docker volume rm "$VOL_DOCS" "$VOL_ATT" >/dev/null 2>&1 || true
+	docker volume rm "$VOL_DOCS" "$VOL_ATT" "$VOL_PH" >/dev/null 2>&1 || true
 	rm -rf "$WORK"
 	if [ "$rc" -eq 0 ]; then echo "E2E RESULT: PASS"; else echo "E2E RESULT: FAIL (exit $rc)"; fi
 }
@@ -123,13 +127,15 @@ echo "seeded mongo container $MONGO"
 
 docker volume create "$VOL_DOCS" >/dev/null
 docker volume create "$VOL_ATT" >/dev/null
-docker run --rm -v "$VOL_DOCS:/d" -v "$VOL_ATT:/a" --entrypoint sh "$IMAGE" -c '
+docker volume create "$VOL_PH" >/dev/null
+docker run --rm -v "$VOL_DOCS:/d" -v "$VOL_ATT:/a" -v "$VOL_PH:/p" --entrypoint sh "$IMAGE" -c '
 set -e
 for u in 1 2 3; do mkdir -p /d/user-$u; for k in 1 2 3 4; do head -c $((u * k * 7000)) /dev/urandom >/d/user-$u/kyc-$k.enc; done; done
 mkdir -p "/d/space dir"; echo hello >"/d/space dir/a b.txt"
 for t in 1 2; do mkdir -p /a/ticket-$t; for k in 1 2 3; do head -c $((t * k * 5000)) /dev/urandom >/a/ticket-$t/att-$k.bin; done; done
-chmod 600 /d/user-1/kyc-1.enc'
-echo "seeded volumes $VOL_DOCS, $VOL_ATT"
+chmod 600 /d/user-1/kyc-1.enc
+for o in 1 2 3; do for v in 1 2; do mkdir -p /p/services/owner-$o; head -c $((o * v * 3000)) /dev/urandom >/p/services/owner-$o/photo_$v.jpg; done; done'
+echo "seeded volumes $VOL_DOCS, $VOL_ATT, $VOL_PH"
 
 mkdir -p "$WORK/blob" "$WORK/state" "$WORK/backups"
 # Fake production .env: comments, blank lines, export, a quoted value.
@@ -169,7 +175,7 @@ printf '%s\n' "http://127.0.0.1:$PPORT/$PING_SECRET" >"$WORK/ping"
 chmod 600 "$WORK/ping"
 echo "fake ping endpoint on 127.0.0.1:$PPORT (path kept in $WORK/ping)"
 
-export MONGO_CONTAINER="$MONGO" VOLUMES="$VOL_DOCS $VOL_ATT" OPTIONAL_VOLUMES="$ID-caddy-missing" \
+export MONGO_CONTAINER="$MONGO" VOLUMES="$VOL_DOCS $VOL_ATT $VOL_PH" OPTIONAL_VOLUMES="$ID-caddy-missing" \
 	BACKUP_DIR="$WORK/backups" STATE_DIR="$WORK/state" SAS_FILE="$WORK/sas" ENV_FILE="$WORK/env" \
 	RECIPIENT_FILE="$WORK/recipient.pub" BLOB_PREFIX="e2e-host" MIN_FREE_MB=100 BACKUP_ALLOW_HTTP=1 \
 	PING_FILE="$WORK/ping"
@@ -200,8 +206,8 @@ cat "$WORK/fake.log"
 RUN1="$(find "$WORK/backups" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | head -n 1)"
 n_local="$(find "$WORK/backups/$RUN1" -type f | wc -l)"
 n_201="$(grep -c ' -> 201' "$WORK/fake.log")"
-[ "$n_local" -eq 5 ] && [ "$n_201" -eq 5 ] || fail "expected 5 local files and 5 uploads, got $n_local / $n_201"
-pass "5 artifacts (mongo, 2 volumes, env, SHA256SUMS) written locally and uploaded with 201"
+[ "$n_local" -eq 6 ] && [ "$n_201" -eq 6 ] || fail "expected 6 local files and 6 uploads, got $n_local / $n_201"
+pass "6 artifacts (mongo, 3 volumes incl. service photos, env, SHA256SUMS) written locally and uploaded with 201"
 [ -f "$WORK/backups/$RUN1/env-$RUN1.age" ] || fail "env-$RUN1.age missing"
 grep -q "  env-$RUN1.age\$" "$WORK/backups/$RUN1/SHA256SUMS" || fail "env-$RUN1.age not in SHA256SUMS"
 env_line="$(grep -n " .*/env-$RUN1.age -> 201" "$WORK/fake.log" | cut -d: -f1)"
@@ -257,23 +263,40 @@ else
 fi
 
 mkdir -p "$WORK/restore-tmp"
-RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -k -i "$WORK/key.txt" "$UP/$VOL_DOCS-$RUN1.tar.gz.age" "$UP/$VOL_ATT-$RUN1.tar.gz.age" | tee "$WORK/restore-vol.log"
+RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -k -i "$WORK/key.txt" "$UP/$VOL_DOCS-$RUN1.tar.gz.age" "$UP/$VOL_ATT-$RUN1.tar.gz.age" "$UP/$VOL_PH-$RUN1.tar.gz.age" | tee "$WORK/restore-vol.log"
 src_sums() { # src_sums <volume>
 	docker run --rm -v "$1:/s:ro" --entrypoint sh "$IMAGE" -c 'cd /s && find . -type f -print0 | sort -z | xargs -0 sha256sum'
 }
 mapfile -t vdirs < <(find "$WORK/restore-tmp" -mindepth 1 -maxdepth 1 -type d | sort)
-[ "${#vdirs[@]}" -eq 2 ] || fail "expected 2 extracted dirs, got ${#vdirs[@]}"
+[ "${#vdirs[@]}" -eq 3 ] || fail "expected 3 extracted dirs, got ${#vdirs[@]}"
 i=0
-for vol in "$VOL_DOCS" "$VOL_ATT"; do
-	# restore.sh extracts in argument order: documents first, then attachments.
+for vol in "$VOL_DOCS" "$VOL_ATT" "$VOL_PH"; do
+	# restore.sh extracts in argument order: documents, attachments, photos.
 	d="$(grep -o "$WORK/restore-tmp/qd-restore-[A-Za-z0-9]*" "$WORK/restore-vol.log" | sed -n "$((i + 1))p")"
 	src_sums "$vol" >"$WORK/src-$i.sums"
 	(cd "$d" && find . -type f -print0 | sort -z | xargs -0 sha256sum) >"$WORK/dst-$i.sums"
 	diff -u "$WORK/src-$i.sums" "$WORK/dst-$i.sums" || fail "restored files of $vol differ from the source"
 	pass "$vol: $(wc -l <"$WORK/src-$i.sums") files restored, every sha256 equal to the source"
+	grep -qx "volume $vol $(wc -l <"$WORK/src-$i.sums") files [0-9]* bytes" "$WORK/restore-vol.log" ||
+		fail "volume count report has no line for $vol with $(wc -l <"$WORK/src-$i.sums") files"
+	pass "$vol: volume count report line matches the source file count"
 	i=$((i + 1))
 done
 rm -rf "$WORK/restore-tmp"
+
+# A run directory holding only the volume artifacts: every expected volume
+# present -> no WARNING; one more expected volume -> exactly that WARNING.
+mkdir -p "$WORK/vols-only" "$WORK/restore-tmp"
+for v in "$VOL_DOCS" "$VOL_ATT" "$VOL_PH"; do cp "$UP/$v-$RUN1.tar.gz.age" "$WORK/vols-only/"; done
+EXPECTED_VOLUMES="$VOL_DOCS $VOL_ATT $VOL_PH" RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -i "$WORK/key.txt" "$WORK/vols-only" >"$WORK/restore-dir.log"
+! grep -q 'WARNING' "$WORK/restore-dir.log" || fail "unexpected WARNING with every expected volume present: $(grep WARNING "$WORK/restore-dir.log")"
+[ "$(grep -c '^volume ' "$WORK/restore-dir.log")" -eq 3 ] || fail "run dir restore: expected 3 volume report lines"
+EXPECTED_VOLUMES="$VOL_DOCS $VOL_ATT $VOL_PH $ID-missing" RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -i "$WORK/key.txt" "$WORK/vols-only" >"$WORK/restore-dir2.log"
+[ "$(grep -c 'WARNING' "$WORK/restore-dir2.log")" -eq 1 ] && grep -q "WARNING: vols-only has no backup of volume $ID-missing" "$WORK/restore-dir2.log" ||
+	fail "missing expected volume not flagged exactly once"
+grep -E '^(volume |== WARNING)' "$WORK/restore-dir2.log"
+pass "run dir restore: 3 volume report lines; a missing expected volume is flagged with one WARNING"
+rm -rf "$WORK/restore-tmp" "$WORK/vols-only"
 
 mkdir -p "$WORK/restore-tmp"
 RESTORE_TMP="$WORK/restore-tmp" "$RESTORE_SH" -i "$WORK/key.txt" "$UP/env-$RUN1.age" >"$WORK/restore-env.log" 2>&1 ||

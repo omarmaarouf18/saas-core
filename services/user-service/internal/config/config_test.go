@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -44,6 +45,7 @@ func TestLoad_MongoDatabaseDefaults(t *testing.T) {
 	os.Setenv("TLS_KEY_PATH", "/tmp/key.pem")
 	os.Setenv("TLS_CA_PATH", "/tmp/ca.pem")
 	os.Setenv("REDIS_URI", "redis://localhost:6379")
+	t.Setenv("DOCUMENT_ENCRYPTION_KEY", testDocKey)
 
 	defer func() {
 		os.Unsetenv("JWT_SECRET")
@@ -85,6 +87,7 @@ func TestLoad_DigitalPaymentsEnabled(t *testing.T) {
 	t.Setenv("REDIS_URI", "redis://localhost:6379")
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("ALLOW_TEST_PAYMENT_BYPASS", "")
+	t.Setenv("DOCUMENT_ENCRYPTION_KEY", testDocKey)
 
 	cases := []struct {
 		name, digital, legacy string
@@ -118,4 +121,71 @@ func TestLoad_DigitalPaymentsEnabled(t *testing.T) {
 			}
 		})
 	}
+}
+
+// testDocKey is a valid 64-hex-character (32-byte) test key.
+const testDocKey = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+
+// PROD-PHOTO-STORAGE item 1: an empty or invalid DOCUMENT_ENCRYPTION_KEY is
+// a config error in production and a --check-env warning elsewhere; the
+// message never contains the key.
+func TestLoad_DocumentEncryptionKey(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-12345678901234567890")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "test-internal-token")
+	t.Setenv("TLS_CERT_PATH", "/tmp/cert.pem")
+	t.Setenv("TLS_KEY_PATH", "/tmp/key.pem")
+	t.Setenv("TLS_CA_PATH", "/tmp/ca.pem")
+	t.Setenv("REDIS_URI", "redis://localhost:6379")
+	t.Setenv("ALLOW_TEST_PAYMENT_BYPASS", "")
+
+	badKeys := map[string]string{
+		"empty":          "",
+		"not hex":        "not-a-hex-key-zzzz",
+		"too short":      "00112233445566778899aabbccddeeff",
+		"too long":       testDocKey + "00",
+		"odd hex length": testDocKey[:63],
+	}
+	for name, key := range badKeys {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("DOCUMENT_ENCRYPTION_KEY", key)
+
+			t.Setenv("APP_ENV", "production")
+			cfg, err := Load()
+			if err == nil {
+				t.Fatalf("production: expected an error, got cfg with warnings %v", cfg.Warnings)
+			}
+			if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+				t.Errorf("production: error does not name the variable: %v", err)
+			}
+			if key != "" && strings.Contains(err.Error(), key) {
+				t.Errorf("production: error leaks the key: %v", err)
+			}
+
+			for _, env := range []string{"local", "test"} {
+				t.Setenv("APP_ENV", env)
+				cfg, err := Load()
+				if err != nil {
+					t.Fatalf("%s: expected a warning, got error: %v", env, err)
+				}
+				if len(cfg.Warnings) != 1 || !strings.Contains(cfg.Warnings[0], "DOCUMENT_ENCRYPTION_KEY") ||
+					!strings.Contains(cfg.Warnings[0], "photo_storage_unavailable") {
+					t.Errorf("%s: unexpected warnings %v", env, cfg.Warnings)
+				}
+			}
+		})
+	}
+
+	t.Run("valid key", func(t *testing.T) {
+		t.Setenv("DOCUMENT_ENCRYPTION_KEY", testDocKey)
+		for _, env := range []string{"production", "local", "test"} {
+			t.Setenv("APP_ENV", env)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("%s: unexpected error: %v", env, err)
+			}
+			if len(cfg.Warnings) != 0 {
+				t.Errorf("%s: unexpected warnings %v", env, cfg.Warnings)
+			}
+		}
+	})
 }

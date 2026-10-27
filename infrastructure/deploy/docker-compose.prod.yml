@@ -247,6 +247,9 @@ services:
       - ./certs/ca.crt:/app/certs/ca.crt:ro
       - ./certs/user-service.crt:/app/certs/user-service.crt:ro
       - ./certs/user-service.key:/app/certs/user-service.key:ro
+      # Service photos (encrypted at rest). The image pre-creates this dir
+      # owned by appuser, so a fresh named volume inherits that ownership.
+      - service_photos_data:/app/data/service_photos
     environment:
       GOMEMLIMIT: 38MiB
       PORT: ${USER_SERVICE_PORT}
@@ -260,6 +263,10 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      # Same key as the auth-service documents and chat attachments; without
+      # a valid 64-hex key user-service refuses to start in production.
+      DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
+      STORAGE_BASE_DIR: /app/data/service_photos
       AWS_REGION: ${AWS_REGION}
       CLOUDWATCH_LOG_GROUP: ${CLOUDWATCH_LOG_GROUP}
       DIGITAL_PAYMENTS_ENABLED: ${DIGITAL_PAYMENTS_ENABLED:-false}
@@ -302,6 +309,11 @@ services:
       TLS_CERT_PATH: /app/certs/notification-service.crt
       TLS_KEY_PATH: /app/certs/notification-service.key
       TLS_CA_PATH: /app/certs/ca.crt
+      # Push (FCM): base64 of the Firebase service-account key file; empty
+      # = push disabled (logged as "push disabled: ..."), never a startup
+      # failure. See docs/DEPLOYMENT.md "FCM push credentials".
+      FCM_SERVICE_ACCOUNT_JSON_B64: ${FCM_SERVICE_ACCOUNT_JSON_B64:-}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
     depends_on:
       mongo:
         condition: service_healthy
@@ -394,6 +406,9 @@ volumes:
   attachments_data:
     driver: local
     name: saas_platform_attachments_data
+  service_photos_data:
+    driver: local
+    name: saas_platform_service_photos_data
   # Let's Encrypt account and certificates of the hand-started Caddy. External
   # so compose never creates, renames or deletes it: the certs must survive.
   caddy_data:

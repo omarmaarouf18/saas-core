@@ -112,13 +112,15 @@ func TestServicePhoto_RemoveAndReplaceDeleteStoredObject(t *testing.T) {
 		t.Errorf("removing the pre-create key: code %d, exists %v", rec.Code, exists(preKey))
 	}
 
-	// 4. A key of another tenant pointed at by photo_url is never deleted.
+	// 4. A key of another tenant can no longer be written to photo_url
+	// (PROD-PHOTO-STORAGE item 6: 400 invalid_photo_url), so it can never
+	// be deleted through it either.
 	otherKey := "services/other-tenant-svc/photo.jpg"
 	if err := u.storage.Upload(ctx, otherKey, bytes.NewReader(createTestImage("jpeg")), "image/jpeg"); err != nil {
 		t.Fatalf("seed other tenant object: %v", err)
 	}
-	if rec := put(ownerToken, otherKey); rec.Code != http.StatusOK {
-		t.Fatalf("PUT other key: %d %s", rec.Code, rec.Body.String())
+	if rec := put(ownerToken, otherKey); rec.Code != http.StatusBadRequest {
+		t.Fatalf("PUT other key: expected 400, got %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := put(ownerToken, ""); rec.Code != http.StatusOK {
 		t.Fatalf("PUT clear: %d %s", rec.Code, rec.Body.String())
