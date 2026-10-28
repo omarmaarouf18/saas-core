@@ -530,12 +530,11 @@ is disabled and the reason is logged. The older raw-JSON variables
 `FCM_SERVICE_ACCOUNT_JSON` / `FCM_CREDENTIALS_JSON` are still read when set in
 the container, but the compose file does not pass them.
 
-> [!WARNING]
-> Push delivery is not verified end to end: as of PROD-PHOTO-STORAGE the FCM
-> client sends no OAuth access token to Google, so Google rejects the sends
-> even with a valid key. The steps below install the key and prove it is
-> loaded; actual delivery needs the follow-up recorded in
-> `docs/worklog/PROD-PHOTO-STORAGE.md`.
+At startup (and in the CD pre-flight `--check-env`) the service mints one
+OAuth2 access token from the key (it sends no push) and logs the result. Every
+send then carries a cached access token (`Authorization: Bearer`, refreshed
+5 minutes before it expires and once on a `401`). Android pushes use the
+notification channel `qd_default`, which the app creates.
 
 1. In the Firebase console: Project settings → Service accounts → Generate new
    private key. It downloads `<project>-firebase-adminsdk-<id>.json`. Keep the
@@ -567,13 +566,66 @@ the container, but the compose file does not pass them.
 5. Verify from the log line, never from the key:
 
    ```bash
-   docker logs saas-notification-service 2>&1 | grep -E '\[CONFIG\] push (enabled|disabled)' | tail -n 1
+   docker logs saas-notification-service 2>&1 | grep -E 'push (enabled|disabled|key loaded)' | tail -n 2
    ```
 
-   Expected: `[CONFIG] push enabled (project <firebase project id>)`. A
-   `push disabled: <reason>` line names what is wrong (`not valid base64`,
-   `not valid JSON`, `not a service-account key`, `no FCM_PROJECT_ID and no
-   project_id`, or no key at all): fix `.env` and redeploy.
+   Expected, in this order:
+
+   ```text
+   [CONFIG] push key loaded (project <firebase project id>)
+   [FCM] push enabled (project <firebase project id>, token ok)
+   ```
+
+   `token ok` means Google accepted the key and issued an access token. Other
+   lines and what to do:
+   - `[CONFIG] push disabled: <reason>`: the key itself (`not valid base64`,
+     `not valid JSON`, `not a service-account key`, `no FCM_PROJECT_ID and no
+     project_id`, or no key at all): fix `.env` and redeploy.
+   - `[FCM] push disabled: token mint failed: token endpoint returned HTTP 400:
+     invalid_grant ...`: Google rejected the key (deleted or disabled in the
+     Firebase/Google Cloud console, or the VM clock is far off: check
+     `timedatectl`). Generate a new key (steps 1 to 4).
+   - `[FCM] push enabled (project X, token mint failed: ...; retried on every
+     send)`: a network or Google-side error at startup. Push stays on and every
+     send retries the token; if it persists, check outbound HTTPS from the VM to
+     `oauth2.googleapis.com` and `fcm.googleapis.com`.
+6. Send a test push to your own account. Sign in to the app (2.0.0 or later,
+   built with Firebase) on a phone and allow notifications, so its device token
+   is registered; take your user ID and tenant ID from the admin tools or the
+   database. Then, on the VM (`<user id>` / `<tenant id>` are yours; the internal
+   token is read from `.env` straight into curl, never onto the screen or a
+   command line):
+
+   ```bash
+   cd /opt/saas-platform
+   NOTIF_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' saas-notification-service)
+   NOTIF_PORT=$(sudo awk -F= '$1=="NOTIFICATION_SERVICE_PORT" { print $2 }' /home/deploybot/.env)
+   curl -sS --cacert certs/ca.crt --cert certs/user-service.crt --key certs/user-service.key \
+     --resolve "notification-service:${NOTIF_PORT}:${NOTIF_IP}" \
+     -H @<(sudo awk -F= '$1=="INTERNAL_SERVICE_TOKEN" { print "X-Internal-Token: " substr($0, length($1) + 2) }' /home/deploybot/.env) \
+     -H 'Content-Type: application/json' \
+     -d '{"type":"popup","tenant_id":"<tenant id>","user_id":"<user id>","title":"Test push","body":"FCM check"}' \
+     "https://notification-service:${NOTIF_PORT}/notifications/send"
+   docker logs --since 2m saas-notification-service 2>&1 | grep '\[FCM-PUSH\]'
+   ```
+
+   (If `INTERNAL_SERVICE_TOKEN` is quoted in `.env`, the quotes end up in the
+   header and the call answers `401`: remove them from the header with
+   `gsub(/^["\x27]|["\x27]$/, "", v)` as in step 9.3, or unquote the value.)
+
+   The curl answers `200`. The log shows one of:
+   - `Push delivered successfully to token <first chars>...`: FCM accepted it;
+     the phone shows "Test push".
+   - `user <id> has no registered device tokens`: the app never registered a
+     token for that user (Firebase not set up in that build, notifications
+     denied, or a different account).
+   - `Stale/unregistered token detected ...`: FCM no longer knows that token; it
+     is removed from the user. Reopen the app to register a new one.
+   - `FCM request failed with status 403 PERMISSION_DENIED` (or
+     `SENDER_ID_MISMATCH`): the key belongs to a different Firebase project
+     than the app's `google-services.json`.
+   - `access token unavailable ... token endpoint returned HTTP 400`: see the
+     `invalid_grant` line above.
 
 ---
 
