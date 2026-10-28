@@ -2166,6 +2166,7 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 	}
 
 	var notifType, title, body string
+	var params map[string]string // PUSH-L10N: notification-service AR/EN push templates
 	switch finalStatus {
 	case models.KYCApproved:
 		notifType = "kyc_approved"
@@ -2175,6 +2176,7 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 		notifType = "kyc_rejected"
 		title = "Verification rejected"
 		body = fmt.Sprintf("Your %s verification was rejected. Reason: %s", kind, reason)
+		params = map[string]string{"reason": reason}
 	default:
 		return
 	}
@@ -2185,6 +2187,9 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 		"user_id":   targetUser.ID,
 		"title":     title,
 		"body":      body,
+	}
+	if params != nil {
+		payload["params"] = params
 	}
 	bodyBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -2683,11 +2688,13 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 	}
 
 	var notifType, title, body string
+	var params map[string]string // PUSH-L10N: notification-service AR/EN push templates
 	switch newStatus {
 	case models.AccountStatusSuspended:
 		notifType = "account_suspended"
 		title = "Account suspended"
 		body = fmt.Sprintf("Your account has been suspended. Reason: %s", reason)
+		params = map[string]string{"reason": reason}
 	case models.AccountStatusActive:
 		notifType = "account_reactivated"
 		title = "Account reactivated"
@@ -2702,6 +2709,9 @@ func (a *Auth) dispatchAccountStatusNotification(targetUser *models.User, newSta
 		"user_id":   targetUser.ID,
 		"title":     title,
 		"body":      body,
+	}
+	if params != nil {
+		payload["params"] = params
 	}
 	bodyBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -3498,7 +3508,11 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 // DeviceToken handles registration, update, and removal of client device tokens.
 //
 // Accepts:
-// POST: { "token": "...", "platform": "android|ios|web", "action": "register|unregister"? }
+// POST: { "token": "...", "platform": "android|ios|web", "action": "register|unregister"?, "locale": "ar|en"? }
+//
+// locale (PUSH-L10N) is the app language on that device, stored per token
+// (one user can have an Arabic phone and an English tablet). Absent means a
+// legacy app: the token keeps no locale and pushes keep the English text.
 // DELETE: { "token": "..." } or ?token=...
 func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
@@ -3566,8 +3580,16 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	locale, ok := models.NormalizeDeviceLocale(req.Locale)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid locale: must be one of ar, en",
+		})
+		return
+	}
+
 	// Upsert token
-	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform); err != nil {
+	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform, locale); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to register device token", err)
 		return
 	}

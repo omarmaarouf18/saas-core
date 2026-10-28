@@ -31,6 +31,20 @@ func NewHTTPDeviceTokenFetcher(authServiceURL, internalServiceToken string, clie
 }
 
 func (f *HTTPDeviceTokenFetcher) GetUserDeviceTokens(ctx context.Context, userID string) ([]string, error) {
+	targets, err := f.GetUserPushTargets(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	tokens := make([]string, 0, len(targets))
+	for _, t := range targets {
+		tokens = append(tokens, t.Token)
+	}
+	return tokens, nil
+}
+
+// GetUserPushTargets returns the user's device tokens with the app language
+// each one registered (PUSH-L10N; empty for legacy apps).
+func (f *HTTPDeviceTokenFetcher) GetUserPushTargets(ctx context.Context, userID string) ([]PushTarget, error) {
 	url := fmt.Sprintf("%s/auth/user?id=%s", f.authServiceURL, userID)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -50,7 +64,8 @@ func (f *HTTPDeviceTokenFetcher) GetUserDeviceTokens(ctx context.Context, userID
 
 	var user struct {
 		DeviceTokens []struct {
-			Token string `json:"token"`
+			Token  string `json:"token"`
+			Locale string `json:"locale"`
 		} `json:"device_tokens"`
 	}
 
@@ -58,13 +73,13 @@ func (f *HTTPDeviceTokenFetcher) GetUserDeviceTokens(ctx context.Context, userID
 		return nil, err
 	}
 
-	tokens := make([]string, 0, len(user.DeviceTokens))
+	targets := make([]PushTarget, 0, len(user.DeviceTokens))
 	for _, dt := range user.DeviceTokens {
 		if strings.TrimSpace(dt.Token) != "" {
-			tokens = append(tokens, dt.Token)
+			targets = append(targets, PushTarget{Token: dt.Token, Locale: dt.Locale})
 		}
 	}
-	return tokens, nil
+	return targets, nil
 }
 
 func (f *HTTPDeviceTokenFetcher) UnregisterStaleToken(ctx context.Context, userID, token string) error {

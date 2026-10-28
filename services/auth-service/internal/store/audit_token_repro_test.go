@@ -40,7 +40,7 @@ func TestUpsertDeviceToken_ConcurrentNoDuplicates(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			defer wg.Done()
-			if err := s.UpsertDeviceToken(ctx, user.ID, tokenStr, "android"); err != nil {
+			if err := s.UpsertDeviceToken(ctx, user.ID, tokenStr, "android", ""); err != nil {
 				errCh <- err
 			}
 		}()

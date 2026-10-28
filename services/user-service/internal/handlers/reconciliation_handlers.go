@@ -532,7 +532,10 @@ func (u *UserService) dispatchDisputeResolvedNotification(job *models.Job, decis
 	url := fmt.Sprintf("%s/notifications/send", strings.TrimSuffix(notificationURL, "/"))
 
 	var customerMsg, courierMsg string
+	// PUSH-L10N template variants (notification-service dispute_resolved:*).
+	customerVariant, providerVariant := "customer_refund", "provider_refund"
 	if decision == "release_to_employee" {
+		customerVariant, providerVariant = "customer_release", "provider_release"
 		customerMsg = fmt.Sprintf("Dispute for job %s has been reviewed and resolved. Funds released to service provider.", job.ID)
 		courierMsg = fmt.Sprintf("Dispute for job %s has been reviewed and resolved. Funds released to your wallet/tenant.", job.ID)
 	} else {
@@ -541,17 +544,19 @@ func (u *UserService) dispatchDisputeResolvedNotification(job *models.Job, decis
 	}
 
 	targets := []struct {
-		userID string
-		msg    string
+		userID  string
+		msg     string
+		variant string
 	}{
-		{userID: job.UserID, msg: customerMsg},
-		{userID: job.OwnerID, msg: courierMsg},
+		{userID: job.UserID, msg: customerMsg, variant: customerVariant},
+		{userID: job.OwnerID, msg: courierMsg, variant: providerVariant},
 	}
 	if job.EmployeeID != "" && job.EmployeeID != job.OwnerID {
 		targets = append(targets, struct {
-			userID string
-			msg    string
-		}{userID: job.EmployeeID, msg: courierMsg})
+			userID  string
+			msg     string
+			variant string
+		}{userID: job.EmployeeID, msg: courierMsg, variant: providerVariant})
 	}
 
 	for _, target := range targets {
@@ -565,6 +570,7 @@ func (u *UserService) dispatchDisputeResolvedNotification(job *models.Job, decis
 			"title":     "Dispute Resolution Update",
 			"body":      target.msg,
 			"job_id":    job.ID,
+			"params":    map[string]string{notifVariantParam: target.variant},
 		}
 		data, err := json.Marshal(payload)
 		if err != nil {

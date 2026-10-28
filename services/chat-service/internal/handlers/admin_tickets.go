@@ -186,6 +186,8 @@ func (c *Chat) dispatchTicketResolvedNotification(ctx context.Context, ticket *s
 		"user_id": ticket.CustomerID,
 		"title":   "Support Ticket Resolved",
 		"body":    fmt.Sprintf("Your ticket (%s) has been resolved: %s", ticket.ID, resolutionNote),
+		// PUSH-L10N: notification-service AR/EN push templates.
+		"params": map[string]string{"ticket_id": ticket.ID, "note": resolutionNote},
 	}
 
 	bodyBytes, err := json.Marshal(payload)
@@ -336,8 +338,11 @@ func (c *Chat) dispatchTicketAcceptedNotification(ctx context.Context, ticket *s
 	sendURL := strings.TrimSuffix(notificationURL, "/") + "/notifications/send"
 
 	agentName := "A support agent"
+	// PUSH-L10N: notification-service AR/EN push templates.
+	params := map[string]string{"ticket_id": ticket.ID, "variant": "anonymous"}
 	if reviewerName != "" {
 		agentName = reviewerName
+		params = map[string]string{"ticket_id": ticket.ID, "agent_name": reviewerName}
 	}
 
 	payload := map[string]any{
@@ -346,6 +351,7 @@ func (c *Chat) dispatchTicketAcceptedNotification(ctx context.Context, ticket *s
 		"user_id": ticket.CustomerID,
 		"title":   "Support Agent Assigned",
 		"body":    fmt.Sprintf("%s has joined your ticket (%s)", agentName, ticket.ID),
+		"params":  params,
 	}
 
 	bodyBytes, err := json.Marshal(payload)

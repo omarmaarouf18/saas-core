@@ -17,6 +17,7 @@ import (
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/store"
+	"github.com/project/notification-service/internal/templates"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -344,7 +345,15 @@ type sendRequest struct {
 	Title    string     `json:"title"`
 	Body     string     `json:"body"`
 	Roles    []hub.Role `json:"roles,omitempty"` // empty = broadcast to all roles
+	// Params are named values for the AR/EN push templates (PUSH-L10N,
+	// internal/templates). Optional: without them a device with a locale
+	// gets the template only when it needs no parameter, else this title
+	// and body.
+	Params map[string]string `json:"params,omitempty"`
 }
+
+// maxNotificationParams bounds the params map of one notification.
+const maxNotificationParams = 16
 
 // Send pushes a notification to matching connected clients.
 func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
@@ -381,6 +390,10 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id is required unless global is true"})
 		return
 	}
+	if len(req.Params) > maxNotificationParams {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("at most %d params", maxNotificationParams)})
+		return
+	}
 
 	notif := hub.Notification{
 		ID:        fmt.Sprintf("notif-%d", time.Now().UnixNano()),
@@ -394,6 +407,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		Body:      req.Body,
 		Roles:     req.Roles,
 		Timestamp: time.Now().UTC(),
+		Params:    req.Params,
 	}
 	if notif.Type == "" {
 		notif.Type = "popup"
@@ -416,6 +430,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
+			Params:    notif.Params,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notif.ID, err)
@@ -477,6 +492,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		Body:      fmt.Sprintf("New job %s for service %s: %s", req.JobID, req.ServiceName, req.Description),
 		Roles:     []hub.Role{hub.RoleOwner, hub.RoleEmployee, hub.RoleClient},
 		Timestamp: time.Now().UTC(),
+		Params:    map[string]string{"service_name": req.ServiceName},
 	}
 
 	if n.store != nil {
@@ -494,6 +510,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
+			Params:    notif.Params,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist job alert %s: %v", notif.ID, err)
@@ -580,6 +597,8 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 			Body:      it.Body,
 			Timestamp: it.Timestamp,
 			IsRead:    it.IsRead,
+			Params:    it.Params,
+			Texts:     templates.RenderAll(it.Type, it.Params),
 		})
 	}
 
@@ -608,6 +627,9 @@ type notificationHistoryItem struct {
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
 	IsRead    bool      `json:"is_read"`
+	// PUSH-L10N: see hub.ClientNotification.
+	Params map[string]string         `json:"params,omitempty"`
+	Texts  map[string]templates.Text `json:"texts,omitempty"`
 }
 
 // ---------------------------------------------------------------------------

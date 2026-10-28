@@ -65,7 +65,7 @@ func TestJobNotifications_PayloadCarriesJobIDAndStableEventType(t *testing.T) {
 		"user_id":   targetUserID,
 		"job_id":    jobID,
 		"title":     "Courier Assigned",
-		"body":      "Your courier has accepted! Final fare: $25.00",
+		"body":      "Your courier has accepted! Final fare: EGP 25",
 		"roles":     []string{"client", "user"},
 	}
 	bodyBytes, _ := json.Marshal(sendPayload)

@@ -596,15 +596,15 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	suggestedPrice := acceptedJobData["suggested_price"].(float64)
 
 	// MATHEMATICAL PROOF:
-	t.Logf("Old buggy price (courier proximity distance %.2f km): $%.2f", oldCourierDistance, oldCourierBuggyPrice)
-	t.Logf("Expected correct price (actual trip distance %.2f km): $%.2f", actualTripDistance, expectedTripPrice)
-	t.Logf("Actual calculated suggested price: $%.2f", suggestedPrice)
+	t.Logf("Old buggy price (courier proximity distance %.2f km): EGP %.2f", oldCourierDistance, oldCourierBuggyPrice)
+	t.Logf("Expected correct price (actual trip distance %.2f km): EGP %.2f", actualTripDistance, expectedTripPrice)
+	t.Logf("Actual calculated suggested price: EGP %.2f", suggestedPrice)
 
 	if math.Abs(suggestedPrice-expectedTripPrice) > 0.05 {
-		t.Errorf("Price does NOT match trip distance math! Expected ~$%.2f, got $%.2f", expectedTripPrice, suggestedPrice)
+		t.Errorf("Price does NOT match trip distance math! Expected ~EGP %.2f, got EGP %.2f", expectedTripPrice, suggestedPrice)
 	}
 	if math.Abs(suggestedPrice-oldCourierBuggyPrice) < 5.0 {
-		t.Fatalf("CRITICAL BUG: Price matches the old courier proximity formula ($%.2f) instead of actual trip distance ($%.2f)!", suggestedPrice, expectedTripPrice)
+		t.Fatalf("CRITICAL BUG: Price matches the old courier proximity formula (EGP %.2f) instead of actual trip distance (EGP %.2f)!", suggestedPrice, expectedTripPrice)
 	}
 
 	// 6. Verify snapshot on Job in DB
@@ -652,7 +652,7 @@ func TestPricing_EmployeeLocationVsBusinessAddress_EndToEnd(t *testing.T) {
 	totalAmount, _ := completeResp["total_amount"].(float64)
 
 	if math.Abs(totalAmount-expectedTripPrice) > 0.05 {
-		t.Errorf("Final complete job total_amount $%.2f does not match expected $%.2f", totalAmount, expectedTripPrice)
+		t.Errorf("Final complete job total_amount EGP %.2f does not match expected EGP %.2f", totalAmount, expectedTripPrice)
 	}
 }
 

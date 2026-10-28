@@ -25,6 +25,7 @@ class _Api extends ApiClient {
     required String token,
     String platform = 'android',
     String? action,
+    String? locale,
   }) async {
     if (failRegister) throw ApiClientException('down', statusCode: 503);
     registered.add(token);

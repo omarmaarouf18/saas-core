@@ -986,7 +986,9 @@ func (s *MongoDB) GetReviewerByToken(ctx context.Context, token string) (*models
 // ---------------------------------------------------------------------------
 
 // UpsertDeviceToken adds or updates a device token on a user record without duplicates.
-func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platform string) error {
+// locale ("ar" | "en", PUSH-L10N) is stored per token; empty (a legacy app)
+// removes it, so pushes to that token keep the sender's English text.
+func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platform, locale string) error {
 	if strings.TrimSpace(tokenStr) == "" {
 		return fmt.Errorf("device token cannot be empty")
 	}
@@ -997,18 +999,15 @@ func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platf
 	entry := models.DeviceToken{
 		Token:     tokenStr,
 		Platform:  platform,
+		Locale:    locale,
 		UpdatedAt: time.Now().UTC(),
 	}
+	refresh := deviceTokenRefresh(entry)
 
 	// 1. Try to update an existing matching token in-place
 	res, err := s.users.UpdateOne(ctx,
 		bson.M{"_id": userID, "device_tokens.token": tokenStr},
-		bson.M{
-			"$set": bson.M{
-				"device_tokens.$.platform":   platform,
-				"device_tokens.$.updated_at": entry.UpdatedAt,
-			},
-		},
+		refresh,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update existing device token: %w", err)
@@ -1044,17 +1043,25 @@ func (s *MongoDB) UpsertDeviceToken(ctx context.Context, userID, tokenStr, platf
 	// If user exists, the token was inserted concurrently by another request. Refresh it.
 	_, err = s.users.UpdateOne(ctx,
 		bson.M{"_id": userID, "device_tokens.token": tokenStr},
-		bson.M{
-			"$set": bson.M{
-				"device_tokens.$.platform":   platform,
-				"device_tokens.$.updated_at": entry.UpdatedAt,
-			},
-		},
+		refresh,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update concurrent device token: %w", err)
 	}
 	return nil
+}
+
+// deviceTokenRefresh is the in-place update of an already registered token.
+func deviceTokenRefresh(entry models.DeviceToken) bson.M {
+	set := bson.M{
+		"device_tokens.$.platform":   entry.Platform,
+		"device_tokens.$.updated_at": entry.UpdatedAt,
+	}
+	if entry.Locale == "" {
+		return bson.M{"$set": set, "$unset": bson.M{"device_tokens.$.locale": ""}}
+	}
+	set["device_tokens.$.locale"] = entry.Locale
+	return bson.M{"$set": set}
 }
 
 // RemoveDeviceToken unregisters a specific device token (or all tokens if tokenStr is empty) from a user record.

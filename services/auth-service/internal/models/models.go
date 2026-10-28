@@ -3,6 +3,7 @@ package models
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -191,9 +192,35 @@ func (u *User) EffectiveAccountStatus() AccountStatus {
 
 // DeviceToken represents a registered push notification token for a client device.
 type DeviceToken struct {
-	Token     string    `json:"token"               bson:"token"`
-	Platform  string    `json:"platform"            bson:"platform"` // "android" | "ios" | "web"
+	Token    string `json:"token"               bson:"token"`
+	Platform string `json:"platform"            bson:"platform"` // "android" | "ios" | "web"
+	// Locale is the app language on this device ("ar" | "en", PUSH-L10N).
+	// Empty for tokens registered by apps that send none: notification-service
+	// then keeps the sender's English push text.
+	Locale    string    `json:"locale,omitempty"    bson:"locale,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"          bson:"updated_at"`
+}
+
+// DeviceLocales are the app languages a device token may carry.
+var DeviceLocales = []string{"ar", "en"}
+
+// NormalizeDeviceLocale returns the device-token locale for raw ("ar",
+// "en", also "ar_EG" / "en-US", any case) and whether it is accepted.
+// Empty stays empty (a legacy app that sends no locale).
+func NormalizeDeviceLocale(raw string) (string, bool) {
+	l := strings.ToLower(strings.TrimSpace(raw))
+	if l == "" {
+		return "", true
+	}
+	if i := strings.IndexAny(l, "-_"); i > 0 {
+		l = l[:i]
+	}
+	for _, ok := range DeviceLocales {
+		if l == ok {
+			return l, true
+		}
+	}
+	return "", false
 }
 
 // DeviceTokenRequest is the expected JSON body for POST /auth/device-token.
@@ -201,6 +228,7 @@ type DeviceTokenRequest struct {
 	Token    string `json:"token"`
 	Platform string `json:"platform,omitempty"` // "android" | "ios" | "web"
 	Action   string `json:"action,omitempty"`   // "register" | "unregister"
+	Locale   string `json:"locale,omitempty"`   // "ar" | "en"; absent = legacy (English push text)
 }
 
 // SignupRequest is the expected JSON body for POST /auth/signup.

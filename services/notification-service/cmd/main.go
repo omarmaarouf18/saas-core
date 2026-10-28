@@ -68,7 +68,18 @@ func main() {
 
 	sseHub := hub.NewSSEHub()
 	fcmClient := newFCMClient(cfg)
-	tokenFetcher := hub.NewHTTPDeviceTokenFetcher(cfg.AuthServiceURL, cfg.InternalServiceToken, nil)
+	// auth-service only serves mTLS: the device-token lookup dials with this
+	// service's certificate, like the SSE token check (PUSH-L10N item 6; a
+	// plain client failed every lookup with "unknown authority").
+	var authClient *http.Client
+	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" && cfg.TLSCAPath != "" {
+		authClient, err = tlsutil.NewClient(cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+		if err != nil {
+			log.Fatalf("[NOTIF] Failed to initialize TLS client for auth-service: %v", err)
+		}
+		authClient.Timeout = 5 * time.Second
+	}
+	tokenFetcher := hub.NewHTTPDeviceTokenFetcher(cfg.AuthServiceURL, cfg.InternalServiceToken, authClient)
 	sseHub.SetPushDispatcher(fcmClient, tokenFetcher)
 
 	// Connect to Redis.

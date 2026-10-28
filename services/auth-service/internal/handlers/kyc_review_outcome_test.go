@@ -233,6 +233,11 @@ func TestReviewKYBKY_OutcomeNotificationDispatch(t *testing.T) {
 	if bodyStr == "" || !bytes.Contains([]byte(bodyStr), []byte("selfie mismatch")) {
 		t.Errorf("Expected notification body to contain the rejection reason, got %q", bodyStr)
 	}
+	// PUSH-L10N: the reason is also a push template parameter.
+	params, _ := capReq.payload["params"].(map[string]any)
+	if params["reason"] != "selfie mismatch" {
+		t.Errorf("Expected params.reason %q, got %v", "selfie mismatch", capReq.payload["params"])
+	}
 }
 
 func TestReviewKYBKY_NotificationFailureDoesNotFailReview(t *testing.T) {
