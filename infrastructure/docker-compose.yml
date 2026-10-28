@@ -228,6 +228,9 @@ services:
       TLS_KEY_PATH: /app/certs/user-service.key
       TLS_CA_PATH: /app/certs/ca.crt
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      # Service photos are stored encrypted with this key; without a usable
+      # key photo upload and read answer 503 photo_storage_unavailable.
+      DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}
     depends_on:
       mongo:
         condition: service_healthy
