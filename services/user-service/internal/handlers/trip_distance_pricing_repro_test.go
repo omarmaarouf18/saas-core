@@ -39,9 +39,9 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 	t.Logf("=== REPRO PROOF PARAMETERS (Long Trip, Close Courier) ===")
 	t.Logf("Pickup: Cairo (%.4f, %.4f)", pickupCairo.Latitude, pickupCairo.Longitude)
 	t.Logf("Destination: Alexandria (%.4f, %.4f)", destAlexandria.Latitude, destAlexandria.Longitude)
-	t.Logf("Actual Trip Distance: %.2f km -> Expected Trip Price: $%.2f", actualTripDist, expectedTripPrice)
+	t.Logf("Actual Trip Distance: %.2f km -> Expected Trip Price: EGP %.2f", actualTripDist, expectedTripPrice)
 	t.Logf("Courier Location: Cairo Downtown (%.4f, %.4f)", courierCloseCairo.Latitude, courierCloseCairo.Longitude)
-	t.Logf("Courier Proximity Distance: %.2f km -> Buggy Courier-Proximity Price: $%.2f", courierProximityDist, buggyCourierPrice)
+	t.Logf("Courier Proximity Distance: %.2f km -> Buggy Courier-Proximity Price: EGP %.2f", courierProximityDist, buggyCourierPrice)
 
 	// -------------------------------------------------------------------------
 	// Repro Scenario 1: Direct Employee Assignment at Booking Time
@@ -97,11 +97,11 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		jobData := resp["job"].(map[string]any)
 		suggestedPrice := jobData["suggested_price"].(float64)
 
-		t.Logf("[Direct Assignment] Suggested Price: $%.2f (Expected Trip Price: $%.2f, Buggy Courier Price: $%.2f)",
+		t.Logf("[Direct Assignment] Suggested Price: EGP %.2f (Expected Trip Price: EGP %.2f, Buggy Courier Price: EGP %.2f)",
 			suggestedPrice, expectedTripPrice, buggyCourierPrice)
 
 		if math.Abs(suggestedPrice-expectedTripPrice) > 0.05 {
-			t.Errorf("CRITICAL BUG REPRODUCED: TrackJob priced job at $%.2f (courier-to-customer proximity), expected $%.2f (pickup-to-destination trip distance)!",
+			t.Errorf("CRITICAL BUG REPRODUCED: TrackJob priced job at EGP %.2f (courier-to-customer proximity), expected EGP %.2f (pickup-to-destination trip distance)!",
 				suggestedPrice, expectedTripPrice)
 		}
 	})
@@ -172,11 +172,11 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		acceptedJob := acceptResp["job"].(map[string]any)
 		suggestedPrice := acceptedJob["suggested_price"].(float64)
 
-		t.Logf("[Cascade Accept] Suggested Price: $%.2f (Expected Trip Price: $%.2f, Buggy Courier Price: $%.2f)",
+		t.Logf("[Cascade Accept] Suggested Price: EGP %.2f (Expected Trip Price: EGP %.2f, Buggy Courier Price: EGP %.2f)",
 			suggestedPrice, expectedTripPrice, buggyCourierPrice)
 
 		if math.Abs(suggestedPrice-expectedTripPrice) > 0.05 {
-			t.Errorf("CRITICAL BUG REPRODUCED: AcceptJobOffer priced job at $%.2f (courier-to-customer proximity), expected $%.2f (pickup-to-destination trip distance)!",
+			t.Errorf("CRITICAL BUG REPRODUCED: AcceptJobOffer priced job at EGP %.2f (courier-to-customer proximity), expected EGP %.2f (pickup-to-destination trip distance)!",
 				suggestedPrice, expectedTripPrice)
 		}
 	})
@@ -226,9 +226,9 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		t.Logf("=== MIRROR CASE PARAMETERS (Short Trip, Far Courier) ===")
 		t.Logf("Pickup: Cairo (%.4f, %.4f)", pickupCairo.Latitude, pickupCairo.Longitude)
 		t.Logf("Destination: Tahrir Museum (%.4f, %.4f)", destTahrirMuseum.Latitude, destTahrirMuseum.Longitude)
-		t.Logf("Short Trip Distance: %.2f km -> Expected Price: $%.2f", shortTripDist, expectedShortTripPrice)
+		t.Logf("Short Trip Distance: %.2f km -> Expected Price: EGP %.2f", shortTripDist, expectedShortTripPrice)
 		t.Logf("Courier Far Location: Alexandria (%.4f, %.4f)", courierFarAlexandria.Latitude, courierFarAlexandria.Longitude)
-		t.Logf("Courier Distance: %.2f km -> Buggy Courier Distance Price: $%.2f", courierDistance, buggyFarCourierPrice)
+		t.Logf("Courier Distance: %.2f km -> Buggy Courier Distance Price: EGP %.2f", courierDistance, buggyFarCourierPrice)
 
 		tokenCust, _ := jwtutil.GenerateToken(custID, "user", ownerID, "cust@repro.com")
 		tokenEmp, _ := jwtutil.GenerateToken(empID, "employee", ownerID, "emp@repro.com")
@@ -253,11 +253,11 @@ func TestRepro_PricingFormulaUsesCourierDistanceInsteadOfTripDistance(t *testing
 		jobData := resp["job"].(map[string]any)
 		suggestedPrice := jobData["suggested_price"].(float64)
 
-		t.Logf("[Mirror Case] Suggested Price: $%.2f (Expected Trip Price: $%.2f, Buggy Far Courier Price: $%.2f)",
+		t.Logf("[Mirror Case] Suggested Price: EGP %.2f (Expected Trip Price: EGP %.2f, Buggy Far Courier Price: EGP %.2f)",
 			suggestedPrice, expectedShortTripPrice, buggyFarCourierPrice)
 
 		if math.Abs(suggestedPrice-expectedShortTripPrice) > 0.05 {
-			t.Errorf("CRITICAL BUG REPRODUCED: TrackJob priced job at $%.2f (charging customer for courier's 181km travel from Alexandria), expected $%.2f (actual 0.43km trip distance)!",
+			t.Errorf("CRITICAL BUG REPRODUCED: TrackJob priced job at EGP %.2f (charging customer for courier's 181km travel from Alexandria), expected EGP %.2f (actual 0.43km trip distance)!",
 				suggestedPrice, expectedShortTripPrice)
 		}
 	})
