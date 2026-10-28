@@ -2763,6 +2763,53 @@ func hashToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func hashTokenPrefix(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	hexStr := hex.EncodeToString(sum[:])
+	if len(hexStr) > 16 {
+		return hexStr[:16]
+	}
+	return hexStr
+}
+
+// getReviewerClientIP extracts the reviewer's forwarded client IP.
+// Only requests presenting a valid X-Internal-Token (such as kyc-reviewer-console)
+// are trusted to forward client IP via X-Forwarded-For or X-Real-IP.
+// If the internal token is invalid or missing, or no forwarded header is provided,
+// it falls back to getClientIP.
+func (a *Auth) getReviewerClientIP(r *http.Request) string {
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) == 1 {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			ip := strings.TrimSpace(parts[0])
+			if ip != "" {
+				return cleanIP(ip)
+			}
+		} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
+			ip := strings.TrimSpace(rip)
+			if ip != "" {
+				return cleanIP(ip)
+			}
+		}
+	}
+	return a.getClientIP(r)
+}
+
+func cleanIP(ip string) string {
+	if strings.Contains(ip, "]") {
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+		ip = strings.Trim(ip, "[]")
+	} else if count := strings.Count(ip, ":"); count == 1 {
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+	}
+	return ip
+}
+
 // ReviewerRateLimitError indicates that the reviewer login attempt was rejected due to rate limiting.
 type ReviewerRateLimitError struct {
 	Remaining time.Duration
@@ -2786,7 +2833,7 @@ func writeReviewerAuthError(w http.ResponseWriter, err error) {
 // authenticateReviewer verifies the reviewer's credentials.
 // It checks both the X-Internal-Token and the X-Reviewer-Token headers.
 // Defaulting to requiring both as the safer option (internal network context + reviewer token).
-// Enforces 3 failed attempts -> 5-minute lockout rate limiting keyed by IP and hashed token.
+// Enforces rate limiting keyed by token hash prefix + forwarded client IP (trusted via internal token), with a global ceiling.
 func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// FLAGGED: Operationally, KYB/KYE reviews could be performed by internal staff via an internal network
 	// or remote staff over HTTPS. As it is unclear whether remote access is required without the internal token,
@@ -2802,26 +2849,37 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 		return nil, errors.New("unauthorized internal token")
 	}
 
-	clientIP := a.getClientIP(r)
+	// 2. Check global failed-attempt ceiling
+	if locked, remaining := a.limiter.IsReviewerGlobalLocked(); locked {
+		return nil, &ReviewerRateLimitError{Remaining: remaining}
+	}
+
+	// 3. Extract forwarded client IP (trusted because X-Internal-Token is valid)
+	clientIP := a.getReviewerClientIP(r)
 
 	// Check if client IP is currently locked out
 	if locked, remaining := a.limiter.IsReviewerLocked(clientIP); locked {
 		return nil, &ReviewerRateLimitError{Remaining: remaining}
 	}
 
-	// 2. Verify X-Reviewer-Token header
+	// 4. Verify X-Reviewer-Token header
 	reviewerToken := r.Header.Get("X-Reviewer-Token")
 	if reviewerToken == "" {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		if lockoutIP > 0 {
-			return nil, &ReviewerRateLimitError{Remaining: lockoutIP}
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
+		remaining := lockoutIP
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
+		}
+		if remaining > 0 {
+			return nil, &ReviewerRateLimitError{Remaining: remaining}
 		}
 		return nil, errors.New("missing reviewer token")
 	}
 
-	tokenHash := hashToken(reviewerToken)
-	// Check if attempted token hash is currently locked out
-	if locked, remaining := a.limiter.IsReviewerLocked(tokenHash); locked {
+	tokenPrefixKey := "tok_prefix:" + hashTokenPrefix(reviewerToken)
+	// Check if attempted token hash prefix is currently locked out
+	if locked, remaining := a.limiter.IsReviewerLocked(tokenPrefixKey); locked {
 		return nil, &ReviewerRateLimitError{Remaining: remaining}
 	}
 
@@ -2829,10 +2887,14 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	rev, err := a.store.GetReviewerByToken(ctx, reviewerToken)
 	if err != nil {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenPrefixKey)
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
 		remaining := lockoutIP
 		if lockoutTok > remaining {
 			remaining = lockoutTok
+		}
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
 		}
 		if remaining > 0 {
 			return nil, &ReviewerRateLimitError{Remaining: remaining}
@@ -2846,10 +2908,14 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// before comparison; legacy plaintext rows compare directly.
 	if !store.MatchesStoredReviewerCredential(rev.Token, reviewerToken) {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenPrefixKey)
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
 		remaining := lockoutIP
 		if lockoutTok > remaining {
 			remaining = lockoutTok
+		}
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
 		}
 		if remaining > 0 {
 			return nil, &ReviewerRateLimitError{Remaining: remaining}
@@ -2859,7 +2925,7 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 
 	// Reset failure counter on successful authentication
 	a.limiter.ResetReviewer(clientIP)
-	a.limiter.ResetReviewer(tokenHash)
+	a.limiter.ResetReviewer(tokenPrefixKey)
 
 	return rev, nil
 }

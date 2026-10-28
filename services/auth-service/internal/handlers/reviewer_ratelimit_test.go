@@ -216,3 +216,190 @@ func TestReviewerLogin_RateLimiting_3Attempts5MinLockout(t *testing.T) {
 		}
 	})
 }
+
+func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *testing.T) {
+	os.Setenv("JWT_SECRET", "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+	jwtutil.Init("z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2")
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	dbName := fmt.Sprintf("saas_auth_rev_rl2_test_%d", time.Now().UnixNano())
+	cipher, err := otpcrypto.NewCipher("", "local")
+	if err != nil {
+		t.Fatalf("failed to create cipher: %v", err)
+	}
+
+	s, err := store.NewMongoDB(ctx, mongoURI, dbName, cipher)
+	if err != nil {
+		t.Skipf("Skipping reviewer rate limit integration tests: MongoDB not available at %s (%v)", mongoURI, err)
+		return
+	}
+	defer func() {
+		_ = s.DropDatabase(context.Background())
+	}()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("failed to start miniredis: %v", err)
+	}
+	defer mr.Close()
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	cfg := &config.Config{
+		AppEnv:                "local",
+		GatewaySecret:         "mock-gateway-secret",
+		InternalServiceToken:  "mock-internal-token",
+		JWTSecret:             "z8J/B2K7D3N5Q6S8V9X0A1C2E3F4G5H6J7K8M9N0P1Q2R3S4T5U6V7W8X9Y0Z1A2",
+		DocumentSigningSecret: "doc-signing-secret-key-32bytes-long-test",
+	}
+
+	tempDir := t.TempDir()
+	storeLoc, _ := storage.NewLocalStorage(tempDir, "/api/v1", cfg.DocumentSigningSecret, "", "test")
+	a := NewAuth(s, &mockOTPDispatcher{}, cfg, rdb, storeLoc)
+
+	validToken := "valid-reviewer-token-secret-987654321"
+	rev := &models.Reviewer{
+		ID:    "rev-rl-2",
+		Name:  "Forwarded Rate Limit Reviewer",
+		Token: validToken,
+	}
+	if err := s.AddReviewer(ctx, rev); err != nil {
+		t.Fatalf("AddReviewer failed: %v", err)
+	}
+
+	consoleIP := "172.20.0.9:50000"
+
+	t.Run("ForwardedClientIP_IsolatesReviewersBehindSingleConsole", func(t *testing.T) {
+		clientIPA := "203.0.113.10"
+		clientIPB := "203.0.113.20"
+
+		// Reviewer A fails 3 times with bad tokens from console
+		for i := 1; i <= 3; i++ {
+			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+			req.RemoteAddr = consoleIP
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			req.Header.Set("X-Forwarded-For", clientIPA)
+			req.Header.Set("X-Reviewer-Token", fmt.Sprintf("bad-token-a-%d", i))
+			rec := httptest.NewRecorder()
+			a.VerifyReviewer(rec, req)
+			if i < 3 && rec.Code != http.StatusUnauthorized {
+				t.Fatalf("attempt %d: expected 401, got %d", i, rec.Code)
+			}
+			if i == 3 && rec.Code != http.StatusTooManyRequests {
+				t.Fatalf("attempt 3: expected 429, got %d", rec.Code)
+			}
+		}
+
+		// Reviewer A's 4th attempt from same forwarded IP is rejected with 429
+		reqA4 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		reqA4.RemoteAddr = consoleIP
+		reqA4.Header.Set("X-Internal-Token", a.internalServiceToken)
+		reqA4.Header.Set("X-Forwarded-For", clientIPA)
+		reqA4.Header.Set("X-Reviewer-Token", validToken)
+		recA4 := httptest.NewRecorder()
+		a.VerifyReviewer(recA4, reqA4)
+		if recA4.Code != http.StatusTooManyRequests {
+			t.Fatalf("Reviewer A: expected 429 during lockout, got %d", recA4.Code)
+		}
+
+		// Reviewer B behind the EXACT SAME console (consoleIP) with distinct forwarded IP succeeds!
+		reqB := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		reqB.RemoteAddr = consoleIP
+		reqB.Header.Set("X-Internal-Token", a.internalServiceToken)
+		reqB.Header.Set("X-Forwarded-For", clientIPB)
+		reqB.Header.Set("X-Reviewer-Token", validToken)
+		recB := httptest.NewRecorder()
+		a.VerifyReviewer(recB, reqB)
+		if recB.Code != http.StatusOK {
+			t.Fatalf("Reviewer B: expected 200 OK behind same console, got %d (body: %s)", recB.Code, recB.Body.String())
+		}
+	})
+
+	t.Run("TokenHashPrefix_LimitsAttemptsTargetingSameCredentialAcrossIPs", func(t *testing.T) {
+		targetTokenPrefix := "target-token-under-attack"
+
+		// Attacker rotates forwarded IP across 3 attempts targeting targetTokenPrefix
+		for i := 1; i <= 3; i++ {
+			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+			req.RemoteAddr = consoleIP
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d", 10+i))
+			req.Header.Set("X-Reviewer-Token", targetTokenPrefix)
+			rec := httptest.NewRecorder()
+			a.VerifyReviewer(rec, req)
+			if i < 3 && rec.Code != http.StatusUnauthorized {
+				t.Fatalf("attempt %d: expected 401, got %d", i, rec.Code)
+			}
+			if i == 3 && rec.Code != http.StatusTooManyRequests {
+				t.Fatalf("attempt 3: expected 429 for token hash prefix, got %d", rec.Code)
+			}
+		}
+
+		// 4th attempt from a fresh IP with the same token prefix is blocked with 429
+		req4 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		req4.RemoteAddr = consoleIP
+		req4.Header.Set("X-Internal-Token", a.internalServiceToken)
+		req4.Header.Set("X-Forwarded-For", "198.51.100.99")
+		req4.Header.Set("X-Reviewer-Token", targetTokenPrefix)
+		rec4 := httptest.NewRecorder()
+		a.VerifyReviewer(rec4, req4)
+		if rec4.Code != http.StatusTooManyRequests {
+			t.Fatalf("expected 429 for token hash prefix from fresh IP, got %d", rec4.Code)
+		}
+	})
+
+	t.Run("GlobalCeiling_LocksOutReviewerAuthWhenCeilingExceeded", func(t *testing.T) {
+		a.limiter.ResetReviewerGlobal()
+		// Set global ceiling threshold to 4 failures
+		a.limiter.SetReviewerGlobalCeiling(4, 5*time.Minute)
+
+		// 4 failed attempts with unique IPs and unique tokens
+		for i := 1; i <= 4; i++ {
+			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+			req.RemoteAddr = consoleIP
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			req.Header.Set("X-Forwarded-For", fmt.Sprintf("10.0.1.%d", i))
+			req.Header.Set("X-Reviewer-Token", fmt.Sprintf("unique-token-%d-%d", time.Now().UnixNano(), i))
+			rec := httptest.NewRecorder()
+			a.VerifyReviewer(rec, req)
+			if i < 4 && rec.Code != http.StatusUnauthorized {
+				t.Fatalf("attempt %d: expected 401, got %d", i, rec.Code)
+			}
+			if i == 4 && rec.Code != http.StatusTooManyRequests {
+				t.Fatalf("attempt 4 (ceiling hit): expected 429, got %d", rec.Code)
+			}
+		}
+
+		// 5th attempt from any IP even with valid token is rejected with 429 due to global ceiling
+		req5 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		req5.RemoteAddr = consoleIP
+		req5.Header.Set("X-Internal-Token", a.internalServiceToken)
+		req5.Header.Set("X-Forwarded-For", "10.0.2.1")
+		req5.Header.Set("X-Reviewer-Token", validToken)
+		rec5 := httptest.NewRecorder()
+		a.VerifyReviewer(rec5, req5)
+		if rec5.Code != http.StatusTooManyRequests {
+			t.Fatalf("expected 429 under global ceiling lockout, got %d", rec5.Code)
+		}
+	})
+
+	t.Run("UntrustedCaller_CannotSpoofForwardedClientIPWithoutInternalToken", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		req.RemoteAddr = "192.0.2.1:12345"
+		req.Header.Set("X-Internal-Token", "invalid-or-missing-token")
+		req.Header.Set("X-Forwarded-For", "10.0.0.1")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		a.VerifyReviewer(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401 Unauthorized for caller without internal token, got %d", rec.Code)
+		}
+	})
+}
