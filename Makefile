@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove
+.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove release-status release hotfix
 
 # --- WF-01 parallel-agent workflow constants ---------------------------------
 # The integration branch agents branch off and the owner merges into.
@@ -76,6 +76,13 @@ push: ensure-hooks
 	case "$$PUSH_BRANCH" in agent/*) \
 		echo $(BLOCKED_MSG); \
 		exit 1 ;; esac; \
+	case "$$PUSH_BRANCH" in main) \
+		echo "BLOCKED: 'make push' refuses to push from 'main'. Releasing to production is done via 'make release'. Switch back: git checkout $(INTEGRATION_BRANCH)"; \
+		exit 1 ;; esac; \
+	if [ "$$PUSH_BRANCH" != "$(INTEGRATION_BRANCH)" ]; then \
+		echo "BLOCKED: 'make push' is only permitted from '$(INTEGRATION_BRANCH)'. Switch back: git checkout $(INTEGRATION_BRANCH)"; \
+		exit 1; \
+	fi; \
 	LOCAL=$$(git rev-parse HEAD); \
 	git push origin $$PUSH_BRANCH; \
 	REMOTE=$$(git ls-remote origin $$PUSH_BRANCH | awk '{print $$1}'); \
@@ -87,6 +94,14 @@ push: ensure-hooks
 		exit 1; \
 	fi
 
+# --- WF-RELEASE release commands ---------------------------------------------
+release-status: ensure-hooks
+	@bash scripts/release-status.sh $(if $(REF),$(REF),$(INTEGRATION_BRANCH))
+
+release: ensure-hooks
+	@bash scripts/release.sh $(if $(WAIT),--wait,) $(if $(DRY_RUN),--dry-run,)
+# -----------------------------------------------------------------------------
+
 # --- WF-01 worktree convenience targets (scripts/agent-worktree.sh) ----------
 worktree-new:
 	@if [ -z "$(TASK)" ] || [ -z "$(SLUG)" ]; then \
@@ -94,6 +109,13 @@ worktree-new:
 		exit 1; \
 	fi
 	./scripts/agent-worktree.sh new "$(TASK)" "$(SLUG)" $(BASE)
+
+hotfix: ensure-hooks
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make hotfix NAME=<slug>"; \
+		exit 1; \
+	fi
+	./scripts/agent-worktree.sh hotfix "$(NAME)"
 
 worktree-list:
 	./scripts/agent-worktree.sh list

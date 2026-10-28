@@ -19,7 +19,7 @@ production deploys only from `main`.
 
 ```text
 make check  ->  make commit  ->  owner merges  ->  make push (scoped)
-            ->  GitHub CI (full)  ->  merge to main only when green
+            ->  GitHub CI (full)  ->  make release (guarded)
 ```
 
 | Command | What it runs |
@@ -29,6 +29,9 @@ make check  ->  make commit  ->  owner merges  ->  make push (scoped)
 | `make ci-full` | everything, exactly the pre-WF-03 gate (`CI_SCOPE=full`); also writes a stamp |
 | `make commit` | refuses unless a passing stamp covers the exact tree being committed ("run make check first"); raw `git commit` is blocked by `.githooks/pre-commit` |
 | `git push` / `make push` | the pre-push hook, scoped by the **pushed commit range** |
+| `make release-status` | inspects release readiness: short SHA, commits ahead of `origin/main`, CI & Release Gate status ([docs/RELEASE.md](RELEASE.md)) |
+| `make release` | guarded single-command release of `logic-exploitation` to `main` ([docs/RELEASE.md](RELEASE.md)) |
+| `make hotfix NAME=<slug>` | creates an isolated worktree from `origin/main` on `hotfix/<slug>` ([docs/RELEASE.md](RELEASE.md)) |
 | GitHub CI (`ci.yml`) | everything, on every push and pull request |
 
 The only way to commit is `make check && make commit`; raw `git commit` is blocked by `.githooks/pre-commit`.
@@ -327,5 +330,8 @@ whose GitHub CI is green. One-time setup on GitHub (owner):
 
 Then the loop is: `make check` → `make commit` → owner merges the agent
 branch → `make push` of `logic-exploitation` (scoped hook) → GitHub CI (full)
-→ when that commit is green, `git checkout main && git merge --ff-only
-logic-exploitation && make push`.
+and Release Gate E2E → when those runs are green on that exact SHA, owner releases
+to production via `make release` (see [docs/RELEASE.md](RELEASE.md)). Pushing
+directly from `main` or agent branches is blocked by `.githooks/pre-push`
+and `make push`.
+
