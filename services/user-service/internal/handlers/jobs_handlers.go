@@ -2571,7 +2571,7 @@ func (u *UserService) PickupJob(w http.ResponseWriter, r *http.Request) {
 	// Customer pool roles as for every customer event: notification-service
 	// puts customer connections in the "client" pool, so "user" alone was
 	// never delivered (BE-GAPS-FIX item 1).
-	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventPickedUp, "Courier Picked Up", "Your package was picked up and is heading to the destination.")
+	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventPickedUp, "Courier Picked Up", "Your package was picked up and is heading to the destination.", nil)
 
 	refreshed := u.store.GetJob(ctx, job.ID)
 	if refreshed == nil {
@@ -2848,9 +2848,11 @@ func (u *UserService) broadcastCourierAccepted(job *models.Job, finalPrice float
 		}()
 
 		title := "Courier Assigned"
-		body := fmt.Sprintf("Your courier has accepted! Final fare: $%.2f", finalPrice)
+		body := fmt.Sprintf("Your courier has accepted! Final fare: %s", formatEGP(finalPrice))
+		params := map[string]string{"fare": moneyParam(finalPrice)}
 		if isNegotiable {
-			body = fmt.Sprintf("Your courier has accepted! Suggested fare: $%.2f. Counter-offer review is now open.", finalPrice)
+			body = fmt.Sprintf("Your courier has accepted! Suggested fare: %s. Counter-offer review is now open.", formatEGP(finalPrice))
+			params[notifVariantParam] = "negotiable"
 		}
 
 		payload := map[string]any{
@@ -2861,6 +2863,7 @@ func (u *UserService) broadcastCourierAccepted(job *models.Job, finalPrice float
 			"title":     title,
 			"body":      body,
 			"roles":     []string{"client", "user"},
+			"params":    params,
 		}
 
 		bodyBytes, err := json.Marshal(payload)
@@ -2967,6 +2970,7 @@ func (u *UserService) notifyCustomerEscrowLockFailed(job *models.Job) {
 			"title":     "Booking Cancelled",
 			"body":      "Your booking was cancelled because the service owner could not lock escrow funds.",
 			"roles":     []string{"client", "user"},
+			"params":    map[string]string{notifVariantParam: "escrow_failed"},
 		}
 
 		bodyBytes, err := json.Marshal(payload)
@@ -3579,8 +3583,8 @@ const (
 
 // notifyCancellationParty sends a fire-and-forget job notification to one
 // recipient in one role pool (see notifyJobEvent).
-func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, notifType, title, body string) {
-	u.notifyJobEvent(job, userID, []string{role}, notifType, title, body)
+func (u *UserService) notifyCancellationParty(job *models.Job, userID, role, notifType, title, body string, params map[string]string) {
+	u.notifyJobEvent(job, userID, []string{role}, notifType, title, body, params)
 }
 
 // notifyOwnerJobBooked tells the owner a customer booked one of their
@@ -3590,7 +3594,7 @@ func (u *UserService) notifyOwnerJobBooked(job *models.Job) {
 		return
 	}
 	u.notifyJobEvent(job, job.OwnerID, []string{"owner"}, JobEventBooked,
-		"New Booking", fmt.Sprintf("A customer booked job %s.", job.ID))
+		"New Booking", fmt.Sprintf("A customer booked job %s.", job.ID), nil)
 }
 
 // notifyCustomerJobDelivered tells the customer the courier completed the
@@ -3600,7 +3604,7 @@ func (u *UserService) notifyCustomerJobDelivered(job *models.Job) {
 		return
 	}
 	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventDelivered,
-		"Delivered", fmt.Sprintf("Job %s was delivered.", job.ID))
+		"Delivered", fmt.Sprintf("Job %s was delivered.", job.ID), nil)
 }
 
 // notifyCustomerJobCancelled tells the customer their job was cancelled by
@@ -3611,13 +3615,15 @@ func (u *UserService) notifyCustomerJobCancelled(job *models.Job, actorID string
 		return
 	}
 	u.notifyJobEvent(job, job.UserID, []string{"client", "user"}, JobEventCancelled,
-		"Booking Cancelled", fmt.Sprintf("Job %s was cancelled.", job.ID))
+		"Booking Cancelled", fmt.Sprintf("Job %s was cancelled.", job.ID), nil)
 }
 
 // notifyJobEvent sends a fire-and-forget job notification reusing the
 // broadcastCourierAccepted POST /notifications/send shape (goroutine +
-// panic guard + internal token). No new notification system.
-func (u *UserService) notifyJobEvent(job *models.Job, userID string, roles []string, notifType, title, body string) {
+// panic guard + internal token). No new notification system. params are
+// the named values of notification-service's AR/EN push templates
+// (PUSH-L10N); title and body stay the English text for legacy apps.
+func (u *UserService) notifyJobEvent(job *models.Job, userID string, roles []string, notifType, title, body string, params map[string]string) {
 	if job == nil || userID == "" {
 		return
 	}
@@ -3636,6 +3642,9 @@ func (u *UserService) notifyJobEvent(job *models.Job, userID string, roles []str
 			"title":     title,
 			"body":      body,
 			"roles":     roles,
+		}
+		if len(params) > 0 {
+			payload["params"] = params
 		}
 
 		bodyBytes, err := json.Marshal(payload)
@@ -3673,7 +3682,8 @@ func (u *UserService) notifyJobEvent(job *models.Job, userID string, roles []str
 func (u *UserService) notifyOwnerCancellationRequested(job *models.Job, employeeID, reason string) {
 	u.notifyCancellationParty(job, job.OwnerID, "owner", "cancellation_requested",
 		"Cancellation Requested",
-		fmt.Sprintf("Courier %s requested cancellation of job %s: %s. Respond within 15 minutes.", employeeID, job.ID, reason))
+		fmt.Sprintf("Courier %s requested cancellation of job %s: %s. Respond within 15 minutes.", employeeID, job.ID, reason),
+		map[string]string{"reason": reason})
 }
 
 func (u *UserService) notifyEmployeeCancellationResolved(job *models.Job, employeeID, decision string) {
@@ -3681,14 +3691,19 @@ func (u *UserService) notifyEmployeeCancellationResolved(job *models.Job, employ
 	if decision == "accept" {
 		body = fmt.Sprintf("Your cancellation request for job %s was approved by the business owner. The job has been cancelled.", job.ID)
 	}
+	// Callers pass "approved" / "declined" (RespondCancellation).
+	variant := "decline"
+	if decision == "approved" || decision == "accept" {
+		variant = "accept"
+	}
 	u.notifyCancellationParty(job, employeeID, "employee", "cancellation_resolved",
-		"Cancellation Request "+decision, body)
+		"Cancellation Request "+decision, body, map[string]string{notifVariantParam: variant})
 }
 
 func (u *UserService) notifyOwnerCancellationExpired(job *models.Job, departedID string) {
 	u.notifyCancellationParty(job, job.OwnerID, "owner", "cancellation_request_expired",
 		"Cancellation Request Expired",
-		fmt.Sprintf("The cancellation request window lapsed with no response; courier %s was unassigned and job %s returned to dispatch.", departedID, job.ID))
+		fmt.Sprintf("The cancellation request window lapsed with no response; courier %s was unassigned and job %s returned to dispatch.", departedID, job.ID), nil)
 }
 
 // ---------------------------------------------------------------------------

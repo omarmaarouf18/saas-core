@@ -581,6 +581,10 @@ func TestSuspendAndReactivateLifecycle(t *testing.T) {
 		if lastReq.payload["type"] != "account_suspended" || lastReq.payload["user_id"] != user.ID {
 			t.Errorf("unexpected notification payload: %+v", lastReq.payload)
 		}
+		// PUSH-L10N: the reason is also a push template parameter.
+		if params, _ := lastReq.payload["params"].(map[string]any); params["reason"] == nil || params["reason"] == "" {
+			t.Errorf("expected params.reason on account_suspended, got %+v", lastReq.payload["params"])
+		}
 	}
 
 	// Verify GET /auth/user returns account_status and suspension_reason (GAP-05)

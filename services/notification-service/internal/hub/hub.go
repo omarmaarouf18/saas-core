@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/project/notification-service/internal/fcm"
+	"github.com/project/notification-service/internal/templates"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -39,6 +40,10 @@ type Notification struct {
 	Body      string    `json:"body"`
 	Roles     []Role    `json:"roles"`
 	Timestamp time.Time `json:"timestamp"`
+	// Params are the sender's named values for the push templates
+	// (PUSH-L10N: fare, reason, ticket_id, variant…). Title and Body stay
+	// the sender's English text.
+	Params map[string]string `json:"params,omitempty"`
 }
 
 // ToClient projects the broadcast to its client-safe shape (A6):
@@ -440,7 +445,8 @@ func (h *SSEHub) dispatchPush(n Notification) {
 		}
 
 		for _, target := range targets {
-			isStale, err := fcmDisp.SendPush(ctx, target.Token, n.Title, n.Body, dataMap)
+			title, body := pushText(n, target.Locale)
+			isStale, err := fcmDisp.SendPush(ctx, target.Token, title, body, dataMap)
 			if isStale {
 				log.Printf("[FCM-PUSH] Cleaning up stale token for user %s", userID)
 				_ = fetcher.UnregisterStaleToken(ctx, userID, target.Token)
@@ -449,6 +455,16 @@ func (h *SSEHub) dispatchPush(n Notification) {
 			}
 		}
 	}
+}
+
+// pushText is the title and body pushed to a device with locale: the
+// template for n's type in that language (PUSH-L10N), else the sender's text
+// (legacy devices without a locale, types without a template).
+func pushText(n Notification, locale string) (string, string) {
+	if t, ok := templates.Render(n.Type, locale, n.Params); ok {
+		return t.Title, t.Body
+	}
+	return n.Title, n.Body
 }
 
 // userPushTargets fetches userID's tokens, with their locales when the
