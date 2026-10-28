@@ -19,6 +19,10 @@ class MarketplaceService {
   final double? coverageRadiusKm;
   final String? address;
   final String? photoUrl;
+
+  /// `photo_version`: changes exactly when the photo does (PUSH-BE); the
+  /// photo tile sends it as `?v=` and caches by it.
+  final String? photoVersion;
   // Hours-based availability (ADR-0025, computed server-side per item).
   // Both nullable: null/absent means "unknown schedule" and must not
   // render any badge — the service looks exactly as before this feature.
@@ -41,6 +45,7 @@ class MarketplaceService {
     this.coverageRadiusKm,
     this.address,
     this.photoUrl,
+    this.photoVersion,
     this.isOpenNow,
     this.reopensAt,
   });
@@ -66,6 +71,7 @@ class MarketplaceService {
       coverageRadiusKm: (serviceJson['coverage_radius_km'] as num?)?.toDouble(),
       address: serviceJson['address'] as String?,
       photoUrl: serviceJson['photo_url'] as String?,
+      photoVersion: serviceJson['photo_version'] as String?,
       isOpenNow: json['is_open_now'] as bool?,
       reopensAt: json['reopens_at'] == null
           ? null

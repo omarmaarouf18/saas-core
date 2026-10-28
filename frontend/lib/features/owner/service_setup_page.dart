@@ -72,6 +72,10 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
   /// The stored photo key (`photo_url`) of the service.
   String? _photoUrl;
 
+  /// Its `photo_version` from the server. Cleared when the key changes
+  /// here: the photo store learned the new key's version from the upload.
+  String? _photoVersion;
+
   /// A photo uploaded before the service exists: sent on the first save.
   String? _pendingPhotoKey;
 
@@ -148,6 +152,7 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
     _hours = ServiceHours.fromService(svc);
     final photo = svc['photo_url']?.toString();
     _photoUrl = isStoredPhotoKey(photo) ? photo : null;
+    _photoVersion = svc['photo_version']?.toString();
   }
 
   void _photoChanged(String? key) {
@@ -156,6 +161,7 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
         _pendingPhotoKey = key;
       } else {
         _photoUrl = key;
+        _photoVersion = null;
       }
     });
   }
@@ -250,6 +256,7 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
           serviceIdOf(ownServiceOf(owner.services, ownerId));
       if (draft.photoUrl != null) {
         _photoUrl = draft.photoUrl;
+        _photoVersion = null;
         _pendingPhotoKey = null;
       }
       try {
@@ -357,6 +364,7 @@ class _OwnerServicePageState extends State<OwnerServicePage> {
             key: const Key('own_service_photo_section'),
             serviceId: _serviceId,
             photoUrl: _serviceId == null ? _pendingPhotoKey : _photoUrl,
+            photoVersion: _serviceId == null ? null : _photoVersion,
             name: _name.text,
             picker: widget.photoPicker ?? const ServicePhotoPicker(),
             enabled: !_saving,

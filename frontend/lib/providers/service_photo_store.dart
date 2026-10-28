@@ -9,7 +9,10 @@ import '../core/api_client.dart';
 ///
 /// The backend stores a storage key in `photo_url` (`services/<id>/photo.jpg`)
 /// and serves the image at `GET /users/services/{id}/photo` to any signed-in
-/// role (JWT in the Authorization header; no signed URL is returned). The
+/// role (JWT in the Authorization header; no signed URL is returned).
+/// `photo_version` (service JSON and upload response, PUSH-BE) changes
+/// exactly when the photo does; the app sends it as `?v=` and keys its
+/// cache by it (PUSH-FCM), so a replaced photo shows at once. The
 /// upload is `POST /users/services/{id}/photo` (multipart field `photo`,
 /// JPEG / PNG, at most 5 MB), or `POST /users/services/photo` without an id
 /// before the service exists: the returned key is then sent as `photo_url`
@@ -118,27 +121,43 @@ ServicePhotoFailure servicePhotoFailureOf(Object error) {
 }
 
 /// Loads (with the JWT) and caches service photos, and uploads them.
-/// One cached load per service and stored key; a failed load is dropped
-/// from the cache so the next build tries again.
+/// One cached load per service, stored key and photo version; a failed
+/// load is dropped from the cache so the next build tries again.
 class ServicePhotoStore {
   ServicePhotoStore(this.apiClient);
 
   final ApiClient apiClient;
   final Map<String, Future<Uint8List?>> _cache = {};
 
-  static String _cacheKey(String serviceId, String photoUrl) =>
-      '$serviceId|$photoUrl';
+  /// `photo_version` per stored key, as the server sent it (a function of
+  /// the key, so it never goes stale).
+  final Map<String, String> _versionOfKey = {};
+
+  static String _cacheKey(String serviceId, String photoUrl, String? version) =>
+      '$serviceId|$photoUrl|${version ?? ''}';
+
+  /// The `photo_version` known for [photoUrl] (from a service or an
+  /// upload), or null.
+  String? versionOf(String? photoUrl) =>
+      photoUrl == null ? null : _versionOfKey[photoUrl];
 
   /// The photo of [serviceId], or null when it has none / failed to load.
-  Future<Uint8List?> load(String serviceId, String? photoUrl) {
+  /// [photoVersion] is the service's `photo_version` (null from old
+  /// servers: then the key alone keys the cache, as before).
+  Future<Uint8List?> load(String serviceId, String? photoUrl,
+      {String? photoVersion}) {
     if (serviceId.isEmpty || !isStoredPhotoKey(photoUrl)) {
       return Future.value(null);
     }
-    final key = _cacheKey(serviceId, photoUrl!);
+    final v = photoVersion?.trim() ?? '';
+    if (v.isNotEmpty) _versionOfKey[photoUrl!] = v;
+    final version = versionOf(photoUrl);
+    final key = _cacheKey(serviceId, photoUrl!, version);
     return _cache.putIfAbsent(key, () async {
       try {
         final bytes = await apiClient.getBytes(
-            '/users/services/${Uri.encodeComponent(serviceId)}/photo');
+            '/users/services/${Uri.encodeComponent(serviceId)}/photo',
+            queryParams: version == null ? null : {'v': version});
         return servicePhotoFormatOf(bytes) == null ? null : bytes;
       } catch (e) {
         debugPrint('[ServicePhoto] load $serviceId failed: $e');
@@ -174,9 +193,11 @@ class ServicePhotoStore {
     if (key == null || !isStoredPhotoKey(key)) {
       throw ApiClientException('photo upload returned no key', statusCode: 500);
     }
+    final version = res is Map ? res['photo_version']?.toString().trim() : null;
+    if (version != null && version.isNotEmpty) _versionOfKey[key] = version;
     if (serviceId != null) {
       invalidate(serviceId);
-      _cache[_cacheKey(serviceId, key)] =
+      _cache[_cacheKey(serviceId, key, versionOf(key))] =
           Future.value(Uint8List.fromList(bytes));
     }
     return key;

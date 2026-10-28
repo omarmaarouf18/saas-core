@@ -14,6 +14,7 @@ class ServicePhotoTile extends StatefulWidget {
     super.key,
     required this.serviceId,
     required this.photoUrl,
+    this.photoVersion,
     required this.name,
     this.size = QdSize.iconTile,
     this.tone = QdIconTileTone.muted,
@@ -24,6 +25,10 @@ class ServicePhotoTile extends StatefulWidget {
 
   /// The stored key from the API (`photo_url`); never a device path.
   final String? photoUrl;
+
+  /// The service's `photo_version` (changes with the photo); null when the
+  /// server did not send one.
+  final String? photoVersion;
 
   /// For the placeholder initial.
   final String name;
@@ -54,7 +59,9 @@ class _ServicePhotoTileState extends State<ServicePhotoTile> {
   @override
   void didUpdateWidget(ServicePhotoTile old) {
     super.didUpdateWidget(old);
-    if (old.serviceId != widget.serviceId || old.photoUrl != widget.photoUrl) {
+    if (old.serviceId != widget.serviceId ||
+        old.photoUrl != widget.photoUrl ||
+        old.photoVersion != widget.photoVersion) {
       _future = _load();
     }
   }
@@ -62,7 +69,8 @@ class _ServicePhotoTileState extends State<ServicePhotoTile> {
   Future<Uint8List?>? _load() {
     final store = _store;
     if (store == null || !isStoredPhotoKey(widget.photoUrl)) return null;
-    return store.load(widget.serviceId, widget.photoUrl);
+    return store.load(widget.serviceId, widget.photoUrl,
+        photoVersion: widget.photoVersion);
   }
 
   @override
