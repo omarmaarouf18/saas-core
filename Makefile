@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove release-status release
+.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove release-status release hotfix
 
 # --- WF-01 parallel-agent workflow constants ---------------------------------
 # The integration branch agents branch off and the owner merges into.
@@ -109,6 +109,13 @@ worktree-new:
 		exit 1; \
 	fi
 	./scripts/agent-worktree.sh new "$(TASK)" "$(SLUG)" $(BASE)
+
+hotfix: ensure-hooks
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make hotfix NAME=<slug>"; \
+		exit 1; \
+	fi
+	./scripts/agent-worktree.sh hotfix "$(NAME)"
 
 worktree-list:
 	./scripts/agent-worktree.sh list

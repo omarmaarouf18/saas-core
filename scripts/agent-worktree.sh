@@ -45,6 +45,10 @@ Usage:
   scripts/agent-worktree.sh list
       List worktrees with branch, ahead/behind vs the integration branch,
       and dirty state (tracked + untracked files).
+  scripts/agent-worktree.sh hotfix <slug>
+      Create branch hotfix/<slug> from origin/main and a worktree for it at
+      ../saas-core-wt/hotfix-<slug>. Push is disabled; owner merges into
+      logic-exploitation and releases from there.
   scripts/agent-worktree.sh remove <TASK-ID> [--force]
       Remove the worktree and delete its branch. Refuses if the branch is not
       merged into the integration branch, unless --force is given.
@@ -120,6 +124,62 @@ cmd_new() {
 	printf 'worktree: %s\n' "$wt_path"
 	printf 'branch:   %s (from %s @ %s)\n' "$branch" "$base" "$(git -C "$wt_path" rev-parse --short HEAD)"
 	printf 'push:     DISABLED in this worktree (Layer A) — agents never push; the owner merges and pushes from the main worktree\n'
+	printf 'commit:   make check && make commit FILES="<paths>" MSG="<msg>" — raw git commit is blocked by .githooks/pre-commit\n'
+	printf "next:     cd '%s'\n" "$wt_path"
+}
+
+cmd_hotfix() {
+	[ $# -eq 1 ] || { usage >&2; exit 1; }
+	local slug="$1"
+
+	valid_task_id "$slug" ||
+		die "invalid hotfix name '$slug' (allowed: letters, digits, '.', '_', '-'; no slashes or spaces)"
+
+	local base="origin/main"
+	git fetch origin main >/dev/null 2>&1 || true
+	git rev-parse --verify --quiet "${base}^{commit}" >/dev/null ||
+		die "base '$base' does not resolve to a commit"
+
+	local main_wt branch wt_root wt_path
+	main_wt="$(main_worktree_path)"
+	if [ -n "$(git -C "$main_wt" status --porcelain --untracked-files=no)" ]; then
+		die "main worktree ($main_wt) has uncommitted changes to tracked files — commit them first (untracked scratch dirs do not block; see docs/WORKFLOW.md)"
+	fi
+
+	branch="hotfix/${slug}"
+	if git show-ref --verify --quiet "refs/heads/${branch}"; then
+		die "branch '${branch}' already exists"
+	fi
+	wt_root="$(dirname "$main_wt")/${WT_PARENT_DIR_NAME}"
+	wt_path="${wt_root}/hotfix-${slug}"
+	if [ -e "$wt_path" ]; then
+		die "worktree path already exists: $wt_path (remove it first: scripts/agent-worktree.sh remove hotfix-${slug})"
+	fi
+
+	# Per-worktree config must be enabled before the first per-worktree setting
+	git config extensions.worktreeConfig true
+	mkdir -p "$wt_root"
+	git worktree add -b "$branch" "$wt_path" "$base"
+
+	# Push-block Layer A
+	git -C "$wt_path" config --worktree remote.origin.pushurl "$DISABLED_PUSHURL"
+	git -C "$wt_path" config core.hooksPath .githooks
+	git -C "$wt_path" config --worktree core.hooksPath .githooks
+
+	if [ -d "$wt_path/frontend" ]; then
+		if command -v flutter >/dev/null 2>&1; then
+			printf 'setup:    flutter pub get in %s/frontend\n' "$wt_path"
+			if ! (cd "$wt_path/frontend" && env -u GIT_DIR -u GIT_WORK_TREE flutter pub get); then
+				printf "WARNING: 'flutter pub get' failed in %s/frontend; run it there before 'make ci'\n" "$wt_path" >&2
+			fi
+		else
+			printf "WARNING: flutter not on PATH; run 'flutter pub get' in %s/frontend before 'make ci' (dart format fails without frontend/.dart_tool)\n" "$wt_path" >&2
+		fi
+	fi
+
+	printf 'worktree: %s\n' "$wt_path"
+	printf 'branch:   %s (from %s @ %s)\n' "$branch" "$base" "$(git -C "$wt_path" rev-parse --short HEAD)"
+	printf 'push:     DISABLED in this worktree (Layer A) — fix -> gate -> merge into logic-exploitation and release from there\n'
 	printf 'commit:   make check && make commit FILES="<paths>" MSG="<msg>" — raw git commit is blocked by .githooks/pre-commit\n'
 	printf "next:     cd '%s'\n" "$wt_path"
 }
@@ -233,6 +293,7 @@ main() {
 	case "$cmd" in
 		new) cmd_new "$@" ;;
 		list) cmd_list "$@" ;;
+		hotfix) cmd_hotfix "$@" ;;
 		remove) cmd_remove "$@" ;;
 		-h | --help | help) usage ;;
 		*) usage >&2; exit 1 ;;
