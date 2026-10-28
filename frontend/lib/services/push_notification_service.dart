@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import '../core/api_client.dart';
 import 'local_notifications.dart';
 
@@ -182,6 +184,7 @@ class PushNotificationService extends ChangeNotifier {
   /// Upper bound for each token fetch and each auth-service call.
   final Duration timeout;
   String? _currentToken;
+  String? _locale;
   bool _signedIn = false;
   bool _refreshListening = false;
   PushPermission _permission = PushPermission.unavailable;
@@ -199,6 +202,9 @@ class PushNotificationService extends ChangeNotifier {
             openSettings ?? (() => PluginLocalNotifier().openAppSettings());
 
   String? get currentToken => _currentToken;
+
+  /// The app language sent with the token (`ar` / `en`), once known.
+  String? get locale => _locale;
 
   /// Push works in this build (Firebase initialized).
   bool get available => adapter.available;
@@ -234,9 +240,7 @@ class PushNotificationService extends ChangeNotifier {
   Future<void> _onTokenRefresh(String token) async {
     if (!_signedIn || token.isEmpty || token == _currentToken) return;
     try {
-      await apiClient
-          .registerDeviceToken(token: token, platform: _platformName)
-          .timeout(timeout);
+      await _sendToken(token);
       _currentToken = token;
       debugPrint('[FCM] Refreshed device token registered');
     } catch (e) {
@@ -259,9 +263,7 @@ class PushNotificationService extends ChangeNotifier {
       }
       _currentToken = token;
 
-      await apiClient
-          .registerDeviceToken(token: token, platform: _platformName)
-          .timeout(timeout);
+      await _sendToken(token);
       // Release builds never log the token; debug builds do, for a
       // Firebase console test message (docs/PUSH.md).
       debugPrint('[FCM] Device token registered successfully');
@@ -270,6 +272,45 @@ class PushNotificationService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[FCM] Failed to register device token: $e');
       return false;
+    }
+  }
+
+  /// Sends [token] with the current app language; sends it again when the
+  /// language changed meanwhile.
+  Future<void> _sendToken(String token) async {
+    final sent = _locale;
+    await apiClient
+        .registerDeviceToken(
+            token: token, platform: _platformName, locale: sent)
+        .timeout(timeout);
+    final now = _locale;
+    if (now != null && now != sent) {
+      await apiClient
+          .registerDeviceToken(
+              token: token, platform: _platformName, locale: now)
+          .timeout(timeout);
+    }
+  }
+
+  /// The app language changed (or became known at startup): pushes that
+  /// arrive while the app is in the background or closed are shown by the
+  /// phone as the server wrote them, so the server is told the language of
+  /// this device (PUSH-L10N). Re-registers the token when signed in.
+  /// Only `ar` and `en` are sent; never throws.
+  Future<void> setLocale(String languageCode) async {
+    final code = languageCode.toLowerCase();
+    if ((code != 'ar' && code != 'en') || code == _locale) return;
+    _locale = code;
+    final token = _currentToken;
+    if (!_signedIn || !available || token == null || token.isEmpty) return;
+    try {
+      await apiClient
+          .registerDeviceToken(
+              token: token, platform: _platformName, locale: code)
+          .timeout(timeout);
+      debugPrint('[FCM] Device token language updated: $code');
+    } catch (e) {
+      debugPrint('[FCM] Failed to update the device token language: $e');
     }
   }
 
@@ -350,4 +391,33 @@ class PushNotificationService extends ChangeNotifier {
     _permission = p;
     notifyListeners();
   }
+}
+
+/// Tells the [PushNotificationService] above it the app language: on the
+/// first frame and whenever the language changes (PUSH-L10N). Place it
+/// below the app's Localizations. Without a service it only shows [child].
+class PushLocaleSync extends StatefulWidget {
+  const PushLocaleSync({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<PushLocaleSync> createState() => _PushLocaleSyncState();
+}
+
+class _PushLocaleSyncState extends State<PushLocaleSync> {
+  String? _synced;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final code = Localizations.localeOf(context).languageCode;
+    if (code == _synced) return;
+    _synced = code;
+    Provider.of<PushNotificationService?>(context, listen: false)
+        ?.setLocale(code);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

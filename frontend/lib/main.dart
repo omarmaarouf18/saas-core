@@ -161,9 +161,12 @@ class MyApp extends StatelessWidget {
       },
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        final host = VerificationRejectedHost(
-          navigatorKey: appNavigatorKey,
-          child: child,
+        // The push token carries the app language (PUSH-L10N).
+        final host = PushLocaleSync(
+          child: VerificationRejectedHost(
+            navigatorKey: appNavigatorKey,
+            child: child,
+          ),
         );
         final notifier = localNotifier;
         return notifier == null

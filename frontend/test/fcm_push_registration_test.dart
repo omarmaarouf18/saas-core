@@ -27,6 +27,7 @@ class MockApiClient extends ApiClient {
     required String token,
     String platform = 'android',
     String? action,
+    String? locale,
   }) async {
     registerCalled = true;
     lastRegisteredToken = token;
