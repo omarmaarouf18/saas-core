@@ -22,6 +22,7 @@ import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/service_photo_store.dart';
+import 'services/local_notifications.dart';
 import 'services/notification_tap_router.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
@@ -57,6 +58,10 @@ void main() {
   // surface as an unmapped generic error.
   apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
 
+  // Push (PUSH-FCM): the qd_default notification channel, in the app
+  // language.
+  final localNotifier = PluginLocalNotifier();
+
   runApp(
     MultiProvider(
       providers: [
@@ -80,7 +85,7 @@ void main() {
         // Push taps (cold start, background, foreground) for the shells.
         child: NotificationTapScope(
           router: NotificationTapRouter()..start(),
-          child: const MyApp(),
+          child: MyApp(localNotifier: localNotifier),
         ),
       ),
     ),
@@ -88,7 +93,10 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.localNotifier});
+
+  /// Creates the push notification channel (PUSH-FCM); none in tests.
+  final LocalNotifier? localNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -132,10 +140,16 @@ class MyApp extends StatelessWidget {
         return const Locale('en');
       },
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => VerificationRejectedHost(
-        navigatorKey: appNavigatorKey,
-        child: child,
-      ),
+      builder: (context, child) {
+        final host = VerificationRejectedHost(
+          navigatorKey: appNavigatorKey,
+          child: child,
+        );
+        final notifier = localNotifier;
+        return notifier == null
+            ? host
+            : PushChannelSync(notifier: notifier, child: host);
+      },
       onGenerateRoute: (settings) {
         // Debug-only redesign A gallery (FE-DS); never in release builds.
         if (kDebugMode && settings.name == QdGalleryScreen.routeName) {

@@ -3819,4 +3819,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authResendTooManyNoTime =>
       'Too many codes sent. Wait a few minutes, then ask again.';
+
+  @override
+  String get pushChannelName => 'Order updates';
+
+  @override
+  String get pushChannelDescription =>
+      'Bookings, pickups, deliveries and cancellations of your orders.';
 }

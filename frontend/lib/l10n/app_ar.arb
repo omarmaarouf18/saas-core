@@ -1203,5 +1203,7 @@
   "courPickupChanged": "الطلب ده اتغير. حدّثناه.",
   "courJobGone": "الطلب ده مبقاش موجود.",
   "authResendTooMany": "اتبعت أكواد كتير. تقدر تطلب كود جديد بعد {seconds} ثانية.",
-  "authResendTooManyNoTime": "اتبعت أكواد كتير. استنى كام دقيقة وبعدين اطلب تاني."
+  "authResendTooManyNoTime": "اتبعت أكواد كتير. استنى كام دقيقة وبعدين اطلب تاني.",
+  "pushChannelName": "تحديثات الطلبات",
+  "pushChannelDescription": "الحجز والاستلام والتوصيل والإلغاء لطلباتك."
 }

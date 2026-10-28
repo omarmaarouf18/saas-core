@@ -6781,6 +6781,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many codes sent. Wait a few minutes, then ask again.'**
   String get authResendTooManyNoTime;
+
+  /// PUSH-FCM item 2: name of the Android notification channel qd_default (system notification settings).
+  ///
+  /// In en, this message translates to:
+  /// **'Order updates'**
+  String get pushChannelName;
+
+  /// PUSH-FCM item 2: description of the Android notification channel qd_default.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings, pickups, deliveries and cancellations of your orders.'**
+  String get pushChannelDescription;
 }
 
 class _AppLocalizationsDelegate

@@ -3763,4 +3763,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get authResendTooManyNoTime =>
       'اتبعت أكواد كتير. استنى كام دقيقة وبعدين اطلب تاني.';
+
+  @override
+  String get pushChannelName => 'تحديثات الطلبات';
+
+  @override
+  String get pushChannelDescription =>
+      'الحجز والاستلام والتوصيل والإلغاء لطلباتك.';
 }

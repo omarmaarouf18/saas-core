@@ -4958,5 +4958,13 @@
   "authResendTooManyNoTime": "Too many codes sent. Wait a few minutes, then ask again.",
   "@authResendTooManyNoTime": {
     "description": "FE-BE-GAPS item 8: 429 without a wait."
+  },
+  "pushChannelName": "Order updates",
+  "@pushChannelName": {
+    "description": "PUSH-FCM item 2: name of the Android notification channel qd_default (system notification settings)."
+  },
+  "pushChannelDescription": "Bookings, pickups, deliveries and cancellations of your orders.",
+  "@pushChannelDescription": {
+    "description": "PUSH-FCM item 2: description of the Android notification channel qd_default."
   }
 }
