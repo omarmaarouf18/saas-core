@@ -61,6 +61,10 @@ jobs:
       - name: Validate Compose Stacks
         run: bash scripts/compose-validate.sh
 
+      # WF-RELEASE: single source script tests runner (matches pre-push gate)
+      - name: Run Script Regression Tests
+        run: bash scripts/run_script_tests.sh
+
       - name: Backend-Frontend Parity Check (Informational)
         run: make backend-frontend-parity-check
         continue-on-error: true
