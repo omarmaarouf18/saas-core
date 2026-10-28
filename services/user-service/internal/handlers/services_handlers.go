@@ -726,9 +726,10 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":   "photo uploaded",
-		"photo_url": key,
-		"key":       key,
+		"message":       "photo uploaded",
+		"photo_url":     key,
+		"key":           key,
+		"photo_version": models.PhotoVersionOf(key),
 	})
 }
 
@@ -900,6 +901,17 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fileRC.Close()
 
+	// The ETag is the photo_version of the key. A new upload always writes a
+	// new key, so a replaced photo gets a new ETag; max-age is short so a
+	// client that does not revalidate shows it within minutes anyway.
+	etag := `"` + models.PhotoVersionOf(key) + `"`
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", servicePhotoCacheControl)
+	if etagMatches(r.Header.Get("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	ext := strings.ToLower(filepath.Ext(key))
 	contentType := "application/octet-stream"
 	switch ext {
@@ -910,9 +922,25 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "private, max-age=86400")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, fileRC)
+}
+
+// servicePhotoCacheControl: private (the photo needs a token), revalidated
+// after 5 minutes, so a replaced photo shows within minutes even for a
+// client that ignores photo_version.
+const servicePhotoCacheControl = "private, max-age=300"
+
+// etagMatches reports whether an If-None-Match header lists etag (weak
+// comparison, RFC 9110 13.1.2) or is "*".
+func etagMatches(ifNoneMatch, etag string) bool {
+	for _, candidate := range strings.Split(ifNoneMatch, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" || strings.TrimPrefix(candidate, "W/") == etag {
+			return true
+		}
+	}
+	return false
 }
 
 func extractServiceIDFromPhotoPath(p string) string {
