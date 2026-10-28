@@ -2598,3 +2598,66 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 		return nil, fmt.Errorf("invalid decision: %s", decision)
 	}
 }
+
+// GetOverviewStats returns counts for pending subscriptions, GPS disputes (escrow_reconciliation_required),
+// stuck COD jobs, and jobs today grouped by status.
+func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingSubs int64, gpsDisputes int64, stuckCODJobs int64, jobsToday map[string]int, err error) {
+	pendingSubs, err = s.subscriptions.CountDocuments(ctx, bson.M{"tier": "pending_payment"})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count pending subscriptions: %w", err)
+	}
+
+	gpsDisputes, err = s.jobs.CountDocuments(ctx, bson.M{"status": models.JobStatusEscrowReconciliationRequired})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count gps disputes: %w", err)
+	}
+
+	stuckReport, err := CountStuckCODReconciliationJobs(ctx, s.db)
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count stuck cod jobs: %w", err)
+	}
+	stuckCODJobs = stuckReport.Total
+
+	now := time.Now().UTC()
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	jobsToday = make(map[string]int)
+
+	knownStatuses := []string{
+		string(models.JobStatusPending),
+		string(models.JobStatusPendingDispatch),
+		string(models.JobStatusUnavailable),
+		string(models.JobStatusAwaitingPriceResponse),
+		string(models.JobStatusActive),
+		string(models.JobStatusCompleted),
+		string(models.JobStatusCancelled),
+		string(models.JobStatusEscrowReconciliationRequired),
+	}
+	for _, st := range knownStatuses {
+		jobsToday[st] = 0
+	}
+
+	cursor, err := s.jobs.Aggregate(ctx, mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"created_at": bson.M{"$gte": startOfToday}}}},
+		{{Key: "$group", Value: bson.M{
+			"_id":   "$status",
+			"count": bson.M{"$sum": 1},
+		}}},
+	})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to aggregate jobs today: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	type statusGroup struct {
+		Status string `bson:"_id"`
+		Count  int    `bson:"count"`
+	}
+	for cursor.Next(ctx) {
+		var g statusGroup
+		if err := cursor.Decode(&g); err == nil && g.Status != "" {
+			jobsToday[g.Status] = g.Count
+		}
+	}
+
+	return pendingSubs, gpsDisputes, stuckCODJobs, jobsToday, nil
+}

@@ -472,3 +472,29 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, respData)
 }
+
+// GetInternalOverviewStats returns ticket counts for admin console aggregation.
+// GET /chat/internal/overview-stats
+func (c *Chat) GetInternalOverviewStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if c.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(c.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	openTickets, assignedTickets, err := c.store.GetTicketOverviewStats(r.Context())
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to get ticket overview stats", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]int64{
+		"open_tickets":     openTickets,
+		"assigned_tickets": assignedTickets,
+	})
+}

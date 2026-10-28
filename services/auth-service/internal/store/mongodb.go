@@ -1082,3 +1082,54 @@ func (s *MongoDB) RemoveDeviceToken(ctx context.Context, userID, tokenStr string
 	}
 	return nil
 }
+
+// GetOverviewStats returns counts for pending KYB/KYE, accounts created today, accounts created in the last 7 days, and suspended accounts.
+func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingKYC int64, newToday int64, new7d int64, suspended int64, err error) {
+	now := time.Now().UTC()
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	sevenDaysAgo := now.AddDate(0, 0, -7)
+
+	// Pending KYB/KYE
+	pendingFilter := bson.M{
+		"$or": []bson.M{
+			{"kyc_status": models.KYCPendingApproval},
+			{"kye_status": models.KYCPendingApproval},
+		},
+	}
+	pendingKYC, err = s.users.CountDocuments(ctx, pendingFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count pending kyc/kye: %w", err)
+	}
+
+	// New accounts today
+	newTodayFilter := bson.M{
+		"created_at": bson.M{"$gte": startOfToday},
+	}
+	newToday, err = s.users.CountDocuments(ctx, newTodayFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count new accounts today: %w", err)
+	}
+
+	// New accounts last 7 days
+	new7dFilter := bson.M{
+		"created_at": bson.M{"$gte": sevenDaysAgo},
+	}
+	new7d, err = s.users.CountDocuments(ctx, new7dFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count new accounts 7d: %w", err)
+	}
+
+	// Suspended accounts
+	suspendedFilter := bson.M{
+		"$or": []bson.M{
+			{"account_status": models.AccountStatusSuspended},
+			{"is_active": false},
+		},
+	}
+	suspended, err = s.users.CountDocuments(ctx, suspendedFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count suspended accounts: %w", err)
+	}
+
+	return pendingKYC, newToday, new7d, suspended, nil
+}

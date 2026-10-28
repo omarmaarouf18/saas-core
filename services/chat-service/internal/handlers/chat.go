@@ -167,6 +167,7 @@ func (c *Chat) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/tickets/attachment", c.UploadTicketAttachment)
 	mux.HandleFunc("/chat/attachments/view", c.ViewAttachment)
 	mux.HandleFunc("/attachments/view", c.ViewAttachment)
+	mux.HandleFunc("/chat/internal/overview-stats", c.GetInternalOverviewStats)
 }
 
 type cachedToken struct {

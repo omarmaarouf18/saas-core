@@ -336,6 +336,14 @@ func (u *UserService) authenticateReviewer(r *http.Request) (*ReviewerIdentity, 
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
 	req.Header.Set("X-Reviewer-Token", reviewerToken)
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		req.Header.Set("X-Forwarded-For", xff)
+	} else if r.RemoteAddr != "" {
+		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		req.Header.Set("X-Real-IP", xri)
+	}
 
 	var resp *http.Response
 	if u.authClient != nil {

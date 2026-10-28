@@ -190,6 +190,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/email-change/request", a.RequestEmailChange)
 	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
 	mux.HandleFunc("/auth/logout", a.Logout)
+	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
 }
 
 // ---------------------------------------------------------------------------
@@ -3935,5 +3936,33 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 		"message": "Email updated successfully",
 		"token":   token,
 		"user":    updatedUser,
+	})
+}
+
+// GetInternalOverviewStats returns overview statistics for admin console aggregation.
+// GET /auth/internal/overview-stats
+func (a *Auth) GetInternalOverviewStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	pendingKYC, newToday, new7d, suspended, err := a.store.GetOverviewStats(r.Context())
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to get overview stats", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]int64{
+		"pending_kyb_kye":    pendingKYC,
+		"new_accounts_today": newToday,
+		"new_accounts_7d":    new7d,
+		"suspended_accounts": suspended,
 	})
 }

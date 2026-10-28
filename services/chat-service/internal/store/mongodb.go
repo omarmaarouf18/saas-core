@@ -567,3 +567,16 @@ func (s *MongoDB) AdminAcceptTicket(ctx context.Context, ticketID, reviewerID st
 
 	return &updated, nil
 }
+
+// GetTicketOverviewStats returns counts for open (pending/open) and assigned tickets.
+func (s *MongoDB) GetTicketOverviewStats(ctx context.Context) (openCount int64, assignedCount int64, err error) {
+	openCount, err = s.tickets.CountDocuments(ctx, bson.M{"status": bson.M{"$in": []string{"pending", "open"}}})
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to count open tickets: %w", err)
+	}
+	assignedCount, err = s.tickets.CountDocuments(ctx, bson.M{"status": "assigned"})
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to count assigned tickets: %w", err)
+	}
+	return openCount, assignedCount, nil
+}

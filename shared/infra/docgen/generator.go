@@ -128,6 +128,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "GetEmployees returns all employees registered under the caller's tenant owner account.",
 		Targets:     "Reads `users` collection by `tenant_id`. Returns JSON array of `EmployeeResponse` (`ID`, `Username`, `Email`, `IsActive`, `CreatedAt`). Rate-limited per owner ID.",
 	},
+	"GET /auth/internal/overview-stats": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns counts for pending KYB/KYE, accounts created today/7d, and suspended accounts for admin console aggregation.",
+		Targets:     "Reads `users` collection.",
+	},
 	"GET /auth/audit-log": {
 		Permissions: "Tenant Owner JWT",
 		Function:    "Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred).",
@@ -264,6 +269,11 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "`X-Internal-Token`",
 		Function:    "Broadcasts driver location event.",
 		Targets:     "None.",
+	},
+	"GET /chat/internal/overview-stats": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns counts for open and assigned tickets for admin console aggregation.",
+		Targets:     "Reads `complaint_tickets` collection.",
 	},
 	"POST /chat/tickets": {
 		Permissions: "User JWT",
@@ -598,6 +608,16 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Rejects a requested payout with mandatory reason, restores wallet balance, and writes compensation ledger entry.",
 		Targets:     "CAS status transition on `payout_requests`, updates `wallets`, writes `ledger`, ships security audit event.",
+	},
+	"GET /users/admin/overview": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/overview; returns aggregated platform overview metrics for admin console.",
+		Targets:     "Reads `subscriptions` and `jobs` collections, calls `auth-service` and `chat-service` internal overview endpoints. Ships security audit event.",
+	},
+	"GET /admin/overview": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns aggregated metrics across user-service (subscriptions, GPS disputes, stuck COD jobs, jobs today) and calls auth/chat services with resilient fallbacks.",
+		Targets:     "Reads `subscriptions` and `jobs` collections, calls `auth-service` and `chat-service` internal overview endpoints. Ships security audit event.",
 	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",
