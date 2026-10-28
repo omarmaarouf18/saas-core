@@ -99,6 +99,8 @@ This repository includes a continuous integration workflow (`.github/workflows/b
 
 Detailed CI/CD pipeline mechanics and sync architecture are documented in [docs/CI_CD.md](docs/CI_CD.md).
 
+Push notifications (Firebase): how they work, the `google-services.json` setup (local file, never committed; CI secret `GOOGLE_SERVICES_JSON_B64`), testing and troubleshooting are in [docs/PUSH.md](docs/PUSH.md). A build without the file works, with push disabled.
+
 ---
 
 ## 4. Building Production Bundles Manually

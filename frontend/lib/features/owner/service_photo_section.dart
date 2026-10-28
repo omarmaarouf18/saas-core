@@ -47,6 +47,7 @@ class ServicePhotoSection extends StatefulWidget {
     super.key,
     required this.serviceId,
     required this.photoUrl,
+    this.photoVersion,
     required this.name,
     required this.onKey,
     required this.onRemove,
@@ -56,6 +57,9 @@ class ServicePhotoSection extends StatefulWidget {
 
   final String? serviceId;
   final String? photoUrl;
+
+  /// The service's `photo_version`, for the photo cache.
+  final String? photoVersion;
   final String name;
   final ValueChanged<String?> onKey;
   final Future<void> Function() onRemove;
@@ -234,6 +238,7 @@ class _ServicePhotoSectionState extends State<ServicePhotoSection> {
                   key: const Key('own_service_photo'),
                   serviceId: widget.serviceId ?? '',
                   photoUrl: widget.photoUrl,
+                  photoVersion: widget.photoVersion,
                   name: widget.name,
                   bytes: _preview,
                   size: 64,

@@ -74,12 +74,17 @@ class NotificationTarget {
       '${fallback == null ? '' : ', fallback: $fallback'})';
 }
 
-/// Stable event types about one job (USER-AUTH-BE item 7 and the types
-/// the services sent before). With a `job_id` they open that job. Not all
-/// are emitted today (see the FE-BE-GAPS worklog): `job_booked`,
-/// `job_in_transit`, `job_delivered` and `job_completed` are listed by the
-/// backend task but no service sends them yet; they route the same way
-/// when they come.
+/// Stable event types about one job (USER-AUTH-BE item 7, BE-GAPS-FIX
+/// item 1). With a `job_id` they open that job. The payload's `event_type`
+/// (= `type` for job notifications) is read first, then `type`.
+///
+/// Sent today: `job_booked` (to the owner), `job_offer` / `job_alert` (to
+/// the courier), `job_accepted`, `job_picked_up`, `job_delivered` and
+/// `job_cancelled` (to the customer; cancelled only when someone else
+/// cancels), `job_unavailable`, and the cancellation / dispute types.
+/// `job_in_transit` and `job_completed` are never sent (picked up is the
+/// in-transit event; delivered is the completion); they stay here so old
+/// history items keep routing.
 const Set<String> kJobEventTypes = {
   'job_booked',
   'job_accepted',
@@ -98,9 +103,9 @@ const Set<String> kJobEventTypes = {
   'dispute_resolved',
 };
 
-/// Customer notification types that are about an order. The payload has no
-/// job id (notification-service does not store one), so they open My
-/// orders.
+/// Customer notification types that are about an order. Without a
+/// `job_id` (older history items) they open My orders; with one, the
+/// order itself ([kJobEventTypes]).
 const Set<String> kOrderNotificationTypes = {
   'job_booked',
   'job_accepted',

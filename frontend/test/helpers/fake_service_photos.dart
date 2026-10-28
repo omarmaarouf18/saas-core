@@ -79,6 +79,9 @@ class FakeServicePhotoStore extends ServicePhotoStore {
 
   final Map<String, Uint8List> photos;
   final List<String> loads = [];
+
+  /// The `photo_version` of each load, in order (PUSH-FCM).
+  final List<String?> loadVersions = [];
   final List<({String? serviceId, int length})> uploads = [];
   final List<String> invalidated = [];
   Object? nextUploadError;
@@ -86,9 +89,11 @@ class FakeServicePhotoStore extends ServicePhotoStore {
   String nextKey = 'services/svc-1/photo.png';
 
   @override
-  Future<Uint8List?> load(String serviceId, String? photoUrl) async {
+  Future<Uint8List?> load(String serviceId, String? photoUrl,
+      {String? photoVersion}) async {
     if (!isStoredPhotoKey(photoUrl)) return null;
     loads.add(serviceId);
+    loadVersions.add(photoVersion);
     return photos[serviceId];
   }
 

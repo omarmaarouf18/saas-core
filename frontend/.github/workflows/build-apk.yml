@@ -35,6 +35,32 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      # PUSH-FCM: the Firebase client config is never committed. With the
+      # repository secret GOOGLE_SERVICES_JSON_B64 (base64 of
+      # android/app/google-services.json) the build has push; without it
+      # the build still succeeds, with push disabled (frontend/docs/PUSH.md).
+      - name: Firebase config for push
+        id: firebase
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+            # The right file for this app, or stop: a wrong one would build
+            # an APK whose push silently never works.
+            if ! jq -e '[.client[].client_info.android_client_info.package_name] | index("com.saascore.frontend")' android/app/google-services.json >/dev/null; then
+              echo "::error::GOOGLE_SERVICES_JSON_B64 is not a google-services.json for com.saascore.frontend"
+              exit 1
+            fi
+            echo "push=enabled" >> "$GITHUB_OUTPUT"
+            echo "Push: enabled (google-services.json from GOOGLE_SERVICES_JSON_B64)"
+          else
+            rm -f android/app/google-services.json
+            echo "push=disabled" >> "$GITHUB_OUTPUT"
+            echo "::warning::GOOGLE_SERVICES_JSON_B64 is not set: push disabled in this build"
+            echo "> ⚠️ **push disabled in this build**: the GOOGLE_SERVICES_JSON_B64 secret is not set, so the APK has no Firebase config (frontend/docs/PUSH.md)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Determine Version & Short SHA
         id: vars
         run: |
@@ -163,6 +189,7 @@ jobs:
           echo "- **Artifact Name**: \`app-release-${{ steps.vars.outputs.short_sha }}\` (one APK per ABI plus the universal app-release.apk)" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ steps.vars.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **API Base URL**: \`${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push**: ${{ steps.firebase.outputs.push == 'enabled' && 'enabled' || 'push disabled in this build (GOOGLE_SERVICES_JSON_B64 not set)' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Download the APKs from the **Artifacts** section at the bottom of this workflow run page, or from the GitHub release." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

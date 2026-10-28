@@ -6,9 +6,11 @@ import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/push_notification_service.dart';
 import '../../ui/qd_ui.dart';
 import 'account_nav.dart';
 import 'my_details_page.dart';
+import 'notifications/push_permission_prompt.dart';
 import 'saved_address_rules.dart';
 import 'saved_addresses_page.dart';
 import 'security_page.dart';
@@ -46,10 +48,28 @@ class _AccountPageState extends State<AccountPage> {
   String? _loadError;
   bool _signingOut = false;
 
+  /// Re-reads the phone's notification permission when the app comes back
+  /// (e.g. from the phone's settings) (PUSH-FCM).
+  late final AppLifecycleListener _lifecycle;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        context.read<PushNotificationService?>()?.refreshPermission();
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+      context.read<PushNotificationService?>()?.refreshPermission();
+    });
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -277,32 +297,43 @@ class _AccountPageState extends State<AccountPage> {
               const SizedBox(height: 18),
               QdSectionHeader(title: l10n.acctSectionApp, small: true),
               const SizedBox(height: 6),
-              QdListGroup(children: [
-                QdListTile(
-                  key: const Key('account_language'),
-                  icon: Icons.language,
-                  title: l10n.acctLanguage,
-                  value: languageValue,
-                  chevron: true,
-                  onTap: _pickLanguage,
+              ListenableBuilder(
+                listenable: Listenable.merge(
+                    [context.read<PushNotificationService?>()]),
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    QdListGroup(children: [
+                      QdListTile(
+                        key: const Key('account_language'),
+                        icon: Icons.language,
+                        title: l10n.acctLanguage,
+                        value: languageValue,
+                        chevron: true,
+                        onTap: _pickLanguage,
+                      ),
+                      QdListTile(
+                        key: const Key('account_theme'),
+                        icon: Icons.dark_mode_outlined,
+                        title: l10n.acctTheme,
+                        value: themeValue,
+                        chevron: true,
+                        onTap: _pickTheme,
+                      ),
+                      if (isCustomer)
+                        QdListTile(
+                          key: const Key('account_notifications'),
+                          icon: Icons.notifications_outlined,
+                          title: l10n.acctNotifications,
+                          chevron: true,
+                          onTap: () => nav.openNotifications(context),
+                        ),
+                      if (pushSettingsTile(context) case final push?) push,
+                    ]),
+                    const PushOffHint(),
+                  ],
                 ),
-                QdListTile(
-                  key: const Key('account_theme'),
-                  icon: Icons.dark_mode_outlined,
-                  title: l10n.acctTheme,
-                  value: themeValue,
-                  chevron: true,
-                  onTap: _pickTheme,
-                ),
-                if (isCustomer)
-                  QdListTile(
-                    key: const Key('account_notifications'),
-                    icon: Icons.notifications_outlined,
-                    title: l10n.acctNotifications,
-                    chevron: true,
-                    onTap: () => nav.openNotifications(context),
-                  ),
-              ]),
+              ),
               const SizedBox(height: 18),
               QdSectionHeader(title: l10n.acctSectionSupport, small: true),
               const SizedBox(height: 6),

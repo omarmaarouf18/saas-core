@@ -10,7 +10,9 @@ import 'notification_rules.dart';
 /// Placed inside each role shell, below its [NotificationShellScope]:
 /// follows a tapped push (cold start or background) with the same
 /// role-checked links as the notifications list, and shows a push that
-/// arrives while the app is open as a notice with a "View" action.
+/// arrives while the app is open as a system notification on `qd_default`
+/// in the app language (PUSH-FCM; its tap comes back as a tap), or, where
+/// that is not possible, as a notice with a "View" action.
 /// Without a [NotificationTapScope] it only shows [child].
 class PushTapHandler extends StatefulWidget {
   const PushTapHandler({super.key, required this.child, this.links});
@@ -65,7 +67,28 @@ class _PushTapHandlerState extends State<PushTapHandler> {
     if (shown != null) _showForeground(shown, role);
   }
 
-  void _showForeground(NotificationModel n, String role) {
+  Future<void> _showForeground(NotificationModel n, String role) async {
+    final l10n = context.l10n;
+    final display = _router?.display;
+    if (display != null) {
+      final (title, body) = notificationCopy(l10n, n);
+      final shown = await display.show(
+        id: _localId(n),
+        title: title.isEmpty ? n.title : title,
+        body: body.isEmpty ? n.body : body,
+        payload: encodePushPayload(n),
+      );
+      if (shown || !mounted) return;
+    }
+    _showNotice(n, role);
+  }
+
+  /// One system notification per notification id (a repeat replaces it).
+  static int _localId(NotificationModel n) => n.id.isEmpty
+      ? DateTime.now().millisecondsSinceEpoch & 0x7fffffff
+      : n.id.hashCode & 0x7fffffff;
+
+  void _showNotice(NotificationModel n, String role) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final l10n = context.l10n;

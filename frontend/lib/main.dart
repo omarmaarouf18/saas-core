@@ -22,7 +22,10 @@ import 'providers/reconciliation_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/service_photo_store.dart';
+import 'services/local_notifications.dart';
 import 'services/notification_tap_router.dart';
+import 'services/push_notification_service.dart';
+import 'services/push_setup.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
 import 'ui/qd_licenses.dart';
@@ -40,7 +43,14 @@ class DevHttpOverrides extends HttpOverrides {
 /// one navigator instance.
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Push (PUSH-FCM): Firebase from the build's google-services.json. A
+  // build without it, or any Firebase error, logs one line and runs with
+  // push off; nothing else changes.
+  await initPushFirebase();
+
   // Wire HTTP certificate overrides in debug mode for self-signed certificates.
   if (kDebugMode) {
     HttpOverrides.global = DevHttpOverrides();
@@ -57,17 +67,28 @@ void main() {
   // surface as an unmapped generic error.
   apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
 
+  // Push (PUSH-FCM): the qd_default notification channel, in the app
+  // language; the token and permission, shared by sign-in and the pages.
+  final localNotifier = PluginLocalNotifier();
+  final pushService = PushNotificationService(apiClient: apiClient);
+  // Created here so a foreground push reaches the in-app list and badge.
+  final notifications = NotificationsProvider(apiClient);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+        ChangeNotifierProvider<PushNotificationService>.value(
+            value: pushService),
+        ChangeNotifierProvider(
+            create: (_) => AuthProvider(apiClient, pushService: pushService)),
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
-        ChangeNotifierProvider(create: (_) => NotificationsProvider(apiClient)),
+        ChangeNotifierProvider<NotificationsProvider>.value(
+            value: notifications),
         ChangeNotifierProvider(create: (_) => MapTrackingProvider(apiClient)),
         ChangeNotifierProvider(
             create: (_) => ReconciliationProvider(apiClient)),
@@ -77,10 +98,14 @@ void main() {
       // Service photos load with the JWT and are cached for every page.
       child: ServicePhotoScope(
         store: ServicePhotoStore(apiClient),
-        // Push taps (cold start, background, foreground) for the shells.
+        // Push taps (cold start, background, foreground) for the shells;
+        // a foreground push shows on qd_default and joins the list.
         child: NotificationTapScope(
-          router: NotificationTapRouter()..start(),
-          child: const MyApp(),
+          router: NotificationTapRouter(
+            display: localNotifier,
+            onForeground: notifications.addFromPush,
+          )..start(),
+          child: MyApp(localNotifier: localNotifier),
         ),
       ),
     ),
@@ -88,7 +113,10 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.localNotifier});
+
+  /// Creates the push notification channel (PUSH-FCM); none in tests.
+  final LocalNotifier? localNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -132,10 +160,16 @@ class MyApp extends StatelessWidget {
         return const Locale('en');
       },
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => VerificationRejectedHost(
-        navigatorKey: appNavigatorKey,
-        child: child,
-      ),
+      builder: (context, child) {
+        final host = VerificationRejectedHost(
+          navigatorKey: appNavigatorKey,
+          child: child,
+        );
+        final notifier = localNotifier;
+        return notifier == null
+            ? host
+            : PushChannelSync(notifier: notifier, child: host);
+      },
       onGenerateRoute: (settings) {
         // Debug-only redesign A gallery (FE-DS); never in release builds.
         if (kDebugMode && settings.name == QdGalleryScreen.routeName) {

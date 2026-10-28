@@ -9,6 +9,7 @@ import '../../providers/notifications_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import '../account/notifications/notification_rules.dart';
+import '../account/notifications/push_permission_prompt.dart';
 import '../account/notifications/push_tap_handler.dart';
 import 'blocked_page.dart';
 import 'courier_controller.dart';
@@ -133,35 +134,37 @@ class _CourierShellState extends State<CourierShell> {
           : NotificationShellScope(
               links: _links,
               child: PushTapHandler(
-                child: Builder(
-                  builder: (context) => Scaffold(
-                    key: const Key('courier_shell'),
-                    backgroundColor: QdColors.of(context).surface,
-                    body: IndexedStack(
-                      index: _index,
-                      children: [
-                        lazy(0, () => const CourierTaskPage()),
-                        lazy(1, () => const CourierJobsPage()),
-                        lazy(2, () => const AccountPage()),
-                      ],
-                    ),
-                    bottomNavigationBar: QdBottomNav(
-                      key: const Key('courier_shell_nav'),
-                      currentIndex: _index,
-                      onTap: _select,
-                      items: [
-                        QdNavItem(
-                            icon: Icons.inventory_2_outlined,
-                            activeIcon: Icons.inventory_2,
-                            label: l10n.courNavTask),
-                        QdNavItem(
-                            icon: Icons.format_list_bulleted,
-                            label: l10n.courNavJobs),
-                        QdNavItem(
-                            icon: Icons.person_outline,
-                            activeIcon: Icons.person,
-                            label: l10n.courNavAccount),
-                      ],
+                child: PushPermissionPrompt(
+                  child: Builder(
+                    builder: (context) => Scaffold(
+                      key: const Key('courier_shell'),
+                      backgroundColor: QdColors.of(context).surface,
+                      body: IndexedStack(
+                        index: _index,
+                        children: [
+                          lazy(0, () => const CourierTaskPage()),
+                          lazy(1, () => const CourierJobsPage()),
+                          lazy(2, () => const AccountPage()),
+                        ],
+                      ),
+                      bottomNavigationBar: QdBottomNav(
+                        key: const Key('courier_shell_nav'),
+                        currentIndex: _index,
+                        onTap: _select,
+                        items: [
+                          QdNavItem(
+                              icon: Icons.inventory_2_outlined,
+                              activeIcon: Icons.inventory_2,
+                              label: l10n.courNavTask),
+                          QdNavItem(
+                              icon: Icons.format_list_bulleted,
+                              label: l10n.courNavJobs),
+                          QdNavItem(
+                              icon: Icons.person_outline,
+                              activeIcon: Icons.person,
+                              label: l10n.courNavAccount),
+                        ],
+                      ),
                     ),
                   ),
                 ),

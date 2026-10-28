@@ -354,6 +354,7 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
                   key: const Key('cust_book_service_photo'),
                   serviceId: service.id,
                   photoUrl: service.photoUrl,
+                  photoVersion: service.photoVersion,
                   name: service.name,
                   size: 44),
               const SizedBox(width: QdSpace.x3),

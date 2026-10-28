@@ -371,6 +371,7 @@ class _ServiceCard extends StatelessWidget {
               ServicePhotoTile(
                 serviceId: service.id,
                 photoUrl: service.photoUrl,
+                photoVersion: service.photoVersion,
                 name: service.name,
                 size: 52,
                 tone: closed ? QdIconTileTone.disabled : QdIconTileTone.muted,
