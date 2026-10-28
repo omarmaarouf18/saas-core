@@ -111,6 +111,22 @@ void main() {
       expect(api.registered, ['t1'], reason: 'no push after logout');
     });
 
+    test('session expired (forceLogout): token deleted on the phone',
+        () async {
+      final api = _Api();
+      final adapter = FakePushAdapter(token: 't1');
+      final push = service(api, adapter);
+      final auth = AuthProvider(api, pushService: push);
+      await push.onSignedIn();
+      await auth.forceLogout();
+      await _settle();
+      expect(adapter.deleteTokenCalls, 1);
+      expect(api.unregistered, isEmpty, reason: 'no session to call with');
+      adapter.refreshTo('t2');
+      await _settle();
+      expect(api.registered, ['t1']);
+    });
+
     test('a second sign-in does not add a second refresh listener', () async {
       final api = _Api();
       final adapter = FakePushAdapter(token: 't1');

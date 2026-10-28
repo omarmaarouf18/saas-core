@@ -292,6 +292,21 @@ class PushNotificationService extends ChangeNotifier {
     return ok;
   }
 
+  /// The session ended without a sign-out call (expired, refresh failed):
+  /// the server cannot be told, so the token is deleted on the phone. FCM
+  /// then answers the server's next send with UNREGISTERED and
+  /// notification-service drops the stale token, so no more pushes reach
+  /// this signed-out phone.
+  Future<void> forgetLocalToken() async {
+    _signedIn = false;
+    _currentToken = null;
+    try {
+      await adapter.deleteToken();
+    } catch (e) {
+      debugPrint('[FCM] local token not deleted: $e');
+    }
+  }
+
   /// Re-reads the permission (e.g. back from the phone's settings).
   Future<PushPermission> refreshPermission() async {
     final p = available

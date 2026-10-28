@@ -569,6 +569,9 @@ class AuthProvider extends ChangeNotifier {
 
   /// Forces immediate local logout when session is expired or refresh fails.
   Future<void> forceLogout() async {
+    // PUSH-FCM: no API call is possible any more; drop the push token on
+    // the phone so pushes stop (not awaited).
+    unawaited(pushService.forgetLocalToken());
     _token = null;
     _user = null;
     // Same stale-error clearing as logout(): logged-out screens must not
