@@ -25,9 +25,15 @@ type Config struct {
 	FCMServiceAccountJSON string
 	FCMProjectID          string
 	FCMEndpointURL        string
-	// FCMStatus is the one-line push status logged by Load (startup and
-	// --check-env): "push enabled (project X)" or "push disabled: <reason>".
-	// It never contains credential material.
+	// FCMAPIBaseURL replaces https://fcm.googleapis.com when set
+	// (FCM_API_BASE_URL; local fakes and e2e only). Empty in production.
+	FCMAPIBaseURL string
+	// FCMStatus is the one-line key status logged by Load (startup and
+	// --check-env): "push key loaded (project X)", "push enabled (internal
+	// relay ...)" or "push disabled: <reason>". With a key loaded, cmd/main
+	// then mints one access token and logs the final "push enabled (project
+	// X, token ok)" / "push disabled: token mint failed: ..." line. It never
+	// contains credential material.
 	FCMStatus string
 }
 
@@ -108,6 +114,7 @@ func Load() (*Config, error) {
 		FCMServiceAccountJSON: fcmServiceAccountJSON,
 		FCMProjectID:          fcmProjectID,
 		FCMEndpointURL:        fcmEndpointURL,
+		FCMAPIBaseURL:         strings.TrimSpace(os.Getenv("FCM_API_BASE_URL")),
 		FCMStatus:             fcmStatus,
 	}, nil
 }
@@ -174,7 +181,7 @@ func loadFCM() (saJSON, projectID, endpointURL, status string) {
 	case reason != "":
 		return "", "", "", "push disabled: " + reason
 	}
-	return saJSON, projectID, "", fmt.Sprintf("push enabled (project %s)", projectID)
+	return saJSON, projectID, "", fmt.Sprintf("push key loaded (project %s)", projectID)
 }
 
 // decodeBase64 decodes standard base64, padded or not, ignoring whitespace

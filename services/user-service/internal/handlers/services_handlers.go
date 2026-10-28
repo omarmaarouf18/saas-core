@@ -224,8 +224,11 @@ func (u *UserService) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isOwnPhotoKey(req.PhotoURL, req.OwnerID) {
-		writeInvalidPhotoURL(w, r, req.OwnerID)
-		return
+		if !ignoreLegacyPhotoURL(r, req.PhotoURL, "create") {
+			writeInvalidPhotoURL(w, r, req.OwnerID)
+			return
+		}
+		req.PhotoURL = "" // 1.x build sent a device path/URL: no photo
 	}
 
 	svc := &models.Service{
@@ -403,11 +406,15 @@ func (u *UserService) UpdateService(w http.ResponseWriter, r *http.Request) {
 	if req.PhotoURL != nil {
 		// Resending the stored value unchanged is always fine (it may be a
 		// legacy value written before this guard).
-		if *req.PhotoURL != existing.PhotoURL && !isOwnPhotoKey(*req.PhotoURL, existing.ID, existing.TenantID) {
+		switch {
+		case *req.PhotoURL == existing.PhotoURL || isOwnPhotoKey(*req.PhotoURL, existing.ID, existing.TenantID):
+			updateFields["photo_url"] = *req.PhotoURL
+		case ignoreLegacyPhotoURL(r, *req.PhotoURL, "update"):
+			// 1.x build sent a device path/URL: photo_url stays unchanged.
+		default:
 			writeInvalidPhotoURL(w, r, req.OwnerID)
 			return
 		}
-		updateFields["photo_url"] = *req.PhotoURL
 	}
 	if req.Address != nil {
 		updateFields["address"] = *req.Address
@@ -719,9 +726,10 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"message":   "photo uploaded",
-		"photo_url": key,
-		"key":       key,
+		"message":       "photo uploaded",
+		"photo_url":     key,
+		"key":           key,
+		"photo_version": models.PhotoVersionOf(key),
 	})
 }
 
@@ -753,6 +761,38 @@ func isOwnPhotoKey(photoURL string, scopes ...string) bool {
 		}
 	}
 	return false
+}
+
+// legacyPhotoURLMajor: app builds with an X-App-Version major below this
+// predate the upload-key flow and may send a device path or URL as
+// photo_url.
+const legacyPhotoURLMajor = 2
+
+// isLegacyAppBuild reports whether X-App-Version names a build below
+// 2.0.0. A missing or unparseable header is not legacy: every 2.0.0+ build
+// sends it, so those requests keep the strict 400.
+func isLegacyAppBuild(r *http.Request) bool {
+	v := strings.TrimPrefix(strings.TrimSpace(r.Header.Get("X-App-Version")), "v")
+	majorStr, _, _ := strings.Cut(v, ".")
+	major, err := strconv.Atoi(majorStr)
+	return err == nil && major >= 0 && major < legacyPhotoURLMajor
+}
+
+// ignoreLegacyPhotoURL reports whether an invalid photo_url may be ignored
+// (create: no photo, update: unchanged) instead of answering 400: only for
+// app builds below 2.0.0, and never for a value in the storage key space
+// (services/... or a traversal), so another tenant's key is always
+// rejected. The value itself is not logged (it may be a device path).
+func ignoreLegacyPhotoURL(r *http.Request, photoURL, op string) bool {
+	if !isLegacyAppBuild(r) {
+		return false
+	}
+	trimmed := strings.TrimLeft(photoURL, "./")
+	if strings.HasPrefix(trimmed, "services/") || strings.Contains(photoURL, "..") {
+		return false
+	}
+	log.Printf("[USER] photo_url from an app build below 2.0.0 is not an upload key; ignored on %s (create: no photo, update: unchanged)", op) // #nosec G706 -- op is a constant
+	return true
 }
 
 // writeInvalidPhotoURL answers 400 invalid_photo_url and records the
@@ -861,6 +901,17 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fileRC.Close()
 
+	// The ETag is the photo_version of the key. A new upload always writes a
+	// new key, so a replaced photo gets a new ETag; max-age is short so a
+	// client that does not revalidate shows it within minutes anyway.
+	etag := `"` + models.PhotoVersionOf(key) + `"`
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", servicePhotoCacheControl)
+	if etagMatches(r.Header.Get("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	ext := strings.ToLower(filepath.Ext(key))
 	contentType := "application/octet-stream"
 	switch ext {
@@ -871,9 +922,25 @@ func (u *UserService) GetServicePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "private, max-age=86400")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, fileRC)
+}
+
+// servicePhotoCacheControl: private (the photo needs a token), revalidated
+// after 5 minutes, so a replaced photo shows within minutes even for a
+// client that ignores photo_version.
+const servicePhotoCacheControl = "private, max-age=300"
+
+// etagMatches reports whether an If-None-Match header lists etag (weak
+// comparison, RFC 9110 13.1.2) or is "*".
+func etagMatches(ifNoneMatch, etag string) bool {
+	for _, candidate := range strings.Split(ifNoneMatch, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" || strings.TrimPrefix(candidate, "W/") == etag {
+			return true
+		}
+	}
+	return false
 }
 
 func extractServiceIDFromPhotoPath(p string) string {

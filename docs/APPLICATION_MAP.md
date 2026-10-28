@@ -119,7 +119,8 @@ The platform is comprised of **5 microservices** and **1 compile-time shared pac
   * `user-service` (invokes `/notifications/broadcast/job-alert` internally).
   * `auth-service` (invokes `/notifications/send` internally for KYC/KYB/KYE review outcome notifications per ADR-0021).
 * **Outbound HTTP calls**:
-  * `auth-service`: Queries `/auth/user?id=<user_id>` to verify connecting SSE client tokens.
+  * `auth-service`: Queries `/auth/user?id=<user_id>` to verify connecting SSE client tokens and to read users' FCM device tokens; `POST /auth/device-token` (`unregister`) removes a token FCM reports as stale.
+  * Google (only with an FCM service-account key): the key's `token_uri` (`oauth2.googleapis.com/token`) for an OAuth2 access token, then FCM HTTP v1 `fcm.googleapis.com/v1/projects/<project>/messages:send` (see "FCM push payload" below).
 
 ### 5. `user-service` (Port: `3003`)
 * **Core Responsibility**: Manages the marketplace services directory (with spatial queries), active job lifecycles, wallets, ledgers, subscriptions, and provider ratings.
@@ -317,9 +318,23 @@ Hand-written (the table above is generated). Details and the corrected USER-AUTH
   | `job_unavailable` | no courier available | customer |
   | `cancellation_requested`, `cancellation_request_expired`, `cancellation_resolved`, `dispute_resolved` | ADR-0027 / reconciliation | owner / courier / parties |
 
+* **FCM push payload** (PUSH-BE). Every notification that reaches a user with registered device tokens is also sent as an FCM HTTP v1 message:
+
+  | Field | Value |
+  | :--- | :--- |
+  | `notification.title` / `notification.body` | the notification's title and body |
+  | `data.type` | the stable event (table above); always present |
+  | `data.job_id`, `data.event_type` | job notifications only (strings; `event_type` = `type`) |
+  | `data.id`, `data.tenant_id` | the notification ID and tenant |
+  | `android.priority` | `HIGH` |
+  | `android.notification.channel_id` | `qd_default`: the app must create an Android notification channel with this id |
+
+  All `data` values are strings. A token FCM answers `UNREGISTERED` / `NOT_FOUND` for, or `INVALID_ARGUMENT` naming the token, is unregistered from the user; `429`/`5xx` are retried at most twice with backoff. Through an internal relay (`FCM_ENDPOINT_URL`) the message has no `android` block and no OAuth token.
 * **`POST /users/jobs/pickup`**: losing the pickup race (the job left `heading_to_pickup` between the read and the update) is `409 {"error": "job state changed during pickup", "message": ..., "code": "job_state_changed"}`. Other pickup codes: `job_id_required`, `unauthorized`, `role_mismatch`, `job_not_found`, `job_not_active`, `access_denied`, `already_picked_up`.
 * **`POST /users/jobs/track`**: recipient, package and address text fields are optional (ADR-0028 §2.1, §2.2, §2.7). Field codes: `address_too_long`, `address_note_too_long`, `recipient_name_too_long`, `recipient_phone_invalid`, `recipient_notes_too_long`, `package_size_invalid`, `package_notes_too_long`. No `*_required` code is sent.
 * **Service photo storage unavailable**: `POST /users/services/photo` (and `/{id}/photo`) and `GET /users/services/photo` answer `503 {"error": "photo storage unavailable", "code": "photo_storage_unavailable"}` when storage was never initialized or a write fails.
+* **Service photo caching** (PUSH-BE): `GET /users/services/{id}/photo` (and `?key=`) answers `ETag: "<photo_version>"`, `Cache-Control: private, max-age=300`, and `304` with no body on a matching `If-None-Match`. Service JSON (single service and the priced list) and the upload response carry `photo_version` (16 hex characters derived from the storage key, absent without a photo); it changes on every new upload, so the app can request `.../photo?v=<photo_version>` to bypass its cache.
+* **`photo_url` from app builds below 2.0.0** (PUSH-BE): when `X-App-Version` is below `2.0.0`, a `photo_url` that is not an upload key (a device path or URL) is ignored instead of `400 invalid_photo_url`: create stores no photo, update leaves `photo_url` unchanged and saves the other fields. A value under `services/` (another tenant's key) or containing `..` is always `400`. 2.0.0+ builds and requests without a parseable `X-App-Version` keep the `400`.
 * **Service photo removal**: `PUT /users/services` with `photo_url: ""` clears the field and deletes the stored object; replacing the photo (another `photo_url`, or an upload under a different key) deletes the old object. Only keys under `services/<service id>/` or `services/<owner id>/` are deleted, and only by the owning tenant.
 * **Saved addresses** (`PUT` / `PATCH /auth/user`): `label` is required (non-empty after trimming, 400 `label is required for saved address`) and at most 100 runes.
 

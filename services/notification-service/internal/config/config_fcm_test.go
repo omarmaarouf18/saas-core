@@ -40,11 +40,11 @@ func TestLoad_FCM(t *testing.T) {
 		wantEndpoint            string
 	}{
 		{"nothing set", nil, "push disabled: no FCM service-account key (set FCM_SERVICE_ACCOUNT_JSON_B64)", "", false, ""},
-		{"b64, project from the key", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": b64}, "push enabled (project qd-test)", "qd-test", true, ""},
-		{"b64 wrapped, explicit project", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": wrapped.String(), "FCM_PROJECT_ID": "qd-prod"}, "push enabled (project qd-prod)", "qd-prod", true, ""},
-		{"b64 unpadded", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": strings.TrimRight(b64, "=")}, "push enabled (project qd-test)", "qd-test", true, ""},
-		{"raw FCM_SERVICE_ACCOUNT_JSON still works", map[string]string{"FCM_SERVICE_ACCOUNT_JSON": fakeServiceAccount}, "push enabled (project qd-test)", "qd-test", true, ""},
-		{"raw FCM_CREDENTIALS_JSON still works", map[string]string{"FCM_CREDENTIALS_JSON": fakeServiceAccount, "FCM_PROJECT_ID": "qd-x"}, "push enabled (project qd-x)", "qd-x", true, ""},
+		{"b64, project from the key", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": b64}, "push key loaded (project qd-test)", "qd-test", true, ""},
+		{"b64 wrapped, explicit project", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": wrapped.String(), "FCM_PROJECT_ID": "qd-prod"}, "push key loaded (project qd-prod)", "qd-prod", true, ""},
+		{"b64 unpadded", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": strings.TrimRight(b64, "=")}, "push key loaded (project qd-test)", "qd-test", true, ""},
+		{"raw FCM_SERVICE_ACCOUNT_JSON still works", map[string]string{"FCM_SERVICE_ACCOUNT_JSON": fakeServiceAccount}, "push key loaded (project qd-test)", "qd-test", true, ""},
+		{"raw FCM_CREDENTIALS_JSON still works", map[string]string{"FCM_CREDENTIALS_JSON": fakeServiceAccount, "FCM_PROJECT_ID": "qd-x"}, "push key loaded (project qd-x)", "qd-x", true, ""},
 		{"invalid base64", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": "!!" + fakeKeyMaterial + "!!", "FCM_PROJECT_ID": "qd-test"}, "push disabled: FCM_SERVICE_ACCOUNT_JSON_B64 is not valid base64", "", false, ""},
 		{"base64 of non-JSON", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": base64.StdEncoding.EncodeToString([]byte("not json " + fakeKeyMaterial))}, "push disabled: FCM_SERVICE_ACCOUNT_JSON_B64 is not valid JSON", "", false, ""},
 		{"JSON but not a service account", map[string]string{"FCM_SERVICE_ACCOUNT_JSON_B64": base64.StdEncoding.EncodeToString([]byte(`{"type":"authorized_user","private_key":"` + fakeKeyMaterial + `"}`))}, "push disabled: FCM_SERVICE_ACCOUNT_JSON_B64 is not a service-account key (needs type service_account, client_email, private_key)", "", false, ""},

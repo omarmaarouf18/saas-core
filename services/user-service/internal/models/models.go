@@ -2,6 +2,9 @@
 package models
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"math"
 	"regexp"
 	"strings"
@@ -58,6 +61,32 @@ type Service struct {
 	Timezone       string        `json:"timezone,omitempty"         bson:"timezone,omitempty"` // IANA, default "Africa/Cairo"
 }
 
+// PhotoVersionOf returns the photo_version of a service photo key: the
+// first 16 hex characters of its SHA-256, "" without a photo. Every upload
+// writes a new key (PROD-PHOTO-STORAGE item 7), so the version changes
+// exactly when the photo does. The app appends it to the fixed photo URL
+// (GET /users/services/{id}/photo?v=<photo_version>) to bust its cache, and
+// the photo endpoint uses it as the ETag.
+func PhotoVersionOf(photoKey string) string {
+	if photoKey == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(photoKey))
+	return hex.EncodeToString(sum[:8])
+}
+
+// serviceFields has Service's fields but none of its methods, so it can be
+// marshalled from Service.MarshalJSON without recursing.
+type serviceFields Service
+
+// MarshalJSON adds the derived photo_version to a Service.
+func (s Service) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		serviceFields
+		PhotoVersion string `json:"photo_version,omitempty"`
+	}{serviceFields(s), PhotoVersionOf(s.PhotoURL)})
+}
+
 // Schedule mode literals for Service.ScheduleMode (ADR-0025).
 const (
 	ScheduleModeSameDaily = "same_daily"
@@ -91,6 +120,20 @@ type ServiceWithPrice struct {
 	// opening is unknown or not computable.
 	IsOpenNow bool       `json:"is_open_now"`
 	ReopensAt *time.Time `json:"reopens_at"`
+}
+
+// MarshalJSON is required because Service.MarshalJSON would otherwise be
+// promoted and drop the price fields. Keep the field list in sync with
+// ServiceWithPrice (TestServiceWithPrice_JSONHasEveryField guards it).
+func (s ServiceWithPrice) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		serviceFields
+		PhotoVersion string     `json:"photo_version,omitempty"`
+		DistanceKM   float64    `json:"distance_km"`
+		FinalPrice   float64    `json:"final_price"`
+		IsOpenNow    bool       `json:"is_open_now"`
+		ReopensAt    *time.Time `json:"reopens_at"`
+	}{serviceFields(s.Service), PhotoVersionOf(s.PhotoURL), s.DistanceKM, s.FinalPrice, s.IsOpenNow, s.ReopensAt})
 }
 
 // ---------------------------------------------------------------------------

@@ -40,11 +40,14 @@ func main() {
 	// --check-env: validate config and exit without starting the server.
 	// Used by the CD pipeline pre-flight to verify env vars before deployment.
 	if len(os.Args) > 1 && os.Args[1] == "--check-env" {
-		_, err := config.Load()
+		cfg, err := config.Load()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "PREFLIGHT FAILED: %v\n", err)
 			os.Exit(1)
 		}
+		// Mints one FCM access token (sends nothing) so the push line is
+		// truthful; a failed mint never fails the pre-flight.
+		newFCMClient(cfg)
 		fmt.Println("PREFLIGHT OK: notification-service config validated")
 		os.Exit(0)
 	}
@@ -64,7 +67,7 @@ func main() {
 	}
 
 	sseHub := hub.NewSSEHub()
-	fcmClient := fcm.NewClient(cfg.FCMServiceAccountJSON, cfg.FCMProjectID, cfg.FCMEndpointURL, cfg.AuthServiceURL, cfg.InternalServiceToken, nil)
+	fcmClient := newFCMClient(cfg)
 	tokenFetcher := hub.NewHTTPDeviceTokenFetcher(cfg.AuthServiceURL, cfg.InternalServiceToken, nil)
 	sseHub.SetPushDispatcher(fcmClient, tokenFetcher)
 
@@ -159,4 +162,21 @@ func main() {
 	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
+}
+
+// newFCMClient builds the FCM client and, when a service-account key is
+// loaded, mints one access token and logs the resulting push status:
+// "push enabled (project X, token ok)" or "push disabled: token mint
+// failed: <reason>". The status never contains key or token material.
+func newFCMClient(cfg *config.Config) *fcm.Client {
+	c := fcm.NewClient(cfg.FCMServiceAccountJSON, cfg.FCMProjectID, cfg.FCMEndpointURL, cfg.AuthServiceURL, cfg.InternalServiceToken, nil, fcm.WithAPIBaseURL(cfg.FCMAPIBaseURL))
+	if cfg.FCMServiceAccountJSON == "" || cfg.FCMEndpointURL != "" {
+		return c // config already logged "push disabled: ..." or the relay line
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if status := c.StartupCheck(ctx); status != "" {
+		log.Printf("[FCM] %s", status)
+	}
+	return c
 }

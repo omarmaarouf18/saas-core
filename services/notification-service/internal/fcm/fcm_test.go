@@ -70,11 +70,7 @@ func TestFCMPush_StaleTokenHandling(t *testing.T) {
 		errResp.Error.Code = 404
 		errResp.Error.Message = "Requested entity was not found."
 		errResp.Error.Status = "NOT_FOUND"
-		errResp.Error.Details = []struct {
-			ErrorCode string `json:"errorCode"`
-		}{
-			{ErrorCode: "UNREGISTERED"},
-		}
+		errResp.Error.Details = []FCMErrorDetail{{ErrorCode: "UNREGISTERED"}}
 		_ = json.NewEncoder(w).Encode(errResp)
 	}))
 	defer fcmServer.Close()
@@ -129,19 +125,18 @@ func TestFCMPush_NoInternalTokenToGoogle(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"name": "projects/p/messages/1"})
 	}))
 	defer stub.Close()
+	tokenSrv := newFakeTokenServer(t)
 
 	// Production default mode: credentials+project set, NO custom endpoint.
-	c := NewClient(`{"type":"service_account"}`, "proj-1", "", "http://auth", "secret-internal-token", nil)
+	// The fake Google API host keeps the client in Google (OAuth) mode.
+	c := NewClient(tokenSrv.serviceAccountJSON("proj-1"), "proj-1", "", "http://auth", "secret-internal-token", nil, WithAPIBaseURL(stub.URL))
 	if !c.IsEnabled() {
 		t.Fatal("client should be enabled")
 	}
-	// Intercept the outbound call without changing the client's endpoint MODE.
-	c.endpointURL = stub.URL
 
-	// NOTE: SendPush's current success path returns (false, nil) on HTTP 200
-	// — a pre-existing quirk outside this item's scope; only header behavior
-	// is under test here.
-	_, _ = c.SendPush(context.Background(), "device-token", "t", "b", nil)
+	if _, err := c.SendPush(context.Background(), "device-token", "t", "b", nil); err != nil {
+		t.Fatalf("send failed: %v", err)
+	}
 
 	if gotInternalToken != "" {
 		t.Errorf("INTERNAL TOKEN LEAKED TO EXTERNAL HOST: X-Internal-Token=%q was sent to the default (Google) endpoint", gotInternalToken)
