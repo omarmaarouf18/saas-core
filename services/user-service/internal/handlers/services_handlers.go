@@ -537,6 +537,9 @@ func (u *UserService) UploadServicePhoto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if u.storage == nil {
+		if r.Body != nil {
+			_, _ = io.Copy(io.Discard, io.LimitReader(r.Body, 5<<20))
+		}
 		writePhotoStorageUnavailable(w, r, nil)
 		return
 	}

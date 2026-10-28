@@ -65,6 +65,19 @@ func New(route config.ServiceRoute, gatewaySecret string, trustedProxies []strin
 			// #nosec G706 //nolint:gosec -- log statement contains sanitised request path and method, log injection not possible
 			log.Printf("[PROXY ERROR] %s %s → %s: %v",
 				r.Method, r.URL.Path, route.Target, err)
+
+			var statusCode int
+			if n, scanErr := fmt.Sscanf(err.Error(), "HTTP status %d", &statusCode); scanErr == nil && n == 1 && statusCode >= 500 && statusCode < 600 {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(statusCode)
+				if statusCode == http.StatusServiceUnavailable && strings.Contains(r.URL.Path, "/photo") {
+					_, _ = w.Write([]byte(`{"error":"photo storage unavailable","code":"photo_storage_unavailable"}`))
+				} else {
+					_, _ = w.Write([]byte(fmt.Sprintf(`{"error": "service unavailable", "target": %q}`, route.Prefix)))
+				}
+				return
+			}
+
 			http.Error(w,
 				fmt.Sprintf(`{"error": "service unavailable", "target": %q}`, route.Prefix),
 				http.StatusBadGateway,

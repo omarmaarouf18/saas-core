@@ -561,3 +561,44 @@ func TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately(t *test
 		t.Errorf("expected immediate 'event: connected\\n', got %q", got)
 	}
 }
+
+func TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503(t *testing.T) {
+	gatewaySecret := "my-secret"
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"error":"photo storage unavailable","code":"photo_storage_unavailable"}`))
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{
+		Prefix:      "/api/v1/users/",
+		Target:      backend.URL,
+		StripPrefix: "/api/v1",
+	}
+
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-user-route", 2, 5*time.Second)
+	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/v1/users/services/svc_123/photo", "image/jpeg", strings.NewReader("fake-image"))
+	if err != nil {
+		t.Fatalf("POST through gateway failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d: %s", resp.StatusCode, string(body))
+	}
+	if !strings.Contains(string(body), "photo_storage_unavailable") {
+		t.Fatalf("expected body to contain photo_storage_unavailable, got: %s", string(body))
+	}
+}
