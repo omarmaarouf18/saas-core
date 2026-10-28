@@ -274,6 +274,17 @@ class NotificationsProvider extends ChangeNotifier {
     }
   }
 
+  /// A push that arrived while the app is open (PUSH-FCM): into the list
+  /// and the unread badge at once. The live stream delivers the same id
+  /// when it is connected, so a notification is never listed twice; one
+  /// without an id is left to the stream and history.
+  void addFromPush(NotificationModel n) {
+    if (_disposed || n.id.isEmpty) return;
+    if (_notifications.any((e) => e.id == n.id)) return;
+    _notifications.insert(0, n);
+    notifyListeners();
+  }
+
   Future<void> markAsRead(String id) async {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx == -1) return;

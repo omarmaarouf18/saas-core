@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
@@ -262,11 +263,21 @@ void main() {
       expect(called, isFalse);
     });
 
-    test('configured → push on', () async {
+    test('configured → push on, background handler registered', () async {
+      var registered = 0;
       expect(
           await initPushFirebase(
-              supported: true, initializeApp: () async => null),
+              supported: true,
+              initializeApp: () async => null,
+              registerBackgroundHandler: () => registered++),
           isTrue);
+      expect(registered, 1);
+    });
+
+    test('the background handler is a top-level no-op', () async {
+      await expectLater(
+          pushBackgroundHandler(const RemoteMessage(data: {'type': 'x'})),
+          completes);
     });
   });
 }

@@ -30,7 +30,7 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as String? ?? '',
-      type: json['type'] as String? ?? 'system',
+      type: typeOf(json),
       tenantId: json['tenant_id'] as String? ?? '',
       userId: json['user_id'] as String?,
       jobId: _nonEmpty(json['job_id']),
@@ -48,13 +48,19 @@ class NotificationModel {
     return s.isEmpty ? null : s;
   }
 
+  /// The stable event type: `event_type` (job notifications, BE-GAPS-FIX;
+  /// equal to `type` there), else `type`, else `system`.
+  static String typeOf(Map<String, dynamic> data) =>
+      _nonEmpty(data['event_type']) ?? _nonEmpty(data['type']) ?? 'system';
+
   /// A push message's data (FCM sends strings: `id`, `type`, `tenant_id`,
-  /// `job_id`) with the shown [title] and [body].
+  /// and `job_id` + `event_type` for job notifications) with the shown
+  /// [title] and [body].
   factory NotificationModel.fromPushData(Map<String, dynamic> data,
           {String title = '', String body = ''}) =>
       NotificationModel(
         id: data['id']?.toString() ?? '',
-        type: _nonEmpty(data['type']) ?? 'system',
+        type: typeOf(data),
         tenantId: data['tenant_id']?.toString() ?? '',
         userId: _nonEmpty(data['user_id']),
         jobId: _nonEmpty(data['job_id']),

@@ -20,6 +20,18 @@ class _RecordingNotifier implements LocalNotifier {
 
   @override
   Future<bool> openAppSettings() async => false;
+
+  @override
+  Future<bool> show(
+          {required int id,
+          required String title,
+          required String body,
+          required String payload}) async =>
+      true;
+
+  @override
+  Future<String?> listenTaps(void Function(String payload) onTap) async =>
+      null;
 }
 
 Widget _app(Locale locale, LocalNotifier notifier) => MaterialApp(
@@ -76,9 +88,55 @@ void main() {
           hasLength(2));
     });
 
+    test('show: qd_default, high priority, the small icon, the payload',
+        () async {
+      final n = PluginLocalNotifier(android: true);
+      await n.ensureChannel(name: 'Order updates', description: 'd');
+      expect(
+          await n.show(id: 7, title: 'T', body: 'B', payload: '{"id":"n1"}'),
+          isTrue);
+      final show = calls.singleWhere((c) => c.method == 'show');
+      final args = (show.arguments as Map).cast<String, Object?>();
+      expect(args['id'], 7);
+      expect(args['title'], 'T');
+      expect(args['body'], 'B');
+      expect(args['payload'], '{"id":"n1"}');
+      final details =
+          (args['platformSpecifics'] as Map).cast<String, Object?>();
+      expect(details['channelId'], 'qd_default');
+      expect(details['channelName'], 'Order updates');
+      expect(details['icon'], 'ic_stat_notification');
+      expect(details['importance'], Importance.high.value);
+      expect(details['priority'], Priority.high.value);
+    });
+
+    test('listenTaps returns the payload that launched the app', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channel, (call) async {
+        calls.add(call);
+        if (call.method == 'initialize') return true;
+        if (call.method == 'getNotificationAppLaunchDetails') {
+          return {
+            'notificationLaunchedApp': true,
+            'notificationResponse': {
+              'notificationResponseType': 0,
+              'id': 7,
+              'payload': '{"id":"n1"}',
+            },
+          };
+        }
+        return null;
+      });
+      final n = PluginLocalNotifier(android: true);
+      expect(await n.listenTaps((_) {}), '{"id":"n1"}');
+    });
+
     test('guarded: not Android → no plugin call, false', () async {
       final n = PluginLocalNotifier(android: false);
       expect(await n.ensureChannel(name: 'x', description: 'y'), isFalse);
+      expect(await n.show(id: 1, title: 't', body: 'b', payload: 'p'),
+          isFalse);
+      expect(await n.listenTaps((_) {}), isNull);
       expect(calls, isEmpty);
     });
 

@@ -71,6 +71,8 @@ Future<void> main() async {
   // language; the token and permission, shared by sign-in and the pages.
   final localNotifier = PluginLocalNotifier();
   final pushService = PushNotificationService(apiClient: apiClient);
+  // Created here so a foreground push reaches the in-app list and badge.
+  final notifications = NotificationsProvider(apiClient);
 
   runApp(
     MultiProvider(
@@ -85,7 +87,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => ChatProvider(apiClient)),
-        ChangeNotifierProvider(create: (_) => NotificationsProvider(apiClient)),
+        ChangeNotifierProvider<NotificationsProvider>.value(
+            value: notifications),
         ChangeNotifierProvider(create: (_) => MapTrackingProvider(apiClient)),
         ChangeNotifierProvider(
             create: (_) => ReconciliationProvider(apiClient)),
@@ -95,9 +98,13 @@ Future<void> main() async {
       // Service photos load with the JWT and are cached for every page.
       child: ServicePhotoScope(
         store: ServicePhotoStore(apiClient),
-        // Push taps (cold start, background, foreground) for the shells.
+        // Push taps (cold start, background, foreground) for the shells;
+        // a foreground push shows on qd_default and joins the list.
         child: NotificationTapScope(
-          router: NotificationTapRouter()..start(),
+          router: NotificationTapRouter(
+            display: localNotifier,
+            onForeground: notifications.addFromPush,
+          )..start(),
           child: MyApp(localNotifier: localNotifier),
         ),
       ),
