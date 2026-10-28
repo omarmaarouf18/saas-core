@@ -575,7 +575,7 @@ class ApiClient {
 
   /// [locale] is the app language on this device (`ar` / `en`): the
   /// server sends this token's pushes in it (PUSH-L10N). Without it the
-  /// server keeps the English text, as for apps before 2.1.
+  /// server keeps the English text, as for builds without PUSH-L10N.
   Future<dynamic> registerDeviceToken({
     required String token,
     String platform = 'android',

@@ -322,7 +322,7 @@ Hand-written (the table above is generated). Details and the corrected USER-AUTH
 
   | Field | Value |
   | :--- | :--- |
-  | `notification.title` / `notification.body` | the notification's title and body |
+  | `notification.title` / `notification.body` | the template text in the device token's language (PUSH-L10N, below), else the notification's title and body |
   | `data.type` | the stable event (table above); always present |
   | `data.job_id`, `data.event_type` | job notifications only (strings; `event_type` = `type`) |
   | `data.id`, `data.tenant_id` | the notification ID and tenant |
@@ -330,6 +330,27 @@ Hand-written (the table above is generated). Details and the corrected USER-AUTH
   | `android.notification.channel_id` | `qd_default`: the app must create an Android notification channel with this id |
 
   All `data` values are strings. A token FCM answers `UNREGISTERED` / `NOT_FOUND` for, or `INVALID_ARGUMENT` naming the token, is unregistered from the user; `429`/`5xx` are retried at most twice with backoff. Through an internal relay (`FCM_ENDPOINT_URL`) the message has no `android` block and no OAuth token.
+* **Push language** (PUSH-L10N). Backward compatible: every new field is optional.
+  * `POST /auth/device-token` takes `locale`: `"ar"` or `"en"` (`ar_EG`, `en-US` and any case are normalized; anything else is `400 {"error": "invalid locale: must be one of ar, en"}`). It is stored on that token only (`device_tokens[].locale`), so one user can have an Arabic phone and an English tablet. A registration without `locale` (1.x / 2.0.0 builds without PUSH-L10N) stores none, and removes one stored earlier for that token. The internal `GET /auth/user` returns it per token (no key when absent).
+  * `POST /notifications/send` takes `params`: a string map of named template values (at most 16, else `400`). `variant` picks a variant of the type's text and is never shown; money values are plain decimals (`"1250.50"`).
+  * Push text: for each token, notification-service renders the template of `type` (+ `variant`) in the token's locale with `params` (`services/notification-service/internal/templates/templates.go`, one table, the source of truth). The sender's `title` / `body` are pushed instead when the token has no locale, the type or variant has no template, or a parameter it needs is missing or blank. Money is `EGP 1,250.50` / `1,250.50 ج.م` (Western digits, thousands separator, no decimals for whole amounts), never `$`.
+  * The stored notification keeps `params`; `GET /notifications/history` items and SSE events add `params` (when sent) and `texts: {"ar": {"title", "body"}, "en": {"title", "body"}}` (when the template renders). `title` / `body` stay the sender's English text.
+
+  | `type` (`:variant`) | `params` | Sender |
+  | :--- | :--- | :--- |
+  | `job_accepted`, `job_accepted:negotiable` | `fare` (money) | user-service |
+  | `job_cancelled`, `job_cancelled:escrow_failed` | none | user-service |
+  | `job_unavailable`, `job_picked_up`, `job_delivered`, `job_booked`, `job_offer`, `cancellation_request_expired` | none | user-service |
+  | `cancellation_requested` | `reason` | user-service |
+  | `cancellation_resolved:accept`, `cancellation_resolved:decline` | none | user-service |
+  | `dispute_resolved:customer_release`, `:customer_refund`, `:provider_release`, `:provider_refund` | none | user-service |
+  | `job_alert` | `service_name` | notification-service (`/notifications/broadcast/job-alert`) |
+  | `kyc_approved`, `account_reactivated` | none | auth-service |
+  | `kyc_rejected`, `account_suspended` | `reason` | auth-service |
+  | `ticket_resolved` | `ticket_id`, `note` | chat-service |
+  | `ticket_assigned`, `ticket_assigned:anonymous` | `ticket_id`, `agent_name` (not with `anonymous`) | chat-service |
+
+  No payout notification is sent today, so there is no payout template.
 * **`POST /users/jobs/pickup`**: losing the pickup race (the job left `heading_to_pickup` between the read and the update) is `409 {"error": "job state changed during pickup", "message": ..., "code": "job_state_changed"}`. Other pickup codes: `job_id_required`, `unauthorized`, `role_mismatch`, `job_not_found`, `job_not_active`, `access_denied`, `already_picked_up`.
 * **`POST /users/jobs/track`**: recipient, package and address text fields are optional (ADR-0028 §2.1, §2.2, §2.7). Field codes: `address_too_long`, `address_note_too_long`, `recipient_name_too_long`, `recipient_phone_invalid`, `recipient_notes_too_long`, `package_size_invalid`, `package_notes_too_long`. No `*_required` code is sent.
 * **Service photo storage unavailable**: `POST /users/services/photo` (and `/{id}/photo`) and `GET /users/services/photo` answer `503 {"error": "photo storage unavailable", "code": "photo_storage_unavailable"}` when storage was never initialized or a write fails.

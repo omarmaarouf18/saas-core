@@ -10,9 +10,10 @@ work in PUSH-BE / BE-GAPS-FIX. iOS is prepared but not enabled (see
 
 ```
 user-service ──POST /notifications/send──▶ notification-service (hub)
-   (job events, title/body, job_id)          │ stores it, SSE to open apps,
-                                             │ and for each device token of
-                                             │ the target user:
+   (job events, title/body, job_id,          │ stores it, SSE to open apps,
+    params)                                  │ and for each device token of
+                                             │ the target user, the text in
+                                             │ that token's language:
                                              ▼
                                    FCM HTTP v1 (OAuth2, service-account key)
                                              │
@@ -27,7 +28,7 @@ One FCM message per registered device token of the notification's user
 
 | Part | Value |
 |---|---|
-| `notification.title` / `.body` | The server's text, in English (e.g. "Courier Picked Up") |
+| `notification.title` / `.body` | The text in the language the token registered with (PUSH-L10N, §1.1), e.g. "طلبك اتستلم" / "Your order was picked up". Tokens from apps that send no language get the server's English text (e.g. "Courier Picked Up"). |
 | `data` | `id`, `type`, `tenant_id` always; `job_id` and `event_type` (= `type`) for job notifications. All strings. |
 | `android.priority` | `HIGH` |
 | `android.notification.channel_id` | `qd_default` |
@@ -46,13 +47,36 @@ Job events and who gets them:
 
 There is no `job_in_transit`: "picked up" is the in-transit event.
 
+### 1.1 Language of the push text (PUSH-L10N)
+
+When the app is in the background or closed, Android shows the push as the
+server wrote it, so the server needs each phone's language:
+
+- The app sends `locale` (`ar` / `en`, the language the app shows, chosen or
+  auto-detected) with every token registration and refresh, and registers
+  the token again when the user switches the language
+  (`PushLocaleSync` → `PushNotificationService.setLocale`).
+- auth-service stores it per token: one account can have an Arabic phone and
+  an English tablet, each gets its own language.
+- notification-service renders the text from one table of templates per
+  event type (`services/notification-service/internal/templates/templates.go`)
+  with the sender's parameters (fare, reason, ticket id…). The wording
+  follows the app's own `ntf…` strings. Money is "EGP 1,250.50" /
+  "1,250.50 ج.م", never `$`.
+- Tokens without a language (1.x / 2.0.0 builds without PUSH-L10N) and types without a template
+  get the server's English text, as before.
+- The list (history / SSE) also carries `params` and `texts.ar` / `texts.en`
+  per item (see docs/APPLICATION_MAP.md, "Push language"). The app does not
+  use them yet: it keeps localizing titles by type.
+
 ### What the app does
 
 | When | What happens | Code |
 |---|---|---|
 | App start | `Firebase.initializeApp()` before `runApp`, guarded: a build without `google-services.json`, an unsupported platform or any error logs one line (`[PUSH] push disabled: …`) and the app runs with push off. On success the top-level background handler is registered. | `lib/services/push_setup.dart` |
 | First frame | The `qd_default` channel is created (high importance), named in the app language ("Order updates" / "تحديثات الطلبات"), renamed when the language changes. | `PushChannelSync`, `lib/services/local_notifications.dart` |
-| Sign-in (login, OTP, session restore) | Reads the permission, registers the token (`POST /auth/device-token {token, platform: "android"}`), follows `onTokenRefresh`. Never awaited: sign-in never waits for or fails on push; every call is time-boxed. | `PushNotificationService.onSignedIn` |
+| Sign-in (login, OTP, session restore) | Reads the permission, registers the token (`POST /auth/device-token {token, platform: "android", locale: "ar" \| "en"}`), follows `onTokenRefresh`. Never awaited: sign-in never waits for or fails on push; every call is time-boxed. | `PushNotificationService.onSignedIn` |
+| First frame, language switch | The app language is passed to the push service; while signed in the token is registered again with the new `locale`, so background pushes follow the switch (§1.1). | `PushLocaleSync`, `PushNotificationService.setLocale` |
 | ~2 s after a role shell first shows | Once per install (cleared by sign-out): a sheet "Turn on notifications?" with role-specific copy. "Turn on" opens the Android 13+ system dialog; "Not now" or closing it is remembered. Not shown when push is off, the phone was already asked, or notifications are already allowed (Android 12 and older). | `PushPermissionPrompt` |
 | Account page → App | "Phone notifications: On / Off" row (asks again while Android still allows it, else opens the app's notification settings) and, when refused, a hint with "Open settings". Re-read when the app resumes. Hidden when push is off in the build. | `pushSettingsTile`, `PushOffHint` |
 | Push, app open | Added to the notifications list and badge at once (deduped with the live stream by id), and shown as a system notification on `qd_default` with the app's own localized title/body for the type. | `PushTapHandler`, `NotificationsProvider.addFromPush` |
@@ -134,9 +158,11 @@ event, try the app **open**, **in the background** (home button) and
 | Owner cancels a booking | customer: "Booking Cancelled" | that order |
 
 App open: the notification is in the app language and the bell / list
-shows it at once. Background or killed: the server's English text (see
-§5). Then sign out on the customer phone and repeat a step: no push
-arrives.
+shows it at once. Background or killed: the server's text in the app
+language (§1.1); the accepted order shows the fare in EGP / ج.م. Switch the
+language on the account page, background the app and repeat a step: the
+push follows the new language. Then sign out on the customer phone and
+repeat a step: no push arrives.
 
 ---
 
@@ -151,7 +177,7 @@ arrives.
 | Arrives silently / no heads-up | Settings → Apps → Quick Delivery → Notifications → "Order updates": allowed, "Alert"/"Pop on screen". Android fixes a channel's importance when it is created; if a user lowered it, only they (or a reinstall) can raise it. |
 | Nothing while the app is closed on some phones (Xiaomi, Huawei, Oppo, Vivo, Samsung "sleeping apps") | Battery optimisation: set the app's battery use to "Unrestricted" / "No restrictions", allow Autostart (MIUI), remove it from "Sleeping apps". An app that was **force-stopped** (Settings → Force stop, or some OEM "clean" buttons) gets no push until it is opened again. |
 | Pushes keep coming after sign-out | Sign-out unregisters and deletes the token; an expired session deletes it on the phone and the server drops it on the next send (one more push may arrive). |
-| Background push text is English | Known: the server sends English text (§5). The app localizes only what it shows itself (app open). |
+| Background push text is English | The token was registered without a language (a build without PUSH-L10N, or the registration failed): open the app once while signed in. Types without a template (§1.1) are always English. |
 
 ---
 
@@ -159,9 +185,8 @@ arrives.
 
 From the contract check (PUSH-FCM item 5, read-only):
 
-- `notification.title` / `body` are English strings from user-service; the
-  system shows them as they are when the app is not open.
-- The `job_accepted` body names a fare with a `$` sign.
+- ~~`notification.title` / `body` are English strings; the `job_accepted`
+  body names a fare with a `$` sign~~: fixed by PUSH-L10N (§1.1).
 - Notifications without a `user_id` (role / tenant broadcasts) are never
   pushed, only streamed to open apps.
 
