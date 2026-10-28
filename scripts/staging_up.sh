@@ -6,15 +6,52 @@ set -euo pipefail
 # =============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
-STAGING_DIR="$REPO_ROOT/infrastructure/staging"
-COMPOSE_FILE="$STAGING_DIR/docker-compose.staging.yml"
-ENV_FILE="$STAGING_DIR/.env.staging"
+STAGING_DIR="${STAGING_DIR:-$REPO_ROOT/infrastructure/staging}"
+COMPOSE_FILE="${COMPOSE_FILE:-$STAGING_DIR/docker-compose.staging.yml}"
+ENV_FILE="${ENV_FILE:-$STAGING_DIR/.env.staging}"
 
 echo "== [STAGING] Validating Staging Environment =="
 
 if [ ! -f "$ENV_FILE" ]; then
-  echo "[STAGING] .env.staging not found, copying from .env.staging.example..."
-  cp "$STAGING_DIR/.env.staging.example" "$ENV_FILE"
+  echo "[STAGING] .env.staging not found, creating from .env.staging.example..."
+  # Generate random passwords for mongo and redis (URL-safe hex to avoid URI encoding issues)
+  MONGO_PASS="$(openssl rand -hex 16)"
+  REDIS_PASS="$(openssl rand -hex 16)"
+
+  touch "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      *MONGO_INITDB_ROOT_PASSWORD=CHANGE_ME_PASSWORD*)
+        line="${line/CHANGE_ME_PASSWORD/$MONGO_PASS}"
+        ;;
+      *MONGO_URI=*CHANGE_ME_PASSWORD*)
+        line="${line/CHANGE_ME_PASSWORD/$MONGO_PASS}"
+        ;;
+      *REDIS_PASSWORD=CHANGE_ME_PASSWORD*)
+        line="${line/CHANGE_ME_PASSWORD/$REDIS_PASS}"
+        ;;
+      *REDIS_URI=*CHANGE_ME_PASSWORD*)
+        line="${line/CHANGE_ME_PASSWORD/$REDIS_PASS}"
+        ;;
+      *CHANGE_ME_PASSWORD*)
+        extra_pw="$(openssl rand -hex 16)"
+        line="${line/CHANGE_ME_PASSWORD/$extra_pw}"
+        ;;
+    esac
+
+    while [[ "$line" == *"CHANGE_ME_64_HEX"* ]]; do
+      hex32="$(openssl rand -hex 32)"
+      line="${line/CHANGE_ME_64_HEX/$hex32}"
+    done
+
+    printf '%s\n' "$line"
+  done < "$STAGING_DIR/.env.staging.example" > "$ENV_FILE"
+fi
+
+if [ "${STAGING_ENV_ONLY:-0}" = "1" ] || [ "${1:-}" = "--env-only" ]; then
+  exit 0
 fi
 
 # Ensure certificates exist
