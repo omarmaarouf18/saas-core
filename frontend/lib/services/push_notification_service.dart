@@ -260,8 +260,10 @@ class PushNotificationService extends ChangeNotifier {
       await apiClient
           .registerDeviceToken(token: token, platform: _platformName)
           .timeout(timeout);
-      // The token itself is never logged.
+      // Release builds never log the token; debug builds do, for a
+      // Firebase console test message (docs/PUSH.md).
       debugPrint('[FCM] Device token registered successfully');
+      if (kDebugMode) debugPrint('[FCM] token (debug build only): $token');
       return true;
     } catch (e) {
       debugPrint('[FCM] Failed to register device token: $e');

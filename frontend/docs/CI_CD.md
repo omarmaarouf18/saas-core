@@ -66,6 +66,7 @@ To avoid manual copy-pasting between repositories while maintaining a clean, sta
    - Set up Flutter **3.44.6** via `subosito/flutter-action@v2` (`flutter-version: '3.44.6'`, the same pin as saas-core CI in `.github/workflows/ci.yml`; bump both together, and regenerate goldens in the same change).
 2. **Dependency Resolution**:
    - Executes `flutter pub get`.
+   - **Firebase config (push)**: decodes the repository secret `GOOGLE_SERVICES_JSON_B64` into `android/app/google-services.json` (never committed) and checks it is the config for `com.saascore.frontend`. Without the secret the build still succeeds with push disabled, and the run summary says "push disabled in this build". See [PUSH.md](PUSH.md).
 3. **Version** (ADR-0018):
    - `version` = the semver part of `pubspec.yaml` `version:` (2.0.0); `build_number` = `github.run_number`; `full_version` = `<version>+<build_number>` (e.g. `2.0.0+57`).
    - `full_version` is compiled in with `--dart-define=APP_VERSION=...` and sent by the app as `X-App-Version` (`lib/core/app_version.dart`). The api-gateway gate strips the `+build` part, so only the semver is compared with `minimum_supported_version`.
