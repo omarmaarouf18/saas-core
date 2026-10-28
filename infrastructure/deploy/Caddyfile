@@ -31,5 +31,21 @@ api.logiclinkeg.tech {
 }
 
 kyc.logiclinkeg.tech {
-	reverse_proxy kyc-reviewer-console:8090
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Content-Security-Policy "frame-ancestors 'none';"
+		X-Frame-Options "DENY"
+	}
+
+	@unconfigured `{env.KYC_CONSOLE_BASIC_AUTH_HASH} == "" || {env.KYC_CONSOLE_BASIC_AUTH_USER} == ""`
+	handle @unconfigured {
+		respond "Console basic auth is not configured" 503
+	}
+
+	handle {
+		basic_auth {
+			{$KYC_CONSOLE_BASIC_AUTH_USER} {$KYC_CONSOLE_BASIC_AUTH_HASH}
+		}
+		reverse_proxy kyc-reviewer-console:8090
+	}
 }

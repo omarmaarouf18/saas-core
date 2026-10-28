@@ -329,9 +329,9 @@ services:
   # reviewer actions to auth-service. NOT publicly bound: the `caddy` service
   # below terminates kyc.<domain> and reaches it on saas-net.
   # Image is built by omarmaarouf18/kyc-reviewer-console's own CI; pin via
-  # KYC_CONSOLE_IMAGE_TAG in .env (falls back to latest).
+  # KYC_CONSOLE_IMAGE_TAG in .env (no latest fallback, deploy preflight fails if unset).
   kyc-reviewer-console:
-    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
+    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:?KYC_CONSOLE_IMAGE_TAG is required}
     container_name: saas-kyc-reviewer-console
     logging: *default-logging
     mem_limit: 16m
@@ -387,6 +387,8 @@ services:
       - kyc-reviewer-console
     environment:
       GOMEMLIMIT: 32MiB
+      KYC_CONSOLE_BASIC_AUTH_USER: ${KYC_CONSOLE_BASIC_AUTH_USER:-}
+      KYC_CONSOLE_BASIC_AUTH_HASH: ${KYC_CONSOLE_BASIC_AUTH_HASH:-}
     networks:
       - saas-net
 
