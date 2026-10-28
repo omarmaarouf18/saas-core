@@ -1,7 +1,8 @@
 # Push notifications
 
 Android push for the Quick Delivery app (PUSH-FCM), on top of the backend
-work in PUSH-BE / BE-GAPS-FIX.
+work in PUSH-BE / BE-GAPS-FIX. iOS is prepared but not enabled (see
+[iOS later](#ios-later)).
 
 ---
 
@@ -164,3 +165,37 @@ From the contract check (PUSH-FCM item 5, read-only):
 - Notifications without a `user_id` (role / tenant broadcasts) are never
   pushed, only streamed to open apps.
 
+---
+
+## iOS later
+
+The push code is platform-neutral: `initPushFirebase` already accepts iOS,
+the permission goes through `FirebaseMessaging.requestPermission` (the iOS
+dialog opens from the same prompt), the token is registered with platform
+`ios`, and taps use the same router. Nothing iOS-specific is in the project
+yet. To turn it on:
+
+1. **Apple Developer Program** membership (paid) for the team that signs the
+   app.
+2. **APNs auth key.** developer.apple.com → Certificates, IDs & Profiles →
+   Keys → + → "Apple Push Notifications service (APNs)" → download the
+   `.p8` (once only), note its Key ID and the Team ID. Firebase console →
+   Project settings → Cloud Messaging → Apple app configuration → upload
+   the APNs authentication key with those IDs.
+3. **Firebase iOS app.** Add app → iOS, bundle ID `com.saascore.frontend`
+   (Runner's `PRODUCT_BUNDLE_IDENTIFIER`) → download
+   `GoogleService-Info.plist` → `frontend/ios/Runner/GoogleService-Info.plist`
+   (already in `frontend/.gitignore`) and add it to the Runner target in Xcode
+   (Copy Bundle Resources). CI would write it from a secret, like Android.
+4. **Xcode capabilities** (Runner target → Signing & Capabilities): **Push
+   Notifications**, and **Background Modes → Remote notifications**.
+5. **Deployment target.** firebase_messaging 16.7 needs iOS 15; the project
+   is at 13.0 (`IPHONEOS_DEPLOYMENT_TARGET`, and `platform :ios` in the
+   Podfile once one exists).
+6. **Foreground display.** The local notifier is Android-only, so an iOS
+   push that arrives while the app is open shows the in-app notice with
+   "View". Optional: `FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true)`
+   to show the system banner instead.
+7. **Mac CI.** iOS builds need macOS with Xcode (a `macos-*` GitHub runner),
+   signing certificate and provisioning profile as secrets, then
+   `flutter build ipa`. The Linux runners used today cannot build iOS.

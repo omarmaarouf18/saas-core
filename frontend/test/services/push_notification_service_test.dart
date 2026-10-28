@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
@@ -15,6 +16,7 @@ class _Api extends ApiClient {
   _Api() : super(baseUrl: 'https://ci.local/api/v1');
 
   final List<String> registered = [];
+  final List<String> platforms = [];
   final List<String?> unregistered = [];
   bool failRegister = false;
 
@@ -26,6 +28,7 @@ class _Api extends ApiClient {
   }) async {
     if (failRegister) throw ApiClientException('down', statusCode: 503);
     registered.add(token);
+    platforms.add(platform);
     return {'message': 'ok'};
   }
 
@@ -148,6 +151,20 @@ void main() {
       expect(api.registered, isEmpty);
       expect(push.permission, PushPermission.unavailable);
       expect(push.shouldOfferPrompt, isFalse);
+    });
+
+    test('platform sent as auth-service expects it (android, ios)',
+        () async {
+      final api = _Api();
+      final push = service(api, FakePushAdapter());
+      await push.registerDeviceToken();
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await push.registerDeviceToken();
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+      expect(api.platforms, ['android', 'ios']);
     });
 
     test('a failing register never throws', () async {

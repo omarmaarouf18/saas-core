@@ -244,8 +244,10 @@ class PushNotificationService extends ChangeNotifier {
     }
   }
 
+  /// auth-service accepts `android`, `ios` and `web` only
+  /// (`TargetPlatform.iOS.name` is `iOS`).
   static String get _platformName =>
-      kIsWeb ? 'web' : defaultTargetPlatform.name;
+      kIsWeb ? 'web' : defaultTargetPlatform.name.toLowerCase();
 
   /// Registers the client's FCM device token with auth-service on login/signup or startup.
   Future<bool> registerDeviceToken() async {
