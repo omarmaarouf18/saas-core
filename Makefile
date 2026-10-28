@@ -1,4 +1,4 @@
-.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove release-status
+.PHONY: docs docs-counts docs-check setup check ci ci-full ensure-hooks commit push since-last-report report-hash backend-frontend-parity-check contract-test worktree-new worktree-list worktree-remove release-status release
 
 # --- WF-01 parallel-agent workflow constants ---------------------------------
 # The integration branch agents branch off and the owner merges into.
@@ -90,6 +90,9 @@ push: ensure-hooks
 # --- WF-RELEASE release commands ---------------------------------------------
 release-status: ensure-hooks
 	@bash scripts/release-status.sh $(if $(REF),$(REF),$(INTEGRATION_BRANCH))
+
+release: ensure-hooks
+	@bash scripts/release.sh $(if $(WAIT),--wait,) $(if $(DRY_RUN),--dry-run,)
 # -----------------------------------------------------------------------------
 
 # --- WF-01 worktree convenience targets (scripts/agent-worktree.sh) ----------
