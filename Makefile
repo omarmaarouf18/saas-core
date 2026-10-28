@@ -76,6 +76,13 @@ push: ensure-hooks
 	case "$$PUSH_BRANCH" in agent/*) \
 		echo $(BLOCKED_MSG); \
 		exit 1 ;; esac; \
+	case "$$PUSH_BRANCH" in main) \
+		echo "BLOCKED: 'make push' refuses to push from 'main'. Releasing to production is done via 'make release'. Switch back: git checkout $(INTEGRATION_BRANCH)"; \
+		exit 1 ;; esac; \
+	if [ "$$PUSH_BRANCH" != "$(INTEGRATION_BRANCH)" ]; then \
+		echo "BLOCKED: 'make push' is only permitted from '$(INTEGRATION_BRANCH)'. Switch back: git checkout $(INTEGRATION_BRANCH)"; \
+		exit 1; \
+	fi; \
 	LOCAL=$$(git rev-parse HEAD); \
 	git push origin $$PUSH_BRANCH; \
 	REMOTE=$$(git ls-remote origin $$PUSH_BRANCH | awk '{print $$1}'); \

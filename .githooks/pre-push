@@ -36,6 +36,10 @@ if [ "${1:-}" != "" ]; then
       echo "BLOCKED: agents never push; the owner merges and pushes from the main worktree"
       exit 1
       ;;
+    main)
+      echo "BLOCKED: pushes directly from 'main' are forbidden; releases must be performed from logic-exploitation via 'make release'. Switch back: git checkout logic-exploitation"
+      exit 1
+      ;;
   esac
 fi
 # --- end WF-01 agent push guard ---
