@@ -4,26 +4,14 @@ import 'package:frontend/core/api_client.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/services/push_notification_service.dart';
 
-class MockPushMessagingAdapter implements PushMessagingAdapter {
-  String? mockToken = 'mock-fcm-token-abc-123';
-  bool deleteTokenCalled = false;
-  void Function(String title, String body, Map<String, dynamic> data)?
-      onMessageCallback;
+import 'helpers/fake_push.dart';
 
-  @override
-  Future<String?> getToken() async => mockToken;
+class MockPushMessagingAdapter extends FakePushAdapter {
+  MockPushMessagingAdapter() : super(token: 'mock-fcm-token-abc-123');
 
-  @override
-  Future<void> deleteToken() async {
-    deleteTokenCalled = true;
-  }
-
-  @override
-  void onForegroundMessage(
-      void Function(String title, String body, Map<String, dynamic> data)
-          callback) {
-    onMessageCallback = callback;
-  }
+  String? get mockToken => token;
+  set mockToken(String? v) => token = v;
+  bool get deleteTokenCalled => deleteTokenCalls > 0;
 }
 
 class MockApiClient extends ApiClient {

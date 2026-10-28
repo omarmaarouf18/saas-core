@@ -21,6 +21,10 @@ abstract class LocalNotifier {
   /// app language). False where there are no channels or it failed.
   Future<bool> ensureChannel(
       {required String name, required String description});
+
+  /// Opens the phone's notification settings for this app. False where it
+  /// cannot.
+  Future<bool> openAppSettings();
 }
 
 /// [flutter_local_notifications] on Android; a no-op elsewhere (iOS has no
@@ -69,6 +73,17 @@ class PluginLocalNotifier implements LocalNotifier {
       return true;
     } catch (e) {
       debugPrint('[PUSH] notification channel not created: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> openAppSettings() async {
+    if (!_android) return false;
+    try {
+      return await _androidPlugin?.openAppNotificationSettings() ?? false;
+    } catch (e) {
+      debugPrint('[PUSH] notification settings not opened: $e');
       return false;
     }
   }

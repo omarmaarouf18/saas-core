@@ -17,6 +17,9 @@ class _RecordingNotifier implements LocalNotifier {
     channels.add((name, description));
     return true;
   }
+
+  @override
+  Future<bool> openAppSettings() async => false;
 }
 
 Widget _app(Locale locale, LocalNotifier notifier) => MaterialApp(

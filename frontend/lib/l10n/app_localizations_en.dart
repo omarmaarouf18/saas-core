@@ -3826,4 +3826,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pushChannelDescription =>
       'Bookings, pickups, deliveries and cancellations of your orders.';
+
+  @override
+  String get pushPromptTitle => 'Turn on notifications?';
+
+  @override
+  String get pushPromptBodyCustomer =>
+      'We\'ll tell you when your order is accepted, picked up, delivered or cancelled, even when the app is closed.';
+
+  @override
+  String get pushPromptBodyOwner =>
+      'We\'ll tell you as soon as a customer books an order, even when the app is closed.';
+
+  @override
+  String get pushPromptBodyCourier =>
+      'We\'ll tell you about new job offers and changes to your jobs, even when the app is closed.';
+
+  @override
+  String get pushPromptTurnOn => 'Turn on';
+
+  @override
+  String get pushPromptNotNow => 'Not now';
+
+  @override
+  String get acctPushRow => 'Phone notifications';
+
+  @override
+  String get acctPushOn => 'On';
+
+  @override
+  String get acctPushOff => 'Off';
+
+  @override
+  String get acctPushOffHint =>
+      'Notifications are off, so you\'ll only see updates when you open the app. You can turn them on in your phone\'s settings.';
+
+  @override
+  String get acctPushOpenSettings => 'Open settings';
 }

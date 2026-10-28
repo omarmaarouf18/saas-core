@@ -3770,4 +3770,41 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get pushChannelDescription =>
       'الحجز والاستلام والتوصيل والإلغاء لطلباتك.';
+
+  @override
+  String get pushPromptTitle => 'تشغّل الإشعارات؟';
+
+  @override
+  String get pushPromptBodyCustomer =>
+      'هنقولك لما طلبك يتقبل أو يتستلم أو يتوصل أو يتلغي، حتى لو التطبيق مقفول.';
+
+  @override
+  String get pushPromptBodyOwner =>
+      'هنقولك أول ما عميل يحجز طلب، حتى لو التطبيق مقفول.';
+
+  @override
+  String get pushPromptBodyCourier =>
+      'هنقولك على عروض الشغل الجديدة وأي تغيير في طلباتك، حتى لو التطبيق مقفول.';
+
+  @override
+  String get pushPromptTurnOn => 'شغّلها';
+
+  @override
+  String get pushPromptNotNow => 'مش دلوقتي';
+
+  @override
+  String get acctPushRow => 'إشعارات الموبايل';
+
+  @override
+  String get acctPushOn => 'شغّالة';
+
+  @override
+  String get acctPushOff => 'مقفولة';
+
+  @override
+  String get acctPushOffHint =>
+      'الإشعارات مقفولة، فمش هتعرف التحديثات غير لما تفتح التطبيق. تقدر تشغّلها من إعدادات الموبايل.';
+
+  @override
+  String get acctPushOpenSettings => 'افتح الإعدادات';
 }

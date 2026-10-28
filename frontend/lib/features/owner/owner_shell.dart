@@ -7,6 +7,7 @@ import '../../providers/owner_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/account_page.dart';
 import '../account/notifications/notification_rules.dart';
+import '../account/notifications/push_permission_prompt.dart';
 import '../account/notifications/push_tap_handler.dart';
 import 'order_detail_page.dart';
 import 'orders_page.dart';
@@ -112,46 +113,48 @@ class _OwnerShellState extends State<OwnerShell> {
             openJob: (id) => _openJob(context, id),
           ),
           child: PushTapHandler(
-            child: Scaffold(
-              key: const Key('owner_shell'),
-              backgroundColor: QdColors.of(context).surface,
-              body: IndexedStack(
-                index: _index,
-                children: [
-                  lazy(
-                    0,
-                    () => OwnerTodayPage(
-                      onShowTeam: () => _select(2),
-                      onShowOrders: () => _select(1),
+            child: PushPermissionPrompt(
+              child: Scaffold(
+                key: const Key('owner_shell'),
+                backgroundColor: QdColors.of(context).surface,
+                body: IndexedStack(
+                  index: _index,
+                  children: [
+                    lazy(
+                      0,
+                      () => OwnerTodayPage(
+                        onShowTeam: () => _select(2),
+                        onShowOrders: () => _select(1),
+                      ),
                     ),
-                  ),
-                  lazy(1, () => const OwnerOrdersPage()),
-                  lazy(2, () => const OwnerTeamPage()),
-                  lazy(3, () => const _OwnerAccount()),
-                ],
-              ),
-              bottomNavigationBar: QdBottomNav(
-                key: const Key('owner_shell_nav'),
-                currentIndex: _index,
-                onTap: _select,
-                items: [
-                  QdNavItem(
-                      icon: Icons.today_outlined,
-                      activeIcon: Icons.today,
-                      label: l10n.ownNavToday),
-                  QdNavItem(
-                      icon: Icons.receipt_long_outlined,
-                      activeIcon: Icons.receipt_long,
-                      label: l10n.ownNavOrders),
-                  QdNavItem(
-                      icon: Icons.groups_outlined,
-                      activeIcon: Icons.groups,
-                      label: l10n.ownNavTeam),
-                  QdNavItem(
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
-                      label: l10n.ownNavAccount),
-                ],
+                    lazy(1, () => const OwnerOrdersPage()),
+                    lazy(2, () => const OwnerTeamPage()),
+                    lazy(3, () => const _OwnerAccount()),
+                  ],
+                ),
+                bottomNavigationBar: QdBottomNav(
+                  key: const Key('owner_shell_nav'),
+                  currentIndex: _index,
+                  onTap: _select,
+                  items: [
+                    QdNavItem(
+                        icon: Icons.today_outlined,
+                        activeIcon: Icons.today,
+                        label: l10n.ownNavToday),
+                    QdNavItem(
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long,
+                        label: l10n.ownNavOrders),
+                    QdNavItem(
+                        icon: Icons.groups_outlined,
+                        activeIcon: Icons.groups,
+                        label: l10n.ownNavTeam),
+                    QdNavItem(
+                        icon: Icons.person_outline,
+                        activeIcon: Icons.person,
+                        label: l10n.ownNavAccount),
+                  ],
+                ),
               ),
             ),
           ),

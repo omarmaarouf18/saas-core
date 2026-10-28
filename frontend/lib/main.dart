@@ -24,6 +24,8 @@ import 'providers/locale_provider.dart';
 import 'providers/service_photo_store.dart';
 import 'services/local_notifications.dart';
 import 'services/notification_tap_router.dart';
+import 'services/push_notification_service.dart';
+import 'services/push_setup.dart';
 import 'features/verification/rejection_dialog_host.dart';
 import 'ui/gallery/qd_gallery_screen.dart';
 import 'ui/qd_licenses.dart';
@@ -41,7 +43,14 @@ class DevHttpOverrides extends HttpOverrides {
 /// one navigator instance.
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Push (PUSH-FCM): Firebase from the build's google-services.json. A
+  // build without it, or any Firebase error, logs one line and runs with
+  // push off; nothing else changes.
+  await initPushFirebase();
+
   // Wire HTTP certificate overrides in debug mode for self-signed certificates.
   if (kDebugMode) {
     HttpOverrides.global = DevHttpOverrides();
@@ -59,15 +68,19 @@ void main() {
   apiClient.onUpdateRequired = UpdateGate(appNavigatorKey).handle;
 
   // Push (PUSH-FCM): the qd_default notification channel, in the app
-  // language.
+  // language; the token and permission, shared by sign-in and the pages.
   final localNotifier = PluginLocalNotifier();
+  final pushService = PushNotificationService(apiClient: apiClient);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+        ChangeNotifierProvider<PushNotificationService>.value(
+            value: pushService),
+        ChangeNotifierProvider(
+            create: (_) => AuthProvider(apiClient, pushService: pushService)),
         ChangeNotifierProvider(create: (_) => OwnerProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => EmployeeJobsProvider(apiClient)),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(apiClient)),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/api_client.dart';
@@ -116,8 +118,8 @@ class AuthProvider extends ChangeNotifier {
           kycStatus: kyc,
         );
         apiClient.setToken(_token);
-        // Register FCM device token on auto-login startup
-        pushService.registerDeviceToken();
+        // Push (PUSH-FCM): token + permission, never awaited.
+        unawaited(pushService.onSignedIn());
         // Refresh full user profile asynchronously on auto-login
         fetchUserProfile();
       }
@@ -523,8 +525,9 @@ class AuthProvider extends ChangeNotifier {
       await _secureStorage.delete(key: 'user_kyc');
     }
 
-    // Register FCM device token on login/signup success
-    await pushService.registerDeviceToken();
+    // Push (PUSH-FCM): register the token and follow its refreshes. Not
+    // awaited: sign-in never waits for, or fails on, push.
+    unawaited(pushService.onSignedIn());
   }
 
   /// Revokes active session on backend, unregisters device tokens, and purges local state.

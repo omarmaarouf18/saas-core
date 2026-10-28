@@ -6793,6 +6793,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bookings, pickups, deliveries and cancellations of your orders.'**
   String get pushChannelDescription;
+
+  /// PUSH-FCM item 3: title of the in-app sheet shown once after sign-in, before the phone's permission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications?'**
+  String get pushPromptTitle;
+
+  /// PUSH-FCM item 3: prompt body for a customer.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell you when your order is accepted, picked up, delivered or cancelled, even when the app is closed.'**
+  String get pushPromptBodyCustomer;
+
+  /// PUSH-FCM item 3: prompt body for a business owner.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell you as soon as a customer books an order, even when the app is closed.'**
+  String get pushPromptBodyOwner;
+
+  /// PUSH-FCM item 3: prompt body for a courier.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tell you about new job offers and changes to your jobs, even when the app is closed.'**
+  String get pushPromptBodyCourier;
+
+  /// PUSH-FCM item 3: prompt button; opens the phone's permission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get pushPromptTurnOn;
+
+  /// PUSH-FCM item 3: prompt dismiss button; the prompt is not shown again.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get pushPromptNotNow;
+
+  /// PUSH-FCM item 3: account row with the phone's notification permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone notifications'**
+  String get acctPushRow;
+
+  /// PUSH-FCM item 3: value of the phone notifications row.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get acctPushOn;
+
+  /// PUSH-FCM item 3: value of the phone notifications row.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get acctPushOff;
+
+  /// PUSH-FCM item 3: hint under the App section when the phone refused notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off, so you\'ll only see updates when you open the app. You can turn them on in your phone\'s settings.'**
+  String get acctPushOffHint;
+
+  /// PUSH-FCM item 3: hint action; opens the phone's notification settings for the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get acctPushOpenSettings;
 }
 
 class _AppLocalizationsDelegate
