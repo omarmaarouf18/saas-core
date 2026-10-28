@@ -17,6 +17,7 @@ import (
 	"github.com/project/notification-service/internal/config"
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/store"
+	"github.com/project/notification-service/internal/templates"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -429,6 +430,7 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
+			Params:    notif.Params,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notif.ID, err)
@@ -508,6 +510,7 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 			Body:      notif.Body,
 			Roles:     roles,
 			Timestamp: notif.Timestamp,
+			Params:    notif.Params,
 		}
 		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
 			log.Printf("[NOTIF-STORE] Failed to persist job alert %s: %v", notif.ID, err)
@@ -594,6 +597,8 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 			Body:      it.Body,
 			Timestamp: it.Timestamp,
 			IsRead:    it.IsRead,
+			Params:    it.Params,
+			Texts:     templates.RenderAll(it.Type, it.Params),
 		})
 	}
 
@@ -622,6 +627,9 @@ type notificationHistoryItem struct {
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
 	IsRead    bool      `json:"is_read"`
+	// PUSH-L10N: see hub.ClientNotification.
+	Params map[string]string         `json:"params,omitempty"`
+	Texts  map[string]templates.Text `json:"texts,omitempty"`
 }
 
 // ---------------------------------------------------------------------------

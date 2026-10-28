@@ -21,21 +21,24 @@ var ErrNotFound = errors.New("notification not found")
 
 // Notification represents a persistent notification document.
 type Notification struct {
-	ID          string    `json:"id" bson:"_id"`
-	Type        string    `json:"type" bson:"type"`
-	TenantID    string    `json:"tenant_id" bson:"tenant_id"`
-	UserID      string    `json:"user_id,omitempty" bson:"user_id,omitempty"`
-	UserIDs     []string  `json:"user_ids,omitempty" bson:"user_ids,omitempty"`
-	JobID       string    `json:"job_id,omitempty" bson:"job_id,omitempty"`
-	Global      bool      `json:"global" bson:"global"`
-	Title       string    `json:"title" bson:"title"`
-	Body        string    `json:"body" bson:"body"`
-	Roles       []string  `json:"roles,omitempty" bson:"roles,omitempty"`
-	Timestamp   time.Time `json:"timestamp" bson:"timestamp"`
-	IsRead      bool      `json:"is_read" bson:"-"`
-	ReadBy      []string  `json:"-" bson:"read_by,omitempty"`
-	DismissedBy []string  `json:"-" bson:"dismissed_by,omitempty"`
-	CreatedAt   time.Time `json:"created_at,omitempty" bson:"created_at"`
+	ID        string    `json:"id" bson:"_id"`
+	Type      string    `json:"type" bson:"type"`
+	TenantID  string    `json:"tenant_id" bson:"tenant_id"`
+	UserID    string    `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	UserIDs   []string  `json:"user_ids,omitempty" bson:"user_ids,omitempty"`
+	JobID     string    `json:"job_id,omitempty" bson:"job_id,omitempty"`
+	Global    bool      `json:"global" bson:"global"`
+	Title     string    `json:"title" bson:"title"`
+	Body      string    `json:"body" bson:"body"`
+	Roles     []string  `json:"roles,omitempty" bson:"roles,omitempty"`
+	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+	// Params are the sender's template parameters (PUSH-L10N), kept so
+	// the history can be rendered in the app's current language.
+	Params      map[string]string `json:"params,omitempty" bson:"params,omitempty"`
+	IsRead      bool              `json:"is_read" bson:"-"`
+	ReadBy      []string          `json:"-" bson:"read_by,omitempty"`
+	DismissedBy []string          `json:"-" bson:"dismissed_by,omitempty"`
+	CreatedAt   time.Time         `json:"created_at,omitempty" bson:"created_at"`
 }
 
 // Store defines persistence operations for notifications.

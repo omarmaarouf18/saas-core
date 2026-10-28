@@ -62,6 +62,8 @@ func (n Notification) ToClient() ClientNotification {
 		Title:     n.Title,
 		Body:      n.Body,
 		Timestamp: n.Timestamp,
+		Params:    n.Params,
+		Texts:     templates.RenderAll(n.Type, n.Params),
 	}
 }
 
@@ -87,6 +89,11 @@ type ClientNotification struct {
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Timestamp time.Time `json:"timestamp"`
+	// Params and Texts (PUSH-L10N): the template parameters and the title
+	// and body in each app language ("ar", "en"), when the type has a
+	// template; Title and Body stay the sender's English text.
+	Params map[string]string         `json:"params,omitempty"`
+	Texts  map[string]templates.Text `json:"texts,omitempty"`
 }
 
 // SSEClient represents a single SSE connection.
