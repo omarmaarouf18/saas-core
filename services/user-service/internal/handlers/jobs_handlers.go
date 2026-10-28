@@ -3687,13 +3687,13 @@ func (u *UserService) notifyOwnerCancellationRequested(job *models.Job, employee
 }
 
 func (u *UserService) notifyEmployeeCancellationResolved(job *models.Job, employeeID, decision string) {
+	// Callers pass "approved" / "declined" (RespondCancellation); the
+	// approved text used to compare with "accept" and was never sent.
+	approved := decision == "approved" || decision == "accept"
 	body := fmt.Sprintf("Your cancellation request for job %s was declined by the business owner. You remain assigned.", job.ID)
-	if decision == "accept" {
-		body = fmt.Sprintf("Your cancellation request for job %s was approved by the business owner. The job has been cancelled.", job.ID)
-	}
-	// Callers pass "approved" / "declined" (RespondCancellation).
 	variant := "decline"
-	if decision == "approved" || decision == "accept" {
+	if approved {
+		body = fmt.Sprintf("Your cancellation request for job %s was approved by the business owner. The job has been cancelled.", job.ID)
 		variant = "accept"
 	}
 	u.notifyCancellationParty(job, employeeID, "employee", "cancellation_resolved",

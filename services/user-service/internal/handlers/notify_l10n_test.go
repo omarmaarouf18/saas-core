@@ -115,9 +115,12 @@ func TestSenders_AddTemplateParams(t *testing.T) {
 		t.Errorf("cancellation_requested: %+v", n)
 	}
 
-	for decision, variant := range map[string]string{"approved": "accept", "declined": "decline"} {
+	for decision, want := range map[string]struct{ variant, body string }{
+		"approved": {"accept", "Your cancellation request for job job-1 was approved by the business owner. The job has been cancelled."},
+		"declined": {"decline", "Your cancellation request for job job-1 was declined by the business owner. You remain assigned."},
+	} {
 		u.notifyEmployeeCancellationResolved(job, "emp-1", decision)
-		if n = c.wait(t, 1)[0]; n.Type != "cancellation_resolved" || n.Params["variant"] != variant {
+		if n = c.wait(t, 1)[0]; n.Type != "cancellation_resolved" || n.Params["variant"] != want.variant || n.Body != want.body {
 			t.Errorf("cancellation_resolved %s: %+v", decision, n)
 		}
 	}
