@@ -99,6 +99,20 @@ type DeviceTokenFetcher interface {
 	UnregisterStaleToken(ctx context.Context, userID, token string) error
 }
 
+// PushTarget is one device token and the app language it registered with
+// ("ar" | "en"; empty for apps that send none, PUSH-L10N).
+type PushTarget struct {
+	Token  string
+	Locale string
+}
+
+// PushTargetFetcher is a DeviceTokenFetcher that also knows each token's
+// locale. The hub uses it when the fetcher offers it; a plain
+// DeviceTokenFetcher keeps today's behaviour (no locale, English text).
+type PushTargetFetcher interface {
+	GetUserPushTargets(ctx context.Context, userID string) ([]PushTarget, error)
+}
+
 type hubPubSubPayload struct {
 	OriginInstanceID string        `json:"origin_instance_id"`
 	Notification     *Notification `json:"notification"`
@@ -414,27 +428,44 @@ func (h *SSEHub) dispatchPush(n Notification) {
 	}
 
 	for _, userID := range targetUserIDs {
-		tokens, err := fetcher.GetUserDeviceTokens(ctx, userID)
+		targets, err := userPushTargets(ctx, fetcher, userID)
 		if err != nil {
 			log.Printf("[FCM-PUSH] Failed to fetch device tokens for user %s: %v", userID, err)
 			continue
 		}
 
-		if len(tokens) == 0 {
+		if len(targets) == 0 {
 			log.Printf("[FCM-PUSH] Debug: user %s has no registered device tokens (silent no-op)", userID)
 			continue
 		}
 
-		for _, token := range tokens {
-			isStale, err := fcmDisp.SendPush(ctx, token, n.Title, n.Body, dataMap)
+		for _, target := range targets {
+			isStale, err := fcmDisp.SendPush(ctx, target.Token, n.Title, n.Body, dataMap)
 			if isStale {
 				log.Printf("[FCM-PUSH] Cleaning up stale token for user %s", userID)
-				_ = fetcher.UnregisterStaleToken(ctx, userID, token)
+				_ = fetcher.UnregisterStaleToken(ctx, userID, target.Token)
 			} else if err != nil {
 				log.Printf("[FCM-PUSH] Push to user %s failed: %v", userID, err)
 			}
 		}
 	}
+}
+
+// userPushTargets fetches userID's tokens, with their locales when the
+// fetcher knows them (PushTargetFetcher).
+func userPushTargets(ctx context.Context, fetcher DeviceTokenFetcher, userID string) ([]PushTarget, error) {
+	if pf, ok := fetcher.(PushTargetFetcher); ok {
+		return pf.GetUserPushTargets(ctx, userID)
+	}
+	tokens, err := fetcher.GetUserDeviceTokens(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	targets := make([]PushTarget, 0, len(tokens))
+	for _, t := range tokens {
+		targets = append(targets, PushTarget{Token: t})
+	}
+	return targets, nil
 }
 
 func (h *SSEHub) deliverLocal(n Notification) {

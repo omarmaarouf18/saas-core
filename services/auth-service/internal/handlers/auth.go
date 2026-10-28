@@ -3498,7 +3498,11 @@ func (a *Auth) GetEmployees(w http.ResponseWriter, r *http.Request) {
 // DeviceToken handles registration, update, and removal of client device tokens.
 //
 // Accepts:
-// POST: { "token": "...", "platform": "android|ios|web", "action": "register|unregister"? }
+// POST: { "token": "...", "platform": "android|ios|web", "action": "register|unregister"?, "locale": "ar|en"? }
+//
+// locale (PUSH-L10N) is the app language on that device, stored per token
+// (one user can have an Arabic phone and an English tablet). Absent means a
+// legacy app: the token keeps no locale and pushes keep the English text.
 // DELETE: { "token": "..." } or ?token=...
 func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
@@ -3566,8 +3570,16 @@ func (a *Auth) DeviceToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	locale, ok := models.NormalizeDeviceLocale(req.Locale)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid locale: must be one of ar, en",
+		})
+		return
+	}
+
 	// Upsert token
-	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform); err != nil {
+	if err := a.store.UpsertDeviceToken(ctx, claims.UserID, req.Token, req.Platform, locale); err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to register device token", err)
 		return
 	}
