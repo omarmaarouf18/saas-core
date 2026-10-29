@@ -192,6 +192,8 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/logout", a.Logout)
 	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
 	mux.HandleFunc("/auth/internal/user-by-phone", a.GetUserByPhone)
+	mux.HandleFunc("/auth/admin/audit", a.AdminGetAuditLogs)
+	mux.HandleFunc("/admin/audit", a.AdminGetAuditLogs)
 }
 
 // ---------------------------------------------------------------------------

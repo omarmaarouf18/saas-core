@@ -245,8 +245,18 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /auth/email-change/confirm": {
 		Permissions: "Authenticated User JWT",
-		Function:    "Verifies OTP and commits updated email address to user profile, issuing fresh JWT.",
+		Function:    "Verifies OTP and commits updated email address to user profile, issues new JWT.",
 		Targets:     "Updates `users` collection, clears pending change, issues new JWT.",
+	},
+	"GET /auth/admin/audit": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns merged, paginated audit logs with actor, action, target, and date filtering (ADR-0023).",
+		Targets:     "Reads `audit_log` collection.",
+	},
+	"GET /admin/audit": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns merged, paginated audit logs with actor, action, target, and date filtering (ADR-0023).",
+		Targets:     "Reads `audit_log` collection.",
 	},
 
 	// chat-service

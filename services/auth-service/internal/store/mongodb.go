@@ -918,6 +918,73 @@ func (s *MongoDB) AuditCount(ctx context.Context) int {
 	return int(count)
 }
 
+// AuditLogFilter specifies query filters for ListAuditLogs.
+type AuditLogFilter struct {
+	ActorID   string
+	Action    string
+	TargetID  string
+	StartDate *time.Time
+	EndDate   *time.Time
+}
+
+// ListAuditLogs returns paginated audit log entries matching the provided filter.
+func (s *MongoDB) ListAuditLogs(ctx context.Context, filter AuditLogFilter, page, limit int64) ([]models.AuditEntry, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filterDoc := bson.M{}
+	if filter.ActorID != "" {
+		filterDoc["employee_id"] = filter.ActorID
+	}
+	if filter.Action != "" {
+		filterDoc["action"] = filter.Action
+	}
+	if filter.TargetID != "" {
+		filterDoc["tenant_id"] = filter.TargetID
+	}
+
+	dateFilter := bson.M{}
+	if filter.StartDate != nil {
+		dateFilter["$gte"] = *filter.StartDate
+	}
+	if filter.EndDate != nil {
+		dateFilter["$lte"] = *filter.EndDate
+	}
+	if len(dateFilter) > 0 {
+		filterDoc["timestamp"] = dateFilter
+	}
+
+	total, err := s.auditLog.CountDocuments(ctx, filterDoc)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count audit log entries: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "timestamp", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.auditLog.Find(ctx, filterDoc, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query audit log entries: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var entries []models.AuditEntry
+	if err := cursor.All(ctx, &entries); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode audit log entries: %w", err)
+	}
+	if entries == nil {
+		entries = []models.AuditEntry{}
+	}
+	return entries, total, nil
+}
+
 // hashToken returns the SHA-256 hex digest used for bearer-token storage at
 // rest. Raw tokens are never persisted; lookups hash the presented credential
 // before querying, with a plaintext fallback for rows written before this

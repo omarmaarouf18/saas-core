@@ -347,6 +347,27 @@ func (e AuditEntry) ToResponse() AuditEntryResponse {
 	}
 }
 
+// AdminAuditItem represents a normalized audit log entry for the reviewer console.
+type AdminAuditItem struct {
+	ID         string    `json:"id"`
+	ActorID    string    `json:"actor_id"`
+	EmployeeID string    `json:"employee_id"`
+	Action     string    `json:"action"`
+	TargetID   string    `json:"target_id"`
+	TenantID   string    `json:"tenant_id"`
+	Timestamp  time.Time `json:"timestamp"`
+}
+
+// AdminAuditResponse is the payload returned by GET /admin/audit.
+type AdminAuditResponse struct {
+	AuditLogs     []AdminAuditItem `json:"audit_logs"`
+	Entries       []AdminAuditItem `json:"entries"`
+	Total         int64            `json:"total"`
+	Page          int64            `json:"page"`
+	Limit         int64            `json:"limit"`
+	StorageNotice string           `json:"storage_notice"`
+}
+
 // Reviewer represents an onboarding reviewer identity.
 type Reviewer struct {
 	ID    string `json:"id"    bson:"_id"`
