@@ -336,13 +336,11 @@ func (u *UserService) authenticateReviewer(r *http.Request) (*ReviewerIdentity, 
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
 	req.Header.Set("X-Reviewer-Token", reviewerToken)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		req.Header.Set("X-Forwarded-For", xff)
-	} else if r.RemoteAddr != "" {
-		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		req.Header.Set("X-Real-IP", xri)
+	// The reviewer rate limit in auth-service keys on X-Console-Client-IP
+	// (set by the console; the internal token was checked above). A caller's
+	// X-Forwarded-For / X-Real-IP is never forwarded.
+	if ip := r.Header.Get("X-Console-Client-IP"); ip != "" {
+		req.Header.Set("X-Console-Client-IP", ip)
 	}
 
 	var resp *http.Response
