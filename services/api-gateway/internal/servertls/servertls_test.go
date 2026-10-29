@@ -36,7 +36,7 @@ func writeCert(t *testing.T, dir, name string, dnsNames []string, isCA bool, par
 		IsCA:                  isCA,
 		BasicConstraintsValid: true,
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 	signer, signerKey := tmpl, key
 	if parent != nil {
@@ -64,7 +64,7 @@ func TestServerTLSConfig_InternalSNIGetsInternalCert(t *testing.T) {
 	intCert, intKey, _, _ := writeCert(t, dir, "api-gateway", []string{"api-gateway"}, false, caCert, caKey)
 	extCert, extKey, _, _ := writeCert(t, dir, "external", []string{"localhost"}, false, nil, nil)
 
-	cfg, err := Config(extCert, extKey, intCert, intKey)
+	cfg, err := Config(extCert, extKey, intCert, intKey, "")
 	if err != nil {
 		t.Fatalf("Config: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestServerTLSConfig_InternalSNIGetsInternalCert(t *testing.T) {
 	}
 
 	// No internal pair: everyone gets the external certificate.
-	cfg, err = Config(extCert, extKey, "", "")
+	cfg, err = Config(extCert, extKey, "", "", "")
 	if err != nil {
 		t.Fatalf("Config without internal pair: %v", err)
 	}
@@ -101,5 +101,61 @@ func TestServerTLSConfig_InternalSNIGetsInternalCert(t *testing.T) {
 	leaf, _ := x509.ParseCertificate(got.Certificate[0])
 	if leaf.Subject.CommonName != "external" {
 		t.Fatalf("without internal pair: expected external cert, got CN=%s", leaf.Subject.CommonName)
+	}
+}
+
+// TestRequireInternalClientCert_OnlyVerifiedInternalClients pins that the
+// gateway's /admin/* handlers answer only callers that presented a client
+// certificate from the internal CA (console, auth-service). A client with no
+// certificate, like the edge Caddy hop or an internet client, gets 403, and
+// so does one holding a certificate from another CA.
+func TestRequireInternalClientCert_OnlyVerifiedInternalClients(t *testing.T) {
+	dir := t.TempDir()
+	caPath, _, caCert, caKey := writeCert(t, dir, "ca", nil, true, nil, nil)
+	intCert, intKey, _, _ := writeCert(t, dir, "api-gateway", []string{"api-gateway"}, false, caCert, caKey)
+	extCert, extKey, _, _ := writeCert(t, dir, "external", []string{"localhost"}, false, nil, nil)
+	clientCert, clientKey, _, _ := writeCert(t, dir, "reviewer-console", []string{"reviewer-console"}, false, caCert, caKey)
+	rogueCert, rogueKey, _, _ := writeCert(t, dir, "rogue", []string{"rogue"}, false, nil, nil)
+
+	cfg, err := Config(extCert, extKey, intCert, intKey, caPath)
+	if err != nil {
+		t.Fatalf("Config: %v", err)
+	}
+	srv := httptest.NewUnstartedServer(RequireInternalClientCert(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+	srv.TLS = cfg
+	srv.StartTLS()
+	defer srv.Close()
+
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+	get := func(certFile, keyFile string) (int, error) {
+		tc := &tls.Config{RootCAs: pool, ServerName: "api-gateway", MinVersion: tls.VersionTLS12}
+		if certFile != "" {
+			pair, err := tls.LoadX509KeyPair(certFile, keyFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.Certificates = []tls.Certificate{pair}
+		}
+		client := &http.Client{Transport: &http.Transport{TLSClientConfig: tc}}
+		resp, err := client.Get("https://" + srv.Listener.Addr().String() + "/admin/version")
+		if err != nil {
+			return 0, err
+		}
+		resp.Body.Close()
+		return resp.StatusCode, nil
+	}
+	if code, err := get("", ""); err != nil || code != http.StatusForbidden {
+		t.Fatalf("no client cert: expected 403, got %d (%v)", code, err)
+	}
+	if code, err := get(clientCert, clientKey); err != nil || code != http.StatusOK {
+		t.Fatalf("internal client cert: expected 200, got %d (%v)", code, err)
+	}
+	// Go's client withholds a certificate the server's CA list does not
+	// accept, so this is a 403 rather than a handshake error; never a 200.
+	if code, err := get(rogueCert, rogueKey); err == nil && code != http.StatusForbidden {
+		t.Fatalf("client cert from another CA: expected denial, got %d", code)
 	}
 }

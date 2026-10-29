@@ -701,7 +701,7 @@ Every reviewer mutation and every unmasked view writes one record to the **ownin
 Records written before this change are not migrated: earlier KYC reviews and suspensions remain in auth-service's employee `audit_log` (served by `/auth/audit-log`) and in the security event log stream.
 
 ### 10.2 Per-service source endpoints (internal)
-`GET /users/internal/admin-audit`, `GET /chat/internal/admin-audit`, `GET /notifications/internal/admin-audit` and the gateway's `GET /admin/internal/audit` return `{"entries": [...], "total": N}` for one service. They require `X-Internal-Token` only (auth-service has already authenticated the reviewer) and accept `actor_id`, `action`, `target_id`, `from`, `to` (RFC 3339) and `limit` (1-1000, default 100). Only auth-service calls them.
+`GET /users/internal/admin-audit`, `GET /chat/internal/admin-audit`, `GET /notifications/internal/admin-audit` and the gateway's `GET /admin/internal/audit` (which, like `/admin/version`, also requires an internal-CA client certificate) return `{"entries": [...], "total": N}` for one service. They require `X-Internal-Token` only (auth-service has already authenticated the reviewer) and accept `actor_id`, `action`, `target_id`, `from`, `to` (RFC 3339) and `limit` (1-1000, default 100). Only auth-service calls them.
 
 ### `GET /admin/audit`
 Merges the records of all five services, newest first (`created_at`, then `id`).
@@ -755,7 +755,7 @@ Returns the active minimum supported version, latest release version, and mandat
 
 - **Service**: `api-gateway`
 - **Permissions**: Reviewer Token & `X-Internal-Token`
-- **Reachability**: internal network only. The console calls `${GATEWAY_INTERNAL_URL}/admin/version` (`https://api-gateway:${API_GATEWAY_PORT}` on saas-net, mTLS with the console's client certificate). The public edge answers `404` for `/admin` and `/admin/*` (and `/api/v1/admin/*`) on `api.logiclinkeg.tech`, and the gateway proxy strips `X-Internal-Token` from every client request, so the endpoint cannot be used from the internet.
+- **Reachability**: internal network only, enforced three ways. (1) The gateway answers `403` (`internal client certificate required`) unless the TLS connection presented a client certificate signed by the internal CA (`TLS_CA_PATH`); the console and auth-service present theirs, the edge Caddy hop and internet clients do not. (2) The production edge answers `404` for `/admin`, `/admin/*` and `/api/v1/admin/*` on `api.logiclinkeg.tech` (staging blocks `/admin`, `/admin/*`). (3) There is no `/api/v1/admin/version` alias: the gateway's own mux handlers do not go through the proxy's `X-Internal-Token` strip. The console calls `${GATEWAY_INTERNAL_URL}/admin/version` (`https://api-gateway:${API_GATEWAY_PORT}` on saas-net, SNI `api-gateway`, which gets the gateway's internal certificate).
 - **Response `200 OK`**:
 ```json
 {

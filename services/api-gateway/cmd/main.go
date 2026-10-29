@@ -125,10 +125,14 @@ func main() {
 	// ---- Reviewer App Version Configuration Endpoint (Console X-Internal-Token + X-Reviewer-Token) ----
 	authClient := &http.Client{Transport: clientTransport, Timeout: 5 * time.Second}
 	reviewerVersionHandler := ReviewerVersionConfigHandler(cfg.InternalServiceToken, cfg.AuthServiceURL, authClient, versionStore, auditStore)
-	mux.HandleFunc("/admin/version", reviewerVersionHandler)
-	mux.HandleFunc("/api/v1/admin/version", reviewerVersionHandler)
+	// Internal-only: a verified internal-CA client certificate (the console,
+	// auth-service) is required on top of the tokens, and the edge answers
+	// 404 for /admin/*. There is deliberately no /api/v1/admin/version alias:
+	// the gateway's own mux handlers never pass through the proxy's
+	// X-Internal-Token strip.
+	mux.Handle("/admin/version", servertls.RequireInternalClientCert(reviewerVersionHandler))
 	// Gateway admin audit records for auth-service's merged GET /admin/audit.
-	mux.HandleFunc("/admin/internal/audit", adminaudit.ListHandler(cfg.InternalServiceToken, auditStore))
+	mux.Handle("/admin/internal/audit", servertls.RequireInternalClientCert(adminaudit.ListHandler(cfg.InternalServiceToken, auditStore)))
 
 	// ---- Service info endpoint ----
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +212,7 @@ func main() {
 		}
 	}()
 
-	tlsConfig, err := servertls.Config(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath)
+	tlsConfig, err := servertls.Config(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
 	if err != nil {
 		log.Fatalf("[GATEWAY] TLS setup failed: %v", err)
 	}

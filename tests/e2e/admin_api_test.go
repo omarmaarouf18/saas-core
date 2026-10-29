@@ -359,8 +359,37 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		t.Logf("Gateway rejected reviewer request carrying client X-Internal-Token: %d", resp.StatusCode)
 	})
 
+	t.Run("Gateway admin paths need an internal client certificate", func(t *testing.T) {
+		client, err := stagingInternalClient()
+		if err != nil {
+			t.Fatalf("internal client: %v", err)
+		}
+		tr := client.Transport.(*http.Transport).Clone()
+		tr.TLSClientConfig.Certificates = nil
+		noCert := &http.Client{Transport: tr, Timeout: 10 * time.Second}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, stagingGatewayURL+"/admin/version", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+		for k, v := range adminHeaders(cfg, rawReviewerToken) {
+			req.Header.Set(k, v)
+		}
+		resp, err := noCert.Do(req)
+		if err != nil {
+			t.Fatalf("GET /admin/version without client cert failed: %v", err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("GET /admin/version with valid tokens but no client cert: expected 403, got %d", resp.StatusCode)
+		}
+		t.Logf("Gateway /admin/version without an internal client certificate: %d", resp.StatusCode)
+	})
+
 	t.Run("Edge returns 404 for gateway admin paths", func(t *testing.T) {
-		for _, path := range []string{"/admin", "/admin/version", "/api/v1/admin/version"} {
+		// /api/v1/admin/* is blocked at the production edge too, but staging
+		// keeps it reachable for the contract/RBAC suites; there the gateway
+		// itself rejects it (X-Internal-Token stripped), checked below.
+		for _, path := range []string{"/admin", "/admin/version", "/admin/internal/audit"} {
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.GatewayURL+path, nil)
 			if err != nil {
 				t.Fatalf("build request: %v", err)
@@ -377,7 +406,22 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 				t.Fatalf("GET %s through edge: expected 404, got %d", path, resp.StatusCode)
 			}
 		}
-		t.Logf("Edge Caddy answered 404 for /admin, /admin/version and /api/v1/admin/version")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.GatewayURL+"/api/v1/admin/version", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+		for k, v := range adminHeaders(cfg, rawReviewerToken) {
+			req.Header.Set(k, v)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET /api/v1/admin/version through edge failed: %v", err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			t.Fatalf("GET /api/v1/admin/version through edge with client X-Internal-Token must not succeed, got 200")
+		}
+		t.Logf("Edge Caddy answered 404 for /admin, /admin/version, /admin/internal/audit; /api/v1/admin/version through the edge got %d", resp.StatusCode)
 	})
 
 	// -------------------------------------------------------------------------
