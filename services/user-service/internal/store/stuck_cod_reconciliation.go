@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -11,6 +12,13 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/project/user-service/internal/models"
+)
+
+var (
+	ErrJobNotFound        = errors.New("job not found")
+	ErrJobAlreadyTerminal = errors.New("job already in terminal state")
+	ErrJobStateConflict   = errors.New("job state conflict during update")
+	ErrNotStuckCODJob     = errors.New("job is not a stuck COD reconciliation job")
 )
 
 // FIX-COD-RECON: before the fix, CompleteJob parked COD delivery/shipping
@@ -228,4 +236,88 @@ func RepairStuckCODReconciliationJobsAt(ctx context.Context, uri, dbName string,
 	return withPlainClient(ctx, uri, dbName, func(db *mongo.Database) (*StuckCODRepairResult, error) {
 		return RepairStuckCODReconciliationJobs(ctx, db, apply)
 	})
+}
+
+// RepairSingleStuckCODJob moves a single COD job stuck in
+// escrow_reconciliation_required to completed, reusing the FIX-COD-RECON logic.
+func (s *MongoDB) RepairSingleStuckCODJob(ctx context.Context, jobID, reviewerID, reason string) (*RepairedCODJob, error) {
+	jobsColl := s.jobs
+	var job models.Job
+	if err := jobsColl.FindOne(ctx, bson.M{"_id": jobID}).Decode(&job); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrJobNotFound
+		}
+		return nil, fmt.Errorf("store: find job: %w", err)
+	}
+
+	// CAS & eligibility check: must be COD, escrow_reconciliation_required, and locked_escrow <= 0
+	if job.PaymentMethod != "cod" || job.Status != models.JobStatusEscrowReconciliationRequired || job.LockedEscrowAmount > 0 {
+		return nil, ErrNotStuckCODJob
+	}
+
+	var svc models.Service
+	if err := s.services.FindOne(ctx, bson.M{"_id": job.ServiceID}).Decode(&svc); err != nil {
+		if job.AgreedPrice == nil && job.ActualCashAmount == nil {
+			return nil, fmt.Errorf("store: service %q not readable: %w", job.ServiceID, err)
+		}
+	}
+
+	actualKm, bookedKm := parseDistanceMismatchNote(job.ReconciliationNote)
+	if job.BookedDistance > 0 {
+		bookedKm = job.BookedDistance
+	}
+	cash := math.Round((svc.TenantBasePrice+(bookedKm*svc.TenantPricePerKM))*100) / 100
+	if job.AgreedPrice != nil && *job.AgreedPrice > 0 {
+		cash = *job.AgreedPrice
+	}
+	if job.ActualCashAmount != nil && *job.ActualCashAmount > 0 {
+		cash = *job.ActualCashAmount
+	}
+
+	now := time.Now().UTC()
+	filter := stuckCODReconciliationFilter()
+	filter["_id"] = job.ID
+
+	histEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusCompleted,
+		At:        now,
+		ActorRole: models.ActorRoleAdmin,
+		ActorID:   reviewerID,
+		Reason:    reason,
+	}
+
+	res, err := jobsColl.UpdateOne(ctx, filter, bson.M{
+		"$set": bson.M{
+			"status":             models.JobStatusCompleted,
+			"sub_status":         "",
+			"actual_cash_amount": cash,
+			"distance_review": models.DistanceReview{
+				ActualKm: actualKm, BookedKm: bookedKm, FlaggedAt: now, Source: models.DistanceReviewSourceRepair,
+			},
+			"updated_at": now,
+		},
+		"$push": bson.M{
+			"status_history": histEntry,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("store: repair stuck cod job %s: %w", job.ID, err)
+	}
+	if res.MatchedCount == 0 {
+		return nil, ErrJobStateConflict
+	}
+
+	if job.EmployeeID != "" {
+		_, _ = s.employeeLocations.UpdateOne(ctx,
+			bson.M{"tenant_id": job.OwnerID, "employee_id": job.EmployeeID, "active_job_id": job.ID},
+			bson.M{"$set": bson.M{"active_job_id": ""}})
+	}
+
+	return &RepairedCODJob{
+		JobID:      job.ID,
+		OwnerID:    job.OwnerID,
+		CashAmount: cash,
+		ActualKm:   actualKm,
+		BookedKm:   bookedKm,
+	}, nil
 }

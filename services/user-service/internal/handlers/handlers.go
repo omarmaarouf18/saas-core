@@ -457,6 +457,14 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/jobs", u.AdminListJobs)
 	mux.HandleFunc("/users/admin/jobs/{id}", u.AdminJobDetail)
 	mux.HandleFunc("/admin/jobs/{id}", u.AdminJobDetail)
+	mux.HandleFunc("/users/admin/jobs/cancel", u.AdminCancelJob)
+	mux.HandleFunc("/admin/jobs/cancel", u.AdminCancelJob)
+	mux.HandleFunc("/users/admin/jobs/{id}/cancel", u.AdminCancelJob)
+	mux.HandleFunc("/admin/jobs/{id}/cancel", u.AdminCancelJob)
+	mux.HandleFunc("/users/admin/jobs/complete-stuck-cod", u.AdminCompleteStuckCODJob)
+	mux.HandleFunc("/admin/jobs/complete-stuck-cod", u.AdminCompleteStuckCODJob)
+	mux.HandleFunc("/users/admin/jobs/{id}/complete-stuck-cod", u.AdminCompleteStuckCODJob)
+	mux.HandleFunc("/admin/jobs/{id}/complete-stuck-cod", u.AdminCompleteStuckCODJob)
 }
 
 // ---------------------------------------------------------------------------

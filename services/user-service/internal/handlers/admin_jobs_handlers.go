@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -447,5 +448,180 @@ func (u *UserService) AdminJobDetail(w http.ResponseWriter, r *http.Request) {
 		Notifications:       notifications,
 		CreatedAt:           job.CreatedAt,
 		UpdatedAt:           job.UpdatedAt,
+	})
+}
+
+// AdminJobActionPayload is the request payload for admin job mutations.
+// Only reason and job_id are permitted. Editing prices or addresses is rejected.
+type AdminJobActionPayload struct {
+	JobID   string          `json:"job_id,omitempty"`
+	Reason  string          `json:"reason"`
+	Price   json.RawMessage `json:"price,omitempty"`
+	Address json.RawMessage `json:"address,omitempty"`
+}
+
+// AdminCancelJob cancels a non-terminal job on behalf of reviewer/admin.
+// Mutations require a reason (1–1000 chars), perform CAS, audit log + ShipSecurityEvent,
+// and notify the parties like the normal flow.
+func (u *UserService) AdminCancelJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	reviewer, err := u.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var req AdminJobActionPayload
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if len(req.Price) > 0 || len(req.Address) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "editing prices or addresses is not allowed"})
+		return
+	}
+
+	jobID := strings.TrimSpace(r.PathValue("id"))
+	if jobID == "" {
+		jobID = strings.TrimSpace(req.JobID)
+	}
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	reason := strings.TrimSpace(req.Reason)
+	reasonRunes := len([]rune(reason))
+	if reasonRunes < 1 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+	if reasonRunes > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason cannot exceed 1000 characters"})
+		return
+	}
+
+	clientIP := handlerutil.GetClientIP(r)
+	ctx := r.Context()
+
+	cancelledJob, err := u.store.AdminCancelJob(ctx, jobID, reviewer.ID, reason)
+	if err != nil {
+		if errors.Is(err, store.ErrJobNotFound) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			return
+		}
+		if errors.Is(err, store.ErrJobAlreadyTerminal) || errors.Is(err, store.ErrJobStateConflict) {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+		return
+	}
+
+	// Audit log + ShipSecurityEvent
+	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOB_CANCELLED", "user-service", reviewer.ID, cancelledJob.OwnerID, fmt.Sprintf("cancelled job %s: %s", jobID, reason), clientIP)
+
+	// Notify parties like normal flow
+	u.notifyCustomerJobCancelled(cancelledJob, reviewer.ID)
+	if cancelledJob.EmployeeID != "" {
+		u.notifyJobEvent(cancelledJob, cancelledJob.EmployeeID, []string{"employee"}, JobEventCancelled, "Booking Cancelled", fmt.Sprintf("Job %s was cancelled by support: %s", jobID, reason), map[string]string{"reason": reason})
+	}
+	u.notifyJobEvent(cancelledJob, cancelledJob.OwnerID, []string{"owner"}, JobEventCancelled, "Booking Cancelled", fmt.Sprintf("Job %s was cancelled by support: %s", jobID, reason), map[string]string{"reason": reason})
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"message": "job cancelled successfully",
+		"job_id":  jobID,
+		"status":  models.JobStatusCancelled,
+	})
+}
+
+// AdminCompleteStuckCODJob marks a stuck COD job completed using the FIX-COD-RECON path.
+// Mutations require a reason (1–1000 chars), perform CAS, audit log + ShipSecurityEvent,
+// and notify the parties like the normal flow.
+func (u *UserService) AdminCompleteStuckCODJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+
+	reviewer, err := u.authenticateReviewer(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var req AdminJobActionPayload
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if len(req.Price) > 0 || len(req.Address) > 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "editing prices or addresses is not allowed"})
+		return
+	}
+
+	jobID := strings.TrimSpace(r.PathValue("id"))
+	if jobID == "" {
+		jobID = strings.TrimSpace(req.JobID)
+	}
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+
+	reason := strings.TrimSpace(req.Reason)
+	reasonRunes := len([]rune(reason))
+	if reasonRunes < 1 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required"})
+		return
+	}
+	if reasonRunes > 1000 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason cannot exceed 1000 characters"})
+		return
+	}
+
+	clientIP := handlerutil.GetClientIP(r)
+	ctx := r.Context()
+
+	repaired, err := u.store.RepairSingleStuckCODJob(ctx, jobID, reviewer.ID, reason)
+	if err != nil {
+		if errors.Is(err, store.ErrJobNotFound) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "job not found"})
+			return
+		}
+		if errors.Is(err, store.ErrNotStuckCODJob) || errors.Is(err, store.ErrJobStateConflict) {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete stuck COD job: " + err.Error()})
+		return
+	}
+
+	// Audit log + ShipSecurityEvent
+	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOB_COMPLETED_STUCK_COD", "user-service", reviewer.ID, repaired.OwnerID, fmt.Sprintf("completed stuck COD job %s, cash: %.2f, reason: %s", jobID, repaired.CashAmount, reason), clientIP)
+
+	// Fetch job to notify parties like normal delivery flow
+	job := u.store.GetJob(ctx, jobID)
+	if job != nil {
+		u.notifyCustomerJobDelivered(job)
+		u.notifyJobEvent(job, job.OwnerID, []string{"owner"}, JobEventDelivered, "Job Completed", fmt.Sprintf("Stuck COD job %s completed by support.", jobID), nil)
+		if job.EmployeeID != "" {
+			u.notifyJobEvent(job, job.EmployeeID, []string{"employee"}, JobEventDelivered, "Job Completed", fmt.Sprintf("Job %s marked completed by support.", jobID), nil)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":            true,
+		"message":            "stuck COD job completed successfully",
+		"job_id":             jobID,
+		"status":             models.JobStatusCompleted,
+		"actual_cash_amount": repaired.CashAmount,
 	})
 }

@@ -649,6 +649,46 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Full v2 job detail view with unmasked phones, status history, price, ratings, reconciliation flags, and notifications.",
 		Targets:     "Reads `jobs` and `ratings` collections, calls `auth-service` and `notification-service`. Ships security audit event.",
 	},
+	"POST /users/admin/jobs/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/cancel; cancels a non-terminal job on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /admin/jobs/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Cancels a non-terminal job on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /users/admin/jobs/{id}/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}/cancel; cancels a non-terminal job by ID on behalf of admin with mandatory reason.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /admin/jobs/{id}/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Cancels a non-terminal job by ID on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /users/admin/jobs/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/complete-stuck-cod; marks a stuck COD job completed using the FIX-COD-RECON path.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /admin/jobs/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Marks a stuck COD job completed using the FIX-COD-RECON path with mandatory reason, CAS transition, cash calculation, and party notifications.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /users/admin/jobs/{id}/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}/complete-stuck-cod; marks a stuck COD job by ID completed using the FIX-COD-RECON path.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /admin/jobs/{id}/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Marks a stuck COD job by ID completed using the FIX-COD-RECON path with mandatory reason, CAS transition, cash calculation, and party notifications.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",
 		Function:    "Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch.",

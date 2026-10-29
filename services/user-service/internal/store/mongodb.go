@@ -1956,6 +1956,82 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string, hist 
 	return nil
 }
 
+// AdminCancelJob cancels a non-terminal job on behalf of support/admin.
+// If the job holds locked escrow, it is refunded to the tenant's withdrawable balance.
+// Courier locks are released, cancellation requests cleared, and status history stamped.
+func (s *MongoDB) AdminCancelJob(ctx context.Context, jobID, reviewerID, reason string) (*models.Job, error) {
+	var job models.Job
+	if err := s.jobs.FindOne(ctx, bson.M{"_id": jobID}).Decode(&job); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrJobNotFound
+		}
+		return nil, fmt.Errorf("store: find job %s: %w", jobID, err)
+	}
+
+	if job.Status == models.JobStatusCompleted || job.Status == models.JobStatusCancelled {
+		return nil, ErrJobAlreadyTerminal
+	}
+
+	now := time.Now().UTC()
+	histEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusCancelled,
+		At:        now,
+		ActorRole: models.ActorRoleAdmin,
+		ActorID:   reviewerID,
+		Reason:    reason,
+	}
+
+	if job.PaymentMethod != "cod" && job.Status != models.JobStatusPendingDispatch && job.LockedEscrowAmount > 0 {
+		if err := s.RefundEscrow(ctx, job.OwnerID, job.ID, job.LockedEscrowAmount, histEntry); err != nil {
+			return nil, fmt.Errorf("store: refund escrow for job %s: %w", job.ID, err)
+		}
+		_ = s.SetCancellationReason(ctx, job.ID, reason)
+	} else {
+		// Non-escrow cancel: COD, pending_dispatch, or 0 locked escrow
+		filter := bson.M{
+			"_id": job.ID,
+			"status": bson.M{"$in": []models.JobStatus{
+				models.JobStatusActive,
+				models.JobStatusPending,
+				models.JobStatusPendingDispatch,
+				models.JobStatusAwaitingPriceResponse,
+				models.JobStatusEscrowReconciliationRequired,
+			}},
+		}
+		res, err := s.jobs.UpdateOne(ctx, filter, bson.M{
+			"$set": bson.M{
+				"status":                      models.JobStatusCancelled,
+				"sub_status":                  "",
+				"current_offered_employee_id": "",
+				"offer_expires_at":            nil,
+				"cancellation_reason":         reason,
+				"updated_at":                  now,
+			},
+			"$push": bson.M{
+				"status_history": histEntry,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("store: cancel job %s: %w", job.ID, err)
+		}
+		if res.MatchedCount == 0 {
+			return nil, ErrJobStateConflict
+		}
+	}
+
+	if job.EmployeeID != "" {
+		_ = s.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
+	}
+	if job.CurrentOfferedEmployeeID != "" {
+		_ = s.ReleaseCourierLock(ctx, job.OwnerID, job.CurrentOfferedEmployeeID, job.ID)
+	}
+	_ = s.ClearCancellationRequest(ctx, job.ID)
+
+	job.Status = models.JobStatusCancelled
+	job.CancellationReason = reason
+	return &job, nil
+}
+
 // SetCancellationReason stamps (or restamps) the cancellation reason on a job
 // that is ALREADY cancelled — i.e. after a guarded money transition such as
 // RefundEscrow flipped it. It can never move a job between states or touch
