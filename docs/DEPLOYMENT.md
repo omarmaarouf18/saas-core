@@ -442,6 +442,19 @@ Follow these steps on the production VM to configure or rotate the console edge 
    - With valid HTTP basic auth: browser opens the Reviewer Console login screen prompting for `X-Reviewer-Token`.
    - If `KYC_CONSOLE_BASIC_AUTH_HASH` is blanked or unset: Caddy answers `503 Service Unavailable` immediately (fail-closed).
 
+##### Console service URLs (internal network)
+The `kyc-reviewer-console` container reaches every backend directly on `saas-net` over mTLS (its own client certificate, the internal CA); none of these calls go through the public edge, which strips `X-Internal-Token` and answers `404` for `/admin` and `/admin/*` on `api.logiclinkeg.tech`. Compose sets:
+
+| Variable | Value in compose | Used for |
+| :--- | :--- | :--- |
+| `AUTH_SERVICE_URL` | `https://auth-service:${AUTH_SERVICE_PORT}` | KYC review, accounts, documents, `/admin/audit` |
+| `USER_SERVICE_URL` | `https://user-service:${USER_SERVICE_PORT}` | jobs, services, subscriptions, payouts, disputes |
+| `CHAT_SERVICE_URL` | `https://chat-service:${CHAT_SERVICE_PORT}` | tickets and chat |
+| `NOTIFICATION_SERVICE_URL` | `https://notification-service:${NOTIFICATION_SERVICE_PORT}` | admin notifications page (`/notifications/admin/*`, CONSOLE-V2) |
+| `GATEWAY_INTERNAL_URL` | `${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}` | app version policy (`GET`/`PUT /admin/version`) |
+
+auth-service also gets `CHAT_SERVICE_URL`, `NOTIFICATION_SERVICE_URL` and `GATEWAY_INTERNAL_URL` for the merged `GET /admin/audit`. The gateway answers SNI `api-gateway` with its internal certificate (`TLS_CERT_PATH`), so these callers verify it against the internal CA; the edge Caddy hop keeps the external certificate. The console must send the reviewer's browser IP as `X-Console-Client-IP` (see `docs/api/ADMIN_API.md` section 1.3). No new secret is needed: `.env` only needs `GATEWAY_INTERNAL_URL` if the gateway is not at `https://api-gateway:${API_GATEWAY_PORT}`.
+
 DNS: create an additional `A` record for the `kyc` subdomain pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
 
 ---

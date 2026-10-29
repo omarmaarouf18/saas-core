@@ -176,7 +176,7 @@ services:
       # endpoint (ADMIN-API-FIX), the gateway included.
       CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
       NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
-      GATEWAY_INTERNAL_URL: https://api-gateway:${API_GATEWAY_PORT}
+      GATEWAY_INTERNAL_URL: ${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
     depends_on:
@@ -287,9 +287,11 @@ services:
       AUTH_SERVICE_URL: https://auth-service:${AUTH_SERVICE_PORT}
       USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}
       CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}
+      # Admin notifications page (CONSOLE-V2): /notifications/admin/*.
+      NOTIFICATION_SERVICE_URL: https://notification-service:${NOTIFICATION_SERVICE_PORT}
       # Gateway's own reviewer endpoints (GET/PUT /admin/version), reached on
       # the internal network only: the edge Caddy answers 404 for /admin/*.
-      GATEWAY_INTERNAL_URL: https://api-gateway:${API_GATEWAY_PORT}
+      GATEWAY_INTERNAL_URL: ${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       APP_ENV: ${APP_ENV}
       TLS_CERT_PATH: /app/certs/reviewer-console.crt
