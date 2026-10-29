@@ -802,6 +802,10 @@ Updates the mobile client enforcement policy. Reason is required. The download U
 
 *(Note: Legacy script automation endpoint `PUT /api/v1/admin/version-config` authenticated via `X-Admin-Token` remains active).*
 
+### 11.1 Storage and failure behaviour
+- With `MONGO_URI` set, the gateway connects to MongoDB, pings it and seeds `platform_versions` at startup. If any of that fails it **refuses to start** (`[GATEWAY] FATAL: refusing to start: version store unavailable ...`), except with `APP_ENV=local` or `APP_ENV=test`, where it logs a loud `WARNING ... falling back to IN-MEMORY stores` and keeps running in memory (version changes and gateway admin audit records are then lost on restart). Without `MONGO_URI` both stores are in memory.
+- A version update whose MongoDB write fails answers `503` (`code: service_unavailable`) on both `PUT /admin/version` and `PUT /api/v1/admin/version-config`. The new policy is not cached, so the gateway never reports or serves an unsaved change.
+
 ---
 
 ## 12. Admin Announcements & Broadcast Notifications

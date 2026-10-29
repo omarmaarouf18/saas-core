@@ -34,6 +34,7 @@ type Config struct {
 	RedisURI        string
 	TrustedProxyIPs []string
 	MongoURI        string
+	AppEnv          string
 	MongoDatabase   string
 	AuthServiceURL  string
 }
@@ -113,6 +114,7 @@ func Load() (*Config, error) {
 		RedisURI:             redisURI,
 		TrustedProxyIPs:      trustedProxyIPs,
 		MongoURI:             os.Getenv("MONGO_URI"),
+		AppEnv:               os.Getenv("APP_ENV"),
 		MongoDatabase:        envOrDefault("GATEWAY_MONGO_DATABASE", "gateway_db"),
 		AuthServiceURL:       envOrDefault("AUTH_SERVICE_URL", "https://auth-service:3002"),
 	}

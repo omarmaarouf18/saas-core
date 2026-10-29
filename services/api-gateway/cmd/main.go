@@ -10,6 +10,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -75,29 +76,13 @@ func main() {
 		clientTransport = http.DefaultTransport
 	}
 
-	// ---- Initialize App Version Store (MongoDB backed, gateway_db) ----
-	var versionStore *version.Store
-	var auditStore *adminaudit.Store
-	if cfg.MongoURI != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		mClient, err := mongo.Connect(options.Client().ApplyURI(cfg.MongoURI))
-		if err == nil && mClient.Ping(ctx, nil) == nil {
-			dbName := cfg.MongoDatabase
-			if dbName == "" {
-				dbName = "gateway_db"
-			}
-			versionStore = version.NewStore(mClient, dbName)
-			auditStore = adminaudit.NewStore(mClient, dbName)
-			log.Printf("[GATEWAY] Version store connected to MongoDB (db=%s, collection=platform_versions)", dbName)
-		} else {
-			log.Printf("[GATEWAY] WARNING: failed to connect to MongoDB, falling back to in-memory store: %v", err)
-			versionStore = version.NewStore(nil, "")
-			auditStore = adminaudit.NewStore(nil, "")
-		}
-	} else {
-		versionStore = version.NewStore(nil, "")
-		auditStore = adminaudit.NewStore(nil, "")
+	// ---- Initialize App Version Store and admin audit store (MongoDB, gateway_db) ----
+	storeCtx, storeCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	versionStore, auditStore, err := openGatewayStores(storeCtx, cfg.MongoURI, cfg.MongoDatabase, cfg.AppEnv)
+	storeCancel()
+	if err != nil {
+		log.Fatalf("[GATEWAY] FATAL: refusing to start: version store unavailable (APP_ENV=%q): %v. "+
+			"Fix MONGO_URI/MongoDB, or run with APP_ENV=local for the in-memory fallback.", cfg.AppEnv, err)
 	}
 
 	mux := http.NewServeMux()
@@ -293,8 +278,8 @@ func VersionConfigHandler(adminToken string, versionStore *version.Store) http.H
 			}
 			updated, err := versionStore.UpdateConfig(r.Context(), req)
 			if err != nil {
-				if strings.Contains(err.Error(), "failed to persist") {
-					handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInternal, "failed to update version config", err)
+				if errors.Is(err, version.ErrPersist) {
+					handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "version store unavailable, config not saved", err)
 					return
 				}
 				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -311,6 +296,43 @@ func VersionConfigHandler(adminToken string, versionStore *version.Store) http.H
 
 		handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 	}
+}
+
+// openGatewayStores opens the version policy and admin audit stores. Without
+// MONGO_URI both are in memory. With MONGO_URI set, MongoDB must be reachable
+// and the version policy seeded at startup; otherwise the gateway refuses to
+// start (returns an error), except with APP_ENV=local or test, where it falls
+// back to in memory with a loud warning. ADMIN-API silently fell back in every
+// environment, so later version changes were lost on restart.
+func openGatewayStores(ctx context.Context, mongoURI, dbName, appEnv string) (*version.Store, *adminaudit.Store, error) {
+	if dbName == "" {
+		dbName = "gateway_db"
+	}
+	if mongoURI == "" {
+		log.Printf("[GATEWAY] MONGO_URI not set: version policy and admin audit records are in memory and lost on restart")
+		return version.NewStore(nil, ""), adminaudit.NewStore(nil, ""), nil
+	}
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+	if err == nil {
+		err = client.Ping(ctx, nil)
+	}
+	var vs *version.Store
+	if err == nil {
+		vs, err = version.NewMongoStore(ctx, client, dbName)
+	}
+	if err != nil {
+		if client != nil {
+			_ = client.Disconnect(context.Background())
+		}
+		env := strings.ToLower(strings.TrimSpace(appEnv))
+		if env == "local" || env == "test" {
+			log.Printf("[GATEWAY] WARNING: MongoDB version store unavailable (%v); APP_ENV=%s so falling back to IN-MEMORY stores. Version policy changes will be LOST on restart.", err, env)
+			return version.NewStore(nil, ""), adminaudit.NewStore(nil, ""), nil
+		}
+		return nil, nil, err
+	}
+	log.Printf("[GATEWAY] Version store connected to MongoDB (db=%s, collections=platform_versions, admin_audit)", dbName)
+	return vs, adminaudit.NewStore(client, dbName), nil
 }
 
 // consoleClientIPHeader carries the reviewer's browser IP on saas-net. The
@@ -471,8 +493,8 @@ func ReviewerVersionConfigHandler(internalToken, authServiceURL string, authClie
 
 			updated, err := versionStore.UpdateConfig(r.Context(), newConfig)
 			if err != nil {
-				if strings.Contains(err.Error(), "failed to persist") {
-					handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to persist version config", err)
+				if errors.Is(err, version.ErrPersist) {
+					handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "version store unavailable, config not saved", err)
 					return
 				}
 				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
