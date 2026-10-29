@@ -69,9 +69,12 @@ func (n Notification) ToClient() ClientNotification {
 
 // JobEventType is the stable `event_type` of a notification: the same
 // value as `type` for every notification about one job (it carries a
-// job_id), empty otherwise. Derived, never stored, so history written
+// job_id), "admin_announcement" for admin notifications, empty otherwise. Derived, never stored, so history written
 // before the field existed carries it too (BE-GAPS-FIX item 1).
 func JobEventType(notifType, jobID string) string {
+	if notifType == "admin_announcement" {
+		return "admin_announcement"
+	}
 	if jobID == "" {
 		return ""
 	}
@@ -437,6 +440,12 @@ func (h *SSEHub) dispatchPush(n Notification) {
 	if n.JobID != "" {
 		dataMap["job_id"] = n.JobID
 		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
+	}
+	if n.Type == "admin_announcement" {
+		dataMap["event_type"] = "admin_announcement"
+		if dl := n.Params["deep_link"]; dl != "" {
+			dataMap["deep_link"] = dl
+		}
 	}
 
 	for _, userID := range targetUserIDs {

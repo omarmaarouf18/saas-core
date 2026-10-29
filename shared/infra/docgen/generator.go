@@ -228,6 +228,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023).",
 		Targets:     "Reads `reviewers` collection.",
 	},
+	"POST /auth/internal/audience-lookup": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Resolves user IDs matching specified audience filters (user, role, tenant, everyone), filtering out suspended/inactive accounts.",
+		Targets:     "Reads `users` collection.",
+	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
 		Function:    "Resolves user profile (including username) and role details. Accepts id (legacy) or user_token (preferred).",
@@ -431,6 +436,36 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "User JWT",
 		Function:    "Clears all notifications for the authenticated user.",
 		Targets:     "Deletes from `notifications` collection.",
+	},
+	"POST /admin/notifications/send": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Dispatches broadcast or targeted admin announcement to users with safety validations, confirmation check, and FCM push fan-out.",
+		Targets:     "Writes `admin_notification_sends`, `notifications` collections, broadcasts via SSE and pushes via FCM.",
+	},
+	"POST /notifications/admin/send": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Dispatches broadcast or targeted admin announcement to users with safety validations, confirmation check, and FCM push fan-out.",
+		Targets:     "Writes `admin_notification_sends`, `notifications` collections, broadcasts via SSE and pushes via FCM.",
+	},
+	"GET /admin/notifications/sends": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists admin notification send jobs with progress counters and status.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /notifications/admin/sends": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists admin notification send jobs with progress counters and status.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /admin/notifications/sends/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves details of a specific admin notification send job.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /notifications/admin/sends/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves details of a specific admin notification send job.",
+		Targets:     "Reads `admin_notification_sends` collection.",
 	},
 
 	// user-service

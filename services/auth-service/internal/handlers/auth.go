@@ -192,6 +192,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/logout", a.Logout)
 	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
 	mux.HandleFunc("/auth/internal/user-by-phone", a.GetUserByPhone)
+	mux.HandleFunc("/auth/internal/audience-lookup", a.AudienceLookup)
 	mux.HandleFunc("/auth/admin/audit", a.AdminGetAuditLogs)
 	mux.HandleFunc("/admin/audit", a.AdminGetAuditLogs)
 }
@@ -4031,5 +4032,103 @@ func (a *Auth) GetUserByPhone(w http.ResponseWriter, r *http.Request) {
 		"email":    user.Email,
 		"phone":    user.Phone,
 		"role":     user.Role,
+	})
+}
+
+// AudienceLookupRequest holds filters for internal audience resolution.
+type AudienceLookupRequest struct {
+	Kind     string `json:"kind"` // "user", "role", "tenant", "everyone"
+	UserID   string `json:"user_id,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Phone    string `json:"phone,omitempty"`
+	Role     string `json:"role,omitempty"` // "customers", "owners", "couriers"
+	TenantID string `json:"tenant_id,omitempty"`
+	Page     int    `json:"page"`
+	Limit    int    `json:"limit"`
+}
+
+// AudienceLookup resolves active user IDs matching audience criteria for admin notification broadcasts.
+// POST /auth/internal/audience-lookup
+func (a *Auth) AudienceLookup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	var req AudienceLookupRequest
+	if r.Method == http.MethodPost && r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+			return
+		}
+	}
+	if req.Kind == "" {
+		req.Kind = r.URL.Query().Get("kind")
+	}
+	if req.UserID == "" {
+		req.UserID = r.URL.Query().Get("user_id")
+	}
+	if req.Email == "" {
+		req.Email = r.URL.Query().Get("email")
+	}
+	if req.Phone == "" {
+		req.Phone = r.URL.Query().Get("phone")
+	}
+	if req.Role == "" {
+		req.Role = r.URL.Query().Get("role")
+	}
+	if req.TenantID == "" {
+		req.TenantID = r.URL.Query().Get("tenant_id")
+	}
+	if req.Page <= 0 {
+		if pStr := r.URL.Query().Get("page"); pStr != "" {
+			if p, err := strconv.Atoi(pStr); err == nil && p > 0 {
+				req.Page = p
+			}
+		}
+	}
+	if req.Limit <= 0 {
+		if lStr := r.URL.Query().Get("limit"); lStr != "" {
+			if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+				req.Limit = l
+			}
+		}
+	}
+
+	if req.Kind == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "kind is required (user, role, tenant, everyone)"})
+		return
+	}
+
+	userIDs, total, err := a.store.AudienceLookup(r.Context(), req.Kind, req.UserID, req.Email, req.Phone, req.Role, req.TenantID, req.Page, req.Limit)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query audience", err)
+		return
+	}
+
+	if userIDs == nil {
+		userIDs = []string{}
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit < 1 {
+		limit = 500
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"user_ids": userIDs,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
 	})
 }

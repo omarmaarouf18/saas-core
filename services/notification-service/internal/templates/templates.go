@@ -154,6 +154,11 @@ var table = map[string]template{
 		en: Text{"Support joined your complaint", "A support agent joined your ticket ({ticket_id})."},
 		ar: Text{"الدعم دخل على شكوتك", "واحد من الدعم دخل على شكوتك ({ticket_id})."},
 	},
+	// admin-announcement (ADMIN-API item 9d)
+	"admin_announcement": {
+		en: Text{"{title_en}", "{body_en}"},
+		ar: Text{"{title_ar}", "{body_ar}"},
+	},
 }
 
 // Keys lists every table key (tests, docs).

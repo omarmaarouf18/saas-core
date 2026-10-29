@@ -92,6 +92,9 @@ func TestRender_EveryTypeBothLanguages(t *testing.T) {
 		{"ticket_assigned:anonymous", "ticket_assigned", p{"ticket_id": "tkt-1", "variant": "anonymous"},
 			Text{"Support joined your complaint", "A support agent joined your ticket (tkt-1)."},
 			Text{"الدعم دخل على شكوتك", "واحد من الدعم دخل على شكوتك (tkt-1)."}},
+		{"admin_announcement", "admin_announcement", p{"title_en": "System Update", "body_en": "Scheduled outage", "title_ar": "تحديث للنظام", "body_ar": "صيانة مجدولة"},
+			Text{"System Update", "Scheduled outage"},
+			Text{"تحديث للنظام", "صيانة مجدولة"}},
 	}
 
 	tested := map[string]bool{}

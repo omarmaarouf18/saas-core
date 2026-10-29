@@ -1216,3 +1216,111 @@ func (s *MongoDB) GetUserByPhone(ctx context.Context, phone string) (*models.Use
 	}
 	return &user, nil
 }
+
+// AudienceLookup resolves active user IDs for admin notifications according to audience criteria, skipping suspended accounts.
+func (s *MongoDB) AudienceLookup(ctx context.Context, kind, userID, email, phone, role, tenantID string, page, limit int) ([]string, int, error) {
+	if s == nil || s.users == nil {
+		return nil, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 500
+	} else if limit > 1000 {
+		limit = 1000
+	}
+
+	activeFilter := bson.M{
+		"account_status": bson.M{"$ne": models.AccountStatusSuspended},
+		"is_active":      bson.M{"$ne": false},
+	}
+
+	var andClauses []bson.M
+	andClauses = append(andClauses, activeFilter)
+
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "user":
+		var userMatches []bson.M
+		if trimmedID := strings.TrimSpace(userID); trimmedID != "" {
+			userMatches = append(userMatches, bson.M{"_id": trimmedID})
+		}
+		if trimmedEmail := strings.TrimSpace(email); trimmedEmail != "" {
+			userMatches = append(userMatches, bson.M{"email": trimmedEmail})
+		}
+		if trimmedPhone := strings.TrimSpace(phone); trimmedPhone != "" {
+			userMatches = append(userMatches, bson.M{"phone": trimmedPhone})
+		}
+		if len(userMatches) == 0 {
+			return []string{}, 0, nil
+		}
+		if len(userMatches) == 1 {
+			andClauses = append(andClauses, userMatches[0])
+		} else {
+			andClauses = append(andClauses, bson.M{"$or": userMatches})
+		}
+
+	case "role":
+		r := strings.ToLower(strings.TrimSpace(role))
+		switch r {
+		case "customers", "customer", "clients", "client", "users", "user":
+			andClauses = append(andClauses, bson.M{"role": bson.M{"$in": []string{"client", "user"}}})
+		case "owners", "owner":
+			andClauses = append(andClauses, bson.M{"role": "owner"})
+		case "couriers", "courier", "employees", "employee":
+			andClauses = append(andClauses, bson.M{"role": "employee"})
+		default:
+			if r != "" {
+				andClauses = append(andClauses, bson.M{"role": r})
+			}
+		}
+
+	case "tenant":
+		tID := strings.TrimSpace(tenantID)
+		if tID == "" {
+			return []string{}, 0, nil
+		}
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"_id": tID, "role": "owner"},
+			{"owner_id": tID},
+			{"tenant_id": tID},
+		}})
+
+	case "everyone":
+		// Only activeFilter applies
+
+	default:
+		return []string{}, 0, fmt.Errorf("unsupported audience kind %q", kind)
+	}
+
+	filter := bson.M{"$and": andClauses}
+	total, err := s.users.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	opts := options.Find().
+		SetProjection(bson.M{"_id": 1}).
+		SetSort(bson.D{{Key: "_id", Value: 1}}).
+		SetSkip(int64((page - 1) * limit)).
+		SetLimit(int64(limit))
+
+	cursor, err := s.users.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		ID string `bson:"_id"`
+	}
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, 0, err
+	}
+
+	userIDs := make([]string, len(results))
+	for i, r := range results {
+		userIDs[i] = r.ID
+	}
+	return userIDs, int(total), nil
+}

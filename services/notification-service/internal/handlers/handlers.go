@@ -38,10 +38,12 @@ type Notification struct {
 	allowedOrigin        string
 	limiter              *handlerutil.RateLimiter
 	streamLimiter        *handlerutil.RateLimiter
+	adminSendLimiter     *handlerutil.RateLimiter
 	streamCaps           map[string]int
 	streamCapsMu         sync.Mutex
 	internalServiceToken string
 	resilienceClient     *resilience.ResilienceClient
+	httpClient           *http.Client
 }
 
 // NewNotification creates a new handler group.
@@ -65,6 +67,7 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 	// Internal dispatch limiter: sized for high-throughput inter-service notification fanout (300 req/min).
 	rl := ratelimit.NewRateLimiter(rdb, 300, 1*time.Minute, "notification")
 	streamRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "notification:stream")
+	adminSendRl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Hour, "notification:admin:send")
 
 	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 
@@ -75,9 +78,11 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 		allowedOrigin:        allowedOrigin,
 		limiter:              handlerutil.NewRateLimiter(rl),
 		streamLimiter:        handlerutil.NewRateLimiter(streamRl),
+		adminSendLimiter:     handlerutil.NewRateLimiter(adminSendRl),
 		streamCaps:           make(map[string]int),
 		internalServiceToken: cfg.InternalServiceToken,
 		resilienceClient:     resClient,
+		httpClient:           client,
 	}
 }
 
@@ -95,6 +100,12 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications/read-all", n.ReadAll)
 	mux.HandleFunc("/notifications/{id}/read", n.MarkRead)
 	mux.HandleFunc("/notifications/internal/by-job", n.GetNotificationsByJob)
+	mux.HandleFunc("/admin/notifications/send", n.AdminSendNotification)
+	mux.HandleFunc("/notifications/admin/send", n.AdminSendNotification)
+	mux.HandleFunc("/admin/notifications/sends", n.AdminListNotificationSends)
+	mux.HandleFunc("/notifications/admin/sends", n.AdminListNotificationSends)
+	mux.HandleFunc("/admin/notifications/sends/{id}", n.AdminGetNotificationSend)
+	mux.HandleFunc("/notifications/admin/sends/{id}", n.AdminGetNotificationSend)
 	mux.HandleFunc("/notifications/{id}", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodDelete:
