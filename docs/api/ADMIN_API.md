@@ -11,24 +11,25 @@ The console frontend and edge ingress at `kyc.logiclinkeg.tech` enforce HTTP Bas
 - **Environment Variables**:
   - `KYC_CONSOLE_BASIC_AUTH_USER`: Username for the edge gate.
   - `KYC_CONSOLE_BASIC_AUTH_HASH`: Bcrypt password hash generated using `caddy hash-password`.
-- **Fail-Closed Behavior**: If `KYC_CONSOLE_BASIC_AUTH_HASH` or `KYC_CONSOLE_BASIC_AUTH_USER` is empty or unset, Caddy responds with `503 Service Unavailable` (`"Admin reviewer console is not configured on this host."`).
-- **Security Headers**:
+- **Fail-Closed Behavior**: If `KYC_CONSOLE_BASIC_AUTH_HASH` or `KYC_CONSOLE_BASIC_AUTH_USER` is empty or unset, Caddy responds with `503 Service Unavailable` and the body `Console basic auth is not configured`.
+- **Security Headers** (set by Caddy on every `kyc.logiclinkeg.tech` response, `infrastructure/deploy/Caddyfile`):
   - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
-  - `Content-Security-Policy: frame-ancestors 'none'`
+  - `Content-Security-Policy: frame-ancestors 'none';`
   - `X-Frame-Options: DENY`
-  - `X-Content-Type-Options: nosniff`
+  - Caddy does not add `X-Content-Type-Options`; the console sets its own response headers.
 - **Container Pinning**: Compose services pin `${KYC_CONSOLE_IMAGE_TAG}` with no `latest` fallback; compose preflight fails if unset.
 
 ### 1.2 Reviewer Authentication Contract
 All administrative endpoints require two authentication headers:
-1. `X-Internal-Token`: Pre-shared service secret matching `INTERNAL_SERVICE_TOKEN` / `INTERNAL_ADMIN_TOKEN`.
+1. `X-Internal-Token`: Pre-shared service secret matching `INTERNAL_SERVICE_TOKEN`. The gateway strips it from every client request, so reviewer endpoints are only reachable on the internal network (the console calls each service directly over mTLS).
 2. `X-Reviewer-Token`: Reviewer bearer token issued to verified human operators.
 
 **Verification Flow**:
 Downstream services authenticate requests via `auth-service` at `GET /auth/reviewer/verify`:
 - Checks `X-Internal-Token` and `X-Reviewer-Token`.
-- Returns HTTP 200 with reviewer metadata (`{"id": "...", "name": "...", "role": "reviewer"}`).
-- Rejects unauthenticated or invalid reviewer sessions with `401 Unauthorized` (`{"code": "unauthorized", "message": "invalid reviewer credentials"}`).
+- Returns HTTP 200 with reviewer metadata (`{"id": "...", "name": "..."}`).
+- Rejects a bad internal token, a missing or invalid reviewer token with `401 Unauthorized` (`{"error": "unauthorized"}`), and a locked-out key (section 1.3) with `429 Too Many Requests` (`{"error": "too many failed reviewer login attempts. Please try again in N seconds."}`).
+- The calling services (user, chat, notification, gateway) answer `401` with their own plain `{"error": ...}` body when verification fails.
 
 ### 1.3 Rate Limiting Architecture
 `authenticateReviewer` in auth-service (used by `/auth/reviewer/verify` and every reviewer endpoint) counts failed attempts on three keys:
@@ -39,20 +40,20 @@ Downstream services authenticate requests via `auth-service` at `GET /auth/revie
 The console must set `X-Console-Client-IP` to the reviewer's browser IP (as seen by the console behind Caddy). Until it does, every console request keys on the console container IP, so the per-IP budget is shared by all reviewers (the token-prefix and global limits are unaffected). The gateway's reviewer version handler (section 11) applies the same rule: it forwards `X-Console-Client-IP` from the console after its own internal token check, or the peer IP, and never forwards a client `X-Forwarded-For`.
 
 ### 1.4 Mutation Contract & Safety
-All mutation operations (state transitions, cancellations, hides, suspensions, version bumps) strictly follow these principles:
-- **Mandatory Reason**: Body field `reason` must contain between 1 and 1000 characters. Empty or oversized reasons reject with `400 Bad Request` (`code: invalid_reason`).
-- **Compare-And-Swap (CAS)**: State updates enforce preconditions on the existing record status. Concurrently modified entities reject with `409 Conflict`.
-- **Security Audit Events**: Mutations and sensitive read operations emit structured security audit events (`handlerutil.ShipSecurityEvent`) containing actor ID, target entity, client IP, and justification.
-- **PII Protection**: User phone numbers are masked throughout standard views and only revealed in explicit support lookup contexts (`GET /admin/jobs/{id}`).
+- **Mandatory Reason**: every mutation below except subscription activation and ticket accept takes a body field `reason` (1-1000 characters after trimming). user-service answers `400` with `{"error": "reason is required"}` or `{"error": "reason cannot exceed 1000 characters"}`; the gateway with `{"error": "reason is required (1-1000 characters)"}`; notification-service with `code: invalid_reason`.
+- **Error bodies**: user-service, chat-service and the gateway answer `{"error": "<message>"}` without a `code`; notification-service adds `code` and `message`; `WriteSafeError` paths add `code` and `request_id`.
+- **Compare-And-Swap (CAS)**: state changes are conditional updates on the current status. A job or record in the wrong state answers `409 Conflict` with the store error as `error`.
+- **Audit**: every mutation and unmasked view writes an `admin_audit` record in the owning service (section 10) and still emits its `ShipSecurityEvent`.
+- **PII Protection**: `GET /admin/jobs/{id}` returns customer, courier and recipient phones unmasked (audited as `job.view`); `GET /admin/jobs` returns recipient phones unmasked (audited as `job.search` when a page contains any). Other reviewer listings do not return phones, except the subscription queue's owner contact.
 
 ---
 
 ## 2. Overview
 
 ### `GET /admin/overview`
-Aggregates high-level operational counts across `user-service`, `auth-service`, and `chat-service`. Downstream service failures degrade gracefully with `null` count values rather than failing the overall overview response.
+Aggregates operational counts. user-service computes its own figures and asks auth-service (`/auth/internal/overview-stats`) and chat-service (`/chat/internal/overview-stats`) for theirs, each with a 2 second timeout. A figure from a service that fails or times out is the string `"unavailable"` instead of a number; the response is still `200`.
 
-- **Service**: `user-service`
+- **Service**: `user-service` (also `GET /users/admin/overview`)
 - **Permissions**: Reviewer Token & `X-Internal-Token`
 - **Query Parameters**: None
 
@@ -61,44 +62,41 @@ Aggregates high-level operational counts across `user-service`, `auth-service`, 
 {
   "pending_kyb_kye": 14,
   "pending_payment_subscriptions": 3,
-  "open_assigned_tickets": 7,
+  "open_tickets": 5,
+  "assigned_tickets": 2,
   "gps_disputes": 2,
   "stuck_cod_jobs": 1,
-  "jobs_today_by_status": {
-    "pending": 5,
-    "assigned": 12,
-    "picked_up": 8,
+  "jobs_today": {
+    "pending_dispatch": 5,
+    "active": 12,
     "completed": 45,
     "cancelled": 2
   },
   "new_accounts_today": 18,
   "new_accounts_7d": 114,
-  "suspended_accounts": 4
+  "suspended_accounts": "unavailable"
 }
 ```
+`pending_kyb_kye`, `new_accounts_today`, `new_accounts_7d` and `suspended_accounts` come from auth-service, `open_tickets` and `assigned_tickets` from chat-service. `jobs_today` counts today's jobs by `status`.
 
-**Audit Event**: None (Read-only operational metric).
+**Audit**: `ShipSecurityEvent` `ADMIN_OVERVIEW_VIEWED` only (no `admin_audit` record; counts only).
 
 ---
 
 ## 3. Jobs Lookup & Mutations
 
 ### `GET /admin/jobs`
-Searches and lists platform jobs with comprehensive filtering and cursor/offset pagination.
+Searches jobs across tenants, newest first.
 
-- **Service**: `user-service`
+- **Service**: `user-service` (also `GET /users/admin/jobs`)
 - **Permissions**: Reviewer Token & `X-Internal-Token`
-- **Query Parameters**:
-  - `id` (string): Exact job ID match.
-  - `customer_id` (string): Filter by customer ID.
-  - `owner_id` (string): Filter by business tenant owner ID.
-  - `courier_id` (string): Filter by courier/driver ID.
-  - `phone` (string): Exact match on customer or recipient phone number.
-  - `status` (string): Job status (`pending`, `assigned`, `arrived_at_pickup`, `picked_up`, `arrived_at_dropoff`, `completed`, `cancelled`).
-  - `from` (string): RFC 3339 start timestamp.
-  - `to` (string): RFC 3339 end timestamp.
-  - `page` (int, default: 1): Page number.
-  - `limit` (int, default: 20, max: 100): Results per page.
+- **Query Parameters** (all optional, combined with AND):
+  - `job_id` (aliases `id`, `search`): Exact job ID.
+  - `customer_id` (alias `user_id`), `owner_id` (alias `tenant_id`), `courier_id` (alias `employee_id`).
+  - `phone`: Exact match on the customer's phone (looked up in auth-service) or the recipient phone.
+  - `status`: A job status: `pending`, `pending_dispatch`, `unavailable`, `awaiting_price_response`, `active`, `completed`, `cancelled`, `escrow_reconciliation_required`. Courier progress (picked up, in transit, ...) is in `sub_status`, not `status`.
+  - `from` (alias `start_date`), `to` (alias `end_date`): RFC 3339 or `YYYY-MM-DD`, on `created_at`.
+  - `page` (default 1), `limit` (default 20, 1-100; other values fall back to 20).
 
 **Response `200 OK`**:
 ```json
@@ -106,13 +104,18 @@ Searches and lists platform jobs with comprehensive filtering and cursor/offset 
   "jobs": [
     {
       "id": "job-98712",
-      "tenant_id": "tenant-xyz",
-      "customer_id": "usr-101",
-      "courier_id": "usr-202",
-      "status": "picked_up",
+      "status": "active",
       "sub_status": "in_transit",
-      "price": 85.50,
+      "owner_id": "tenant-xyz",
+      "user_id": "usr-101",
+      "employee_id": "usr-202",
+      "service_id": "svc-555",
+      "location": {"lat": 30.0444, "lng": 31.2357, "address": "..."},
+      "destination": {"lat": 30.0500, "lng": 31.2400, "address": "..."},
       "payment_method": "cod",
+      "suggested_price": 85.5,
+      "customer_name": "Mona",
+      "recipient": {"name": "Mona Recipient", "phone": "+201011112222"},
       "created_at": "2026-10-29T08:15:00Z",
       "updated_at": "2026-10-29T08:35:12Z"
     }
@@ -122,6 +125,9 @@ Searches and lists platform jobs with comprehensive filtering and cursor/offset 
   "limit": 20
 }
 ```
+Optional fields (`sub_status`, `employee_id`, `agreed_price`, `actual_cash_amount`, `locked_escrow_amount`, `customer_name`, `recipient`, `package_details`, `distance_review`) are omitted when empty.
+
+**Audit**: `ShipSecurityEvent` `ADMIN_JOBS_LISTED`, plus an `admin_audit` `job.search` record when the page returns any recipient phone (unmasked).
 
 ---
 
@@ -130,7 +136,8 @@ Returns the complete V2 job model including full status history, unmasked custom
 
 - **Service**: `user-service`
 - **Permissions**: Reviewer Token & `X-Internal-Token`
-- **Audit Event**: `ADMIN_JOB_VIEWED` (`detail: "viewed full job details for job-98712"`)
+- **Audit**: `admin_audit` record `job.view` (target `job`) and `ShipSecurityEvent` `ADMIN_JOB_VIEWED`. Every call is recorded because the response carries unmasked phones.
+- **Response fields** (`AdminJobDetailResponse`): `id`, `status`, `sub_status`, `status_history`, `location`, `destination`, `current_location`, `waypoints`, `recipient`, `package_details` (and `package`), `price` (object), `suggested_price`, `agreed_price`, `actual_cash_amount`, `locked_escrow_amount`, `payment_method`, `tenant`, `owner_id`, `courier`, `employee_id`, `courier_phone`, `customer_id`, `user_id`, `customer_name`, `customer_phone`, `ratings`, `reconciliation_flags`, `notifications` (recent notifications for the job from notification-service), `created_at`, `updated_at`. The example below is abridged.
 
 **Response `200 OK`**:
 ```json
@@ -184,11 +191,12 @@ Returns the complete V2 job model including full status history, unmasked custom
 ---
 
 ### `POST /admin/jobs/{id}/cancel`
-Cancels a non-terminal job (i.e. not already `completed` or `cancelled`). Performs a CAS state transition, releases courier assignment, dispatches cancellation notifications to parties, and writes an audit event.
+Cancels a job on behalf of support. Releases courier locks, clears any pending cancellation request, appends a `status_history` entry (`actor_role: admin`) and notifies the parties. A wallet-paid job (not `cod`, not `pending_dispatch`) with locked escrow has the escrow refunded to the tenant's withdrawable balance.
 
-- **Service**: `user-service`
+- **Service**: `user-service` (also `POST /users/admin/jobs/{id}/cancel`)
 - **Permissions**: Reviewer Token & `X-Internal-Token`
-- **Request Body**:
+- **Cancellable statuses**: `pending`, `pending_dispatch`, `awaiting_price_response`, `active`, `escrow_reconciliation_required`. `completed` and `cancelled` answer `409` (`job already in terminal state`); `unavailable` answers `409` (`job state conflict during update`).
+- **Request Body** (`job_id` in the body is accepted instead of the path; price or address fields are rejected with `400 editing prices or addresses is not allowed`):
 ```json
 {
   "reason": "Customer called support: duplicate order created accidentally"
@@ -198,26 +206,27 @@ Cancels a non-terminal job (i.e. not already `completed` or `cancelled`). Perfor
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "job cancelled successfully",
   "job_id": "job-98712",
-  "previous_status": "arrived_at_dropoff",
-  "new_status": "cancelled"
+  "status": "cancelled"
 }
 ```
 
-**Audit Event**: `ADMIN_JOB_CANCELLED`
-**Error Codes**:
-- `invalid_reason` (`400`): Reason missing or >1000 characters.
-- `job_not_found` (`404`): No job found with specified ID.
-- `invalid_status_transition` (`409`): Job already completed or cancelled.
+**Audit**: `admin_audit` `job.cancel` (target `job`, with the reason) and `ShipSecurityEvent` `ADMIN_JOB_CANCELLED`.
+**Errors** (`{"error": ...}`):
+- `400`: `reason is required`, `reason cannot exceed 1000 characters`, `job_id is required`, `invalid request body`.
+- `404`: `job not found`.
+- `409`: the job is not in a cancellable status (see above).
 
 ---
 
 ### `POST /admin/jobs/{id}/complete-stuck-cod`
-Resolves a stuck COD job where physical delivery and cash handover occurred, but network issues or courier battery failure prevented completion. Reuses the core reconciliation pipeline to close the ledger balance.
+Completes one COD job stuck in `escrow_reconciliation_required` (for example the courier's phone died after the cash handover) through the same repair path as the FIX-COD-RECON sweep, records the cash amount and releases the courier lock.
 
-- **Service**: `user-service`
+- **Service**: `user-service` (also `POST /users/admin/jobs/{id}/complete-stuck-cod`)
 - **Permissions**: Reviewer Token & `X-Internal-Token`
+- **Preconditions**: `payment_method` is `cod`, `status` is `escrow_reconciliation_required`, and no escrow is locked. Anything else answers `409` (`job is not a stuck COD reconciliation job`).
 - **Request Body**:
 ```json
 {
@@ -228,18 +237,16 @@ Resolves a stuck COD job where physical delivery and cash handover occurred, but
 **Response `200 OK`**:
 ```json
 {
+  "success": true,
   "message": "stuck COD job completed successfully",
   "job_id": "job-98712",
-  "previous_status": "arrived_at_dropoff",
-  "new_status": "completed"
+  "status": "completed",
+  "actual_cash_amount": 85.5
 }
 ```
 
-**Audit Event**: `ADMIN_JOB_COMPLETED_STUCK_COD`
-**Error Codes**:
-- `invalid_reason` (`400`): Reason missing or >1000 characters.
-- `not_stuck_cod` (`400`): Job does not satisfy stuck COD criteria.
-- `job_not_found` (`404`): Specified job does not exist.
+**Audit**: `admin_audit` `job.complete_stuck_cod` and `ShipSecurityEvent` `ADMIN_JOB_COMPLETED_STUCK_COD`.
+**Errors** (`{"error": ...}`): `400` reason/body errors as for cancel; `404` `job not found`; `409` precondition not met or concurrent change.
 
 ---
 
@@ -251,12 +258,11 @@ Lists business services with filters for tenant, moderation status, and photo pr
 - **Service**: `user-service`
 - **Permissions**: Reviewer Token & `X-Internal-Token`
 - **Query Parameters**:
-  - `tenant_id` (string): Filter by tenant.
-  - `name` (string): Substring search on service title.
-  - `has_photo` (bool): Filter by presence of service photo.
-  - `hidden` (bool): Filter by hidden moderation status (`true` / `false`).
-  - `page` (int, default: 1): Page number.
-  - `limit` (int, default: 20): Items per page.
+  - `tenant_id` (alias `tenant`): Filter by tenant.
+  - `name`: Search on the service name.
+  - `has_photo` (`true` / `false`): Filter by presence of a photo.
+  - `hidden` (`true` / `false`): Filter by moderation status.
+  - `page` (default 1), `limit` (default 20).
 
 **Response `200 OK`**:
 ```json
@@ -266,11 +272,11 @@ Lists business services with filters for tenant, moderation status, and photo pr
       "id": "svc-555",
       "tenant_id": "tenant-fast-courier",
       "name": "Express Same-Day Delivery",
-      "has_photo": true,
       "photo_url": "https://storage.logiclinkeg.tech/services/svc-555.jpg",
-      "is_hidden": false,
-      "hide_reason": "",
-      "created_at": "2026-09-15T10:00:00Z"
+      "is_hidden": true,
+      "hidden_reason": "Prohibited items listed in description",
+      "hidden_by": "rev-sarah-1",
+      "hidden_notice": "hidden by support: Prohibited items listed in description"
     }
   ],
   "total": 1,
@@ -296,12 +302,16 @@ Hides an offensive, non-compliant, or misleading service listing from the public
 **Response `200 OK`**:
 ```json
 {
-  "message": "service hidden successfully",
+  "success": true,
   "service_id": "svc-555",
-  "is_hidden": true
+  "is_hidden": true,
+  "hidden_reason": "Prohibited items listed in description",
+  "hidden_notice": "hidden by support: Prohibited items listed in description",
+  "message": "service hidden successfully"
 }
 ```
-**Audit Event**: `ADMIN_SERVICE_HIDDEN`
+**Audit**: `admin_audit` `service.hide` and `ShipSecurityEvent` `ADMIN_SERVICE_HIDDEN`. Hidden services are left out of the public marketplace listing.
+**Errors** (`{"error": ...}`): `400` `service_id is required` / reason errors; `404` `service not found`.
 
 ---
 
@@ -320,12 +330,13 @@ Restores a previously hidden service listing to the marketplace.
 **Response `200 OK`**:
 ```json
 {
-  "message": "service unhidden successfully",
+  "success": true,
   "service_id": "svc-555",
-  "is_hidden": false
+  "is_hidden": false,
+  "message": "service unhidden successfully"
 }
 ```
-**Audit Event**: `ADMIN_SERVICE_UNHIDDEN`
+**Audit**: `admin_audit` `service.unhide` and `ShipSecurityEvent` `ADMIN_SERVICE_UNHIDDEN`.
 
 ---
 
@@ -344,11 +355,13 @@ Removes an inappropriate or copyright-infringing service photo. Physically delet
 **Response `200 OK`**:
 ```json
 {
-  "message": "service photo removed successfully",
-  "service_id": "svc-555"
+  "success": true,
+  "service_id": "svc-555",
+  "message": "service photo removed successfully"
 }
 ```
-**Audit Event**: `ADMIN_SERVICE_PHOTO_REMOVED`
+**Audit**: `admin_audit` `service.photo_remove` and `ShipSecurityEvent` `ADMIN_SERVICE_PHOTO_REMOVED`.
+**Errors** (`{"error": ...}`): `400` `service has no photo to remove` / reason errors; `404` `service not found`.
 
 ---
 
@@ -368,16 +381,25 @@ Retrieves pending subscription upgrade requests awaiting manual verification of 
 {
   "queue": [
     {
+      "id": "sub-771",
+      "subscription_id": "sub-771",
       "tenant_id": "tenant-cairo-express",
       "tenant_name": "Cairo Express Logistics",
-      "requested_plan": "enterprise",
-      "status": "pending_payment",
+      "requested_plan": "pro",
       "requested_at": "2026-10-28T14:30:00Z",
-      "owner_name": "Moustafa Kamel",
-      "owner_phone": "+201001122334",
-      "owner_email": "moustafa@cairoexpress.com"
+      "owner_contact": {
+        "username": "mkamel",
+        "name": "Moustafa Kamel",
+        "company_name": "Cairo Express Logistics",
+        "email": "moustafa@cairoexpress.com",
+        "phone": "+201001122334"
+      },
+      "tier": "pro",
+      "status": "pending_payment",
+      "started_at": "2026-10-28T14:30:00Z"
     }
   ],
+  "subscriptions": ["... same items as queue ..."],
   "total": 1,
   "page": 1,
   "limit": 20
@@ -409,7 +431,7 @@ Activates a `pending_payment` subscription upon verifying offline payment receip
   "status": "active"
 }
 ```
-**Audit Event**: `ADMIN_SUBSCRIPTION_ACTIVATED`
+**Audit**: `admin_audit` `subscription.activate` and `ShipSecurityEvent` `ADMIN_SUBSCRIPTION_ACTIVATED`.
 
 ---
 
@@ -434,7 +456,7 @@ Revokes or cancels a subscription with an operator justification.
   "status": "inactive"
 }
 ```
-**Audit Event**: `ADMIN_SUBSCRIPTION_REVOKED`
+**Audit**: `admin_audit` `subscription.revoke` and `ShipSecurityEvent` `ADMIN_SUBSCRIPTION_REVOKED`.
 
 ---
 
@@ -489,7 +511,7 @@ Resolves an active delivery reconciliation dispute.
   "resolution": "approved_override"
 }
 ```
-**Audit Event**: `ADMIN_RECONCILIATION_RESOLVED`
+**Audit**: `admin_audit` `reconciliation.resolve` and `ShipSecurityEvent` `ADMIN_ESCROW_RECONCILIATION_RESOLVED`.
 
 ---
 
@@ -524,7 +546,7 @@ Rejects a requested payout with mandatory operator reason.
   "status": "rejected"
 }
 ```
-**Audit Event**: `ADMIN_PAYOUT_REJECTED`
+**Audit**: `admin_audit` `payout.reject` and `ShipSecurityEvent` `ADMIN_PAYOUT_REJECTED`.
 
 ---
 
@@ -549,6 +571,7 @@ Assigns the calling reviewer to handle a complaint ticket.
   "ticket_id": "tkt-0042"
 }
 ```
+- **Audit**: `admin_audit` `ticket.accept` and `ShipSecurityEvent` `ADMIN_TICKET_ACCEPTED`.
 
 ---
 
@@ -561,10 +584,11 @@ Resolves a complaint ticket with resolution notes and closes the chat thread.
 ```json
 {
   "ticket_id": "tkt-0042",
-  "note": "Refund processed to client wallet.",
-  "reason": "Merchant confirmed package damage."
+  "resolution_note": "Refund processed to client wallet."
 }
 ```
+`resolution_note` is required (1-1000 characters); it is posted in the ticket chat, sent to the customer and stored as the audit `reason`.
+- **Audit**: `admin_audit` `ticket.resolve` and `ShipSecurityEvent` `ADMIN_TICKET_RESOLVED`.
 
 ---
 
@@ -572,7 +596,7 @@ Resolves a complaint ticket with resolution notes and closes the chat thread.
 Ticket creation validates `context_id` against strict format requirements:
 - Allowed: empty string, or alphanumeric characters, hyphens, and underscores up to 64 characters (e.g. `order-1234`, `job_98712`).
 - Payloads containing HTML, script tags, or oversized strings reject with:
-  `400 Bad Request` (`{"code": "invalid_context_id", "message": "context_id must be alphanumeric/hyphens/underscores up to 64 chars"}`).
+  `400 Bad Request` (`{"error": "invalid_context_id", "code": "invalid_context_id", "message": "context_id must be empty or a valid identifier format (up to 64 alphanumeric characters, dashes, and underscores)"}`).
 
 ### 8.2 WebSocket Token Security
 Reviewer WebSocket upgrades (`/chat/ws`) accept credentials without exposing tokens in URL query strings:
@@ -605,7 +629,7 @@ Suspends an account, terminating active JWT sessions and dispatching push/in-app
 }
 ```
 
-**Audit Event**: `ACCOUNT_SUSPENDED`
+**Audit**: `admin_audit` `account.suspend` and `ShipSecurityEvent` `ACCOUNT_SUSPENDED` (the employee `audit_log` entry `ACCOUNT_SUSPENDED` is still written too).
 
 ---
 
@@ -622,7 +646,7 @@ Reactivates a suspended account.
 }
 ```
 
-**Audit Event**: `ACCOUNT_REACTIVATED`
+**Audit**: `admin_audit` `account.reactivate` and `ShipSecurityEvent` `ACCOUNT_REACTIVATED` (plus the employee `audit_log` entry).
 
 ---
 
@@ -643,17 +667,19 @@ Retrieves pre-signed secure URLs to inspect encrypted KYB/KYE identity documents
 ```json
 {
   "user_id": "usr-101",
-  "documents": [
-    {
-      "type": "national_id_front",
-      "url": "https://storage.logiclinkeg.tech/kyc/usr-101/id_front.jpg?signed=...",
-      "expires_at": "2026-10-29T10:00:00Z"
-    }
-  ]
+  "email": "owner@example.com",
+  "username": "owner101",
+  "role": "owner",
+  "kyc_status": "pending",
+  "id_front_url": "<signed short-lived URL for GET /auth/documents/view>",
+  "id_back_url": "<signed short-lived URL for GET /auth/documents/view>",
+  "selfie_url": "<signed short-lived URL for GET /auth/documents/view>",
+  "business_proof_url": "<signed short-lived URL for GET /auth/documents/view>"
 }
 ```
+URLs are signed and short-lived; a document that cannot be signed is reported in `document_errors` instead.
 
-**Audit Event**: `DOCUMENT_VIEWED`
+**Audit**: `admin_audit` `user_documents.view` (with the reason), `ShipSecurityEvent` `USER_DOCUMENTS_RETRIEVED` and one `DOCUMENT_VIEWED` per signed document. Opening a signed URL (`GET /auth/documents/view`) writes `document.view`.
 
 ---
 
@@ -678,6 +704,7 @@ Every reviewer mutation and every unmasked view writes one record to the **ownin
 
 | Action | Service | Written by |
 | :--- | :--- | :--- |
+| `job.search` | user-service | `GET /admin/jobs` when the page returns at least one unmasked recipient phone (`details` lists those job ids) |
 | `job.view` | user-service | `GET /admin/jobs/{id}` (unmasked phones) |
 | `job.cancel` | user-service | `POST /admin/jobs/{id}/cancel` |
 | `job.complete_stuck_cod` | user-service | `POST /admin/jobs/{id}/complete-stuck-cod` |
@@ -759,16 +786,20 @@ Returns the active minimum supported version, latest release version, and mandat
 - **Response `200 OK`**:
 ```json
 {
-  "minimum_supported_version": "1.4.0",
+  "id": "global",
   "latest_version": "1.5.2",
-  "download_url": "https://play.google.com/store/apps/details?id=tech.logiclinkeg.app"
+  "minimum_supported_version": "1.4.0",
+  "enforce_minimum_version": false,
+  "download_url": "https://play.google.com/store/apps/details?id=tech.logiclinkeg.app",
+  "revision": 7,
+  "updated_at": "2026-10-29T08:30:15Z"
 }
 ```
 
 ---
 
-### `PUT /admin/version`
-Updates the mobile client enforcement policy. Reason is required. The download URL is strictly validated (must be HTTPS and belong to Google Play, Apple App Store, or company domain `*.logiclinkeg.tech`).
+### `PUT /admin/version` (also `POST`)
+Updates the mobile client version policy. `reason` is required (1-1000 characters). Fields left empty keep their current value; `enforce_minimum_version` is changed only when present. Both versions must be semver; `download_url` must be an `https` URL on `github.com` or `play.google.com` (SEC-02).
 
 - **Service**: `api-gateway`
 - **Permissions**: Reviewer Token & `X-Internal-Token`
@@ -785,20 +816,25 @@ Updates the mobile client enforcement policy. Reason is required. The download U
 **Response `200 OK`**:
 ```json
 {
-  "message": "version policy updated successfully",
+  "message": "version configuration updated successfully",
   "config": {
-    "minimum_supported_version": "1.5.0",
+    "id": "global",
     "latest_version": "1.5.2",
-    "download_url": "https://play.google.com/store/apps/details?id=tech.logiclinkeg.app"
+    "minimum_supported_version": "1.5.0",
+    "enforce_minimum_version": false,
+    "download_url": "https://play.google.com/store/apps/details?id=tech.logiclinkeg.app",
+    "revision": 8,
+    "updated_at": "2026-10-29T09:00:00Z"
   }
 }
 ```
 
-**Audit Event**: `APP_VERSION_CONFIG_UPDATED`
-**Error Codes**:
-- `invalid_reason` (`400`): Reason missing or >1000 characters.
-- `invalid_download_url` (`400`): Download URL fails scheme, domain, or syntax validation.
-- `invalid_version_format` (`400`): Semantic version format error or minimum version > latest version.
+**Audit**: `admin_audit` `version.update` (target `version_policy` / `global`, in `gateway_db.admin_audit`) and `ShipSecurityEvent` `ADMIN_VERSION_CONFIG_CHANGED`.
+**Errors** (`{"error": ...}`):
+- `400`: `reason is required (1-1000 characters)`, `invalid JSON body`, `invalid download_url: ...`, `invalid latest_version: ...` / `invalid minimum_supported_version: ...`.
+- `401`: missing/invalid internal or reviewer token; `429` when auth-service rate-limits the reviewer.
+- `403`: no internal client certificate (see Reachability).
+- `503`: the MongoDB write failed; nothing was saved (section 11.1).
 
 *(Note: Legacy script automation endpoint `PUT /api/v1/admin/version-config` authenticated via `X-Admin-Token` remains active).*
 
@@ -881,12 +917,17 @@ Dispatches administrative announcements to users across in-app message lists and
 }
 ```
 
+**Response `200 OK`** (idempotent replay: an earlier send used the same `idempotency_key`): `{"job_id", "status", "audience_size", "message": "idempotent replay of existing send job", "send": {...}}`. No new send and no new audit record.
+
+**Audit**: real and test sends write `admin_audit` `notification.send` (target `notification_send` / `job_id`, with the reason and `audience=<kind> size=<n> test=<bool>` in `details`) and `ShipSecurityEvent` `ADMIN_NOTIFICATION_SENT`. Dry runs write neither.
+
 **Error Codes**:
 - `invalid_reason` (`400`): Reason missing or >1000 characters.
 - `invalid_title` (`400`): Missing or oversized Arabic or English title.
 - `invalid_body` (`400`): Missing or oversized Arabic or English body.
 - `invalid_deep_link` (`400`): Deep link does not match allowed internal routes.
-- `confirmation_required` (`400`): `confirm_audience_size` missing or does not match audience total.
+- `invalid_audience` (`400`): `audience.kind` is not `user`, `role`, `tenant` or `everyone`.
+- `confirmation_required` (`400`): `confirm_audience_size` missing or does not match audience total (not required for test sends).
 - `rate_limit_exceeded` (`429`): Operator exceeded 5 sends/hour budget.
 
 ---
