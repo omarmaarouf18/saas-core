@@ -3,13 +3,19 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,7 +31,99 @@ func adminHeaders(cfg *Config, revToken string) map[string]string {
 	}
 }
 
+// Internal base URLs of the staging services on staging-net. The gateway
+// strips X-Internal-Token from every client request, so reviewer endpoints
+// are only reachable the way the console reaches them in production: directly,
+// over mTLS, with the console's client certificate.
+const (
+	stagingAuthURL         = "https://auth-service:3002"
+	stagingUserURL         = "https://user-service:3003"
+	stagingNotificationURL = "https://notification-service:3004"
+	stagingGatewayURL      = "https://api-gateway:8080"
+)
+
+var (
+	internalClientOnce sync.Once
+	internalClient     *http.Client
+	internalClientErr  error
+)
+
+// stagingInternalClient returns an mTLS client that presents the
+// reviewer-console certificate and dials the staging containers by their
+// bridge-network IP (docker inspect), keeping the service name as the TLS
+// server name. STAGING_CERTS_DIR overrides the cert directory and
+// STAGING_<SERVICE>_ADDR (e.g. STAGING_USER_SERVICE_ADDR=172.21.0.6:3003)
+// overrides the dial address of one service.
+func stagingInternalClient() (*http.Client, error) {
+	internalClientOnce.Do(func() {
+		certsDir := os.Getenv("STAGING_CERTS_DIR")
+		if certsDir == "" {
+			certsDir = filepath.Join("..", "..", "infrastructure", "certs")
+		}
+		caPEM, err := os.ReadFile(filepath.Join(certsDir, "ca.crt"))
+		if err != nil {
+			internalClientErr = fmt.Errorf("read staging CA: %w", err)
+			return
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(caPEM) {
+			internalClientErr = fmt.Errorf("staging CA in %s is not valid PEM", certsDir)
+			return
+		}
+		cert, err := tls.LoadX509KeyPair(filepath.Join(certsDir, "reviewer-console.crt"), filepath.Join(certsDir, "reviewer-console.key"))
+		if err != nil {
+			internalClientErr = fmt.Errorf("load reviewer-console client cert: %w", err)
+			return
+		}
+		var mu sync.Mutex
+		resolved := map[string]string{}
+		dialer := &net.Dialer{Timeout: 5 * time.Second}
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: pool, Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12},
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				host, port, err := net.SplitHostPort(addr)
+				if err != nil {
+					return nil, err
+				}
+				mu.Lock()
+				target, ok := resolved[addr]
+				mu.Unlock()
+				if !ok {
+					envKey := "STAGING_" + strings.ToUpper(strings.ReplaceAll(host, "-", "_")) + "_ADDR"
+					if v := os.Getenv(envKey); v != "" {
+						target = v
+					} else {
+						out, err := exec.CommandContext(ctx, "docker", "inspect", "-f",
+							"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", "staging-saas-"+host).Output()
+						if err != nil {
+							return nil, fmt.Errorf("resolve %s via docker inspect (set %s to override): %w", host, envKey, err)
+						}
+						target = net.JoinHostPort(strings.TrimSpace(string(out)), port)
+					}
+					mu.Lock()
+					resolved[addr] = target
+					mu.Unlock()
+				}
+				return dialer.DialContext(ctx, network, target)
+			},
+		}
+		internalClient = &http.Client{Transport: transport, Timeout: 30 * time.Second}
+	})
+	return internalClient, internalClientErr
+}
+
+// doAdminRequest sends a reviewer request straight to a service (see
+// stagingInternalClient), the same hop the console makes in production.
 func doAdminRequest(ctx context.Context, method, url string, cfg *Config, revToken string, body any) (*http.Response, []byte, error) {
+	return doAdminRequestWithHeaders(ctx, method, url, cfg, revToken, body, nil)
+}
+
+func doAdminRequestWithHeaders(ctx context.Context, method, url string, cfg *Config, revToken string, body any, extra map[string]string) (*http.Response, []byte, error) {
+	client, err := stagingInternalClient()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	var bodyReader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -44,8 +142,11 @@ func doAdminRequest(ctx context.Context, method, url string, cfg *Config, revTok
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+	for k, v := range extra {
+		req.Header.Set(k, v)
+	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -234,10 +335,35 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	}
 
 	// -------------------------------------------------------------------------
+	// The public gateway never forwards a client X-Internal-Token, even next
+	// to a valid X-Reviewer-Token, so reviewer endpoints are not reachable
+	// through it.
+	// -------------------------------------------------------------------------
+	t.Run("Gateway strips client X-Internal-Token on reviewer paths", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.GatewayURL+"/api/v1/users/admin/overview", nil)
+		if err != nil {
+			t.Fatalf("build request: %v", err)
+		}
+		for k, v := range adminHeaders(cfg, rawReviewerToken) {
+			req.Header.Set(k, v)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET through gateway failed: %v", err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			t.Fatalf("reviewer endpoint must not be reachable through the gateway with a client X-Internal-Token, got 200: %s", string(body))
+		}
+		t.Logf("Gateway rejected reviewer request carrying client X-Internal-Token: %d", resp.StatusCode)
+	})
+
+	// -------------------------------------------------------------------------
 	// ITEM 3: GET /admin/overview
 	// -------------------------------------------------------------------------
 	t.Run("Item 3 - Overview Aggregation", func(t *testing.T) {
-		overviewURL := cfg.GatewayURL + "/api/v1/users/admin/overview"
+		overviewURL := stagingUserURL + "/users/admin/overview"
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, overviewURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/overview request failed: %v", err)
@@ -265,7 +391,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// -------------------------------------------------------------------------
 	t.Run("Item 4 - Jobs Lookup and Full Detail", func(t *testing.T) {
 		// List jobs
-		jobsListURL := fmt.Sprintf("%s/api/v1/users/admin/jobs?id=%s", cfg.GatewayURL, activeJobID)
+		jobsListURL := fmt.Sprintf("%s/users/admin/jobs?id=%s", stagingUserURL, activeJobID)
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, jobsListURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/jobs request failed: %v", err)
@@ -286,7 +412,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Job detail
-		jobDetailURL := fmt.Sprintf("%s/api/v1/users/admin/jobs/%s", cfg.GatewayURL, activeJobID)
+		jobDetailURL := fmt.Sprintf("%s/users/admin/jobs/%s", stagingUserURL, activeJobID)
 		respDetail, bodyDetail, err := doAdminRequest(ctx, http.MethodGet, jobDetailURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/jobs/{id} request failed: %v", err)
@@ -317,7 +443,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// -------------------------------------------------------------------------
 	t.Run("Item 5 - Admin Job Mutations", func(t *testing.T) {
 		// Cancel non-terminal job
-		cancelURL := fmt.Sprintf("%s/api/v1/users/admin/jobs/%s/cancel", cfg.GatewayURL, activeJobID)
+		cancelURL := fmt.Sprintf("%s/users/admin/jobs/%s/cancel", stagingUserURL, activeJobID)
 		// Negative guard: empty reason rejected
 		respNeg, _, _ := doAdminRequest(ctx, http.MethodPost, cancelURL, cfg, rawReviewerToken, map[string]string{"reason": ""})
 		if respNeg.StatusCode != http.StatusBadRequest {
@@ -336,7 +462,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Complete stuck COD job
-		completeStuckURL := fmt.Sprintf("%s/api/v1/users/admin/jobs/%s/complete-stuck-cod", cfg.GatewayURL, stuckJobID)
+		completeStuckURL := fmt.Sprintf("%s/users/admin/jobs/%s/complete-stuck-cod", stagingUserURL, stuckJobID)
 		respStuck, bodyStuck, err := doAdminRequest(ctx, http.MethodPost, completeStuckURL, cfg, rawReviewerToken, map[string]string{
 			"reason": "Courier confirmed cash collected and recipient confirmed delivery",
 		})
@@ -353,7 +479,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// ITEM 6: Services Marketplace Moderation
 	// -------------------------------------------------------------------------
 	t.Run("Item 6 - Services Moderation", func(t *testing.T) {
-		servicesURL := fmt.Sprintf("%s/api/v1/users/admin/services?tenant_id=%s", cfg.GatewayURL, testTenantID)
+		servicesURL := fmt.Sprintf("%s/users/admin/services?tenant_id=%s", stagingUserURL, testTenantID)
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, servicesURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/services request failed: %v", err)
@@ -363,7 +489,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Hide service
-		hideURL := fmt.Sprintf("%s/api/v1/users/admin/services/%s/hide", cfg.GatewayURL, testServiceID)
+		hideURL := fmt.Sprintf("%s/users/admin/services/%s/hide", stagingUserURL, testServiceID)
 		respHide, bodyHide, err := doAdminRequest(ctx, http.MethodPost, hideURL, cfg, rawReviewerToken, map[string]string{
 			"reason": "Suspicious promotion violating marketplace policy",
 		})
@@ -382,7 +508,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Unhide service
-		unhideURL := fmt.Sprintf("%s/api/v1/users/admin/services/%s/unhide", cfg.GatewayURL, testServiceID)
+		unhideURL := fmt.Sprintf("%s/users/admin/services/%s/unhide", stagingUserURL, testServiceID)
 		respUnhide, bodyUnhide, err := doAdminRequest(ctx, http.MethodPost, unhideURL, cfg, rawReviewerToken, map[string]string{
 			"reason": "Owner adjusted description to comply with marketplace policy",
 		})
@@ -394,7 +520,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Remove photo
-		rmPhotoURL := fmt.Sprintf("%s/api/v1/users/admin/services/%s/photo/remove", cfg.GatewayURL, testServiceID)
+		rmPhotoURL := fmt.Sprintf("%s/users/admin/services/%s/photo/remove", stagingUserURL, testServiceID)
 		respPhoto, bodyPhoto, err := doAdminRequest(ctx, http.MethodPost, rmPhotoURL, cfg, rawReviewerToken, map[string]string{
 			"reason": "Copyright infringement notice received",
 		})
@@ -411,7 +537,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// ITEM 7: Subscriptions Queue
 	// -------------------------------------------------------------------------
 	t.Run("Item 7 - Subscriptions Queue", func(t *testing.T) {
-		queueURL := cfg.GatewayURL + "/api/v1/users/admin/subscriptions/queue"
+		queueURL := stagingUserURL + "/users/admin/subscriptions/queue"
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, queueURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/subscriptions/queue request failed: %v", err)
@@ -448,7 +574,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// ITEM 8: Audit Log Viewer
 	// -------------------------------------------------------------------------
 	t.Run("Item 8 - Audit Log Viewer", func(t *testing.T) {
-		auditURL := cfg.GatewayURL + "/api/v1/auth/admin/audit?limit=20"
+		auditURL := stagingAuthURL + "/auth/admin/audit?limit=20"
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, auditURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/audit request failed: %v", err)
@@ -475,7 +601,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// ITEM 9: App Version Policy (Persisted in Gateway DB)
 	// -------------------------------------------------------------------------
 	t.Run("Item 9 - Persisted Version Config", func(t *testing.T) {
-		versionURL := cfg.GatewayURL + "/admin/version"
+		versionURL := stagingGatewayURL + "/admin/version"
 		// Read version
 		resp, body, err := doAdminRequest(ctx, http.MethodGet, versionURL, cfg, rawReviewerToken, nil)
 		if err != nil {
@@ -552,7 +678,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// Reviewer user-documents accepts POST body
-		docURL := cfg.GatewayURL + "/api/v1/auth/reviewer/user-documents"
+		docURL := stagingAuthURL + "/auth/reviewer/user-documents"
 		docPayload := map[string]string{
 			"user_id": testCustID,
 			"reason":  "Compliance identity verification",
@@ -571,7 +697,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 	// ITEM 9d: Admin Notifications (Dry Run, Test Send, Sends List)
 	// -------------------------------------------------------------------------
 	t.Run("Item 9d - Admin Announcements", func(t *testing.T) {
-		sendURL := cfg.GatewayURL + "/api/v1/notifications/admin/send"
+		sendURL := stagingNotificationURL + "/notifications/admin/send"
 
 		// Dry run mode
 		dryPayload := map[string]any{
@@ -607,7 +733,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		// List notification sends
-		sendsListURL := cfg.GatewayURL + "/api/v1/notifications/admin/sends"
+		sendsListURL := stagingNotificationURL + "/notifications/admin/sends"
 		respSends, bodySends, err := doAdminRequest(ctx, http.MethodGet, sendsListURL, cfg, rawReviewerToken, nil)
 		if err != nil {
 			t.Fatalf("GET /admin/notifications/sends failed: %v", err)

@@ -26,9 +26,9 @@ func New(route config.ServiceRoute, gatewaySecret string, trustedProxies []strin
 		Transport:     transport,
 		FlushInterval: -1,
 		Director: func(req *http.Request) {
-			if req.Header.Get("X-Reviewer-Token") == "" {
-				req.Header.Del("X-Internal-Token")
-			}
+			// Always strip: X-Internal-Token is only ever set service to
+			// service on saas-net, never by a client of the public edge.
+			req.Header.Del("X-Internal-Token")
 			req.URL.Scheme = target.Scheme
 			req.URL.Host = target.Host
 			req.Host = target.Host
