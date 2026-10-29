@@ -271,3 +271,93 @@ func TestGetUserDocuments_ValidationAndNotFound(t *testing.T) {
 		t.Errorf("expected 404 for non-existent user, got %d", rec4.Code)
 	}
 }
+
+func TestGetUserDocuments_PostBody(t *testing.T) {
+	auth, s, cleanup := setupTestAuth(t)
+	if auth == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	rawReviewerToken := "reviewer-token-post-test"
+	if err := s.AddReviewer(ctx, &models.Reviewer{
+		ID:    "rev-post-1",
+		Token: rawReviewerToken,
+		Name:  "Post Auditor",
+	}); err != nil {
+		t.Fatalf("failed to add reviewer: %v", err)
+	}
+
+	docContent := "dummy document content for post testing"
+	keyFront := "kyb/post-owner/id_front.jpg"
+	_ = auth.storage.Upload(ctx, keyFront, strings.NewReader(docContent), "image/jpeg")
+
+	user := &models.User{
+		ID:         "post-owner",
+		Email:      "postowner@example.com",
+		Username:   "post_owner",
+		Role:       models.RoleOwner,
+		IsActive:   true,
+		KYCStatus:  models.KYCApproved,
+		IDFrontDoc: keyFront,
+		CreatedAt:  time.Now().UTC(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	setAuth := func(r *http.Request) {
+		r.Header.Set("X-Internal-Token", auth.internalServiceToken)
+		r.Header.Set("X-Reviewer-Token", rawReviewerToken)
+		r.Header.Set("Content-Type", "application/json")
+	}
+
+	// 1. Success via POST body
+	body := `{"user_id":"post-owner","reason":"Investigating dispute ticket #123"}`
+	req := httptest.NewRequest("POST", "/auth/reviewer/user-documents", strings.NewReader(body))
+	setAuth(req)
+	rec := httptest.NewRecorder()
+	auth.GetUserDocuments(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for POST body user documents, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var resp map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["user_id"] != "post-owner" {
+		t.Errorf("expected user_id 'post-owner', got %v", resp["user_id"])
+	}
+	if resp["id_front_url"] == nil || resp["id_front_url"] == "" {
+		t.Errorf("expected id_front_url in response, got %v", resp["id_front_url"])
+	}
+
+	// 2. Disallowed method (PUT) -> 405 Method Not Allowed
+	reqPut := httptest.NewRequest("PUT", "/auth/reviewer/user-documents", strings.NewReader(body))
+	setAuth(reqPut)
+	recPut := httptest.NewRecorder()
+	auth.GetUserDocuments(recPut, reqPut)
+	if recPut.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405 Method Not Allowed for PUT, got %d", recPut.Code)
+	}
+
+	// 3. Invalid JSON body -> 400 Bad Request
+	reqBadJSON := httptest.NewRequest("POST", "/auth/reviewer/user-documents", strings.NewReader("{invalid"))
+	setAuth(reqBadJSON)
+	recBadJSON := httptest.NewRecorder()
+	auth.GetUserDocuments(recBadJSON, reqBadJSON)
+	if recBadJSON.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for malformed JSON, got %d", recBadJSON.Code)
+	}
+
+	// 4. Missing reason in POST body -> 400 Bad Request
+	reqNoReason := httptest.NewRequest("POST", "/auth/reviewer/user-documents", strings.NewReader(`{"user_id":"post-owner"}`))
+	setAuth(reqNoReason)
+	recNoReason := httptest.NewRecorder()
+	auth.GetUserDocuments(recNoReason, reqNoReason)
+	if recNoReason.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for missing reason, got %d", recNoReason.Code)
+	}
+}

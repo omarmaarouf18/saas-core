@@ -2237,9 +2237,10 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 }
 
 // GET /auth/reviewer/user-documents?user_id=...&reason=...
+// POST /auth/reviewer/user-documents (JSON body: {"user_id":"...","reason":"..."})
 func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET or POST"})
 		return
 	}
 
@@ -2249,14 +2250,35 @@ func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
-	email := strings.TrimSpace(r.URL.Query().Get("email"))
+	var reqBody struct {
+		UserID string `json:"user_id"`
+		Email  string `json:"email"`
+		Reason string `json:"reason"`
+	}
+	if r.Method == http.MethodPost && r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil && !errors.Is(err, io.EOF) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+			return
+		}
+	}
+
+	userID := strings.TrimSpace(reqBody.UserID)
+	if userID == "" {
+		userID = strings.TrimSpace(r.URL.Query().Get("user_id"))
+	}
+	email := strings.TrimSpace(reqBody.Email)
+	if email == "" {
+		email = strings.TrimSpace(r.URL.Query().Get("email"))
+	}
 	if userID == "" && email == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id or email is required"})
 		return
 	}
 
-	reason := strings.TrimSpace(r.URL.Query().Get("reason"))
+	reason := strings.TrimSpace(reqBody.Reason)
+	if reason == "" {
+		reason = strings.TrimSpace(r.URL.Query().Get("reason"))
+	}
 	if reason == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required for out-of-band document access"})
 		return

@@ -319,9 +319,11 @@ func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
 }
 
 // HandleWebSocket upgrades the HTTP connection to a WebSocket protocol.
-// The client must provide a ?token= query parameter for user identification.
-//
-//	GET /chat/ws?token=<user_token>
+// The client may provide the token via:
+// - Header: Authorization: Bearer <token>
+// - Header: X-Reviewer-Token: <token>
+// - WebSocket subprotocol: Sec-WebSocket-Protocol: kyc-console-auth, <token>
+// - Query parameter: GET /chat/ws?token=<user_token> (deprecated: leaks into access logs)
 func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ip := handlerutil.GetIP(r)
 	if limited, remaining := c.wsLimiter.CheckAndRecord(ip); limited {
@@ -331,10 +333,45 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the token query parameter for user identification.
-	token := r.URL.Query().Get("token")
+	var token string
+	var requestedAuthSubprotocol bool
+
+	// 1. Extract from WebSocket subprotocols (e.g., "Sec-WebSocket-Protocol: kyc-console-auth, <token>")
+	for _, h := range r.Header.Values("Sec-WebSocket-Protocol") {
+		for _, v := range strings.Split(h, ",") {
+			part := strings.TrimSpace(v)
+			if part == "kyc-console-auth" {
+				requestedAuthSubprotocol = true
+			} else if requestedAuthSubprotocol && token == "" && part != "" {
+				token = part
+			}
+		}
+	}
+
+	// 2. Extract from standard headers
 	if token == "" {
-		http.Error(w, `{"error": "missing token query parameter"}`, http.StatusUnauthorized)
+		if auth := r.Header.Get("Authorization"); auth != "" {
+			if strings.HasPrefix(auth, "Bearer ") {
+				token = strings.TrimPrefix(auth, "Bearer ")
+			} else {
+				token = auth
+			}
+		}
+	}
+	if token == "" {
+		token = r.Header.Get("X-Reviewer-Token")
+	}
+	if token == "" {
+		token = r.Header.Get("X-Auth-Token")
+	}
+
+	// 3. Fallback: Parse the token query parameter (deprecated)
+	if token == "" {
+		token = r.URL.Query().Get("token")
+	}
+
+	if token == "" {
+		http.Error(w, `{"error": "missing token"}`, http.StatusUnauthorized)
 		return
 	}
 
@@ -386,7 +423,14 @@ func (c *Chat) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			return c.isOriginAllowed(r.Header.Get("Origin"))
 		},
 	}
-	conn, err := upgrader.Upgrade(w, r, nil)
+	var respHeader http.Header
+	if requestedAuthSubprotocol {
+		upgrader.Subprotocols = []string{"kyc-console-auth"}
+		respHeader = http.Header{
+			"Sec-WebSocket-Protocol": []string{"kyc-console-auth"},
+		}
+	}
+	conn, err := upgrader.Upgrade(w, r, respHeader)
 	if err != nil {
 		// #nosec G706 //nolint:gosec -- userID is from verified JWT claims, log injection not possible
 		log.Printf("[WS] Upgrade failed for user=%s: %v", userID, err)

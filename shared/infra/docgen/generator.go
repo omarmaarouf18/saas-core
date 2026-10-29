@@ -183,7 +183,17 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason.",
 		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
 	},
+	"POST /auth/reviewer/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason in POST body.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
 	"GET /auth/kyb-kye/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
+	"POST /auth/kyb-kye/user-documents": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents.",
 		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
