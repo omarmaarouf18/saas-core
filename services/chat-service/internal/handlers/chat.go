@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,6 +41,9 @@ const (
 	// Maximum message size allowed from peer (64 KB).
 	maxMessageSize = 64 * 1024
 )
+
+// validTicketContextIDRegex enforces that ticket context_id is an identifier (alphanumeric, dashes, colons, underscores, max 64 chars)
+var validTicketContextIDRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-\.:]{1,64}$`)
 
 // wsMessage is the expected JSON structure from WebSocket clients.
 type wsMessage struct {
@@ -830,7 +834,19 @@ func (c *Chat) HandleCreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticket, err := c.store.CreateTicketAndAssign(r.Context(), claims.UserID, req.ContextID)
+	contextID := strings.TrimSpace(req.ContextID)
+	if contextID != "" {
+		if len(contextID) > 64 || !validTicketContextIDRegex.MatchString(contextID) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error":   "invalid_context_id",
+				"code":    "invalid_context_id",
+				"message": "context_id must be empty or a valid identifier format (up to 64 alphanumeric characters, dashes, and underscores)",
+			})
+			return
+		}
+	}
+
+	ticket, err := c.store.CreateTicketAndAssign(r.Context(), claims.UserID, contextID)
 	if err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create ticket", err)
 		return

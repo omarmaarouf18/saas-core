@@ -1015,9 +1015,12 @@ type AdminReconciliationJobItem struct {
 	ID                   string    `json:"id"`
 	TenantID             string    `json:"tenant_id"`
 	OwnerID              string    `json:"owner_id"`
-	EmployeeID           string    `json:"employee_id,omitempty"`
+	EmployeeID           string    `json:"employee_id"`
 	CustomerID           string    `json:"customer_id"`
 	ServiceID            string    `json:"service_id"`
+	Category             string    `json:"category"`
+	PickupAddress        string    `json:"pickup_address"`
+	DropoffAddress       string    `json:"dropoff_address"`
 	BookedDistance       float64   `json:"booked_distance"`
 	ActualDistance       float64   `json:"actual_distance"`
 	WaypointsCount       int       `json:"waypoints_count"`

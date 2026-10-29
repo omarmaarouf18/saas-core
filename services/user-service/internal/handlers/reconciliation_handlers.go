@@ -407,6 +407,7 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 	}
 
 	items := make([]models.AdminReconciliationJobItem, 0, len(jobs))
+	categoryCache := make(map[string]string)
 	for _, j := range jobs {
 		var actualCash float64
 		if j.ActualCashAmount != nil {
@@ -423,6 +424,16 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 			}
 		}
 
+		category := ""
+		if j.ServiceID != "" {
+			if cat, ok := categoryCache[j.ServiceID]; ok {
+				category = cat
+			} else if svc := u.store.GetServiceByID(ctx, j.ServiceID); svc != nil {
+				category = svc.Category
+				categoryCache[j.ServiceID] = category
+			}
+		}
+
 		items = append(items, models.AdminReconciliationJobItem{
 			ID:                   j.ID,
 			TenantID:             j.OwnerID,
@@ -430,6 +441,9 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 			EmployeeID:           j.EmployeeID,
 			CustomerID:           j.UserID,
 			ServiceID:            j.ServiceID,
+			Category:             category,
+			PickupAddress:        j.Location.Address,
+			DropoffAddress:       j.Destination.Address,
 			BookedDistance:       j.BookedDistance,
 			ActualDistance:       actualDist,
 			WaypointsCount:       len(j.Waypoints),
