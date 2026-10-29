@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/project/gateway/internal/config"
+	"github.com/project/gateway/internal/iputil"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
 	"github.com/project/gateway/internal/version"
@@ -296,6 +298,21 @@ func VersionConfigHandler(adminToken string, versionStore *version.Store) http.H
 	}
 }
 
+// consoleClientIPHeader carries the reviewer's browser IP on saas-net. The
+// console sets it; the gateway trusts it only after the X-Internal-Token
+// check has passed and only when it parses as an IP.
+const consoleClientIPHeader = "X-Console-Client-IP"
+
+// reviewerClientIP returns the reviewer IP to report to auth-service. Call it
+// only after the internal token check: it trusts X-Console-Client-IP, never
+// X-Forwarded-For or X-Real-IP, and otherwise uses RemoteAddr.
+func reviewerClientIP(r *http.Request) string {
+	if ip := strings.TrimSpace(r.Header.Get(consoleClientIPHeader)); ip != "" && net.ParseIP(ip) != nil {
+		return ip
+	}
+	return iputil.ExtractIP(r.RemoteAddr)
+}
+
 // ReviewerVersionUpdateRequest is the payload for updating version config from the reviewer console.
 type ReviewerVersionUpdateRequest struct {
 	LatestVersion           string `json:"latest_version"`
@@ -334,14 +351,10 @@ func ReviewerVersionConfigHandler(internalToken, authServiceURL string, authClie
 		}
 		verifyReq.Header.Set("X-Internal-Token", internalToken)
 		verifyReq.Header.Set("X-Reviewer-Token", revToken)
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			verifyReq.Header.Set("X-Forwarded-For", xff)
-		} else if r.RemoteAddr != "" {
-			verifyReq.Header.Set("X-Forwarded-For", r.RemoteAddr)
-		}
-		if xri := r.Header.Get("X-Real-IP"); xri != "" {
-			verifyReq.Header.Set("X-Real-IP", xri)
-		}
+		// The reviewer rate limit in auth-service keys on this IP. A client
+		// X-Forwarded-For is never forwarded (rotating it reset the limit).
+		clientIP := reviewerClientIP(r)
+		verifyReq.Header.Set(consoleClientIPHeader, clientIP)
 
 		client := authClient
 		if client == nil {
@@ -437,7 +450,7 @@ func ReviewerVersionConfigHandler(internalToken, authServiceURL string, authClie
 			handlerutil.ShipSecurityEvent(r.Context(), "ADMIN_VERSION_CONFIG_CHANGED", "api-gateway", revIdentity.ID, "",
 				fmt.Sprintf("latest=%s min=%s enforce=%t reason=%s revision=%d",
 					updated.LatestVersion, updated.MinimumSupportedVersion, updated.EnforceMinimumVersion, reason, updated.Revision),
-				handlerutil.GetClientIP(r))
+				clientIP)
 
 			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
 				"message": "version configuration updated successfully",

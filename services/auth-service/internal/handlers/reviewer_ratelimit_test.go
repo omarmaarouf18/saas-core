@@ -285,7 +285,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 			req.RemoteAddr = consoleIP
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
-			req.Header.Set("X-Forwarded-For", clientIPA)
+			req.Header.Set(ConsoleClientIPHeader, clientIPA)
 			req.Header.Set("X-Reviewer-Token", fmt.Sprintf("bad-token-a-%d", i))
 			rec := httptest.NewRecorder()
 			a.VerifyReviewer(rec, req)
@@ -301,7 +301,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 		reqA4 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 		reqA4.RemoteAddr = consoleIP
 		reqA4.Header.Set("X-Internal-Token", a.internalServiceToken)
-		reqA4.Header.Set("X-Forwarded-For", clientIPA)
+		reqA4.Header.Set(ConsoleClientIPHeader, clientIPA)
 		reqA4.Header.Set("X-Reviewer-Token", validToken)
 		recA4 := httptest.NewRecorder()
 		a.VerifyReviewer(recA4, reqA4)
@@ -313,12 +313,44 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 		reqB := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 		reqB.RemoteAddr = consoleIP
 		reqB.Header.Set("X-Internal-Token", a.internalServiceToken)
-		reqB.Header.Set("X-Forwarded-For", clientIPB)
+		reqB.Header.Set(ConsoleClientIPHeader, clientIPB)
 		reqB.Header.Set("X-Reviewer-Token", validToken)
 		recB := httptest.NewRecorder()
 		a.VerifyReviewer(recB, reqB)
 		if recB.Code != http.StatusOK {
 			t.Fatalf("Reviewer B: expected 200 OK behind same console, got %d (body: %s)", recB.Code, recB.Body.String())
+		}
+	})
+
+	t.Run("RotatingForwardedFor_DoesNotResetPerIPLimit", func(t *testing.T) {
+		// A caller holding the internal token but rotating X-Forwarded-For
+		// (what a client could do through the gateway's /admin/version
+		// handler before ADMIN-API-FIX) stays on one per-IP key: RemoteAddr.
+		rotatorIP := "172.20.0.50:41000"
+		for i := 1; i <= 3; i++ {
+			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+			req.RemoteAddr = rotatorIP
+			req.Header.Set("X-Internal-Token", a.internalServiceToken)
+			req.Header.Set("X-Forwarded-For", fmt.Sprintf("192.0.2.%d", 100+i))
+			req.Header.Set("X-Reviewer-Token", fmt.Sprintf("rotating-bad-token-%d-%d", time.Now().UnixNano(), i))
+			rec := httptest.NewRecorder()
+			a.VerifyReviewer(rec, req)
+			if i < 3 && rec.Code != http.StatusUnauthorized {
+				t.Fatalf("attempt %d: expected 401, got %d", i, rec.Code)
+			}
+			if i == 3 && rec.Code != http.StatusTooManyRequests {
+				t.Fatalf("attempt 3: expected 429 (rotating XFF must not reset the limit), got %d", rec.Code)
+			}
+		}
+		req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
+		req.RemoteAddr = rotatorIP
+		req.Header.Set("X-Internal-Token", a.internalServiceToken)
+		req.Header.Set("X-Forwarded-For", "192.0.2.250")
+		req.Header.Set("X-Reviewer-Token", validToken)
+		rec := httptest.NewRecorder()
+		a.VerifyReviewer(rec, req)
+		if rec.Code != http.StatusTooManyRequests {
+			t.Fatalf("fresh XFF with valid token during lockout: expected 429, got %d", rec.Code)
 		}
 	})
 
@@ -330,7 +362,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 			req.RemoteAddr = consoleIP
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
-			req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d", 10+i))
+			req.Header.Set(ConsoleClientIPHeader, fmt.Sprintf("198.51.100.%d", 10+i))
 			req.Header.Set("X-Reviewer-Token", targetTokenPrefix)
 			rec := httptest.NewRecorder()
 			a.VerifyReviewer(rec, req)
@@ -346,7 +378,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 		req4 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 		req4.RemoteAddr = consoleIP
 		req4.Header.Set("X-Internal-Token", a.internalServiceToken)
-		req4.Header.Set("X-Forwarded-For", "198.51.100.99")
+		req4.Header.Set(ConsoleClientIPHeader, "198.51.100.99")
 		req4.Header.Set("X-Reviewer-Token", targetTokenPrefix)
 		rec4 := httptest.NewRecorder()
 		a.VerifyReviewer(rec4, req4)
@@ -365,7 +397,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 			req := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 			req.RemoteAddr = consoleIP
 			req.Header.Set("X-Internal-Token", a.internalServiceToken)
-			req.Header.Set("X-Forwarded-For", fmt.Sprintf("10.0.1.%d", i))
+			req.Header.Set(ConsoleClientIPHeader, fmt.Sprintf("10.0.1.%d", i))
 			req.Header.Set("X-Reviewer-Token", fmt.Sprintf("unique-token-%d-%d", time.Now().UnixNano(), i))
 			rec := httptest.NewRecorder()
 			a.VerifyReviewer(rec, req)
@@ -381,7 +413,7 @@ func TestReviewerRateLimiting_ForwardedClientIP_TokenPrefix_GlobalCeiling(t *tes
 		req5 := httptest.NewRequest(http.MethodGet, "/auth/reviewer/verify", nil)
 		req5.RemoteAddr = consoleIP
 		req5.Header.Set("X-Internal-Token", a.internalServiceToken)
-		req5.Header.Set("X-Forwarded-For", "10.0.2.1")
+		req5.Header.Set(ConsoleClientIPHeader, "10.0.2.1")
 		req5.Header.Set("X-Reviewer-Token", validToken)
 		rec5 := httptest.NewRecorder()
 		a.VerifyReviewer(rec5, req5)

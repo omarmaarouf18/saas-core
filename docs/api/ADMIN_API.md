@@ -31,10 +31,12 @@ Downstream services authenticate requests via `auth-service` at `GET /auth/revie
 - Rejects unauthenticated or invalid reviewer sessions with `401 Unauthorized` (`{"code": "unauthorized", "message": "invalid reviewer credentials"}`).
 
 ### 1.3 Rate Limiting Architecture
-To prevent lockout of the entire console when all requests route through a single egress IP, `/auth/reviewer/verify` and admin handlers enforce a composite rate limiter:
-- **Key**: Reviewer token SHA-256 hash prefix (first 16 hex chars) + Forwarded Client IP (from `X-Forwarded-For` or `RemoteAddr`).
-- **Trusted Forwarding**: Client IP is only accepted from forwarded headers when the request bears a valid `X-Internal-Token`.
-- **Tiered Budget**: Per-reviewer-client limit (10 failed attempts/min) plus a global fallback ceiling (100 req/min) to shield the authentication store.
+`authenticateReviewer` in auth-service (used by `/auth/reviewer/verify` and every reviewer endpoint) counts failed attempts on three keys:
+- **Per client IP**: 3 failures lock the key for 5 minutes. The key is the `X-Console-Client-IP` header **only** when the request also carries a valid `X-Internal-Token` and the value parses as an IP; otherwise it is the TCP peer (`RemoteAddr`). `X-Forwarded-For` and `X-Real-IP` are never used for this key: rotating them used to reset the budget.
+- **Per token hash prefix** (`tok_prefix:` + first 16 hex chars of SHA-256 of the presented token): 3 failures lock that prefix for 5 minutes, whatever IP the attempts come from.
+- **Global ceiling**: 20 failures across all keys lock reviewer authentication for everyone for 5 minutes.
+
+The console must set `X-Console-Client-IP` to the reviewer's browser IP (as seen by the console behind Caddy). Until it does, every console request keys on the console container IP, so the per-IP budget is shared by all reviewers (the token-prefix and global limits are unaffected). The gateway's reviewer version handler (section 11) applies the same rule: it forwards `X-Console-Client-IP` from the console after its own internal token check, or the peer IP, and never forwards a client `X-Forwarded-For`.
 
 ### 1.4 Mutation Contract & Safety
 All mutation operations (state transitions, cancellations, hides, suspensions, version bumps) strictly follow these principles:
@@ -701,6 +703,7 @@ Returns the active minimum supported version, latest release version, and mandat
 
 - **Service**: `api-gateway`
 - **Permissions**: Reviewer Token & `X-Internal-Token`
+- **Reachability**: internal network only. The console calls `${GATEWAY_INTERNAL_URL}/admin/version` (`https://api-gateway:${API_GATEWAY_PORT}` on saas-net, mTLS with the console's client certificate). The public edge answers `404` for `/admin` and `/admin/*` (and `/api/v1/admin/*`) on `api.logiclinkeg.tech`, and the gateway proxy strips `X-Internal-Token` from every client request, so the endpoint cannot be used from the internet.
 - **Response `200 OK`**:
 ```json
 {

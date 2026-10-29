@@ -12,6 +12,12 @@
         reverse_proxy http://kyc-reviewer-console:8090
     }
 
+    # Mirrors production: admin paths are never served through the edge.
+    @admin path /api/v1/admin /api/v1/admin/* /admin /admin/*
+    handle @admin {
+        respond 404
+    }
+
     handle {
         reverse_proxy https://api-gateway:8080 {
             transport http {

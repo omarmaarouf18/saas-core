@@ -253,3 +253,67 @@ func TestReviewerVersionConfigHandler_MongoPersistence(t *testing.T) {
 		t.Fatalf("expected version config to persist across restarts, got latest=%s min=%s", recovered.LatestVersion, recovered.MinimumSupportedVersion)
 	}
 }
+
+// TestReviewerVersionHandler_NeverForwardsClientForwardedFor pins that the
+// gateway's reviewer version handler does not pass a client X-Forwarded-For
+// (or X-Real-IP) to auth-service: rotating it reset the per-IP reviewer rate
+// limit. auth-service only receives X-Console-Client-IP, taken from the
+// console header (trusted after the internal token check) or RemoteAddr.
+func TestReviewerVersionHandler_NeverForwardsClientForwardedFor(t *testing.T) {
+	internalToken := "mock-internal-token-xff"
+	type seen struct{ xff, xri, console string }
+	var got []seen
+	mockAuth := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = append(got, seen{r.Header.Get("X-Forwarded-For"), r.Header.Get("X-Real-IP"), r.Header.Get("X-Console-Client-IP")})
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"invalid reviewer token"}`))
+	}))
+	defer mockAuth.Close()
+
+	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), version.NewStore(nil, ""))
+
+	for i := 0; i < 3; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/admin/version", nil)
+		req.RemoteAddr = "172.20.0.9:50000"
+		req.Header.Set("X-Internal-Token", internalToken)
+		req.Header.Set("X-Reviewer-Token", fmt.Sprintf("bad-%d", i))
+		req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.%d", i))
+		req.Header.Set("X-Real-IP", fmt.Sprintf("198.51.101.%d", i))
+		handler.ServeHTTP(httptest.NewRecorder(), req)
+	}
+	if len(got) != 3 {
+		t.Fatalf("expected 3 verify calls, got %d", len(got))
+	}
+	for i, g := range got {
+		if g.xff != "" || g.xri != "" {
+			t.Fatalf("call %d forwarded client X-Forwarded-For=%q X-Real-IP=%q to auth-service", i, g.xff, g.xri)
+		}
+		if g.console != "172.20.0.9" {
+			t.Fatalf("call %d: X-Console-Client-IP = %q, want RemoteAddr IP 172.20.0.9", i, g.console)
+		}
+	}
+
+	// The console header is honoured (after the internal token check) when it is an IP.
+	got = nil
+	req := httptest.NewRequest(http.MethodGet, "/admin/version", nil)
+	req.RemoteAddr = "172.20.0.9:50000"
+	req.Header.Set("X-Internal-Token", internalToken)
+	req.Header.Set("X-Reviewer-Token", "bad")
+	req.Header.Set("X-Console-Client-IP", "203.0.113.10")
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+	if len(got) != 1 || got[0].console != "203.0.113.10" {
+		t.Fatalf("expected console client IP 203.0.113.10 forwarded, got %+v", got)
+	}
+
+	// Without the internal token nothing reaches auth-service.
+	got = nil
+	req = httptest.NewRequest(http.MethodGet, "/admin/version", nil)
+	req.Header.Set("X-Internal-Token", "wrong")
+	req.Header.Set("X-Reviewer-Token", "bad")
+	req.Header.Set("X-Console-Client-IP", "203.0.113.10")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized || len(got) != 0 {
+		t.Fatalf("expected 401 and no auth call without internal token, got %d and %d calls", rec.Code, len(got))
+	}
+}

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -2799,28 +2800,26 @@ func hashTokenPrefix(token string) string {
 	return hexStr
 }
 
-// getReviewerClientIP extracts the reviewer's forwarded client IP.
-// Only requests presenting a valid X-Internal-Token (such as kyc-reviewer-console)
-// are trusted to forward client IP via X-Forwarded-For or X-Real-IP.
-// If the internal token is invalid or missing, or no forwarded header is provided,
-// it falls back to getClientIP.
+// ConsoleClientIPHeader carries the reviewer's browser IP from the
+// kyc-reviewer-console (or the gateway's reviewer version handler) to
+// auth-service, for the per-IP reviewer rate limit.
+const ConsoleClientIPHeader = "X-Console-Client-IP"
+
+// getReviewerClientIP returns the key for the per-IP reviewer rate limit.
+// X-Forwarded-For and X-Real-IP are never trusted here: every hop can append
+// to them, and a caller that rotated them got a fresh per-IP budget on each
+// attempt. Only the dedicated X-Console-Client-IP header is trusted, and only
+// on a request that presents the valid X-Internal-Token (the console, or the
+// gateway's reviewer version handler, which both sit on saas-net) and whose
+// value parses as an IP. Everything else keys on RemoteAddr.
 func (a *Auth) getReviewerClientIP(r *http.Request) string {
 	internalToken := r.Header.Get("X-Internal-Token")
 	if a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) == 1 {
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			parts := strings.Split(xff, ",")
-			ip := strings.TrimSpace(parts[0])
-			if ip != "" {
-				return cleanIP(ip)
-			}
-		} else if rip := r.Header.Get("X-Real-IP"); rip != "" {
-			ip := strings.TrimSpace(rip)
-			if ip != "" {
-				return cleanIP(ip)
-			}
+		if ip := cleanIP(strings.TrimSpace(r.Header.Get(ConsoleClientIPHeader))); ip != "" && net.ParseIP(ip) != nil {
+			return ip
 		}
 	}
-	return a.getClientIP(r)
+	return cleanIP(r.RemoteAddr)
 }
 
 func cleanIP(ip string) string {
