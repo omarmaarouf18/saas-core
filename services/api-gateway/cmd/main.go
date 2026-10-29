@@ -212,7 +212,12 @@ func main() {
 		}
 	}()
 
-	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
+	tlsConfig, err := serverTLSConfig(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath)
+	if err != nil {
+		log.Fatalf("[GATEWAY] TLS setup failed: %v", err)
+	}
+	server.TLSConfig = tlsConfig
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }
