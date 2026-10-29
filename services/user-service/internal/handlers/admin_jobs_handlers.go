@@ -321,6 +321,19 @@ func (u *UserService) AdminListJobs(w http.ResponseWriter, r *http.Request) {
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOBS_LISTED", "user-service", reviewer.ID, "", fmt.Sprintf("listed %d jobs (total=%d, page=%d)", len(items), total, page), handlerutil.GetClientIP(r))
 
+	// The list returns recipient phones unmasked, so a page that carries any
+	// is an unmasked view and gets an admin audit record listing the job ids.
+	var unmaskedIDs []string
+	for _, it := range items {
+		if it.Recipient != nil && it.Recipient.Phone != "" {
+			unmaskedIDs = append(unmaskedIDs, it.ID)
+		}
+	}
+	if len(unmaskedIDs) > 0 {
+		u.recordAdminAudit(r, reviewer.ID, auditJobSearch, "job", jobID, "",
+			fmt.Sprintf("page=%d results=%d unmasked_phone_jobs=%s", page, len(items), strings.Join(unmaskedIDs, ",")))
+	}
+
 	writeJSON(w, http.StatusOK, AdminJobListResponse{
 		Jobs:  items,
 		Total: total,

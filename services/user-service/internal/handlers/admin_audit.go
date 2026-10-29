@@ -20,6 +20,7 @@ import (
 // "<resource>.<verb>", lower snake case. The full list is in
 // docs/api/ADMIN_API.md section 10 (ADMIN-API-FIX).
 const (
+	auditJobSearch             = "job.search"
 	auditJobView               = "job.view"
 	auditJobCancel             = "job.cancel"
 	auditJobCompleteStuckCOD   = "job.complete_stuck_cod"

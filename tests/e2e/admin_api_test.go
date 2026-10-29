@@ -856,6 +856,7 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 			seen[e.Action] = e.Source
 		}
 		want := map[string]string{
+			"job.search":             "user-service",
 			"job.view":               "user-service",
 			"job.cancel":             "user-service",
 			"job.complete_stuck_cod": "user-service",
