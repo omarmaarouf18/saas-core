@@ -576,7 +576,12 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /admin/subscriptions/queue": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
-		Function:    "Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023).",
+		Function:    "Returns pending_payment subscriptions oldest first with tenant details and owner contact (ADR-0023).",
+		Targets:     "Reads `subscriptions` collection. Paginated.",
+	},
+	"GET /users/admin/subscriptions/queue": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns pending_payment subscriptions oldest first with tenant details and owner contact (ADR-0023).",
 		Targets:     "Reads `subscriptions` collection. Paginated.",
 	},
 	"POST /users/admin/subscriptions/activate": {

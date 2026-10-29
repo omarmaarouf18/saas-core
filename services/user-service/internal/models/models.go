@@ -1081,3 +1081,35 @@ type AdminPayoutListResponse struct {
 	Page    int              `json:"page"`
 	Limit   int              `json:"limit"`
 }
+
+// SubscriptionOwnerContact represents contact details for a tenant owner in the subscription queue.
+type SubscriptionOwnerContact struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
+}
+
+// AdminSubscriptionQueueItem represents a pending subscription waiting for manual activation.
+type AdminSubscriptionQueueItem struct {
+	ID             string                   `json:"id"`
+	SubscriptionID string                   `json:"subscription_id"`
+	TenantID       string                   `json:"tenant_id"`
+	TenantName     string                   `json:"tenant_name"`
+	RequestedPlan  string                   `json:"requested_plan"`
+	RequestedAt    time.Time                `json:"requested_at"`
+	OwnerContact   SubscriptionOwnerContact `json:"owner_contact"`
+	Tier           PlanTier                 `json:"tier"`
+	Status         string                   `json:"status"`
+	StartedAt      time.Time                `json:"started_at"`
+	ExpiresAt      *time.Time               `json:"expires_at,omitempty"`
+	Reason         string                   `json:"reason,omitempty"`
+}
+
+// AdminSubscriptionQueueResponse is the payload returned by GET /admin/subscriptions/queue.
+type AdminSubscriptionQueueResponse struct {
+	Queue         []AdminSubscriptionQueueItem `json:"queue"`
+	Subscriptions []AdminSubscriptionQueueItem `json:"subscriptions"`
+	Total         int64                        `json:"total"`
+	Page          int64                        `json:"page"`
+	Limit         int64                        `json:"limit"`
+}

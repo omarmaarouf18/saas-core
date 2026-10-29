@@ -1886,6 +1886,46 @@ func (s *MongoDB) ListSubscriptions(ctx context.Context, status string, search s
 	return subs, total, nil
 }
 
+// ListSubscriptionQueue returns subscriptions in PlanPendingPayment status, ordered oldest first (started_at ASC).
+func (s *MongoDB) ListSubscriptionQueue(ctx context.Context, page, limit int64) ([]models.Subscription, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{
+		"tier": models.PlanPendingPayment,
+	}
+
+	total, err := s.subscriptions.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count pending subscriptions: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "started_at", Value: 1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.subscriptions.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query pending subscriptions: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var subs []models.Subscription
+	if err := cursor.All(ctx, &subs); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode pending subscriptions: %w", err)
+	}
+	if subs == nil {
+		subs = []models.Subscription{}
+	}
+	return subs, total, nil
+}
+
 // AdminActivateSubscription atomically activates a subscription to PlanPaid with durationDays expiry (ADR-0023).
 func (s *MongoDB) AdminActivateSubscription(ctx context.Context, tenantID, subscriptionID string, durationDays int, reviewerID string) (*models.Subscription, error) {
 	if durationDays <= 0 {
