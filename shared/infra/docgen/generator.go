@@ -44,12 +44,22 @@ var KnownEndpoints = map[string]struct {
 	"GET /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Fetches current mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Reads in-memory version store.",
+		Targets:     "Reads platform_versions collection in gateway database.",
 	},
 	"PUT /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Updates mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Updates in-memory version store.",
+		Targets:     "Updates platform_versions collection in gateway database.",
+	},
+	"GET /admin/version": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Fetches mobile client version policy for reviewer console oversight (ADR-0023).",
+		Targets:     "Reads platform_versions collection in gateway database.",
+	},
+	"PUT /admin/version": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Updates mobile client version policy from reviewer console with mandatory audit reason (ADR-0023).",
+		Targets:     "Updates platform_versions collection in gateway database.",
 	},
 	"GET /": {
 		Permissions: "Public",
@@ -885,8 +895,10 @@ func GenerateEndpointsList(repoRoot string) ([]Endpoint, error) {
 	// Add api-gateway static endpoints
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health", Service: "api-gateway", Permissions: "Public", Function: "Public gateway health status.", Targets: "None.", HandlerName: "GatewayHealth"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health/internal", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Returns circuit breaker metrics.", Targets: "Reads breaker memory.", HandlerName: "GatewayInternalHealth"})
-	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads in-memory version store.", HandlerName: "GetVersionConfig"})
-	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates in-memory version store.", HandlerName: "UpdateVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads platform_versions collection in gateway database.", HandlerName: "GetVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates platform_versions collection in gateway database.", HandlerName: "UpdateVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/admin/version", Service: "api-gateway", Permissions: "Reviewer Token & `X-Internal-Token`", Function: "Fetches mobile client version policy for reviewer console oversight (ADR-0023).", Targets: "Reads platform_versions collection in gateway database.", HandlerName: "GetReviewerVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/admin/version", Service: "api-gateway", Permissions: "Reviewer Token & `X-Internal-Token`", Function: "Updates mobile client version policy from reviewer console with mandatory audit reason (ADR-0023).", Targets: "Updates platform_versions collection in gateway database.", HandlerName: "UpdateReviewerVersionConfig"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/", Service: "api-gateway", Permissions: "Public", Function: "Root index.", Targets: "None.", HandlerName: "GatewayIndex"})
 
 	services := []struct {
