@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,6 +46,26 @@ func (u *UserService) ListServices(w http.ResponseWriter, r *http.Request) {
 		}
 		if isLocalPath(svc.PhotoURL) {
 			svc.PhotoURL = ""
+		}
+		if svc.IsHidden {
+			// Hidden from marketplace: only the owner or reviewer sees it
+			callerToken := resolveOwnerAuthToken(r, q.Get("owner_token"), q.Get("owner_id"))
+			isOwner := false
+			if callerToken != "" {
+				if ownerID, err := resolveTokenWithRole(callerToken, "owner"); err == nil && ownerID == svc.TenantID {
+					isOwner = true
+				} else if callerToken == svc.TenantID {
+					isOwner = true
+				}
+			}
+			if u.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(u.internalServiceToken)) == 1 {
+				isOwner = true
+			}
+			if !isOwner {
+				writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
+				return
+			}
+			svc.HiddenNotice = "hidden by support: " + svc.HiddenReason
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"count":    1,

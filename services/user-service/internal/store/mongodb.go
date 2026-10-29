@@ -287,9 +287,10 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) error {
 // Service operations — with 2dsphere spatial queries
 // ---------------------------------------------------------------------------
 
-// ErrServiceExists is returned by CreateService when a service with the same
-// ID already exists.
-var ErrServiceExists = errors.New("store: service already exists")
+var (
+	ErrServiceExists   = errors.New("store: service already exists")
+	ErrServiceNotFound = errors.New("store: service not found")
+)
 
 // CreateService inserts a new service. A duplicate ID returns
 // ErrServiceExists; any other insert failure is returned wrapped (BE-ERR).
@@ -345,10 +346,141 @@ func (s *MongoDB) UpdateServiceFields(ctx context.Context, id, tenantID string, 
 	return &updated, nil
 }
 
+// AdminListServices returns a paginated list of services matching filters for the reviewer console.
+func (s *MongoDB) AdminListServices(ctx context.Context, tenantID, name string, hasPhoto, hidden *bool, page, limit int64) ([]models.Service, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if tenantID != "" {
+		filter["tenant_id"] = tenantID
+	}
+	if name != "" {
+		filter["name"] = bson.M{"$regex": regexp.QuoteMeta(name), "$options": "i"}
+	}
+	if hasPhoto != nil {
+		if *hasPhoto {
+			filter["photo_url"] = bson.M{"$exists": true, "$nin": bson.A{"", nil}}
+		} else {
+			filter["$or"] = bson.A{
+				bson.M{"photo_url": bson.M{"$exists": false}},
+				bson.M{"photo_url": ""},
+				bson.M{"photo_url": nil},
+			}
+		}
+	}
+	if hidden != nil {
+		if *hidden {
+			filter["is_hidden"] = true
+		} else {
+			filter["$or"] = bson.A{
+				bson.M{"is_hidden": bson.M{"$exists": false}},
+				bson.M{"is_hidden": false},
+			}
+		}
+	}
+
+	total, err := s.services.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: count services: %w", err)
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(skip).SetLimit(limit)
+	cur, err := s.services.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: find services: %w", err)
+	}
+	defer cur.Close(ctx)
+
+	var svcs []models.Service
+	if err := cur.All(ctx, &svcs); err != nil {
+		return nil, 0, fmt.Errorf("store: decode services: %w", err)
+	}
+	if svcs == nil {
+		svcs = []models.Service{}
+	}
+	return svcs, total, nil
+}
+
+// AdminSetServiceHidden updates the visibility of a service (hide or unhide).
+func (s *MongoDB) AdminSetServiceHidden(ctx context.Context, serviceID string, isHidden bool, reviewerID, reason string) (*models.Service, error) {
+	now := time.Now().UTC()
+	var update bson.M
+	if isHidden {
+		update = bson.M{
+			"$set": bson.M{
+				"is_hidden":     true,
+				"hidden_reason": reason,
+				"hidden_by":     reviewerID,
+				"updated_at":    now,
+			},
+		}
+	} else {
+		update = bson.M{
+			"$set": bson.M{
+				"is_hidden":     false,
+				"hidden_reason": "",
+				"hidden_by":     "",
+				"updated_at":    now,
+			},
+		}
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.services.FindOneAndUpdate(ctx, bson.M{"_id": serviceID}, update, opts)
+	if res.Err() != nil {
+		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, fmt.Errorf("store: update service visibility: %w", res.Err())
+	}
+	var svc models.Service
+	if err := res.Decode(&svc); err != nil {
+		return nil, fmt.Errorf("store: decode updated service: %w", err)
+	}
+	return &svc, nil
+}
+
+// AdminRemoveServicePhoto removes the photo from a service in MongoDB and returns the previous service object.
+func (s *MongoDB) AdminRemoveServicePhoto(ctx context.Context, serviceID string) (*models.Service, error) {
+	var oldSvc models.Service
+	if err := s.services.FindOne(ctx, bson.M{"_id": serviceID}).Decode(&oldSvc); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, fmt.Errorf("store: find service %s: %w", serviceID, err)
+	}
+
+	if oldSvc.PhotoURL == "" {
+		return nil, fmt.Errorf("service has no photo to remove")
+	}
+
+	now := time.Now().UTC()
+	_, err := s.services.UpdateOne(ctx, bson.M{"_id": serviceID}, bson.M{
+		"$set": bson.M{
+			"photo_url":  "",
+			"updated_at": now,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("store: remove service photo: %w", err)
+	}
+	return &oldSvc, nil
+}
+
 // ListServices uses MongoDB $nearSphere for proximity filtering instead of linear Haversine scan.
 func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64, limit, offset int64) []models.ServiceWithPrice {
 	limit, offset = clampPage(limit, offset, 50, 200)
 	var filter bson.M
+	notHidden := bson.A{
+		bson.M{"is_hidden": bson.M{"$exists": false}},
+		bson.M{"is_hidden": false},
+	}
 	if nearBy {
 		if maxDistKm <= 0 {
 			maxDistKm = 50
@@ -360,9 +492,12 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 					"$maxDistance": maxDistKm * 1000, // meters
 				},
 			},
+			"$or": notHidden,
 		}
 	} else {
-		filter = bson.M{}
+		filter = bson.M{
+			"$or": notHidden,
+		}
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset)

@@ -465,6 +465,20 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/jobs/complete-stuck-cod", u.AdminCompleteStuckCODJob)
 	mux.HandleFunc("/users/admin/jobs/{id}/complete-stuck-cod", u.AdminCompleteStuckCODJob)
 	mux.HandleFunc("/admin/jobs/{id}/complete-stuck-cod", u.AdminCompleteStuckCODJob)
+	mux.HandleFunc("/users/admin/services", u.AdminListServices)
+	mux.HandleFunc("/admin/services", u.AdminListServices)
+	mux.HandleFunc("/users/admin/services/hide", u.AdminHideService)
+	mux.HandleFunc("/admin/services/hide", u.AdminHideService)
+	mux.HandleFunc("/users/admin/services/{id}/hide", u.AdminHideService)
+	mux.HandleFunc("/admin/services/{id}/hide", u.AdminHideService)
+	mux.HandleFunc("/users/admin/services/unhide", u.AdminUnhideService)
+	mux.HandleFunc("/admin/services/unhide", u.AdminUnhideService)
+	mux.HandleFunc("/users/admin/services/{id}/unhide", u.AdminUnhideService)
+	mux.HandleFunc("/admin/services/{id}/unhide", u.AdminUnhideService)
+	mux.HandleFunc("/users/admin/services/photo/remove", u.AdminRemoveServicePhoto)
+	mux.HandleFunc("/admin/services/photo/remove", u.AdminRemoveServicePhoto)
+	mux.HandleFunc("/users/admin/services/{id}/photo/remove", u.AdminRemoveServicePhoto)
+	mux.HandleFunc("/admin/services/{id}/photo/remove", u.AdminRemoveServicePhoto)
 }
 
 // ---------------------------------------------------------------------------

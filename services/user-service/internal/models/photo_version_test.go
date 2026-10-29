@@ -50,6 +50,7 @@ func TestServiceWithPrice_JSONHasEveryField(t *testing.T) {
 		PhotoURL: "services/s1/photo_aa.jpg", Address: "a", WorkingHours: "w", CoverageRadiusKM: 6,
 		ScheduleMode: ScheduleModeSameDaily, OpenTime: "08:00", CloseTime: "20:00",
 		PerDaySchedule: []DaySchedule{{Day: "mon"}}, Timezone: DefaultServiceTimezone,
+		IsHidden: true, HiddenReason: "r", HiddenBy: "u", HiddenNotice: "n",
 	}
 	for name, v := range map[string]any{
 		"Service":            full,

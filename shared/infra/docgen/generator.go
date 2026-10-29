@@ -689,6 +689,76 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Marks a stuck COD job by ID completed using the FIX-COD-RECON path with mandatory reason, CAS transition, cash calculation, and party notifications.",
 		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
 	},
+	"GET /users/admin/services": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services; lists marketplace services for reviewer moderation with search and status filters.",
+		Targets:     "Reads `services` collection. Ships security audit event.",
+	},
+	"GET /admin/services": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists marketplace services for reviewer moderation with filters by tenant, name, has_photo, and hidden status.",
+		Targets:     "Reads `services` collection. Ships security audit event.",
+	},
+	"POST /users/admin/services/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/hide; hides a service from marketplace with mandatory reason and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Hides a service from the public marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/{id}/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/hide; hides a service by ID with mandatory reason and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/{id}/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Hides a service by ID from the public marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/unhide; restores a hidden service to the marketplace with mandatory reason.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Restores a hidden service to the marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/{id}/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/unhide; restores a hidden service by ID to the marketplace.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/{id}/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Restores a hidden service by ID to the marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/photo/remove; deletes stored photo object via existing delete path and clears photo_url.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /admin/services/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Deletes a service's stored photo object via the existing delete path, clears photo_url, and notifies owner.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /users/admin/services/{id}/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/photo/remove; deletes stored photo object by service ID.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /admin/services/{id}/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Deletes stored photo object by service ID via existing delete path, clears photo_url, and notifies owner.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",
 		Function:    "Updates employee standalone availability GPS coordinates and heartbeat for proximity-based cascade dispatch.",

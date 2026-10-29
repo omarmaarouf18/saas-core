@@ -59,6 +59,10 @@ type Service struct {
 	CloseTime      string        `json:"close_time,omitempty"       bson:"close_time,omitempty"`    // "HH:mm" 24h, same_daily
 	PerDaySchedule []DaySchedule `json:"per_day_schedule,omitempty" bson:"per_day_schedule,omitempty"`
 	Timezone       string        `json:"timezone,omitempty"         bson:"timezone,omitempty"` // IANA, default "Africa/Cairo"
+	IsHidden       bool          `json:"is_hidden,omitempty"         bson:"is_hidden,omitempty"`
+	HiddenReason   string        `json:"hidden_reason,omitempty"     bson:"hidden_reason,omitempty"`
+	HiddenBy       string        `json:"hidden_by,omitempty"         bson:"hidden_by,omitempty"`
+	HiddenNotice   string        `json:"hidden_notice,omitempty"     bson:"-"`
 }
 
 // PhotoVersionOf returns the photo_version of a service photo key: the
@@ -79,12 +83,21 @@ func PhotoVersionOf(photoKey string) string {
 // marshalled from Service.MarshalJSON without recursing.
 type serviceFields Service
 
-// MarshalJSON adds the derived photo_version to a Service.
+// MarshalJSON adds the derived photo_version and hidden_notice to a Service.
 func (s Service) MarshalJSON() ([]byte, error) {
+	notice := s.HiddenNotice
+	if s.IsHidden && s.HiddenReason != "" && notice == "" {
+		notice = "hidden by support: " + s.HiddenReason
+	}
 	return json.Marshal(struct {
 		serviceFields
 		PhotoVersion string `json:"photo_version,omitempty"`
-	}{serviceFields(s), PhotoVersionOf(s.PhotoURL)})
+		HiddenNotice string `json:"hidden_notice,omitempty"`
+	}{
+		serviceFields: serviceFields(s),
+		PhotoVersion:  PhotoVersionOf(s.PhotoURL),
+		HiddenNotice:  notice,
+	})
 }
 
 // Schedule mode literals for Service.ScheduleMode (ADR-0025).
