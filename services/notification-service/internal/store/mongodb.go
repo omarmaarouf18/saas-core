@@ -45,6 +45,7 @@ type Notification struct {
 type Store interface {
 	InsertNotification(ctx context.Context, notif *Notification) error
 	ListForUser(ctx context.Context, tenantID, userID string, roles []string, limit int, before *time.Time) ([]Notification, error)
+	ListByJobID(ctx context.Context, jobID string, limit int) ([]Notification, error)
 	MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
 	MarkAllRead(ctx context.Context, tenantID, userID string, roles []string) error
 	Delete(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
@@ -441,4 +442,29 @@ func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string, roles 
 	sharedFilter := userMutationFilter(tenantID, userID, roles, "")
 	_, err := s.notifications.UpdateMany(ctx, sharedFilter, bson.M{"$addToSet": bson.M{"dismissed_by": userID}})
 	return err
+}
+
+// ListByJobID returns notifications associated with a given job ID.
+func (s *MongoDB) ListByJobID(ctx context.Context, jobID string, limit int) ([]Notification, error) {
+	if s == nil || s.notifications == nil || jobID == "" {
+		return []Notification{}, nil
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 50
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(int64(limit))
+	cursor, err := s.notifications.Find(ctx, bson.M{"job_id": jobID}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var items []Notification
+	if err := cursor.All(ctx, &items); err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []Notification{}
+	}
+	return items, nil
 }

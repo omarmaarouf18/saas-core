@@ -1133,3 +1133,19 @@ func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingKYC int64, newTo
 
 	return pendingKYC, newToday, new7d, suspended, nil
 }
+
+// GetUserByPhone looks up a user by exact phone number match.
+func (s *MongoDB) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
+	if s == nil || s.users == nil || phone == "" {
+		return nil, nil
+	}
+	var user models.User
+	err := s.users.FindOne(ctx, bson.M{"phone": phone}).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}

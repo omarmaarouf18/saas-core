@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -105,5 +106,71 @@ func TestAuth_GetInternalOverviewStats(t *testing.T) {
 	}
 	if stats["suspended_accounts"] < 1 {
 		t.Errorf("expected at least 1 suspended_accounts, got %d", stats["suspended_accounts"])
+	}
+}
+
+func TestAuth_GetUserByPhone(t *testing.T) {
+	a, s, cleanup := setupTestAuth(t)
+	if a == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+	phone := "+201012345678"
+	s.CreateUser(ctx, &models.User{
+		ID:        "user-phone-test",
+		Email:     "phone@example.com",
+		Username:  "phone_user",
+		Phone:     phone,
+		Role:      models.RoleUser,
+		IsActive:  true,
+		CreatedAt: time.Now().UTC(),
+	})
+
+	// 1. Missing / invalid internal token -> 401
+	reqNoAuth := httptest.NewRequest(http.MethodGet, "/auth/internal/user-by-phone?phone="+phone, nil)
+	recNoAuth := httptest.NewRecorder()
+	a.GetUserByPhone(recNoAuth, reqNoAuth)
+	if recNoAuth.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401, got %d", recNoAuth.Code)
+	}
+
+	// 2. Missing phone parameter -> 400
+	reqNoPhone := httptest.NewRequest(http.MethodGet, "/auth/internal/user-by-phone", nil)
+	reqNoPhone.Header.Set("X-Internal-Token", a.internalServiceToken)
+	recNoPhone := httptest.NewRecorder()
+	a.GetUserByPhone(recNoPhone, reqNoPhone)
+	if recNoPhone.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", recNoPhone.Code)
+	}
+
+	// 3. User not found -> 404
+	reqNotFound := httptest.NewRequest(http.MethodGet, "/auth/internal/user-by-phone?phone="+url.QueryEscape("+201999999999"), nil)
+	reqNotFound.Header.Set("X-Internal-Token", a.internalServiceToken)
+	recNotFound := httptest.NewRecorder()
+	a.GetUserByPhone(recNotFound, reqNotFound)
+	if recNotFound.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", recNotFound.Code)
+	}
+
+	// 4. Found -> 200
+	reqFound := httptest.NewRequest(http.MethodGet, "/auth/internal/user-by-phone?phone="+url.QueryEscape(phone), nil)
+	reqFound.Header.Set("X-Internal-Token", a.internalServiceToken)
+	recFound := httptest.NewRecorder()
+	a.GetUserByPhone(recFound, reqFound)
+	if recFound.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", recFound.Code, recFound.Body.String())
+	}
+
+	var u struct {
+		ID    string `json:"id"`
+		Phone string `json:"phone"`
+	}
+	if err := json.Unmarshal(recFound.Body.Bytes(), &u); err != nil {
+		t.Fatalf("decode err: %v", err)
+	}
+	if u.ID != "user-phone-test" || u.Phone != phone {
+		t.Errorf("expected user-phone-test and %s, got %s and %s", phone, u.ID, u.Phone)
 	}
 }

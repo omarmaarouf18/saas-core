@@ -133,6 +133,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Returns counts for pending KYB/KYE, accounts created today/7d, and suspended accounts for admin console aggregation.",
 		Targets:     "Reads `users` collection.",
 	},
+	"GET /auth/internal/user-by-phone": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Looks up user profile by exact phone number for internal service resolution.",
+		Targets:     "Reads `users` collection.",
+	},
 	"GET /auth/audit-log": {
 		Permissions: "Tenant Owner JWT",
 		Function:    "Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred).",
@@ -370,6 +375,11 @@ var KnownEndpoints = map[string]struct {
 	"GET /notifications/history": {
 		Permissions: "User JWT",
 		Function:    "Returns the authenticated user's persisted notifications, paginated.",
+		Targets:     "Reads `notifications` collection.",
+	},
+	"GET /notifications/internal/by-job": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns notifications sent for a given job ID.",
 		Targets:     "Reads `notifications` collection.",
 	},
 	"POST /notifications/{id}/read": {
@@ -618,6 +628,26 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Returns aggregated metrics across user-service (subscriptions, GPS disputes, stuck COD jobs, jobs today) and calls auth/chat services with resilient fallbacks.",
 		Targets:     "Reads `subscriptions` and `jobs` collections, calls `auth-service` and `chat-service` internal overview endpoints. Ships security audit event.",
+	},
+	"GET /users/admin/jobs": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs; paginated job lookup with filters by id, phone, actor, status, and date range.",
+		Targets:     "Queries `jobs` collection, resolves phones via `auth-service`.",
+	},
+	"GET /admin/jobs": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Paginated job lookup with filters by id, phone, customer/owner/courier id, status, and date range.",
+		Targets:     "Queries `jobs` collection, resolves phones via `auth-service`.",
+	},
+	"GET /users/admin/jobs/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}; full v2 job detail view with unmasked phones, status history, price, ratings, reconciliation flags, and notifications.",
+		Targets:     "Reads `jobs` and `ratings` collections, calls `auth-service` and `notification-service`. Ships security audit event.",
+	},
+	"GET /admin/jobs/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Full v2 job detail view with unmasked phones, status history, price, ratings, reconciliation flags, and notifications.",
+		Targets:     "Reads `jobs` and `ratings` collections, calls `auth-service` and `notification-service`. Ships security audit event.",
 	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",

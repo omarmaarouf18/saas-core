@@ -2661,3 +2661,121 @@ func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingSubs int64, gpsD
 
 	return pendingSubs, gpsDisputes, stuckCODJobs, jobsToday, nil
 }
+
+// GetRatingsForJob returns all ratings submitted for a job.
+func (s *MongoDB) GetRatingsForJob(ctx context.Context, jobID string) ([]*models.Rating, error) {
+	if s == nil || s.ratings == nil || jobID == "" {
+		return []*models.Rating{}, nil
+	}
+	cursor, err := s.ratings.Find(ctx, bson.M{"job_id": jobID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var ratings []*models.Rating
+	if err := cursor.All(ctx, &ratings); err != nil {
+		return nil, err
+	}
+	if ratings == nil {
+		ratings = []*models.Rating{}
+	}
+	return ratings, nil
+}
+
+// AdminJobFilter holds filtering criteria for reviewer jobs search.
+type AdminJobFilter struct {
+	JobID                   string
+	CustomerID              string
+	OwnerID                 string
+	CourierID               string
+	Phone                   string
+	ResolvedUserIDsForPhone []string
+	Status                  string
+	DateFrom                *time.Time
+	DateTo                  *time.Time
+}
+
+// AdminListJobs returns a paginated list of jobs matching the filters, plus total count.
+func (s *MongoDB) AdminListJobs(ctx context.Context, f AdminJobFilter, page, limit int64) ([]*models.Job, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	var andClauses []bson.M
+
+	if f.JobID != "" {
+		andClauses = append(andClauses, bson.M{"_id": f.JobID})
+	}
+	if f.CustomerID != "" {
+		andClauses = append(andClauses, bson.M{"user_id": f.CustomerID})
+	}
+	if f.OwnerID != "" {
+		andClauses = append(andClauses, bson.M{"owner_id": f.OwnerID})
+	}
+	if f.CourierID != "" {
+		andClauses = append(andClauses, bson.M{"employee_id": f.CourierID})
+	}
+	if f.Status != "" {
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"status": f.Status},
+			{"sub_status": f.Status},
+		}})
+	}
+	if f.Phone != "" {
+		phoneClauses := []bson.M{
+			{"recipient.phone": f.Phone},
+		}
+		for _, uid := range f.ResolvedUserIDsForPhone {
+			phoneClauses = append(phoneClauses, bson.M{"user_id": uid})
+			phoneClauses = append(phoneClauses, bson.M{"employee_id": uid})
+		}
+		andClauses = append(andClauses, bson.M{"$or": phoneClauses})
+	}
+	if f.DateFrom != nil || f.DateTo != nil {
+		dateFilter := bson.M{}
+		if f.DateFrom != nil {
+			dateFilter["$gte"] = *f.DateFrom
+		}
+		if f.DateTo != nil {
+			dateFilter["$lte"] = *f.DateTo
+		}
+		andClauses = append(andClauses, bson.M{"created_at": dateFilter})
+	}
+
+	filter := bson.M{}
+	if len(andClauses) == 1 {
+		filter = andClauses[0]
+	} else if len(andClauses) > 1 {
+		filter = bson.M{"$and": andClauses}
+	}
+
+	total, err := s.jobs.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: admin count jobs: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.jobs.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: admin query jobs: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var jobs []*models.Job
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, 0, fmt.Errorf("store: admin decode jobs: %w", err)
+	}
+	if jobs == nil {
+		jobs = []*models.Job{}
+	}
+	return jobs, total, nil
+}

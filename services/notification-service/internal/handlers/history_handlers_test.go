@@ -232,6 +232,21 @@ func (m *memoryStore) DeleteAll(ctx context.Context, tenantID, userID string, ro
 	return nil
 }
 
+func (m *memoryStore) ListByJobID(ctx context.Context, jobID string, limit int) ([]store.Notification, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var matched []store.Notification
+	for _, n := range m.notifications {
+		if n.JobID == jobID {
+			matched = append(matched, n)
+		}
+	}
+	if limit > 0 && len(matched) > limit {
+		matched = matched[:limit]
+	}
+	return matched, nil
+}
+
 func (m *memoryStore) Close(ctx context.Context) error {
 	return nil
 }

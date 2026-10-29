@@ -94,6 +94,7 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications/history", n.History)
 	mux.HandleFunc("/notifications/read-all", n.ReadAll)
 	mux.HandleFunc("/notifications/{id}/read", n.MarkRead)
+	mux.HandleFunc("/notifications/internal/by-job", n.GetNotificationsByJob)
 	mux.HandleFunc("/notifications/{id}", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodDelete:
@@ -804,4 +805,36 @@ func (n *Notification) releaseStreamSlot(tenantID string) {
 	if n.streamCaps[tenantID] > 0 {
 		n.streamCaps[tenantID]--
 	}
+}
+
+// GetNotificationsByJob returns notifications sent for a given job.
+// GET /notifications/internal/by-job?job_id=...
+func (n *Notification) GetNotificationsByJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if n.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(n.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	jobID := strings.TrimSpace(r.URL.Query().Get("job_id"))
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing job_id parameter"})
+		return
+	}
+
+	items, err := n.store.ListByJobID(r.Context(), jobID, 50)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query notifications", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"job_id":        jobID,
+		"notifications": items,
+	})
 }

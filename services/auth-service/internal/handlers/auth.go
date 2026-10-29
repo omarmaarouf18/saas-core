@@ -191,6 +191,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
 	mux.HandleFunc("/auth/logout", a.Logout)
 	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
+	mux.HandleFunc("/auth/internal/user-by-phone", a.GetUserByPhone)
 }
 
 // ---------------------------------------------------------------------------
@@ -3964,5 +3965,47 @@ func (a *Auth) GetInternalOverviewStats(w http.ResponseWriter, r *http.Request) 
 		"new_accounts_today": newToday,
 		"new_accounts_7d":    new7d,
 		"suspended_accounts": suspended,
+	})
+}
+
+// GetUserByPhone looks up a user by phone number for internal service calls.
+// GET /auth/internal/user-by-phone?phone=...
+func (a *Auth) GetUserByPhone(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	phone := strings.TrimSpace(r.URL.Query().Get("phone"))
+	if phone == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing phone parameter"})
+		return
+	}
+
+	user, err := a.store.GetUserByPhone(r.Context(), phone)
+	if err == nil && user == nil && !strings.HasPrefix(phone, "+") {
+		user, err = a.store.GetUserByPhone(r.Context(), "+"+phone)
+	}
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query user by phone", err)
+		return
+	}
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"phone":    user.Phone,
+		"role":     user.Role,
 	})
 }
