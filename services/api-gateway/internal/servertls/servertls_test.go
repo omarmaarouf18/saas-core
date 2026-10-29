@@ -1,4 +1,4 @@
-package main
+package servertls
 
 import (
 	"crypto/ecdsa"
@@ -64,9 +64,9 @@ func TestServerTLSConfig_InternalSNIGetsInternalCert(t *testing.T) {
 	intCert, intKey, _, _ := writeCert(t, dir, "api-gateway", []string{"api-gateway"}, false, caCert, caKey)
 	extCert, extKey, _, _ := writeCert(t, dir, "external", []string{"localhost"}, false, nil, nil)
 
-	cfg, err := serverTLSConfig(extCert, extKey, intCert, intKey)
+	cfg, err := Config(extCert, extKey, intCert, intKey)
 	if err != nil {
-		t.Fatalf("serverTLSConfig: %v", err)
+		t.Fatalf("Config: %v", err)
 	}
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 	srv.TLS = cfg
@@ -93,9 +93,9 @@ func TestServerTLSConfig_InternalSNIGetsInternalCert(t *testing.T) {
 	}
 
 	// No internal pair: everyone gets the external certificate.
-	cfg, err = serverTLSConfig(extCert, extKey, "", "")
+	cfg, err = Config(extCert, extKey, "", "")
 	if err != nil {
-		t.Fatalf("serverTLSConfig without internal pair: %v", err)
+		t.Fatalf("Config without internal pair: %v", err)
 	}
 	got, _ := cfg.GetCertificate(&tls.ClientHelloInfo{ServerName: "api-gateway"})
 	leaf, _ := x509.ParseCertificate(got.Certificate[0])

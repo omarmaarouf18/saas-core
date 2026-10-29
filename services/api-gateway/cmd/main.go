@@ -31,6 +31,7 @@ import (
 	"github.com/project/gateway/internal/iputil"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/gateway/internal/servertls"
 	"github.com/project/gateway/internal/version"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -207,7 +208,7 @@ func main() {
 		}
 	}()
 
-	tlsConfig, err := serverTLSConfig(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath)
+	tlsConfig, err := servertls.Config(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath)
 	if err != nil {
 		log.Fatalf("[GATEWAY] TLS setup failed: %v", err)
 	}

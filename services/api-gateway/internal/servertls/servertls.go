@@ -1,4 +1,6 @@
-package main
+// Package servertls builds the gateway listener's TLS config. It lives
+// outside cmd/ because the Dockerfile compiles ./cmd/main.go alone.
+package servertls
 
 import (
 	"crypto/tls"
@@ -10,14 +12,14 @@ import (
 // auth-service) send when they dial https://api-gateway:<port>.
 const internalServerName = "api-gateway"
 
-// serverTLSConfig returns the gateway listener's TLS config. A client that
+// Config returns the gateway listener's TLS config. A client that
 // asks for SNI "api-gateway" gets the internal certificate (signed by the
 // internal mTLS CA, SAN api-gateway), so the console and auth-service can
 // verify the gateway's internal reviewer endpoints (/admin/version,
 // /admin/internal/audit). Every other client, including the edge Caddy hop,
 // gets the external certificate as before. Without an internal pair the
 // external certificate is served to everyone.
-func serverTLSConfig(externalCert, externalKey, internalCert, internalKey string) (*tls.Config, error) {
+func Config(externalCert, externalKey, internalCert, internalKey string) (*tls.Config, error) {
 	external, err := tls.LoadX509KeyPair(externalCert, externalKey)
 	if err != nil {
 		return nil, fmt.Errorf("load external TLS key pair: %w", err)
