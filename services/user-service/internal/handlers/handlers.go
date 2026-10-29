@@ -454,6 +454,7 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/payouts/reject", u.AdminRejectPayoutRequest)
 	mux.HandleFunc("/users/admin/overview", u.AdminOverview)
 	mux.HandleFunc("/admin/overview", u.AdminOverview)
+	mux.HandleFunc("/users/internal/admin-audit", u.InternalListAdminAudit)
 	mux.HandleFunc("/users/admin/jobs", u.AdminListJobs)
 	mux.HandleFunc("/admin/jobs", u.AdminListJobs)
 	mux.HandleFunc("/users/admin/jobs/{id}", u.AdminJobDetail)

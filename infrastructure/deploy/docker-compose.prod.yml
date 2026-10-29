@@ -225,6 +225,11 @@ services:
       TLS_KEY_PATH: /app/certs/auth-service.key
       TLS_CA_PATH: /app/certs/ca.crt
       USER_SERVICE_URL: ${USER_SERVICE_URL}
+      # GET /admin/audit fans out to every service's internal admin-audit
+      # endpoint (ADMIN-API-FIX), the gateway included.
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      GATEWAY_INTERNAL_URL: https://api-gateway:${API_GATEWAY_PORT}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
     depends_on:

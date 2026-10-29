@@ -659,38 +659,90 @@ Retrieves pre-signed secure URLs to inspect encrypted KYB/KYE identity documents
 
 ## 10. Audit Log Viewer
 
-### `GET /admin/audit`
-Merges and paginates recorded audit log entries from the primary `audit_log` MongoDB collection in `auth-service`.
+### 10.1 Where records are stored
+Every reviewer mutation and every unmasked view writes one record to the **owning service's own** `admin_audit` collection (no service reads another service's database). The record is written after the action succeeded; if the write fails the action is not undone, and the service logs the failure and ships an `ADMIN_AUDIT_WRITE_FAILED` security event. The existing `ShipSecurityEvent` calls are unchanged and still go to the log stream.
 
-- **Service**: `auth-service`
+| Field | Meaning |
+| :--- | :--- |
+| `id` | Random record id. |
+| `source` | Owning service: `auth-service`, `user-service`, `chat-service`, `notification-service`, `api-gateway`. |
+| `actor_id` | Reviewer id returned by `/auth/reviewer/verify`. |
+| `action` | One of the action names below. |
+| `target_type`, `target_id` | The entity acted on (`job`, `service`, `subscription`, `payout`, `ticket`, `notification_send`, `version_policy`, `user`, `document`). |
+| `reason` | The reviewer's reason, when the endpoint takes one. |
+| `details` | Short extra context (e.g. `decision=refund_to_customer`, `tenant=...`). |
+| `request_id` | The caller's `X-Request-ID` when it matches `[A-Za-z0-9._-]{1,64}`, else a generated id. |
+| `created_at` | UTC time the record was written. |
+
+**Action names** (one scheme: `<resource>.<verb>`, lower snake case):
+
+| Action | Service | Written by |
+| :--- | :--- | :--- |
+| `job.view` | user-service | `GET /admin/jobs/{id}` (unmasked phones) |
+| `job.cancel` | user-service | `POST /admin/jobs/{id}/cancel` |
+| `job.complete_stuck_cod` | user-service | `POST /admin/jobs/{id}/complete-stuck-cod` |
+| `service.hide` | user-service | `POST /admin/services/{id}/hide` |
+| `service.unhide` | user-service | `POST /admin/services/{id}/unhide` |
+| `service.photo_remove` | user-service | `POST /admin/services/{id}/photo/remove` |
+| `subscription.activate` | user-service | `POST /admin/subscriptions/activate` |
+| `subscription.revoke` | user-service | `POST /admin/subscriptions/revoke` |
+| `payout.reject` | user-service | `POST /admin/payouts/reject` |
+| `reconciliation.resolve` | user-service | `POST /admin/reconciliation/resolve` |
+| `ticket.accept` | chat-service | `POST /admin/tickets/accept` |
+| `ticket.resolve` | chat-service | `POST /admin/tickets/resolve` |
+| `notification.send` | notification-service | `POST /admin/notifications/send` (real and test sends; dry runs write nothing) |
+| `version.update` | api-gateway | `PUT`/`POST /admin/version` |
+| `kyc.review` | auth-service | `POST /auth/kyb-kye/review` |
+| `account.suspend` | auth-service | `POST /auth/accounts/suspend` |
+| `account.reactivate` | auth-service | `POST /auth/accounts/reactivate` |
+| `user_documents.view` | auth-service | `POST`/`GET /auth/reviewer/user-documents` |
+| `document.view` | auth-service | `GET /auth/documents/view` |
+
+Records written before this change are not migrated: earlier KYC reviews and suspensions remain in auth-service's employee `audit_log` (served by `/auth/audit-log`) and in the security event log stream.
+
+### 10.2 Per-service source endpoints (internal)
+`GET /users/internal/admin-audit`, `GET /chat/internal/admin-audit`, `GET /notifications/internal/admin-audit` and the gateway's `GET /admin/internal/audit` return `{"entries": [...], "total": N}` for one service. They require `X-Internal-Token` only (auth-service has already authenticated the reviewer) and accept `actor_id`, `action`, `target_id`, `from`, `to` (RFC 3339) and `limit` (1-1000, default 100). Only auth-service calls them.
+
+### `GET /admin/audit`
+Merges the records of all five services, newest first (`created_at`, then `id`).
+
+- **Service**: `auth-service` (also `GET /auth/admin/audit`)
 - **Permissions**: Reviewer Token & `X-Internal-Token`
 - **Query Parameters**:
-  - `actor_id` (string): Filter by reviewer or admin operator ID.
-  - `action` (string): Filter by action name (e.g. `ACCOUNT_SUSPENDED`, `DOCUMENT_VIEWED`, `APP_VERSION_CONFIG_UPDATED`).
-  - `target_id` (string): Filter by impacted target entity ID.
-  - `from` (string): RFC 3339 start timestamp.
-  - `to` (string): RFC 3339 end timestamp.
-  - `page` (int, default: 1): Page number.
-  - `limit` (int, default: 20, max: 100): Records per page.
+  - `actor_id` (string; aliases `actor`, `reviewer_id`, `employee_id`): Filter by reviewer id.
+  - `action` (string): Exact action name from the table above.
+  - `target_id` (string; aliases `target`, `user_id`, `tenant_id`): Filter by target id.
+  - `from` / `start_date`, `to` / `end_date` (RFC 3339 or `YYYY-MM-DD`), or `date` (`YYYY-MM-DD`, that whole UTC day).
+  - `page` (int, default 1) and `limit` (int, default 20, max 100). `page * limit` must be at most 1000, else `400`.
+- **Fan-out**: auth-service reads its own collection and calls the four internal endpoints in parallel, each with a 3 second timeout, asking each for its newest `page * limit` matches. A source that errors, answers non-200 or times out is reported as `"unavailable"` in `sources`; the response is still `200` with the other sources' records, and `total` counts only the sources that answered.
 
 **Response `200 OK`**:
 ```json
 {
   "entries": [
     {
-      "id": "audit-7712",
-      "timestamp": "2026-10-29T08:30:15Z",
+      "id": "6f1c2a9e0b7d4c3a8e5f1b2c",
+      "source": "user-service",
       "actor_id": "rev-sarah-1",
-      "action": "ACCOUNT_SUSPENDED",
-      "target_id": "usr-101",
-      "reason": "Repeated non-delivery complaints",
-      "client_ip": "197.38.12.9"
+      "action": "job.cancel",
+      "target_type": "job",
+      "target_id": "job-8812",
+      "reason": "Courier vehicle broke down",
+      "details": "owner=tenant-55",
+      "request_id": "c0ffee12ab34",
+      "created_at": "2026-10-29T08:30:15Z"
     }
   ],
   "total": 1,
   "page": 1,
   "limit": 20,
-  "notice": "Audit logs reflect all persisted database security actions. Real-time microservice security events without persistence are shipped directly to CloudWatch log groups."
+  "sources": {
+    "auth-service": "ok",
+    "user-service": "ok",
+    "chat-service": "ok",
+    "notification-service": "unavailable",
+    "api-gateway": "ok"
+  }
 }
 ```
 

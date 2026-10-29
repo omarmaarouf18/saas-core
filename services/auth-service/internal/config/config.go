@@ -26,8 +26,12 @@ type Config struct {
 	RedisURI               string
 	UserServiceURL         string
 	NotificationServiceURL string
-	ResendAPIKey           string
-	ResendFromEmail        string
+	// ChatServiceURL and GatewayInternalURL are only used by the merged
+	// GET /admin/audit fan-out (ADMIN-API-FIX).
+	ChatServiceURL     string
+	GatewayInternalURL string
+	ResendAPIKey       string
+	ResendFromEmail    string
 }
 
 func Load() (*Config, error) {
@@ -118,6 +122,14 @@ func Load() (*Config, error) {
 	if notificationServiceURL == "" {
 		notificationServiceURL = "https://notification-service:3004"
 	}
+	chatServiceURL := os.Getenv("CHAT_SERVICE_URL")
+	if chatServiceURL == "" {
+		chatServiceURL = "https://chat-service:3001"
+	}
+	gatewayInternalURL := os.Getenv("GATEWAY_INTERNAL_URL")
+	if gatewayInternalURL == "" {
+		gatewayInternalURL = "https://api-gateway:8080"
+	}
 
 	resendAPIKey := os.Getenv("RESEND_API_KEY")
 	resendFromEmail := os.Getenv("RESEND_FROM_EMAIL")
@@ -157,6 +169,8 @@ func Load() (*Config, error) {
 		StorageBaseURL:         storageBaseURL,
 		UserServiceURL:         userServiceURL,
 		NotificationServiceURL: notificationServiceURL,
+		ChatServiceURL:         chatServiceURL,
+		GatewayInternalURL:     gatewayInternalURL,
 		ResendAPIKey:           resendAPIKey,
 		ResendFromEmail:        resendFromEmail,
 	}, nil

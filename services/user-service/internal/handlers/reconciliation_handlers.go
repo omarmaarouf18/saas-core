@@ -522,6 +522,7 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_ESCROW_RECONCILIATION_RESOLVED", "user-service", reviewer.ID, updatedJob.OwnerID, fmt.Sprintf("resolved dispute for job %s: decision=%s, reason=%s", updatedJob.ID, req.Decision, reason), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditReconciliationResolve, "job", updatedJob.ID, reason, "decision="+req.Decision)
 
 	go u.dispatchDisputeResolvedNotification(updatedJob, req.Decision, reason)
 

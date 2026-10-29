@@ -351,6 +351,8 @@ func (n *Notification) AdminSendNotification(w http.ResponseWriter, r *http.Requ
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to record send job", err)
 			return
 		}
+		n.recordAdminAudit(r, reviewer.ID, auditNotificationSend, "notification_send", jobID, reason,
+			fmt.Sprintf("audience=%s size=%d test=%t", kind, resolvedSize, isTestSend))
 	}
 
 	// 12. Asynchronous background fan-out

@@ -101,6 +101,7 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications/{id}/read", n.MarkRead)
 	mux.HandleFunc("/notifications/internal/by-job", n.GetNotificationsByJob)
 	mux.HandleFunc("/admin/notifications/send", n.AdminSendNotification)
+	mux.HandleFunc("/notifications/internal/admin-audit", n.InternalListAdminAudit)
 	mux.HandleFunc("/notifications/admin/send", n.AdminSendNotification)
 	mux.HandleFunc("/admin/notifications/sends", n.AdminListNotificationSends)
 	mux.HandleFunc("/notifications/admin/sends", n.AdminListNotificationSends)

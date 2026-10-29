@@ -79,6 +79,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := store.ensureIndexes(ctx); err != nil {
 		return nil, fmt.Errorf("store: failed to ensure indexes: %w", err)
 	}
+	if err := store.ensureAdminAuditIndexes(ctx); err != nil {
+		return nil, err
+	}
 
 	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return store, nil

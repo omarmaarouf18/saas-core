@@ -25,6 +25,7 @@ type memoryStore struct {
 	mu            sync.Mutex
 	notifications []store.Notification
 	adminSends    map[string]*store.AdminNotificationSend
+	adminAudit    []store.AdminAuditRecord
 }
 
 func newMemoryStore() *memoryStore {
@@ -247,6 +248,31 @@ func (m *memoryStore) ListByJobID(ctx context.Context, jobID string, limit int) 
 		matched = matched[:limit]
 	}
 	return matched, nil
+}
+
+func (m *memoryStore) AppendAdminAudit(ctx context.Context, rec *store.AdminAuditRecord) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.adminAudit = append(m.adminAudit, *rec)
+	return nil
+}
+
+func (m *memoryStore) ListAdminAudit(ctx context.Context, f store.AdminAuditFilter, limit int64) ([]store.AdminAuditRecord, int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := []store.AdminAuditRecord{}
+	for i := len(m.adminAudit) - 1; i >= 0; i-- {
+		rec := m.adminAudit[i]
+		if (f.ActorID != "" && rec.ActorID != f.ActorID) || (f.Action != "" && rec.Action != f.Action) || (f.TargetID != "" && rec.TargetID != f.TargetID) {
+			continue
+		}
+		out = append(out, rec)
+	}
+	total := int64(len(out))
+	if int64(len(out)) > limit {
+		out = out[:limit]
+	}
+	return out, total, nil
 }
 
 func (m *memoryStore) CreateAdminNotificationSend(ctx context.Context, send *store.AdminNotificationSend) error {

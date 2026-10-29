@@ -68,6 +68,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.ensureAdminAuditIndexes(ctx); err != nil {
+		return nil, err
+	}
 	// BE-ERR: seeding failures fail startup in every environment. A missing
 	// platform config or central wallet otherwise surfaces much later as
 	// money-path errors, and a half-seeded demo dataset as flaky behaviour.

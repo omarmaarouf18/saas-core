@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/project/gateway/internal/adminaudit"
 	"github.com/project/gateway/internal/version"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -53,7 +54,7 @@ func TestReviewerVersionConfigHandler_Authentication(t *testing.T) {
 	defer mockAuth.Close()
 
 	store := version.NewStore(nil, "")
-	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), store)
+	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), store, adminaudit.NewStore(nil, ""))
 
 	t.Run("Missing Internal Token Rejected", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/version", nil)
@@ -119,7 +120,7 @@ func TestReviewerVersionConfigHandler_GetAndPut(t *testing.T) {
 	defer mockAuth.Close()
 
 	store := version.NewStore(nil, "")
-	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), store)
+	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), store, adminaudit.NewStore(nil, ""))
 
 	t.Run("GET Returns Current Config", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/version", nil)
@@ -270,7 +271,7 @@ func TestReviewerVersionHandler_NeverForwardsClientForwardedFor(t *testing.T) {
 	}))
 	defer mockAuth.Close()
 
-	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), version.NewStore(nil, ""))
+	handler := ReviewerVersionConfigHandler(internalToken, mockAuth.URL, mockAuth.Client(), version.NewStore(nil, ""), adminaudit.NewStore(nil, ""))
 
 	for i := 0; i < 3; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/admin/version", nil)

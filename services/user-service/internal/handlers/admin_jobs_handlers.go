@@ -415,6 +415,7 @@ func (u *UserService) AdminJobDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOB_VIEWED", "user-service", reviewer.ID, job.OwnerID, fmt.Sprintf("viewed full details for job %s", job.ID), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditJobView, "job", job.ID, "", "full detail with unmasked recipient and courier phones")
 
 	writeJSON(w, http.StatusOK, AdminJobDetailResponse{
 		ID:                  job.ID,
@@ -525,6 +526,7 @@ func (u *UserService) AdminCancelJob(w http.ResponseWriter, r *http.Request) {
 
 	// Audit log + ShipSecurityEvent
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOB_CANCELLED", "user-service", reviewer.ID, cancelledJob.OwnerID, fmt.Sprintf("cancelled job %s: %s", jobID, reason), clientIP)
+	u.recordAdminAudit(r, reviewer.ID, auditJobCancel, "job", jobID, reason, "owner="+cancelledJob.OwnerID)
 
 	// Notify parties like normal flow
 	u.notifyCustomerJobCancelled(cancelledJob, reviewer.ID)
@@ -606,6 +608,7 @@ func (u *UserService) AdminCompleteStuckCODJob(w http.ResponseWriter, r *http.Re
 
 	// Audit log + ShipSecurityEvent
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOB_COMPLETED_STUCK_COD", "user-service", reviewer.ID, repaired.OwnerID, fmt.Sprintf("completed stuck COD job %s, cash: %.2f, reason: %s", jobID, repaired.CashAmount, reason), clientIP)
+	u.recordAdminAudit(r, reviewer.ID, auditJobCompleteStuckCOD, "job", jobID, reason, fmt.Sprintf("owner=%s cash=%.2f", repaired.OwnerID, repaired.CashAmount))
 
 	// Fetch job to notify parties like normal delivery flow
 	job := u.store.GetJob(ctx, jobID)

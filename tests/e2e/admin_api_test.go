@@ -605,17 +605,19 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 		}
 
 		var auditResp struct {
-			Entries       []map[string]any `json:"entries"`
-			Total         int              `json:"total"`
-			StorageNotice string           `json:"storage_notice"`
+			Entries []map[string]any  `json:"entries"`
+			Total   int               `json:"total"`
+			Sources map[string]string `json:"sources"`
 		}
 		if err := json.Unmarshal(body, &auditResp); err != nil {
 			t.Fatalf("failed to parse audit log response JSON: %v", err)
 		}
-		if auditResp.StorageNotice == "" {
-			t.Errorf("expected storage notice in audit log response")
+		for _, src := range []string{"auth-service", "user-service", "chat-service", "notification-service", "api-gateway"} {
+			if auditResp.Sources[src] != "ok" {
+				t.Errorf("audit source %s = %q, want ok (all: %v)", src, auditResp.Sources[src], auditResp.Sources)
+			}
 		}
-		t.Logf("Verified Item 8: Audit log viewer returns entries and storage notice")
+		t.Logf("Verified Item 8: Audit log viewer merges all five sources: %v", auditResp.Sources)
 	})
 
 	// -------------------------------------------------------------------------
@@ -774,5 +776,57 @@ func TestE2E_AdminConsoleEndpoints(t *testing.T) {
 			t.Fatalf("expected at least 1 send job in sends list, got %d", sendsResp.Total)
 		}
 		t.Logf("Verified Item 9d: Admin notification dry run, test send, and sends list")
+	})
+
+	// -------------------------------------------------------------------------
+	// ITEM 8 (ADMIN-API-FIX): the merged viewer shows the admin actions above,
+	// persisted by the service that owns each one.
+	// -------------------------------------------------------------------------
+	t.Run("Item 8b - Merged audit shows persisted admin actions", func(t *testing.T) {
+		auditURL := stagingAuthURL + "/auth/admin/audit?limit=100&actor_id=" + reviewerID
+		resp, body, err := doAdminRequest(ctx, http.MethodGet, auditURL, cfg, rawReviewerToken, nil)
+		if err != nil {
+			t.Fatalf("GET /admin/audit request failed: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200 OK for /admin/audit, got %d: %s", resp.StatusCode, string(body))
+		}
+		var auditResp struct {
+			Entries []struct {
+				Source    string `json:"source"`
+				ActorID   string `json:"actor_id"`
+				Action    string `json:"action"`
+				TargetID  string `json:"target_id"`
+				RequestID string `json:"request_id"`
+			} `json:"entries"`
+			Sources map[string]string `json:"sources"`
+		}
+		if err := json.Unmarshal(body, &auditResp); err != nil {
+			t.Fatalf("failed to parse audit response: %v", err)
+		}
+		seen := map[string]string{}
+		for _, e := range auditResp.Entries {
+			if e.ActorID != reviewerID || e.RequestID == "" {
+				t.Errorf("unexpected entry: %+v", e)
+			}
+			seen[e.Action] = e.Source
+		}
+		want := map[string]string{
+			"job.view":               "user-service",
+			"job.cancel":             "user-service",
+			"job.complete_stuck_cod": "user-service",
+			"service.hide":           "user-service",
+			"service.unhide":         "user-service",
+			"service.photo_remove":   "user-service",
+			"version.update":         "api-gateway",
+			"user_documents.view":    "auth-service",
+			"notification.send":      "notification-service",
+		}
+		for action, source := range want {
+			if seen[action] != source {
+				t.Errorf("expected %s from %s in merged audit, got %q (sources: %v)", action, source, seen[action], auditResp.Sources)
+			}
+		}
+		t.Logf("Verified Item 8b: merged audit returned %d entries for the reviewer across %v", len(auditResp.Entries), auditResp.Sources)
 	})
 }

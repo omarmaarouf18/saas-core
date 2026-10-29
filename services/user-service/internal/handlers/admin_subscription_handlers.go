@@ -247,6 +247,7 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SUBSCRIPTION_ACTIVATED", "user-service", reviewer.ID, sub.TenantID, fmt.Sprintf("activated paid subscription %s for tenant %s (expires=%s)", sub.ID, sub.TenantID, sub.ExpiresAt.Format("2006-01-02")), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditSubscriptionActivate, "subscription", sub.ID, "", fmt.Sprintf("tenant=%s expires=%s", sub.TenantID, sub.ExpiresAt.Format("2006-01-02")))
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":      "subscription activated successfully",
@@ -299,6 +300,7 @@ func (u *UserService) AdminRevokeSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SUBSCRIPTION_REVOKED", "user-service", reviewer.ID, sub.TenantID, fmt.Sprintf("revoked subscription %s for tenant %s: reason=%s", sub.ID, sub.TenantID, reason), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditSubscriptionRevoke, "subscription", sub.ID, reason, "tenant="+sub.TenantID)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":      "subscription revoked successfully",

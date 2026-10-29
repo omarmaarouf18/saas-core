@@ -312,6 +312,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 	notified, notifyErr := c.dispatchTicketResolvedNotification(ctx, ticket, note)
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_TICKET_RESOLVED", "chat-service", reviewer.ID, ticket.CustomerID, fmt.Sprintf("resolved ticket %s (customer=%s, note=%s, notified=%t)", ticket.ID, ticket.CustomerID, note, notified), handlerutil.GetClientIP(r))
+	c.recordAdminAudit(r, reviewer.ID, auditTicketResolve, "ticket", ticket.ID, note, fmt.Sprintf("customer=%s notified=%t", ticket.CustomerID, notified))
 
 	respData := map[string]any{
 		"message":           "ticket resolved successfully",
@@ -460,6 +461,7 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 	notified, notifyErr := c.dispatchTicketAcceptedNotification(ctx, ticket, reviewer.Name)
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_TICKET_ACCEPTED", "chat-service", reviewer.ID, ticket.CustomerID, fmt.Sprintf("accepted ticket %s (customer=%s, reviewer=%s, notified=%t)", ticket.ID, ticket.CustomerID, reviewer.ID, notified), handlerutil.GetClientIP(r))
+	c.recordAdminAudit(r, reviewer.ID, auditTicketAccept, "ticket", ticket.ID, "", fmt.Sprintf("customer=%s notified=%t", ticket.CustomerID, notified))
 
 	respData := map[string]any{
 		"message":           "ticket accepted successfully",

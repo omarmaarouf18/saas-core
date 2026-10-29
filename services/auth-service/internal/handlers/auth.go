@@ -102,6 +102,11 @@ type Auth struct {
 	userServiceURL       string
 	notificationClient   *resilience.ResilienceClient
 	notificationURL      string
+	chatServiceURL       string
+	gatewayInternalURL   string
+	// auditClient fans GET /admin/audit out to the other services' admin
+	// audit endpoints; each call also gets adminAuditSourceTimeout.
+	auditClient *http.Client
 }
 
 // NewAuth creates a new Auth handler group.
@@ -144,6 +149,9 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		userServiceURL:       cfg.UserServiceURL,
 		notificationClient:   notificationClient,
 		notificationURL:      cfg.NotificationServiceURL,
+		chatServiceURL:       cfg.ChatServiceURL,
+		gatewayInternalURL:   cfg.GatewayInternalURL,
+		auditClient:          &http.Client{Transport: client.Transport, Timeout: adminAuditSourceTimeout},
 	}
 }
 
@@ -2144,6 +2152,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditKYCReview, "user", req.UserID, req.Reason, "decision="+req.Action)
 
 	// ADR-0021: fire-and-forget user notification. Deliberately decoupled from
 	// the review transaction — a dispatch failure must never fail the
@@ -2377,6 +2386,7 @@ func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "USER_DOCUMENTS_RETRIEVED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("retrieved documents for user %s reason: %s", u.ID, reason), clientIP)
+	a.recordAdminAudit(r, reviewer.ID, auditUserDocumentsView, "user", u.ID, reason, "")
 
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -2407,6 +2417,7 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(r.Context(), "DOCUMENT_VIEWED", "auth-service", reviewer.ID, "", fmt.Sprintf("accessed document key: %s", key), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditDocumentView, "document", key, "", "")
 
 	file, err := a.storage.OpenFile(key)
 	if err != nil {
@@ -2615,6 +2626,7 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_SUSPENDED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditAccountSuspend, "user", targetUserID, reason, "")
 
 	// Dispatch notification fire-and-forget
 	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusSuspended, reason)
@@ -2696,6 +2708,7 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_REACTIVATED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditAccountReactivate, "user", targetUserID, reason, "")
 
 	// Dispatch notification fire-and-forget
 	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusActive, reason)

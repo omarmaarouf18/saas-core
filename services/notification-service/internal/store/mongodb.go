@@ -98,6 +98,8 @@ type Store interface {
 	GetAdminNotificationSendByIdempotencyKey(ctx context.Context, key string) (*AdminNotificationSend, error)
 	ListAdminNotificationSends(ctx context.Context, page, limit int) ([]AdminNotificationSend, int, error)
 	UpdateAdminNotificationSendProgress(ctx context.Context, id string, status AdminNotificationSendStatus, sentCount, failedCount int, errMsg string) error
+	AppendAdminAudit(ctx context.Context, rec *AdminAuditRecord) error
+	ListAdminAudit(ctx context.Context, f AdminAuditFilter, limit int64) ([]AdminAuditRecord, int64, error)
 	Close(ctx context.Context) error
 }
 
@@ -130,6 +132,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.ensureAdminAuditIndexes(ctx); err != nil {
 		return nil, err
 	}
 

@@ -198,6 +198,7 @@ func (u *UserService) AdminHideService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SERVICE_HIDDEN", "user-service", reviewer.ID, updatedSvc.TenantID, fmt.Sprintf("service %s hidden by support: %s", serviceID, reason), clientIP)
+	u.recordAdminAudit(r, reviewer.ID, auditServiceHide, "service", serviceID, reason, "tenant="+updatedSvc.TenantID)
 
 	u.notifyOwnerServiceModeration(updatedSvc, "service_hidden", "Service Hidden", fmt.Sprintf("Your service %s was hidden by support: %s", updatedSvc.Name, reason), map[string]string{
 		"service_id": updatedSvc.ID,
@@ -267,6 +268,7 @@ func (u *UserService) AdminUnhideService(w http.ResponseWriter, r *http.Request)
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SERVICE_UNHIDDEN", "user-service", reviewer.ID, updatedSvc.TenantID, fmt.Sprintf("service %s unhidden by support: %s", serviceID, reason), clientIP)
+	u.recordAdminAudit(r, reviewer.ID, auditServiceUnhide, "service", serviceID, reason, "tenant="+updatedSvc.TenantID)
 
 	u.notifyOwnerServiceModeration(updatedSvc, "service_unhidden", "Service Restored", fmt.Sprintf("Your service %s is now visible in the marketplace.", updatedSvc.Name), map[string]string{
 		"service_id": updatedSvc.ID,
@@ -341,6 +343,7 @@ func (u *UserService) AdminRemoveServicePhoto(w http.ResponseWriter, r *http.Req
 	u.deleteServicePhotoObject(ctx, oldSvc, oldSvc.PhotoURL)
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SERVICE_PHOTO_REMOVED", "user-service", reviewer.ID, oldSvc.TenantID, fmt.Sprintf("service %s photo removed by support: %s", serviceID, reason), clientIP)
+	u.recordAdminAudit(r, reviewer.ID, auditServicePhotoRemove, "service", serviceID, reason, "tenant="+oldSvc.TenantID)
 
 	u.notifyOwnerServiceModeration(oldSvc, "service_photo_removed", "Service Photo Removed", fmt.Sprintf("Photo for service %s was removed by support: %s", oldSvc.Name, reason), map[string]string{
 		"service_id": oldSvc.ID,
