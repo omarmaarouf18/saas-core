@@ -44,12 +44,22 @@ var KnownEndpoints = map[string]struct {
 	"GET /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Fetches current mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Reads in-memory version store.",
+		Targets:     "Reads platform_versions collection in gateway database.",
 	},
 	"PUT /api/v1/admin/version-config": {
 		Permissions: "`X-Admin-Token`",
 		Function:    "Updates mobile client minimum and latest version enforcement configuration.",
-		Targets:     "Updates in-memory version store.",
+		Targets:     "Updates platform_versions collection in gateway database.",
+	},
+	"GET /admin/version": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Fetches mobile client version policy for reviewer console oversight (ADR-0023).",
+		Targets:     "Reads platform_versions collection in gateway database.",
+	},
+	"PUT /admin/version": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Updates mobile client version policy from reviewer console with mandatory audit reason (ADR-0023).",
+		Targets:     "Updates platform_versions collection in gateway database.",
 	},
 	"GET /": {
 		Permissions: "Public",
@@ -128,6 +138,16 @@ var KnownEndpoints = map[string]struct {
 		Function:    "GetEmployees returns all employees registered under the caller's tenant owner account.",
 		Targets:     "Reads `users` collection by `tenant_id`. Returns JSON array of `EmployeeResponse` (`ID`, `Username`, `Email`, `IsActive`, `CreatedAt`). Rate-limited per owner ID.",
 	},
+	"GET /auth/internal/overview-stats": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns counts for pending KYB/KYE, accounts created today/7d, and suspended accounts for admin console aggregation.",
+		Targets:     "Reads `users` collection.",
+	},
+	"GET /auth/internal/user-by-phone": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Looks up user profile by exact phone number for internal service resolution.",
+		Targets:     "Reads `users` collection.",
+	},
 	"GET /auth/audit-log": {
 		Permissions: "Tenant Owner JWT",
 		Function:    "Fetches tenant security audit logs. Accepts requester_id (legacy) or requester_token (preferred).",
@@ -163,7 +183,17 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason.",
 		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
 	},
+	"POST /auth/reviewer/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves fresh signed URLs for all KYC/KYE documents for a user with mandatory audit reason in POST body.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
 	"GET /auth/kyb-kye/user-documents": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents.",
+		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
+	},
+	"POST /auth/kyb-kye/user-documents": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Alias for /auth/reviewer/user-documents; retrieves signed URLs for user KYC/KYE documents.",
 		Targets:     "Reads `users` collection. Writes `audit_logs` (`DOCUMENT_VIEWED`, `USER_DOCUMENTS_RETRIEVED`).",
@@ -197,6 +227,11 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Verifies reviewer credentials and returns reviewer identity for inter-service ops authentication (ADR-0023).",
 		Targets:     "Reads `reviewers` collection.",
+	},
+	"POST /auth/internal/audience-lookup": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Resolves user IDs matching specified audience filters (user, role, tenant, everyone), filtering out suspended/inactive accounts.",
+		Targets:     "Reads `users` collection.",
 	},
 	"GET /auth/user": {
 		Permissions: "`X-Internal-Token` OR User JWT",
@@ -235,8 +270,18 @@ var KnownEndpoints = map[string]struct {
 	},
 	"POST /auth/email-change/confirm": {
 		Permissions: "Authenticated User JWT",
-		Function:    "Verifies OTP and commits updated email address to user profile, issuing fresh JWT.",
+		Function:    "Verifies OTP and commits updated email address to user profile, issues new JWT.",
 		Targets:     "Updates `users` collection, clears pending change, issues new JWT.",
+	},
+	"GET /auth/admin/audit": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns merged, paginated audit logs with actor, action, target, and date filtering (ADR-0023).",
+		Targets:     "Reads `audit_log` collection.",
+	},
+	"GET /admin/audit": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns merged, paginated audit logs with actor, action, target, and date filtering (ADR-0023).",
+		Targets:     "Reads `audit_log` collection.",
 	},
 
 	// chat-service
@@ -264,6 +309,11 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "`X-Internal-Token`",
 		Function:    "Broadcasts driver location event.",
 		Targets:     "None.",
+	},
+	"GET /chat/internal/overview-stats": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns counts for open and assigned tickets for admin console aggregation.",
+		Targets:     "Reads `complaint_tickets` collection.",
 	},
 	"POST /chat/tickets": {
 		Permissions: "User JWT",
@@ -362,6 +412,11 @@ var KnownEndpoints = map[string]struct {
 		Function:    "Returns the authenticated user's persisted notifications, paginated.",
 		Targets:     "Reads `notifications` collection.",
 	},
+	"GET /notifications/internal/by-job": {
+		Permissions: "`X-Internal-Token`",
+		Function:    "Returns notifications sent for a given job ID.",
+		Targets:     "Reads `notifications` collection.",
+	},
 	"POST /notifications/{id}/read": {
 		Permissions: "User JWT",
 		Function:    "Marks a single notification as read for the authenticated user.",
@@ -381,6 +436,36 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "User JWT",
 		Function:    "Clears all notifications for the authenticated user.",
 		Targets:     "Deletes from `notifications` collection.",
+	},
+	"POST /admin/notifications/send": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Dispatches broadcast or targeted admin announcement to users with safety validations, confirmation check, and FCM push fan-out.",
+		Targets:     "Writes `admin_notification_sends`, `notifications` collections, broadcasts via SSE and pushes via FCM.",
+	},
+	"POST /notifications/admin/send": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Dispatches broadcast or targeted admin announcement to users with safety validations, confirmation check, and FCM push fan-out.",
+		Targets:     "Writes `admin_notification_sends`, `notifications` collections, broadcasts via SSE and pushes via FCM.",
+	},
+	"GET /admin/notifications/sends": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists admin notification send jobs with progress counters and status.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /notifications/admin/sends": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists admin notification send jobs with progress counters and status.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /admin/notifications/sends/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves details of a specific admin notification send job.",
+		Targets:     "Reads `admin_notification_sends` collection.",
+	},
+	"GET /notifications/admin/sends/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Retrieves details of a specific admin notification send job.",
+		Targets:     "Reads `admin_notification_sends` collection.",
 	},
 
 	// user-service
@@ -556,7 +641,12 @@ var KnownEndpoints = map[string]struct {
 	},
 	"GET /admin/subscriptions/queue": {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
-		Function:    "Lists subscriptions globally with optional status/search filters and pagination for ops console oversight (ADR-0023).",
+		Function:    "Returns pending_payment subscriptions oldest first with tenant details and owner contact (ADR-0023).",
+		Targets:     "Reads `subscriptions` collection. Paginated.",
+	},
+	"GET /users/admin/subscriptions/queue": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns pending_payment subscriptions oldest first with tenant details and owner contact (ADR-0023).",
 		Targets:     "Reads `subscriptions` collection. Paginated.",
 	},
 	"POST /users/admin/subscriptions/activate": {
@@ -598,6 +688,146 @@ var KnownEndpoints = map[string]struct {
 		Permissions: "Reviewer Token & `X-Internal-Token`",
 		Function:    "Rejects a requested payout with mandatory reason, restores wallet balance, and writes compensation ledger entry.",
 		Targets:     "CAS status transition on `payout_requests`, updates `wallets`, writes `ledger`, ships security audit event.",
+	},
+	"GET /users/admin/overview": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/overview; returns aggregated platform overview metrics for admin console.",
+		Targets:     "Reads `subscriptions` and `jobs` collections, calls `auth-service` and `chat-service` internal overview endpoints. Ships security audit event.",
+	},
+	"GET /admin/overview": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Returns aggregated metrics across user-service (subscriptions, GPS disputes, stuck COD jobs, jobs today) and calls auth/chat services with resilient fallbacks.",
+		Targets:     "Reads `subscriptions` and `jobs` collections, calls `auth-service` and `chat-service` internal overview endpoints. Ships security audit event.",
+	},
+	"GET /users/admin/jobs": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs; paginated job lookup with filters by id, phone, actor, status, and date range.",
+		Targets:     "Queries `jobs` collection, resolves phones via `auth-service`.",
+	},
+	"GET /admin/jobs": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Paginated job lookup with filters by id, phone, customer/owner/courier id, status, and date range.",
+		Targets:     "Queries `jobs` collection, resolves phones via `auth-service`.",
+	},
+	"GET /users/admin/jobs/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}; full v2 job detail view with unmasked phones, status history, price, ratings, reconciliation flags, and notifications.",
+		Targets:     "Reads `jobs` and `ratings` collections, calls `auth-service` and `notification-service`. Ships security audit event.",
+	},
+	"GET /admin/jobs/{id}": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Full v2 job detail view with unmasked phones, status history, price, ratings, reconciliation flags, and notifications.",
+		Targets:     "Reads `jobs` and `ratings` collections, calls `auth-service` and `notification-service`. Ships security audit event.",
+	},
+	"POST /users/admin/jobs/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/cancel; cancels a non-terminal job on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /admin/jobs/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Cancels a non-terminal job on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /users/admin/jobs/{id}/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}/cancel; cancels a non-terminal job by ID on behalf of admin with mandatory reason.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /admin/jobs/{id}/cancel": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Cancels a non-terminal job by ID on behalf of admin with mandatory reason, CAS transition, escrow refund, and party notifications.",
+		Targets:     "CAS update on `jobs`, refunds `wallets` escrow if funded, releases courier locks, ships security audit event.",
+	},
+	"POST /users/admin/jobs/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/complete-stuck-cod; marks a stuck COD job completed using the FIX-COD-RECON path.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /admin/jobs/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Marks a stuck COD job completed using the FIX-COD-RECON path with mandatory reason, CAS transition, cash calculation, and party notifications.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /users/admin/jobs/{id}/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/jobs/{id}/complete-stuck-cod; marks a stuck COD job by ID completed using the FIX-COD-RECON path.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"POST /admin/jobs/{id}/complete-stuck-cod": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Marks a stuck COD job by ID completed using the FIX-COD-RECON path with mandatory reason, CAS transition, cash calculation, and party notifications.",
+		Targets:     "CAS update on `jobs`, calculates cash, flags distance_review with source repair, releases courier lock, ships security audit event.",
+	},
+	"GET /users/admin/services": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services; lists marketplace services for reviewer moderation with search and status filters.",
+		Targets:     "Reads `services` collection. Ships security audit event.",
+	},
+	"GET /admin/services": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Lists marketplace services for reviewer moderation with filters by tenant, name, has_photo, and hidden status.",
+		Targets:     "Reads `services` collection. Ships security audit event.",
+	},
+	"POST /users/admin/services/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/hide; hides a service from marketplace with mandatory reason and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Hides a service from the public marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/{id}/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/hide; hides a service by ID with mandatory reason and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/{id}/hide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Hides a service by ID from the public marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/unhide; restores a hidden service to the marketplace with mandatory reason.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Restores a hidden service to the marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/{id}/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/unhide; restores a hidden service by ID to the marketplace.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /admin/services/{id}/unhide": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Restores a hidden service by ID to the marketplace with mandatory reason, CAS update, and notifies owner.",
+		Targets:     "Updates `services` collection, ships security audit event, dispatches notification to tenant owner.",
+	},
+	"POST /users/admin/services/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/photo/remove; deletes stored photo object via existing delete path and clears photo_url.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /admin/services/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Deletes a service's stored photo object via the existing delete path, clears photo_url, and notifies owner.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /users/admin/services/{id}/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Alias for /admin/services/{id}/photo/remove; deletes stored photo object by service ID.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
+	},
+	"POST /admin/services/{id}/photo/remove": {
+		Permissions: "Reviewer Token & `X-Internal-Token`",
+		Function:    "Deletes stored photo object by service ID via existing delete path, clears photo_url, and notifies owner.",
+		Targets:     "Deletes storage object, updates `services` collection, ships security audit event, notifies owner.",
 	},
 	"POST /users/employee/location": {
 		Permissions: "Employee JWT",
@@ -710,8 +940,10 @@ func GenerateEndpointsList(repoRoot string) ([]Endpoint, error) {
 	// Add api-gateway static endpoints
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health", Service: "api-gateway", Permissions: "Public", Function: "Public gateway health status.", Targets: "None.", HandlerName: "GatewayHealth"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/health/internal", Service: "api-gateway", Permissions: "`X-Internal-Token`", Function: "Returns circuit breaker metrics.", Targets: "Reads breaker memory.", HandlerName: "GatewayInternalHealth"})
-	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads in-memory version store.", HandlerName: "GetVersionConfig"})
-	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates in-memory version store.", HandlerName: "UpdateVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Fetches current mobile client minimum and latest version enforcement configuration.", Targets: "Reads platform_versions collection in gateway database.", HandlerName: "GetVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/api/v1/admin/version-config", Service: "api-gateway", Permissions: "`X-Admin-Token`", Function: "Updates mobile client minimum and latest version enforcement configuration.", Targets: "Updates platform_versions collection in gateway database.", HandlerName: "UpdateVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/admin/version", Service: "api-gateway", Permissions: "Reviewer Token & `X-Internal-Token`", Function: "Fetches mobile client version policy for reviewer console oversight (ADR-0023).", Targets: "Reads platform_versions collection in gateway database.", HandlerName: "GetReviewerVersionConfig"})
+	endpoints = append(endpoints, Endpoint{Method: "PUT", Path: "/admin/version", Service: "api-gateway", Permissions: "Reviewer Token & `X-Internal-Token`", Function: "Updates mobile client version policy from reviewer console with mandatory audit reason (ADR-0023).", Targets: "Updates platform_versions collection in gateway database.", HandlerName: "UpdateReviewerVersionConfig"})
 	endpoints = append(endpoints, Endpoint{Method: "GET", Path: "/", Service: "api-gateway", Permissions: "Public", Function: "Root index.", Targets: "None.", HandlerName: "GatewayIndex"})
 
 	services := []struct {

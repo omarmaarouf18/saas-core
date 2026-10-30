@@ -225,6 +225,11 @@ services:
       TLS_KEY_PATH: /app/certs/auth-service.key
       TLS_CA_PATH: /app/certs/ca.crt
       USER_SERVICE_URL: ${USER_SERVICE_URL}
+      # GET /admin/audit fans out to every service's internal admin-audit
+      # endpoint (ADMIN-API-FIX), the gateway included.
+      CHAT_SERVICE_URL: ${CHAT_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      GATEWAY_INTERNAL_URL: ${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
     depends_on:
@@ -329,9 +334,9 @@ services:
   # reviewer actions to auth-service. NOT publicly bound: the `caddy` service
   # below terminates kyc.<domain> and reaches it on saas-net.
   # Image is built by omarmaarouf18/kyc-reviewer-console's own CI; pin via
-  # KYC_CONSOLE_IMAGE_TAG in .env (falls back to latest).
+  # KYC_CONSOLE_IMAGE_TAG in .env (no latest fallback, deploy preflight fails if unset).
   kyc-reviewer-console:
-    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:-latest}
+    image: ghcr.io/omarmaarouf18/kyc-reviewer-console:${KYC_CONSOLE_IMAGE_TAG:?KYC_CONSOLE_IMAGE_TAG is required}
     container_name: saas-kyc-reviewer-console
     logging: *default-logging
     mem_limit: 16m
@@ -347,6 +352,11 @@ services:
       AUTH_SERVICE_URL: https://auth-service:${AUTH_SERVICE_PORT}
       USER_SERVICE_URL: https://user-service:${USER_SERVICE_PORT}
       CHAT_SERVICE_URL: https://chat-service:${CHAT_SERVICE_PORT}
+      # Admin notifications page (CONSOLE-V2): /notifications/admin/*.
+      NOTIFICATION_SERVICE_URL: https://notification-service:${NOTIFICATION_SERVICE_PORT}
+      # Gateway's own reviewer endpoints (GET/PUT /admin/version), reached on
+      # the internal network only: the edge Caddy answers 404 for /admin/*.
+      GATEWAY_INTERNAL_URL: ${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       APP_ENV: ${APP_ENV}
       TLS_CERT_PATH: /app/certs/reviewer-console.crt
@@ -387,6 +397,8 @@ services:
       - kyc-reviewer-console
     environment:
       GOMEMLIMIT: 32MiB
+      KYC_CONSOLE_BASIC_AUTH_USER: ${KYC_CONSOLE_BASIC_AUTH_USER:-}
+      KYC_CONSOLE_BASIC_AUTH_HASH: ${KYC_CONSOLE_BASIC_AUTH_HASH:-}
     networks:
       - saas-net
 

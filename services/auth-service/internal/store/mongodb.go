@@ -69,6 +69,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string, otpCipher *otpcrypto.Ci
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, fmt.Errorf("store: failed to create indexes: %w", err)
 	}
+	if err := s.ensureAdminAuditIndexes(ctx); err != nil {
+		return nil, err
+	}
 
 	log.Printf("[AUTH-STORE] Connected to MongoDB: %s/%s (OTP encryption: AES-256-GCM)", redact.RedactURI(uri), dbName)
 	return s, nil
@@ -1081,4 +1084,179 @@ func (s *MongoDB) RemoveDeviceToken(ctx context.Context, userID, tokenStr string
 		return fmt.Errorf("user %q not found", userID)
 	}
 	return nil
+}
+
+// GetOverviewStats returns counts for pending KYB/KYE, accounts created today, accounts created in the last 7 days, and suspended accounts.
+func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingKYC int64, newToday int64, new7d int64, suspended int64, err error) {
+	now := time.Now().UTC()
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	sevenDaysAgo := now.AddDate(0, 0, -7)
+
+	// Pending KYB/KYE
+	pendingFilter := bson.M{
+		"$or": []bson.M{
+			{"kyc_status": models.KYCPendingApproval},
+			{"kye_status": models.KYCPendingApproval},
+		},
+	}
+	pendingKYC, err = s.users.CountDocuments(ctx, pendingFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count pending kyc/kye: %w", err)
+	}
+
+	// New accounts today
+	newTodayFilter := bson.M{
+		"created_at": bson.M{"$gte": startOfToday},
+	}
+	newToday, err = s.users.CountDocuments(ctx, newTodayFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count new accounts today: %w", err)
+	}
+
+	// New accounts last 7 days
+	new7dFilter := bson.M{
+		"created_at": bson.M{"$gte": sevenDaysAgo},
+	}
+	new7d, err = s.users.CountDocuments(ctx, new7dFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count new accounts 7d: %w", err)
+	}
+
+	// Suspended accounts
+	suspendedFilter := bson.M{
+		"$or": []bson.M{
+			{"account_status": models.AccountStatusSuspended},
+			{"is_active": false},
+		},
+	}
+	suspended, err = s.users.CountDocuments(ctx, suspendedFilter)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to count suspended accounts: %w", err)
+	}
+
+	return pendingKYC, newToday, new7d, suspended, nil
+}
+
+// GetUserByPhone looks up a user by exact phone number match.
+func (s *MongoDB) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
+	if s == nil || s.users == nil || phone == "" {
+		return nil, nil
+	}
+	var user models.User
+	err := s.users.FindOne(ctx, bson.M{"phone": phone}).Decode(&user)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// AudienceLookup resolves active user IDs for admin notifications according to audience criteria, skipping suspended accounts.
+func (s *MongoDB) AudienceLookup(ctx context.Context, kind, userID, email, phone, role, tenantID string, page, limit int) ([]string, int, error) {
+	if s == nil || s.users == nil {
+		return nil, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 500
+	} else if limit > 1000 {
+		limit = 1000
+	}
+
+	activeFilter := bson.M{
+		"account_status": bson.M{"$ne": models.AccountStatusSuspended},
+		"is_active":      bson.M{"$ne": false},
+	}
+
+	var andClauses []bson.M
+	andClauses = append(andClauses, activeFilter)
+
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "user":
+		var userMatches []bson.M
+		if trimmedID := strings.TrimSpace(userID); trimmedID != "" {
+			userMatches = append(userMatches, bson.M{"_id": trimmedID})
+		}
+		if trimmedEmail := strings.TrimSpace(email); trimmedEmail != "" {
+			userMatches = append(userMatches, bson.M{"email": trimmedEmail})
+		}
+		if trimmedPhone := strings.TrimSpace(phone); trimmedPhone != "" {
+			userMatches = append(userMatches, bson.M{"phone": trimmedPhone})
+		}
+		if len(userMatches) == 0 {
+			return []string{}, 0, nil
+		}
+		if len(userMatches) == 1 {
+			andClauses = append(andClauses, userMatches[0])
+		} else {
+			andClauses = append(andClauses, bson.M{"$or": userMatches})
+		}
+
+	case "role":
+		r := strings.ToLower(strings.TrimSpace(role))
+		switch r {
+		case "customers", "customer", "clients", "client", "users", "user":
+			andClauses = append(andClauses, bson.M{"role": bson.M{"$in": []string{"client", "user"}}})
+		case "owners", "owner":
+			andClauses = append(andClauses, bson.M{"role": "owner"})
+		case "couriers", "courier", "employees", "employee":
+			andClauses = append(andClauses, bson.M{"role": "employee"})
+		default:
+			if r != "" {
+				andClauses = append(andClauses, bson.M{"role": r})
+			}
+		}
+
+	case "tenant":
+		tID := strings.TrimSpace(tenantID)
+		if tID == "" {
+			return []string{}, 0, nil
+		}
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"_id": tID, "role": "owner"},
+			{"owner_id": tID},
+			{"tenant_id": tID},
+		}})
+
+	case "everyone":
+		// Only activeFilter applies
+
+	default:
+		return []string{}, 0, fmt.Errorf("unsupported audience kind %q", kind)
+	}
+
+	filter := bson.M{"$and": andClauses}
+	total, err := s.users.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	opts := options.Find().
+		SetProjection(bson.M{"_id": 1}).
+		SetSort(bson.D{{Key: "_id", Value: 1}}).
+		SetSkip(int64((page - 1) * limit)).
+		SetLimit(int64(limit))
+
+	cursor, err := s.users.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		ID string `bson:"_id"`
+	}
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, 0, err
+	}
+
+	userIDs := make([]string, len(results))
+	for i, r := range results {
+		userIDs[i] = r.ID
+	}
+	return userIDs, int(total), nil
 }

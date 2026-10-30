@@ -79,6 +79,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := store.ensureIndexes(ctx); err != nil {
 		return nil, fmt.Errorf("store: failed to ensure indexes: %w", err)
 	}
+	if err := store.ensureAdminAuditIndexes(ctx); err != nil {
+		return nil, err
+	}
 
 	log.Printf("[CHAT-STORE] Connected to MongoDB: %s/%s", redact.RedactURI(uri), dbName)
 	return store, nil
@@ -566,4 +569,17 @@ func (s *MongoDB) AdminAcceptTicket(ctx context.Context, ticketID, reviewerID st
 	}
 
 	return &updated, nil
+}
+
+// GetTicketOverviewStats returns counts for open (pending/open) and assigned tickets.
+func (s *MongoDB) GetTicketOverviewStats(ctx context.Context) (openCount int64, assignedCount int64, err error) {
+	openCount, err = s.tickets.CountDocuments(ctx, bson.M{"status": bson.M{"$in": []string{"pending", "open"}}})
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to count open tickets: %w", err)
+	}
+	assignedCount, err = s.tickets.CountDocuments(ctx, bson.M{"status": "assigned"})
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to count assigned tickets: %w", err)
+	}
+	return openCount, assignedCount, nil
 }

@@ -602,3 +602,46 @@ func TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503(t *testing.
 		t.Fatalf("expected body to contain photo_storage_unavailable, got: %s", string(body))
 	}
 }
+
+// TestProxy_StripsInternalTokenEvenWithReviewerToken pins the rule that the
+// gateway deletes a client-supplied X-Internal-Token on every inbound request.
+// ADMIN-API briefly kept it whenever X-Reviewer-Token was present, which let
+// any internet client that knew (or guessed) the internal token reach
+// internal-only reviewer endpoints through the public edge.
+func TestProxy_StripsInternalTokenEvenWithReviewerToken(t *testing.T) {
+	var gotInternal, gotReviewer string
+	var sawInternal bool
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, sawInternal = r.Header["X-Internal-Token"]
+		gotInternal = r.Header.Get("X-Internal-Token")
+		gotReviewer = r.Header.Get("X-Reviewer-Token")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{Prefix: "/api/v1/users/", Target: backend.URL, StripPrefix: "/api/v1"}
+	proxyHandler, err := New(route, "gw-secret", []string{"127.0.0.1", "::1"}, http.DefaultTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/v1/users/admin/jobs", nil)
+	req.Header.Set("X-Reviewer-Token", "reviewer-token")
+	req.Header.Set("X-Internal-Token", "client-supplied-internal-token")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request through gateway failed: %v", err)
+	}
+	resp.Body.Close()
+
+	if sawInternal || gotInternal != "" {
+		t.Fatalf("upstream received X-Internal-Token %q; the gateway must strip it from every client request", gotInternal)
+	}
+	if gotReviewer != "reviewer-token" {
+		t.Fatalf("X-Reviewer-Token should pass through unchanged, got %q", gotReviewer)
+	}
+}

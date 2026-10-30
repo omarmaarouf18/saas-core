@@ -164,9 +164,15 @@ USER_SERVICE_URL=https://user-service:3003
 CHAT_SERVICE_URL=https://chat-service:3001
 NOTIFICATION_SERVICE_URL=https://notification-service:3004
 
-# Reviewer console image pin (saas-core ADR-0021). `latest` tracks the
-# kyc-reviewer-console repo's main branch; pin a SHA tag for reproducibility.
-KYC_CONSOLE_IMAGE_TAG=latest
+# Reviewer console image pin (saas-core ADR-0021). Pin an exact SHA tag
+# published by kyc-reviewer-console (NO 'latest' fallback; deploy preflight fails if unset).
+KYC_CONSOLE_IMAGE_TAG=<commit-sha>
+
+# Second gate for reviewer console: Caddy basic_auth on kyc.logiclinkeg.tech.
+# If either variable is empty, Caddy fails closed with HTTP 503.
+# Generate hash via: `caddy hash-password` (see step 8.1.3). Never print the password.
+KYC_CONSOLE_BASIC_AUTH_USER=<username>
+KYC_CONSOLE_BASIC_AUTH_HASH=<bcrypt-hash>
 
 # -----------------------------------------------------------------------------
 # Production Environment & Security Secrets
@@ -395,8 +401,59 @@ volumes:
     external: true
 ```
 
-#### 3. Reviewer Console Route (saas-core ADR-0021)
-The KYC/KYB/KYE reviewer console (`kyc-reviewer-console` service) is kept off the public API surface: it holds `INTERNAL_SERVICE_TOKEN` and exists precisely because reviewer endpoints cannot be reached through the public gateway. It is exposed on its own subdomain (`kyc.logiclinkeg.tech`) so remote reviewers can reach it over HTTPS. All console API routes require a valid `X-Reviewer-Token` enforced by auth-service upstream; the login page itself carries no privilege.
+#### 3. Reviewer Console Route (saas-core ADR-0021 & Two-Gate Security Model)
+The KYC/KYB/KYE reviewer console (`kyc-reviewer-console` service) is kept off the public API surface: it holds `INTERNAL_SERVICE_TOKEN` and exists precisely because reviewer endpoints cannot be reached through the public gateway. It is exposed on its own subdomain (`kyc.logiclinkeg.tech`) so remote reviewers can reach it over HTTPS.
+
+To protect the console against automated scanning and unauthorized access, access is gated by **two independent layers**:
+1. **Edge Gate (Caddy `basic_auth` & Edge Security Headers)**: Caddy terminates TLS on `kyc.logiclinkeg.tech` and enforces HTTP Basic Authentication before any request reaches the console container. Caddy also injects edge security headers (`Strict-Transport-Security`, `Content-Security-Policy: frame-ancestors 'none'`, and `X-Frame-Options: DENY`). If either `KYC_CONSOLE_BASIC_AUTH_HASH` or `KYC_CONSOLE_BASIC_AUTH_USER` is empty or unset, Caddy fails closed with `HTTP 503 Service Unavailable`.
+2. **Application Gate (`X-Reviewer-Token`)**: The console UI and its API proxies require a valid cryptographic reviewer token verified upstream by `auth-service` via `/auth/reviewer/verify`.
+
+##### Owner Steps: Reviewer Console Edge Gate Setup
+Follow these steps on the production VM to configure or rotate the console edge gate:
+
+1. **Generate Bcrypt Password Hash** (never write or echo the plaintext password):
+   Run Caddy's password hasher. The interactive prompt reads the password directly without echoing it to terminal or shell history:
+   ```bash
+   docker run --rm -it caddy:2.11.4-alpine caddy hash-password
+   ```
+   Copy the output bcrypt string (e.g. `$2a$14$...`).
+
+2. **Configure Environment in `/home/deploybot/.env`**:
+   Set the operator username, bcrypt hash, and the pinned console image tag:
+   ```bash
+   sudo nano /home/deploybot/.env
+   # Ensure the following keys are populated:
+   # KYC_CONSOLE_IMAGE_TAG=<pinned-sha-from-kyc-reviewer-console-ci>
+   # KYC_CONSOLE_BASIC_AUTH_USER=<operator-username>
+   # KYC_CONSOLE_BASIC_AUTH_HASH='<bcrypt-hash-from-step-1>'
+   ```
+   > [!IMPORTANT]
+   > Do NOT use `latest` for `KYC_CONSOLE_IMAGE_TAG`. Docker Compose configuration strictly requires `KYC_CONSOLE_IMAGE_TAG` to be set; deploy preflight fails if unset.
+
+3. **Apply Changes and Redeploy**:
+   ```bash
+   cd /opt/saas-platform
+   docker compose --env-file /home/deploybot/.env up -d caddy kyc-reviewer-console
+   ```
+
+4. **Verify Dual Gates**:
+   - Without credentials: `curl -i https://kyc.logiclinkeg.tech/` returns `401 Unauthorized` with `Www-Authenticate: Basic realm="restricted"`.
+   - Edge security headers present: verify `Strict-Transport-Security`, `Content-Security-Policy: frame-ancestors 'none'`, `X-Frame-Options: DENY`.
+   - With valid HTTP basic auth: browser opens the Reviewer Console login screen prompting for `X-Reviewer-Token`.
+   - If `KYC_CONSOLE_BASIC_AUTH_HASH` is blanked or unset: Caddy answers `503 Service Unavailable` immediately (fail-closed).
+
+##### Console service URLs (internal network)
+The `kyc-reviewer-console` container reaches every backend directly on `saas-net` over mTLS (its own client certificate, the internal CA); none of these calls go through the public edge, which strips `X-Internal-Token` and answers `404` for `/admin` and `/admin/*` on `api.logiclinkeg.tech`. Compose sets:
+
+| Variable | Value in compose | Used for |
+| :--- | :--- | :--- |
+| `AUTH_SERVICE_URL` | `https://auth-service:${AUTH_SERVICE_PORT}` | KYC review, accounts, documents, `/admin/audit` |
+| `USER_SERVICE_URL` | `https://user-service:${USER_SERVICE_PORT}` | jobs, services, subscriptions, payouts, disputes |
+| `CHAT_SERVICE_URL` | `https://chat-service:${CHAT_SERVICE_PORT}` | tickets and chat |
+| `NOTIFICATION_SERVICE_URL` | `https://notification-service:${NOTIFICATION_SERVICE_PORT}` | admin notifications page (`/notifications/admin/*`, CONSOLE-V2) |
+| `GATEWAY_INTERNAL_URL` | `${GATEWAY_INTERNAL_URL:-https://api-gateway:${API_GATEWAY_PORT}}` | app version policy (`GET`/`PUT /admin/version`) |
+
+auth-service also gets `CHAT_SERVICE_URL`, `NOTIFICATION_SERVICE_URL` and `GATEWAY_INTERNAL_URL` for the merged `GET /admin/audit`. The gateway answers SNI `api-gateway` with its internal certificate (`TLS_CERT_PATH`), so these callers verify it against the internal CA; the edge Caddy hop keeps the external certificate. The console must send the reviewer's browser IP as `X-Console-Client-IP` (see `docs/api/ADMIN_API.md` section 1.3). No new secret is needed: `.env` only needs `GATEWAY_INTERNAL_URL` if the gateway is not at `https://api-gateway:${API_GATEWAY_PORT}`.
 
 DNS: create an additional `A` record for the `kyc` subdomain pointing at the same VM public IP, using the same registrar guidance as Step 8.2 (delegated-nameserver warning applies).
 

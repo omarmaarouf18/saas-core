@@ -24,11 +24,14 @@ import (
 type memoryStore struct {
 	mu            sync.Mutex
 	notifications []store.Notification
+	adminSends    map[string]*store.AdminNotificationSend
+	adminAudit    []store.AdminAuditRecord
 }
 
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
 		notifications: make([]store.Notification, 0),
+		adminSends:    make(map[string]*store.AdminNotificationSend),
 	}
 }
 
@@ -229,6 +232,148 @@ func (m *memoryStore) DeleteAll(ctx context.Context, tenantID, userID string, ro
 		remaining = append(remaining, n)
 	}
 	m.notifications = remaining
+	return nil
+}
+
+func (m *memoryStore) ListByJobID(ctx context.Context, jobID string, limit int) ([]store.Notification, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var matched []store.Notification
+	for _, n := range m.notifications {
+		if n.JobID == jobID {
+			matched = append(matched, n)
+		}
+	}
+	if limit > 0 && len(matched) > limit {
+		matched = matched[:limit]
+	}
+	return matched, nil
+}
+
+func (m *memoryStore) AppendAdminAudit(ctx context.Context, rec *store.AdminAuditRecord) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.adminAudit = append(m.adminAudit, *rec)
+	return nil
+}
+
+func (m *memoryStore) ListAdminAudit(ctx context.Context, f store.AdminAuditFilter, limit int64) ([]store.AdminAuditRecord, int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := []store.AdminAuditRecord{}
+	for i := len(m.adminAudit) - 1; i >= 0; i-- {
+		rec := m.adminAudit[i]
+		if (f.ActorID != "" && rec.ActorID != f.ActorID) || (f.Action != "" && rec.Action != f.Action) || (f.TargetID != "" && rec.TargetID != f.TargetID) {
+			continue
+		}
+		out = append(out, rec)
+	}
+	total := int64(len(out))
+	if int64(len(out)) > limit {
+		out = out[:limit]
+	}
+	return out, total, nil
+}
+
+func (m *memoryStore) CreateAdminNotificationSend(ctx context.Context, send *store.AdminNotificationSend) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if send.ID == "" {
+		send.ID = fmt.Sprintf("send-%d", time.Now().UnixNano())
+	}
+	if send.CreatedAt.IsZero() {
+		send.CreatedAt = time.Now().UTC()
+	}
+	send.UpdatedAt = send.CreatedAt
+	if m.adminSends == nil {
+		m.adminSends = make(map[string]*store.AdminNotificationSend)
+	}
+	m.adminSends[send.ID] = send
+	return nil
+}
+
+func (m *memoryStore) GetAdminNotificationSendByID(ctx context.Context, id string) (*store.AdminNotificationSend, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.adminSends == nil {
+		return nil, store.ErrNotFound
+	}
+	send, ok := m.adminSends[id]
+	if !ok {
+		return nil, store.ErrNotFound
+	}
+	return send, nil
+}
+
+func (m *memoryStore) GetAdminNotificationSendByIdempotencyKey(ctx context.Context, key string) (*store.AdminNotificationSend, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.adminSends == nil || key == "" {
+		return nil, nil
+	}
+	for _, send := range m.adminSends {
+		if send.IdempotencyKey == key {
+			return send, nil
+		}
+	}
+	return nil, nil
+}
+
+func (m *memoryStore) ListAdminNotificationSends(ctx context.Context, page, limit int) ([]store.AdminNotificationSend, int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var list []store.AdminNotificationSend
+	for _, send := range m.adminSends {
+		list = append(list, *send)
+	}
+	slices.SortFunc(list, func(a, b store.AdminNotificationSend) int {
+		if a.CreatedAt.After(b.CreatedAt) {
+			return -1
+		}
+		if a.CreatedAt.Before(b.CreatedAt) {
+			return 1
+		}
+		return 0
+	})
+	total := len(list)
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	start := (page - 1) * limit
+	if start >= total {
+		return []store.AdminNotificationSend{}, total, nil
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+	return list[start:end], total, nil
+}
+
+func (m *memoryStore) UpdateAdminNotificationSendProgress(ctx context.Context, id string, status store.AdminNotificationSendStatus, sentCount, failedCount int, errMsg string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.adminSends == nil {
+		return store.ErrNotFound
+	}
+	send, ok := m.adminSends[id]
+	if !ok {
+		return store.ErrNotFound
+	}
+	now := time.Now().UTC()
+	send.Status = status
+	send.SentCount = sentCount
+	send.FailedCount = failedCount
+	send.UpdatedAt = now
+	if errMsg != "" {
+		send.ErrorMessage = errMsg
+	}
+	if status == store.SendStatusDone || status == store.SendStatusFailed {
+		send.CompletedAt = &now
+	}
 	return nil
 }
 

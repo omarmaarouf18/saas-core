@@ -6,20 +6,32 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"github.com/project/gateway/internal/adminaudit"
 	"github.com/project/gateway/internal/config"
+	"github.com/project/gateway/internal/iputil"
 	"github.com/project/gateway/internal/middleware"
 	"github.com/project/gateway/internal/proxy"
+	"github.com/project/gateway/internal/servertls"
 	"github.com/project/gateway/internal/version"
 	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/ratelimit"
@@ -65,8 +77,14 @@ func main() {
 		clientTransport = http.DefaultTransport
 	}
 
-	// ---- Initialize App Version Store ----
-	versionStore := version.NewStore(nil, "")
+	// ---- Initialize App Version Store and admin audit store (MongoDB, gateway_db) ----
+	storeCtx, storeCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	versionStore, auditStore, err := openGatewayStores(storeCtx, cfg.MongoURI, cfg.MongoDatabase, cfg.AppEnv)
+	storeCancel()
+	if err != nil {
+		log.Fatalf("[GATEWAY] FATAL: refusing to start: version store unavailable (APP_ENV=%q): %v. "+
+			"Fix MONGO_URI/MongoDB, or run with APP_ENV=local for the in-memory fallback.", cfg.AppEnv, err)
+	}
 
 	mux := http.NewServeMux()
 
@@ -103,6 +121,18 @@ func main() {
 	// SEC-02: guarded by the dedicated ADMIN_API_TOKEN (X-Admin-Token), not
 	// the internal service token that every service holds.
 	mux.HandleFunc("/api/v1/admin/version-config", VersionConfigHandler(cfg.AdminAPIToken, versionStore))
+
+	// ---- Reviewer App Version Configuration Endpoint (Console X-Internal-Token + X-Reviewer-Token) ----
+	authClient := &http.Client{Transport: clientTransport, Timeout: 5 * time.Second}
+	reviewerVersionHandler := ReviewerVersionConfigHandler(cfg.InternalServiceToken, cfg.AuthServiceURL, authClient, versionStore, auditStore)
+	// Internal-only: a verified internal-CA client certificate (the console,
+	// auth-service) is required on top of the tokens, and the edge answers
+	// 404 for /admin/*. There is deliberately no /api/v1/admin/version alias:
+	// the gateway's own mux handlers never pass through the proxy's
+	// X-Internal-Token strip.
+	mux.Handle("/admin/version", servertls.RequireInternalClientCert(reviewerVersionHandler))
+	// Gateway admin audit records for auth-service's merged GET /admin/audit.
+	mux.Handle("/admin/internal/audit", servertls.RequireInternalClientCert(adminaudit.ListHandler(cfg.InternalServiceToken, auditStore)))
 
 	// ---- Service info endpoint ----
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +212,12 @@ func main() {
 		}
 	}()
 
-	if err := server.ListenAndServeTLS(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath); err != nil && err != http.ErrServerClosed {
+	tlsConfig, err := servertls.Config(cfg.ExternalTLSCertPath, cfg.ExternalTLSKeyPath, cfg.TLSCertPath, cfg.TLSKeyPath, cfg.TLSCAPath)
+	if err != nil {
+		log.Fatalf("[GATEWAY] TLS setup failed: %v", err)
+	}
+	server.TLSConfig = tlsConfig
+	if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }
@@ -248,8 +283,8 @@ func VersionConfigHandler(adminToken string, versionStore *version.Store) http.H
 			}
 			updated, err := versionStore.UpdateConfig(r.Context(), req)
 			if err != nil {
-				if strings.Contains(err.Error(), "failed to persist") {
-					handlerutil.WriteSafeError(w, r, http.StatusBadRequest, handlerutil.ErrCodeInternal, "failed to update version config", err)
+				if errors.Is(err, version.ErrPersist) {
+					handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "version store unavailable, config not saved", err)
 					return
 				}
 				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -261,6 +296,245 @@ func VersionConfigHandler(adminToken string, versionStore *version.Store) http.H
 					updated.LatestVersion, updated.MinimumSupportedVersion, updated.EnforceMinimumVersion, updated.Revision),
 				handlerutil.GetClientIP(r))
 			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{"message": "version configuration updated successfully", "config": updated})
+			return
+		}
+
+		handlerutil.WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+	}
+}
+
+// openGatewayStores opens the version policy and admin audit stores. Without
+// MONGO_URI both are in memory. With MONGO_URI set, MongoDB must be reachable
+// and the version policy seeded at startup; otherwise the gateway refuses to
+// start (returns an error), except with APP_ENV=local or test, where it falls
+// back to in memory with a loud warning. ADMIN-API silently fell back in every
+// environment, so later version changes were lost on restart.
+func openGatewayStores(ctx context.Context, mongoURI, dbName, appEnv string) (*version.Store, *adminaudit.Store, error) {
+	if dbName == "" {
+		dbName = "gateway_db"
+	}
+	if mongoURI == "" {
+		log.Printf("[GATEWAY] MONGO_URI not set: version policy and admin audit records are in memory and lost on restart")
+		return version.NewStore(nil, ""), adminaudit.NewStore(nil, ""), nil
+	}
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+	if err == nil {
+		err = client.Ping(ctx, nil)
+	}
+	var vs *version.Store
+	if err == nil {
+		vs, err = version.NewMongoStore(ctx, client, dbName)
+	}
+	if err != nil {
+		if client != nil {
+			_ = client.Disconnect(context.Background())
+		}
+		env := strings.ToLower(strings.TrimSpace(appEnv))
+		if env == "local" || env == "test" {
+			log.Printf("[GATEWAY] WARNING: MongoDB version store unavailable (%v); APP_ENV=%s so falling back to IN-MEMORY stores. Version policy changes will be LOST on restart.", err, env)
+			return version.NewStore(nil, ""), adminaudit.NewStore(nil, ""), nil
+		}
+		return nil, nil, err
+	}
+	log.Printf("[GATEWAY] Version store connected to MongoDB (db=%s, collections=platform_versions, admin_audit)", dbName)
+	return vs, adminaudit.NewStore(client, dbName), nil
+}
+
+// consoleClientIPHeader carries the reviewer's browser IP on saas-net. The
+// console sets it; the gateway trusts it only after the X-Internal-Token
+// check has passed and only when it parses as an IP.
+const consoleClientIPHeader = "X-Console-Client-IP"
+
+// reviewerClientIP returns the reviewer IP to report to auth-service. Call it
+// only after the internal token check: it trusts X-Console-Client-IP, never
+// X-Forwarded-For or X-Real-IP, and otherwise uses RemoteAddr.
+func reviewerClientIP(r *http.Request) string {
+	if ip := strings.TrimSpace(r.Header.Get(consoleClientIPHeader)); ip != "" && net.ParseIP(ip) != nil {
+		return ip
+	}
+	return iputil.ExtractIP(r.RemoteAddr)
+}
+
+var auditRequestIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
+
+// auditRequestID returns the caller's X-Request-ID when it is a safe token,
+// else a fresh random id.
+func auditRequestID(r *http.Request) string {
+	if rid := strings.TrimSpace(r.Header.Get("X-Request-ID")); auditRequestIDPattern.MatchString(rid) {
+		return rid
+	}
+	return newAuditID()
+}
+
+func newAuditID() string {
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// ReviewerVersionUpdateRequest is the payload for updating version config from the reviewer console.
+type ReviewerVersionUpdateRequest struct {
+	LatestVersion           string `json:"latest_version"`
+	MinimumSupportedVersion string `json:"minimum_supported_version"`
+	EnforceMinimumVersion   *bool  `json:"enforce_minimum_version,omitempty"`
+	DownloadURL             string `json:"download_url"`
+	Reason                  string `json:"reason"`
+}
+
+// ReviewerVersionConfigHandler handles reviewer console access to read and update version policy (ADR-0023).
+// GET /admin/version & PUT /admin/version & POST /admin/version
+func ReviewerVersionConfigHandler(internalToken, authServiceURL string, authClient *http.Client, versionStore *version.Store, auditStore *adminaudit.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gotInternal := r.Header.Get("X-Internal-Token")
+		if internalToken == "" || subtle.ConstantTimeCompare([]byte(gotInternal), []byte(internalToken)) != 1 {
+			handlerutil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+			return
+		}
+
+		revToken := r.Header.Get("X-Reviewer-Token")
+		if revToken == "" {
+			handlerutil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing reviewer token"})
+			return
+		}
+
+		authBase := authServiceURL
+		if authBase == "" {
+			authBase = "https://auth-service:3002"
+		}
+		verifyURL := fmt.Sprintf("%s/auth/reviewer/verify", strings.TrimSuffix(authBase, "/"))
+		// #nosec G704 //nolint:gosec -- verifyURL is constructed from trusted internal config
+		verifyReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, verifyURL, nil)
+		if err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to create reviewer auth request", err)
+			return
+		}
+		verifyReq.Header.Set("X-Internal-Token", internalToken)
+		verifyReq.Header.Set("X-Reviewer-Token", revToken)
+		// The reviewer rate limit in auth-service keys on this IP. A client
+		// X-Forwarded-For is never forwarded (rotating it reset the limit).
+		clientIP := reviewerClientIP(r)
+		verifyReq.Header.Set(consoleClientIPHeader, clientIP)
+
+		client := authClient
+		if client == nil {
+			client = http.DefaultClient
+		}
+		// #nosec G704 //nolint:gosec -- verifyURL is trusted
+		authResp, err := client.Do(verifyReq)
+		if err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusBadGateway, handlerutil.ErrCodeUnavailable, "auth-service unavailable", err)
+			return
+		}
+		defer authResp.Body.Close()
+
+		if authResp.StatusCode != http.StatusOK {
+			if authResp.StatusCode == http.StatusTooManyRequests {
+				if ra := authResp.Header.Get("Retry-After"); ra != "" {
+					w.Header().Set("Retry-After", ra)
+				}
+				handlerutil.WriteJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid reviewer token"})
+			return
+		}
+
+		var revIdentity struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}
+		if err := json.NewDecoder(authResp.Body).Decode(&revIdentity); err != nil {
+			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "invalid auth response", err)
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			vConfig, err := versionStore.GetConfig(r.Context())
+			if err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
+				return
+			}
+			handlerutil.WriteJSON(w, http.StatusOK, vConfig)
+			return
+		}
+
+		if r.Method == http.MethodPut || r.Method == http.MethodPost {
+			var req ReviewerVersionUpdateRequest
+			if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+				return
+			}
+
+			reason := strings.TrimSpace(req.Reason)
+			if len(reason) < 1 || len(reason) > 1000 {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required (1-1000 characters)"})
+				return
+			}
+
+			current, err := versionStore.GetConfig(r.Context())
+			if err != nil {
+				handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to read existing version config", err)
+				return
+			}
+
+			newConfig := current
+			if req.LatestVersion != "" {
+				newConfig.LatestVersion = req.LatestVersion
+			}
+			if req.MinimumSupportedVersion != "" {
+				newConfig.MinimumSupportedVersion = req.MinimumSupportedVersion
+			}
+			if req.DownloadURL != "" {
+				newConfig.DownloadURL = req.DownloadURL
+			}
+			if req.EnforceMinimumVersion != nil {
+				newConfig.EnforceMinimumVersion = *req.EnforceMinimumVersion
+			}
+
+			if err := version.ValidateDownloadURL(newConfig.DownloadURL); err != nil {
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
+
+			updated, err := versionStore.UpdateConfig(r.Context(), newConfig)
+			if err != nil {
+				if errors.Is(err, version.ErrPersist) {
+					handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "version store unavailable, config not saved", err)
+					return
+				}
+				handlerutil.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+				return
+			}
+
+			if auditStore != nil {
+				rec := adminaudit.Record{
+					ID:         newAuditID(),
+					Source:     "api-gateway",
+					ActorID:    revIdentity.ID,
+					Action:     adminaudit.ActionVersionUpdate,
+					TargetType: "version_policy",
+					TargetID:   updated.ID,
+					Reason:     reason,
+					Details: fmt.Sprintf("latest=%s min=%s enforce=%t revision=%d",
+						updated.LatestVersion, updated.MinimumSupportedVersion, updated.EnforceMinimumVersion, updated.Revision),
+					RequestID: auditRequestID(r),
+					CreatedAt: time.Now().UTC(),
+				}
+				if err := auditStore.Append(r.Context(), rec); err != nil {
+					log.Printf("[GATEWAY] failed to persist %s audit record: %v", adminaudit.ActionVersionUpdate, err)
+					handlerutil.ShipSecurityEvent(r.Context(), "ADMIN_AUDIT_WRITE_FAILED", "api-gateway", revIdentity.ID, "", "action="+adminaudit.ActionVersionUpdate, clientIP)
+				}
+			}
+
+			handlerutil.ShipSecurityEvent(r.Context(), "ADMIN_VERSION_CONFIG_CHANGED", "api-gateway", revIdentity.ID, "",
+				fmt.Sprintf("latest=%s min=%s enforce=%t reason=%s revision=%d",
+					updated.LatestVersion, updated.MinimumSupportedVersion, updated.EnforceMinimumVersion, reason, updated.Revision),
+				clientIP)
+
+			handlerutil.WriteJSON(w, http.StatusOK, map[string]any{
+				"message": "version configuration updated successfully",
+				"config":  updated,
+			})
 			return
 		}
 

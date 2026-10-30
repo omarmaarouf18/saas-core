@@ -68,6 +68,9 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 	if err := s.ensureIndexes(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.ensureAdminAuditIndexes(ctx); err != nil {
+		return nil, err
+	}
 	// BE-ERR: seeding failures fail startup in every environment. A missing
 	// platform config or central wallet otherwise surfaces much later as
 	// money-path errors, and a half-seeded demo dataset as flaky behaviour.
@@ -287,9 +290,10 @@ func (s *MongoDB) ensureSeedData(ctx context.Context) error {
 // Service operations — with 2dsphere spatial queries
 // ---------------------------------------------------------------------------
 
-// ErrServiceExists is returned by CreateService when a service with the same
-// ID already exists.
-var ErrServiceExists = errors.New("store: service already exists")
+var (
+	ErrServiceExists   = errors.New("store: service already exists")
+	ErrServiceNotFound = errors.New("store: service not found")
+)
 
 // CreateService inserts a new service. A duplicate ID returns
 // ErrServiceExists; any other insert failure is returned wrapped (BE-ERR).
@@ -345,10 +349,141 @@ func (s *MongoDB) UpdateServiceFields(ctx context.Context, id, tenantID string, 
 	return &updated, nil
 }
 
+// AdminListServices returns a paginated list of services matching filters for the reviewer console.
+func (s *MongoDB) AdminListServices(ctx context.Context, tenantID, name string, hasPhoto, hidden *bool, page, limit int64) ([]models.Service, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if tenantID != "" {
+		filter["tenant_id"] = tenantID
+	}
+	if name != "" {
+		filter["name"] = bson.M{"$regex": regexp.QuoteMeta(name), "$options": "i"}
+	}
+	if hasPhoto != nil {
+		if *hasPhoto {
+			filter["photo_url"] = bson.M{"$exists": true, "$nin": bson.A{"", nil}}
+		} else {
+			filter["$or"] = bson.A{
+				bson.M{"photo_url": bson.M{"$exists": false}},
+				bson.M{"photo_url": ""},
+				bson.M{"photo_url": nil},
+			}
+		}
+	}
+	if hidden != nil {
+		if *hidden {
+			filter["is_hidden"] = true
+		} else {
+			filter["$or"] = bson.A{
+				bson.M{"is_hidden": bson.M{"$exists": false}},
+				bson.M{"is_hidden": false},
+			}
+		}
+	}
+
+	total, err := s.services.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: count services: %w", err)
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(skip).SetLimit(limit)
+	cur, err := s.services.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: find services: %w", err)
+	}
+	defer cur.Close(ctx)
+
+	var svcs []models.Service
+	if err := cur.All(ctx, &svcs); err != nil {
+		return nil, 0, fmt.Errorf("store: decode services: %w", err)
+	}
+	if svcs == nil {
+		svcs = []models.Service{}
+	}
+	return svcs, total, nil
+}
+
+// AdminSetServiceHidden updates the visibility of a service (hide or unhide).
+func (s *MongoDB) AdminSetServiceHidden(ctx context.Context, serviceID string, isHidden bool, reviewerID, reason string) (*models.Service, error) {
+	now := time.Now().UTC()
+	var update bson.M
+	if isHidden {
+		update = bson.M{
+			"$set": bson.M{
+				"is_hidden":     true,
+				"hidden_reason": reason,
+				"hidden_by":     reviewerID,
+				"updated_at":    now,
+			},
+		}
+	} else {
+		update = bson.M{
+			"$set": bson.M{
+				"is_hidden":     false,
+				"hidden_reason": "",
+				"hidden_by":     "",
+				"updated_at":    now,
+			},
+		}
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := s.services.FindOneAndUpdate(ctx, bson.M{"_id": serviceID}, update, opts)
+	if res.Err() != nil {
+		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, fmt.Errorf("store: update service visibility: %w", res.Err())
+	}
+	var svc models.Service
+	if err := res.Decode(&svc); err != nil {
+		return nil, fmt.Errorf("store: decode updated service: %w", err)
+	}
+	return &svc, nil
+}
+
+// AdminRemoveServicePhoto removes the photo from a service in MongoDB and returns the previous service object.
+func (s *MongoDB) AdminRemoveServicePhoto(ctx context.Context, serviceID string) (*models.Service, error) {
+	var oldSvc models.Service
+	if err := s.services.FindOne(ctx, bson.M{"_id": serviceID}).Decode(&oldSvc); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, fmt.Errorf("store: find service %s: %w", serviceID, err)
+	}
+
+	if oldSvc.PhotoURL == "" {
+		return nil, fmt.Errorf("service has no photo to remove")
+	}
+
+	now := time.Now().UTC()
+	_, err := s.services.UpdateOne(ctx, bson.M{"_id": serviceID}, bson.M{
+		"$set": bson.M{
+			"photo_url":  "",
+			"updated_at": now,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("store: remove service photo: %w", err)
+	}
+	return &oldSvc, nil
+}
+
 // ListServices uses MongoDB $nearSphere for proximity filtering instead of linear Haversine scan.
 func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, refLat, refLon, maxDistKm float64, limit, offset int64) []models.ServiceWithPrice {
 	limit, offset = clampPage(limit, offset, 50, 200)
 	var filter bson.M
+	notHidden := bson.A{
+		bson.M{"is_hidden": bson.M{"$exists": false}},
+		bson.M{"is_hidden": false},
+	}
 	if nearBy {
 		if maxDistKm <= 0 {
 			maxDistKm = 50
@@ -360,9 +495,12 @@ func (s *MongoDB) ListServices(ctx context.Context, sortBy string, nearBy bool, 
 					"$maxDistance": maxDistKm * 1000, // meters
 				},
 			},
+			"$or": notHidden,
 		}
 	} else {
-		filter = bson.M{}
+		filter = bson.M{
+			"$or": notHidden,
+		}
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset)
@@ -1751,6 +1889,46 @@ func (s *MongoDB) ListSubscriptions(ctx context.Context, status string, search s
 	return subs, total, nil
 }
 
+// ListSubscriptionQueue returns subscriptions in PlanPendingPayment status, ordered oldest first (started_at ASC).
+func (s *MongoDB) ListSubscriptionQueue(ctx context.Context, page, limit int64) ([]models.Subscription, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	filter := bson.M{
+		"tier": models.PlanPendingPayment,
+	}
+
+	total, err := s.subscriptions.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count pending subscriptions: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "started_at", Value: 1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.subscriptions.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query pending subscriptions: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var subs []models.Subscription
+	if err := cursor.All(ctx, &subs); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode pending subscriptions: %w", err)
+	}
+	if subs == nil {
+		subs = []models.Subscription{}
+	}
+	return subs, total, nil
+}
+
 // AdminActivateSubscription atomically activates a subscription to PlanPaid with durationDays expiry (ADR-0023).
 func (s *MongoDB) AdminActivateSubscription(ctx context.Context, tenantID, subscriptionID string, durationDays int, reviewerID string) (*models.Subscription, error) {
 	if durationDays <= 0 {
@@ -1954,6 +2132,82 @@ func (s *MongoDB) CancelJob(ctx context.Context, id string, reason string, hist 
 		return fmt.Errorf("cancel job failed: job %s is not in a cancellable state (currently %s)", id, job.Status)
 	}
 	return nil
+}
+
+// AdminCancelJob cancels a non-terminal job on behalf of support/admin.
+// If the job holds locked escrow, it is refunded to the tenant's withdrawable balance.
+// Courier locks are released, cancellation requests cleared, and status history stamped.
+func (s *MongoDB) AdminCancelJob(ctx context.Context, jobID, reviewerID, reason string) (*models.Job, error) {
+	var job models.Job
+	if err := s.jobs.FindOne(ctx, bson.M{"_id": jobID}).Decode(&job); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrJobNotFound
+		}
+		return nil, fmt.Errorf("store: find job %s: %w", jobID, err)
+	}
+
+	if job.Status == models.JobStatusCompleted || job.Status == models.JobStatusCancelled {
+		return nil, ErrJobAlreadyTerminal
+	}
+
+	now := time.Now().UTC()
+	histEntry := models.JobStatusHistoryEntry{
+		Status:    models.JobStatusCancelled,
+		At:        now,
+		ActorRole: models.ActorRoleAdmin,
+		ActorID:   reviewerID,
+		Reason:    reason,
+	}
+
+	if job.PaymentMethod != "cod" && job.Status != models.JobStatusPendingDispatch && job.LockedEscrowAmount > 0 {
+		if err := s.RefundEscrow(ctx, job.OwnerID, job.ID, job.LockedEscrowAmount, histEntry); err != nil {
+			return nil, fmt.Errorf("store: refund escrow for job %s: %w", job.ID, err)
+		}
+		_ = s.SetCancellationReason(ctx, job.ID, reason)
+	} else {
+		// Non-escrow cancel: COD, pending_dispatch, or 0 locked escrow
+		filter := bson.M{
+			"_id": job.ID,
+			"status": bson.M{"$in": []models.JobStatus{
+				models.JobStatusActive,
+				models.JobStatusPending,
+				models.JobStatusPendingDispatch,
+				models.JobStatusAwaitingPriceResponse,
+				models.JobStatusEscrowReconciliationRequired,
+			}},
+		}
+		res, err := s.jobs.UpdateOne(ctx, filter, bson.M{
+			"$set": bson.M{
+				"status":                      models.JobStatusCancelled,
+				"sub_status":                  "",
+				"current_offered_employee_id": "",
+				"offer_expires_at":            nil,
+				"cancellation_reason":         reason,
+				"updated_at":                  now,
+			},
+			"$push": bson.M{
+				"status_history": histEntry,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("store: cancel job %s: %w", job.ID, err)
+		}
+		if res.MatchedCount == 0 {
+			return nil, ErrJobStateConflict
+		}
+	}
+
+	if job.EmployeeID != "" {
+		_ = s.ReleaseCourierLock(ctx, job.OwnerID, job.EmployeeID, job.ID)
+	}
+	if job.CurrentOfferedEmployeeID != "" {
+		_ = s.ReleaseCourierLock(ctx, job.OwnerID, job.CurrentOfferedEmployeeID, job.ID)
+	}
+	_ = s.ClearCancellationRequest(ctx, job.ID)
+
+	job.Status = models.JobStatusCancelled
+	job.CancellationReason = reason
+	return &job, nil
 }
 
 // SetCancellationReason stamps (or restamps) the cancellation reason on a job
@@ -2597,4 +2851,185 @@ func (s *MongoDB) AdminResolveReconciliation(ctx context.Context, jobID, decisio
 	default:
 		return nil, fmt.Errorf("invalid decision: %s", decision)
 	}
+}
+
+// GetOverviewStats returns counts for pending subscriptions, GPS disputes (escrow_reconciliation_required),
+// stuck COD jobs, and jobs today grouped by status.
+func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingSubs int64, gpsDisputes int64, stuckCODJobs int64, jobsToday map[string]int, err error) {
+	pendingSubs, err = s.subscriptions.CountDocuments(ctx, bson.M{"tier": "pending_payment"})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count pending subscriptions: %w", err)
+	}
+
+	gpsDisputes, err = s.jobs.CountDocuments(ctx, bson.M{"status": models.JobStatusEscrowReconciliationRequired})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count gps disputes: %w", err)
+	}
+
+	stuckReport, err := CountStuckCODReconciliationJobs(ctx, s.db)
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to count stuck cod jobs: %w", err)
+	}
+	stuckCODJobs = stuckReport.Total
+
+	now := time.Now().UTC()
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	jobsToday = make(map[string]int)
+
+	knownStatuses := []string{
+		string(models.JobStatusPending),
+		string(models.JobStatusPendingDispatch),
+		string(models.JobStatusUnavailable),
+		string(models.JobStatusAwaitingPriceResponse),
+		string(models.JobStatusActive),
+		string(models.JobStatusCompleted),
+		string(models.JobStatusCancelled),
+		string(models.JobStatusEscrowReconciliationRequired),
+	}
+	for _, st := range knownStatuses {
+		jobsToday[st] = 0
+	}
+
+	cursor, err := s.jobs.Aggregate(ctx, mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"created_at": bson.M{"$gte": startOfToday}}}},
+		{{Key: "$group", Value: bson.M{
+			"_id":   "$status",
+			"count": bson.M{"$sum": 1},
+		}}},
+	})
+	if err != nil {
+		return 0, 0, 0, nil, fmt.Errorf("failed to aggregate jobs today: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	type statusGroup struct {
+		Status string `bson:"_id"`
+		Count  int    `bson:"count"`
+	}
+	for cursor.Next(ctx) {
+		var g statusGroup
+		if err := cursor.Decode(&g); err == nil && g.Status != "" {
+			jobsToday[g.Status] = g.Count
+		}
+	}
+
+	return pendingSubs, gpsDisputes, stuckCODJobs, jobsToday, nil
+}
+
+// GetRatingsForJob returns all ratings submitted for a job.
+func (s *MongoDB) GetRatingsForJob(ctx context.Context, jobID string) ([]*models.Rating, error) {
+	if s == nil || s.ratings == nil || jobID == "" {
+		return []*models.Rating{}, nil
+	}
+	cursor, err := s.ratings.Find(ctx, bson.M{"job_id": jobID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var ratings []*models.Rating
+	if err := cursor.All(ctx, &ratings); err != nil {
+		return nil, err
+	}
+	if ratings == nil {
+		ratings = []*models.Rating{}
+	}
+	return ratings, nil
+}
+
+// AdminJobFilter holds filtering criteria for reviewer jobs search.
+type AdminJobFilter struct {
+	JobID                   string
+	CustomerID              string
+	OwnerID                 string
+	CourierID               string
+	Phone                   string
+	ResolvedUserIDsForPhone []string
+	Status                  string
+	DateFrom                *time.Time
+	DateTo                  *time.Time
+}
+
+// AdminListJobs returns a paginated list of jobs matching the filters, plus total count.
+func (s *MongoDB) AdminListJobs(ctx context.Context, f AdminJobFilter, page, limit int64) ([]*models.Job, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	skip := (page - 1) * limit
+
+	var andClauses []bson.M
+
+	if f.JobID != "" {
+		andClauses = append(andClauses, bson.M{"_id": f.JobID})
+	}
+	if f.CustomerID != "" {
+		andClauses = append(andClauses, bson.M{"user_id": f.CustomerID})
+	}
+	if f.OwnerID != "" {
+		andClauses = append(andClauses, bson.M{"owner_id": f.OwnerID})
+	}
+	if f.CourierID != "" {
+		andClauses = append(andClauses, bson.M{"employee_id": f.CourierID})
+	}
+	if f.Status != "" {
+		andClauses = append(andClauses, bson.M{"$or": []bson.M{
+			{"status": f.Status},
+			{"sub_status": f.Status},
+		}})
+	}
+	if f.Phone != "" {
+		phoneClauses := []bson.M{
+			{"recipient.phone": f.Phone},
+		}
+		for _, uid := range f.ResolvedUserIDsForPhone {
+			phoneClauses = append(phoneClauses, bson.M{"user_id": uid})
+			phoneClauses = append(phoneClauses, bson.M{"employee_id": uid})
+		}
+		andClauses = append(andClauses, bson.M{"$or": phoneClauses})
+	}
+	if f.DateFrom != nil || f.DateTo != nil {
+		dateFilter := bson.M{}
+		if f.DateFrom != nil {
+			dateFilter["$gte"] = *f.DateFrom
+		}
+		if f.DateTo != nil {
+			dateFilter["$lte"] = *f.DateTo
+		}
+		andClauses = append(andClauses, bson.M{"created_at": dateFilter})
+	}
+
+	filter := bson.M{}
+	if len(andClauses) == 1 {
+		filter = andClauses[0]
+	} else if len(andClauses) > 1 {
+		filter = bson.M{"$and": andClauses}
+	}
+
+	total, err := s.jobs.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: admin count jobs: %w", err)
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(skip).
+		SetLimit(limit)
+
+	cursor, err := s.jobs.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: admin query jobs: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var jobs []*models.Job
+	if err := cursor.All(ctx, &jobs); err != nil {
+		return nil, 0, fmt.Errorf("store: admin decode jobs: %w", err)
+	}
+	if jobs == nil {
+		jobs = []*models.Job{}
+	}
+	return jobs, total, nil
 }

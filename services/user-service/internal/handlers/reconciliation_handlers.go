@@ -336,6 +336,12 @@ func (u *UserService) authenticateReviewer(r *http.Request) (*ReviewerIdentity, 
 	}
 	req.Header.Set("X-Internal-Token", u.internalServiceToken)
 	req.Header.Set("X-Reviewer-Token", reviewerToken)
+	// The reviewer rate limit in auth-service keys on X-Console-Client-IP
+	// (set by the console; the internal token was checked above). A caller's
+	// X-Forwarded-For / X-Real-IP is never forwarded.
+	if ip := r.Header.Get("X-Console-Client-IP"); ip != "" {
+		req.Header.Set("X-Console-Client-IP", ip)
+	}
 
 	var resp *http.Response
 	if u.authClient != nil {
@@ -399,6 +405,7 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 	}
 
 	items := make([]models.AdminReconciliationJobItem, 0, len(jobs))
+	categoryCache := make(map[string]string)
 	for _, j := range jobs {
 		var actualCash float64
 		if j.ActualCashAmount != nil {
@@ -415,6 +422,16 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 			}
 		}
 
+		category := ""
+		if j.ServiceID != "" {
+			if cat, ok := categoryCache[j.ServiceID]; ok {
+				category = cat
+			} else if svc := u.store.GetServiceByID(ctx, j.ServiceID); svc != nil {
+				category = svc.Category
+				categoryCache[j.ServiceID] = category
+			}
+		}
+
 		items = append(items, models.AdminReconciliationJobItem{
 			ID:                   j.ID,
 			TenantID:             j.OwnerID,
@@ -422,6 +439,9 @@ func (u *UserService) AdminGetReconciliationQueue(w http.ResponseWriter, r *http
 			EmployeeID:           j.EmployeeID,
 			CustomerID:           j.UserID,
 			ServiceID:            j.ServiceID,
+			Category:             category,
+			PickupAddress:        j.Location.Address,
+			DropoffAddress:       j.Destination.Address,
 			BookedDistance:       j.BookedDistance,
 			ActualDistance:       actualDist,
 			WaypointsCount:       len(j.Waypoints),
@@ -502,6 +522,7 @@ func (u *UserService) AdminResolveReconciliation(w http.ResponseWriter, r *http.
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_ESCROW_RECONCILIATION_RESOLVED", "user-service", reviewer.ID, updatedJob.OwnerID, fmt.Sprintf("resolved dispute for job %s: decision=%s, reason=%s", updatedJob.ID, req.Decision, reason), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditReconciliationResolve, "job", updatedJob.ID, reason, "decision="+req.Decision)
 
 	go u.dispatchDisputeResolvedNotification(updatedJob, req.Decision, reason)
 

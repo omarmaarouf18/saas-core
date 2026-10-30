@@ -8,11 +8,14 @@
 # =============================================================================
 
 api.logiclinkeg.tech {
-	# The admin API (/api/v1/admin/*, today only version-config) is used from
-	# the VM only, by exec-ing into the gateway container (see
-	# docs/runbooks/OPS-HARDEN-cutover.md). It is not served publicly: the
-	# token check stays in the gateway, this is defence in depth.
-	@admin path /api/v1/admin /api/v1/admin/*
+	# The admin API (/api/v1/admin/*: version-config and the reviewer version
+	# endpoint) is used from the VM only, by exec-ing into the gateway
+	# container (see docs/runbooks/OPS-HARDEN-cutover.md). The gateway's
+	# reviewer endpoints under /admin/* (today /admin/version) are reached by
+	# kyc-reviewer-console on saas-net only (GATEWAY_INTERNAL_URL). Neither is
+	# served publicly: the token checks stay in the gateway, this is defence
+	# in depth.
+	@admin path /api/v1/admin /api/v1/admin/* /admin /admin/*
 	respond @admin 404
 
 	reverse_proxy https://api-gateway:8080 {
@@ -31,5 +34,21 @@ api.logiclinkeg.tech {
 }
 
 kyc.logiclinkeg.tech {
-	reverse_proxy kyc-reviewer-console:8090
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Content-Security-Policy "frame-ancestors 'none';"
+		X-Frame-Options "DENY"
+	}
+
+	@unconfigured `{env.KYC_CONSOLE_BASIC_AUTH_HASH} == "" || {env.KYC_CONSOLE_BASIC_AUTH_USER} == ""`
+	handle @unconfigured {
+		respond "Console basic auth is not configured" 503
+	}
+
+	handle {
+		basic_auth {
+			{$KYC_CONSOLE_BASIC_AUTH_USER} {$KYC_CONSOLE_BASIC_AUTH_HASH}
+		}
+		reverse_proxy kyc-reviewer-console:8090
+	}
 }

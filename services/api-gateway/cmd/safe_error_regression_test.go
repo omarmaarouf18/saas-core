@@ -48,15 +48,17 @@ func TestVersionConfig_SafeErrors(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400, got %d (%s)", rec.Code, rec.Body.String())
+		// ADMIN-API-FIX item 4: a failed write is 503 service_unavailable
+		// (was 400 internal_error), still with a sanitized body.
+		if rec.Code != http.StatusServiceUnavailable {
+			t.Fatalf("expected 503, got %d (%s)", rec.Code, rec.Body.String())
 		}
 		var decoded map[string]any
 		if err := json.Unmarshal(rec.Body.Bytes(), &decoded); err != nil {
 			t.Fatalf("body not JSON: %s", rec.Body.String())
 		}
-		if decoded["code"] != "internal_error" {
-			t.Errorf("expected code internal_error, got %s", rec.Body.String())
+		if decoded["code"] != "service_unavailable" {
+			t.Errorf("expected code service_unavailable, got %s", rec.Body.String())
 		}
 		for _, leak := range []string{"MongoDB", "mongo", "BSON", "connection refused"} {
 			if strings.Contains(rec.Body.String(), leak) {

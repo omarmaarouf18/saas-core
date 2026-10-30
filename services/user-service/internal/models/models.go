@@ -59,6 +59,10 @@ type Service struct {
 	CloseTime      string        `json:"close_time,omitempty"       bson:"close_time,omitempty"`    // "HH:mm" 24h, same_daily
 	PerDaySchedule []DaySchedule `json:"per_day_schedule,omitempty" bson:"per_day_schedule,omitempty"`
 	Timezone       string        `json:"timezone,omitempty"         bson:"timezone,omitempty"` // IANA, default "Africa/Cairo"
+	IsHidden       bool          `json:"is_hidden,omitempty"         bson:"is_hidden,omitempty"`
+	HiddenReason   string        `json:"hidden_reason,omitempty"     bson:"hidden_reason,omitempty"`
+	HiddenBy       string        `json:"hidden_by,omitempty"         bson:"hidden_by,omitempty"`
+	HiddenNotice   string        `json:"hidden_notice,omitempty"     bson:"-"`
 }
 
 // PhotoVersionOf returns the photo_version of a service photo key: the
@@ -79,12 +83,21 @@ func PhotoVersionOf(photoKey string) string {
 // marshalled from Service.MarshalJSON without recursing.
 type serviceFields Service
 
-// MarshalJSON adds the derived photo_version to a Service.
+// MarshalJSON adds the derived photo_version and hidden_notice to a Service.
 func (s Service) MarshalJSON() ([]byte, error) {
+	notice := s.HiddenNotice
+	if s.IsHidden && s.HiddenReason != "" && notice == "" {
+		notice = "hidden by support: " + s.HiddenReason
+	}
 	return json.Marshal(struct {
 		serviceFields
 		PhotoVersion string `json:"photo_version,omitempty"`
-	}{serviceFields(s), PhotoVersionOf(s.PhotoURL)})
+		HiddenNotice string `json:"hidden_notice,omitempty"`
+	}{
+		serviceFields: serviceFields(s),
+		PhotoVersion:  PhotoVersionOf(s.PhotoURL),
+		HiddenNotice:  notice,
+	})
 }
 
 // Schedule mode literals for Service.ScheduleMode (ADR-0025).
@@ -1002,9 +1015,12 @@ type AdminReconciliationJobItem struct {
 	ID                   string    `json:"id"`
 	TenantID             string    `json:"tenant_id"`
 	OwnerID              string    `json:"owner_id"`
-	EmployeeID           string    `json:"employee_id,omitempty"`
+	EmployeeID           string    `json:"employee_id"`
 	CustomerID           string    `json:"customer_id"`
 	ServiceID            string    `json:"service_id"`
+	Category             string    `json:"category"`
+	PickupAddress        string    `json:"pickup_address"`
+	DropoffAddress       string    `json:"dropoff_address"`
 	BookedDistance       float64   `json:"booked_distance"`
 	ActualDistance       float64   `json:"actual_distance"`
 	WaypointsCount       int       `json:"waypoints_count"`
@@ -1067,4 +1083,36 @@ type AdminPayoutListResponse struct {
 	Total   int              `json:"total"`
 	Page    int              `json:"page"`
 	Limit   int              `json:"limit"`
+}
+
+// SubscriptionOwnerContact represents contact details for a tenant owner in the subscription queue.
+type SubscriptionOwnerContact struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
+}
+
+// AdminSubscriptionQueueItem represents a pending subscription waiting for manual activation.
+type AdminSubscriptionQueueItem struct {
+	ID             string                   `json:"id"`
+	SubscriptionID string                   `json:"subscription_id"`
+	TenantID       string                   `json:"tenant_id"`
+	TenantName     string                   `json:"tenant_name"`
+	RequestedPlan  string                   `json:"requested_plan"`
+	RequestedAt    time.Time                `json:"requested_at"`
+	OwnerContact   SubscriptionOwnerContact `json:"owner_contact"`
+	Tier           PlanTier                 `json:"tier"`
+	Status         string                   `json:"status"`
+	StartedAt      time.Time                `json:"started_at"`
+	ExpiresAt      *time.Time               `json:"expires_at,omitempty"`
+	Reason         string                   `json:"reason,omitempty"`
+}
+
+// AdminSubscriptionQueueResponse is the payload returned by GET /admin/subscriptions/queue.
+type AdminSubscriptionQueueResponse struct {
+	Queue         []AdminSubscriptionQueueItem `json:"queue"`
+	Subscriptions []AdminSubscriptionQueueItem `json:"subscriptions"`
+	Total         int64                        `json:"total"`
+	Page          int64                        `json:"page"`
+	Limit         int64                        `json:"limit"`
 }

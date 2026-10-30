@@ -41,14 +41,65 @@ type Notification struct {
 	CreatedAt   time.Time         `json:"created_at,omitempty" bson:"created_at"`
 }
 
+// AdminNotificationSendStatus represents lifecycle states of an admin announcement send job.
+type AdminNotificationSendStatus string
+
+const (
+	SendStatusQueued  AdminNotificationSendStatus = "queued"
+	SendStatusSending AdminNotificationSendStatus = "sending"
+	SendStatusDone    AdminNotificationSendStatus = "done"
+	SendStatusFailed  AdminNotificationSendStatus = "failed"
+)
+
+// AdminAudience captures targeting parameters for admin announcements.
+type AdminAudience struct {
+	Kind     string `json:"kind" bson:"kind"` // "user", "role", "tenant", "everyone"
+	UserID   string `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	Email    string `json:"email,omitempty" bson:"email,omitempty"`
+	Phone    string `json:"phone,omitempty" bson:"phone,omitempty"`
+	Role     string `json:"role,omitempty" bson:"role,omitempty"`
+	TenantID string `json:"tenant_id,omitempty" bson:"tenant_id,omitempty"`
+}
+
+// AdminNotificationSend records an admin broadcast job and its delivery status.
+type AdminNotificationSend struct {
+	ID             string                      `json:"id" bson:"_id"`
+	IdempotencyKey string                      `json:"idempotency_key,omitempty" bson:"idempotency_key,omitempty"`
+	ReviewerID     string                      `json:"reviewer_id" bson:"reviewer_id"`
+	ReviewerName   string                      `json:"reviewer_name,omitempty" bson:"reviewer_name,omitempty"`
+	Reason         string                      `json:"reason" bson:"reason"`
+	Audience       AdminAudience               `json:"audience" bson:"audience"`
+	TitleAR        string                      `json:"title_ar" bson:"title_ar"`
+	TitleEN        string                      `json:"title_en" bson:"title_en"`
+	BodyAR         string                      `json:"body_ar" bson:"body_ar"`
+	BodyEN         string                      `json:"body_en" bson:"body_en"`
+	DeepLink       string                      `json:"deep_link,omitempty" bson:"deep_link,omitempty"`
+	Status         AdminNotificationSendStatus `json:"status" bson:"status"`
+	AudienceSize   int                         `json:"audience_size" bson:"audience_size"`
+	SentCount      int                         `json:"sent_count" bson:"sent_count"`
+	FailedCount    int                         `json:"failed_count" bson:"failed_count"`
+	ErrorMessage   string                      `json:"error_message,omitempty" bson:"error_message,omitempty"`
+	CreatedAt      time.Time                   `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time                   `json:"updated_at" bson:"updated_at"`
+	CompletedAt    *time.Time                  `json:"completed_at,omitempty" bson:"completed_at,omitempty"`
+}
+
 // Store defines persistence operations for notifications.
 type Store interface {
 	InsertNotification(ctx context.Context, notif *Notification) error
 	ListForUser(ctx context.Context, tenantID, userID string, roles []string, limit int, before *time.Time) ([]Notification, error)
+	ListByJobID(ctx context.Context, jobID string, limit int) ([]Notification, error)
 	MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
 	MarkAllRead(ctx context.Context, tenantID, userID string, roles []string) error
 	Delete(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error
 	DeleteAll(ctx context.Context, tenantID, userID string, roles []string) error
+	CreateAdminNotificationSend(ctx context.Context, send *AdminNotificationSend) error
+	GetAdminNotificationSendByID(ctx context.Context, id string) (*AdminNotificationSend, error)
+	GetAdminNotificationSendByIdempotencyKey(ctx context.Context, key string) (*AdminNotificationSend, error)
+	ListAdminNotificationSends(ctx context.Context, page, limit int) ([]AdminNotificationSend, int, error)
+	UpdateAdminNotificationSendProgress(ctx context.Context, id string, status AdminNotificationSendStatus, sentCount, failedCount int, errMsg string) error
+	AppendAdminAudit(ctx context.Context, rec *AdminAuditRecord) error
+	ListAdminAudit(ctx context.Context, f AdminAuditFilter, limit int64) ([]AdminAuditRecord, int64, error)
 	Close(ctx context.Context) error
 }
 
@@ -57,6 +108,7 @@ type MongoDB struct {
 	client        *mongo.Client
 	db            *mongo.Database
 	notifications *mongo.Collection
+	adminSends    *mongo.Collection
 }
 
 // NewMongoDB connects to MongoDB and ensures indexes.
@@ -76,9 +128,13 @@ func NewMongoDB(ctx context.Context, uri, dbName string) (*MongoDB, error) {
 		client:        client,
 		db:            db,
 		notifications: db.Collection("notifications"),
+		adminSends:    db.Collection("admin_notification_sends"),
 	}
 
 	if err := s.ensureIndexes(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.ensureAdminAuditIndexes(ctx); err != nil {
 		return nil, err
 	}
 
@@ -126,6 +182,23 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		Options: options.Index().SetExpireAfterSeconds(expireAfterSeconds),
 	}); err != nil {
 		return fmt.Errorf("notifications created_at TTL index: %w", err)
+	}
+
+	// Index on created_at desc for adminSends
+	if _, err := s.adminSends.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "created_at", Value: -1}},
+	}); err != nil {
+		return fmt.Errorf("admin_notification_sends created_at index: %w", err)
+	}
+
+	// Partial unique index on idempotency_key
+	if _, err := s.adminSends.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "idempotency_key", Value: 1}},
+		Options: options.Index().SetUnique(true).SetPartialFilterExpression(bson.M{
+			"idempotency_key": bson.M{"$type": "string", "$gt": ""},
+		}),
+	}); err != nil {
+		return fmt.Errorf("admin_notification_sends idempotency_key index: %w", err)
 	}
 
 	return nil
@@ -440,5 +513,137 @@ func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string, roles 
 	// 2. Soft-dismiss shared / broadcast notifications for this user
 	sharedFilter := userMutationFilter(tenantID, userID, roles, "")
 	_, err := s.notifications.UpdateMany(ctx, sharedFilter, bson.M{"$addToSet": bson.M{"dismissed_by": userID}})
+	return err
+}
+
+// ListByJobID returns notifications associated with a given job ID.
+func (s *MongoDB) ListByJobID(ctx context.Context, jobID string, limit int) ([]Notification, error) {
+	if s == nil || s.notifications == nil || jobID == "" {
+		return []Notification{}, nil
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 50
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(int64(limit))
+	cursor, err := s.notifications.Find(ctx, bson.M{"job_id": jobID}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var items []Notification
+	if err := cursor.All(ctx, &items); err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []Notification{}
+	}
+	return items, nil
+}
+
+// CreateAdminNotificationSend persists a new admin broadcast send job.
+func (s *MongoDB) CreateAdminNotificationSend(ctx context.Context, send *AdminNotificationSend) error {
+	if s == nil || s.adminSends == nil || send == nil {
+		return errors.New("invalid store or send job")
+	}
+	if send.CreatedAt.IsZero() {
+		send.CreatedAt = time.Now().UTC()
+	}
+	send.UpdatedAt = send.CreatedAt
+	_, err := s.adminSends.InsertOne(ctx, send)
+	return err
+}
+
+// GetAdminNotificationSendByID fetches an admin send job by ID.
+func (s *MongoDB) GetAdminNotificationSendByID(ctx context.Context, id string) (*AdminNotificationSend, error) {
+	if s == nil || s.adminSends == nil || id == "" {
+		return nil, ErrNotFound
+	}
+	var send AdminNotificationSend
+	err := s.adminSends.FindOne(ctx, bson.M{"_id": id}).Decode(&send)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &send, nil
+}
+
+// GetAdminNotificationSendByIdempotencyKey fetches an existing send job by idempotency key.
+func (s *MongoDB) GetAdminNotificationSendByIdempotencyKey(ctx context.Context, key string) (*AdminNotificationSend, error) {
+	if s == nil || s.adminSends == nil || key == "" {
+		return nil, nil
+	}
+	var send AdminNotificationSend
+	err := s.adminSends.FindOne(ctx, bson.M{"idempotency_key": key}).Decode(&send)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &send, nil
+}
+
+// ListAdminNotificationSends lists send jobs sorted newest first with pagination.
+func (s *MongoDB) ListAdminNotificationSends(ctx context.Context, page, limit int) ([]AdminNotificationSend, int, error) {
+	if s == nil || s.adminSends == nil {
+		return []AdminNotificationSend{}, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+
+	total, err := s.adminSends.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetSkip(int64((page - 1) * limit)).
+		SetLimit(int64(limit))
+
+	cursor, err := s.adminSends.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var items []AdminNotificationSend
+	if err := cursor.All(ctx, &items); err != nil {
+		return nil, 0, err
+	}
+	if items == nil {
+		items = []AdminNotificationSend{}
+	}
+	return items, int(total), nil
+}
+
+// UpdateAdminNotificationSendProgress updates status, counters and completion timestamp.
+func (s *MongoDB) UpdateAdminNotificationSendProgress(ctx context.Context, id string, status AdminNotificationSendStatus, sentCount, failedCount int, errMsg string) error {
+	if s == nil || s.adminSends == nil || id == "" {
+		return errors.New("invalid store or id")
+	}
+
+	now := time.Now().UTC()
+	update := bson.M{
+		"status":       status,
+		"sent_count":   sentCount,
+		"failed_count": failedCount,
+		"updated_at":   now,
+	}
+	if errMsg != "" {
+		update["error_message"] = errMsg
+	}
+	if status == SendStatusDone || status == SendStatusFailed {
+		update["completed_at"] = now
+	}
+
+	_, err := s.adminSends.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": update})
 	return err
 }

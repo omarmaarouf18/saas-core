@@ -38,10 +38,12 @@ type Notification struct {
 	allowedOrigin        string
 	limiter              *handlerutil.RateLimiter
 	streamLimiter        *handlerutil.RateLimiter
+	adminSendLimiter     *handlerutil.RateLimiter
 	streamCaps           map[string]int
 	streamCapsMu         sync.Mutex
 	internalServiceToken string
 	resilienceClient     *resilience.ResilienceClient
+	httpClient           *http.Client
 }
 
 // NewNotification creates a new handler group.
@@ -65,6 +67,7 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 	// Internal dispatch limiter: sized for high-throughput inter-service notification fanout (300 req/min).
 	rl := ratelimit.NewRateLimiter(rdb, 300, 1*time.Minute, "notification")
 	streamRl := ratelimit.NewRateLimiter(rdb, 30, 1*time.Minute, "notification:stream")
+	adminSendRl := ratelimit.NewRateLimiter(rdb, 5, 1*time.Hour, "notification:admin:send")
 
 	resClient := resilience.NewClient(client, "auth-service", 2, 5*time.Second)
 
@@ -75,9 +78,11 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 		allowedOrigin:        allowedOrigin,
 		limiter:              handlerutil.NewRateLimiter(rl),
 		streamLimiter:        handlerutil.NewRateLimiter(streamRl),
+		adminSendLimiter:     handlerutil.NewRateLimiter(adminSendRl),
 		streamCaps:           make(map[string]int),
 		internalServiceToken: cfg.InternalServiceToken,
 		resilienceClient:     resClient,
+		httpClient:           client,
 	}
 }
 
@@ -94,6 +99,14 @@ func (n *Notification) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications/history", n.History)
 	mux.HandleFunc("/notifications/read-all", n.ReadAll)
 	mux.HandleFunc("/notifications/{id}/read", n.MarkRead)
+	mux.HandleFunc("/notifications/internal/by-job", n.GetNotificationsByJob)
+	mux.HandleFunc("/admin/notifications/send", n.AdminSendNotification)
+	mux.HandleFunc("/notifications/internal/admin-audit", n.InternalListAdminAudit)
+	mux.HandleFunc("/notifications/admin/send", n.AdminSendNotification)
+	mux.HandleFunc("/admin/notifications/sends", n.AdminListNotificationSends)
+	mux.HandleFunc("/notifications/admin/sends", n.AdminListNotificationSends)
+	mux.HandleFunc("/admin/notifications/sends/{id}", n.AdminGetNotificationSend)
+	mux.HandleFunc("/notifications/admin/sends/{id}", n.AdminGetNotificationSend)
 	mux.HandleFunc("/notifications/{id}", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodDelete:
@@ -804,4 +817,36 @@ func (n *Notification) releaseStreamSlot(tenantID string) {
 	if n.streamCaps[tenantID] > 0 {
 		n.streamCaps[tenantID]--
 	}
+}
+
+// GetNotificationsByJob returns notifications sent for a given job.
+// GET /notifications/internal/by-job?job_id=...
+func (n *Notification) GetNotificationsByJob(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if n.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(n.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	jobID := strings.TrimSpace(r.URL.Query().Get("job_id"))
+	if jobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing job_id parameter"})
+		return
+	}
+
+	items, err := n.store.ListByJobID(r.Context(), jobID, 50)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query notifications", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"job_id":        jobID,
+		"notifications": items,
+	})
 }

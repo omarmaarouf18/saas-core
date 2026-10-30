@@ -60,6 +60,112 @@ func (u *UserService) AdminListSubscriptions(w http.ResponseWriter, r *http.Requ
 	})
 }
 
+// AdminSubscriptionQueue returns subscriptions waiting in pending_payment status, oldest first (ADR-0023).
+// GET /users/admin/subscriptions/queue & GET /admin/subscriptions/queue
+func (u *UserService) AdminSubscriptionQueue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	reviewer, err := u.authenticateReviewer(r)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
+		return
+	}
+
+	ctx := r.Context()
+	page := int64(1)
+	if pStr := r.URL.Query().Get("page"); pStr != "" {
+		if p, err := strconv.ParseInt(pStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	limit := int64(20)
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if l, err := strconv.ParseInt(lStr, 10, 64); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+
+	subs, total, err := u.store.ListSubscriptionQueue(ctx, page, limit)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to list subscription queue", err)
+		return
+	}
+
+	queueItems := make([]models.AdminSubscriptionQueueItem, 0, len(subs))
+	for _, sub := range subs {
+		item := models.AdminSubscriptionQueueItem{
+			ID:             sub.ID,
+			SubscriptionID: sub.ID,
+			TenantID:       sub.TenantID,
+			TenantName:     sub.TenantID,
+			RequestedPlan:  string(models.PlanPaid),
+			RequestedAt:    sub.StartedAt,
+			Tier:           sub.Tier,
+			Status:         string(sub.Tier),
+			StartedAt:      sub.StartedAt,
+			Reason:         sub.Reason,
+		}
+		if !sub.ExpiresAt.IsZero() {
+			item.ExpiresAt = &sub.ExpiresAt
+		}
+
+		if u.authServiceURL != "" && sub.TenantID != "" {
+			authURL := fmt.Sprintf("%s/auth/user?id=%s", u.authServiceURL, sub.TenantID)
+			// #nosec G704 //nolint:gosec -- authServiceURL is trusted internal config
+			authReq, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
+			if err == nil {
+				authReq.Header.Set("X-Internal-Token", u.internalServiceToken)
+				resp, err := u.authClient.Do(authReq)
+				if err == nil {
+					if resp.StatusCode == http.StatusOK {
+						var uResp struct {
+							Username    string `json:"username"`
+							Name        string `json:"name"`
+							CompanyName string `json:"company_name"`
+							Email       string `json:"email"`
+							Phone       string `json:"phone"`
+						}
+						if err := json.NewDecoder(resp.Body).Decode(&uResp); err == nil {
+							name := uResp.Username
+							if name == "" {
+								name = uResp.Name
+							}
+							if name == "" {
+								name = uResp.CompanyName
+							}
+							if name != "" {
+								item.TenantName = name
+							}
+							item.OwnerContact = models.SubscriptionOwnerContact{
+								Name:  name,
+								Email: uResp.Email,
+								Phone: uResp.Phone,
+							}
+						}
+					}
+					_ = resp.Body.Close()
+				}
+			}
+		}
+
+		queueItems = append(queueItems, item)
+	}
+
+	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SUBSCRIPTIONS_QUEUE_VIEWED", "user-service", reviewer.ID, "", fmt.Sprintf("viewed subscription queue (count=%d, total=%d, page=%d)", len(queueItems), total, page), handlerutil.GetClientIP(r))
+
+	writeJSON(w, http.StatusOK, models.AdminSubscriptionQueueResponse{
+		Queue:         queueItems,
+		Subscriptions: queueItems,
+		Total:         total,
+		Page:          page,
+		Limit:         limit,
+	})
+}
+
 // AdminActivateSubscription activates a tenant's subscription to PlanPaid with durationDays (ADR-0023).
 // POST /users/admin/subscriptions/activate & POST /admin/subscriptions/activate
 func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +247,7 @@ func (u *UserService) AdminActivateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SUBSCRIPTION_ACTIVATED", "user-service", reviewer.ID, sub.TenantID, fmt.Sprintf("activated paid subscription %s for tenant %s (expires=%s)", sub.ID, sub.TenantID, sub.ExpiresAt.Format("2006-01-02")), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditSubscriptionActivate, "subscription", sub.ID, "", fmt.Sprintf("tenant=%s expires=%s", sub.TenantID, sub.ExpiresAt.Format("2006-01-02")))
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":      "subscription activated successfully",
@@ -193,6 +300,7 @@ func (u *UserService) AdminRevokeSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_SUBSCRIPTION_REVOKED", "user-service", reviewer.ID, sub.TenantID, fmt.Sprintf("revoked subscription %s for tenant %s: reason=%s", sub.ID, sub.TenantID, reason), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditSubscriptionRevoke, "subscription", sub.ID, reason, "tenant="+sub.TenantID)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":      "subscription revoked successfully",

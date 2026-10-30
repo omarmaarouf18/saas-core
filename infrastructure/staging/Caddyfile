@@ -12,6 +12,15 @@
         reverse_proxy http://kyc-reviewer-console:8090
     }
 
+    # Mirrors production for the gateway's reviewer paths (/admin, /admin/*),
+    # which are never served through the edge. Unlike production,
+    # /api/v1/admin/* stays reachable here: the contract and RBAC E2E suites
+    # exercise /api/v1/admin/version-config through this edge.
+    @admin path /admin /admin/*
+    handle @admin {
+        respond 404
+    }
+
     handle {
         reverse_proxy https://api-gateway:8080 {
             transport http {

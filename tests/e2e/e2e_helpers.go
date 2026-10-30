@@ -244,7 +244,41 @@ func ConnectWS(ctx context.Context, gatewayURL, token string) (*WSClient, error)
 }
 
 func ConnectConsoleWS(ctx context.Context, consoleURL, token string) (*WSClient, error) {
-	return ConnectWSPath(ctx, consoleURL, "/api/chat/ws", token)
+	wsCtx, wsCancel := context.WithCancel(ctx)
+	u, err := url.Parse(consoleURL)
+	if err != nil {
+		wsCancel()
+		return nil, fmt.Errorf("invalid console url: %w", err)
+	}
+
+	scheme := "ws"
+	if u.Scheme == "https" {
+		scheme = "wss"
+	}
+	wsTarget := fmt.Sprintf("%s://%s/api/chat/ws", scheme, u.Host)
+
+	dialer := websocket.Dialer{
+		HandshakeTimeout: 10 * time.Second,
+		Subprotocols:     []string{"kyc-console-auth", token},
+	}
+	conn, resp, err := dialer.DialContext(wsCtx, wsTarget, nil)
+	if err != nil {
+		wsCancel()
+		status := 0
+		if resp != nil {
+			status = resp.StatusCode
+		}
+		return nil, fmt.Errorf("WebSocket dial failed (status %d): %w", status, err)
+	}
+
+	client := &WSClient{
+		Conn:     conn,
+		Messages: make(chan map[string]any, 50),
+		cancel:   wsCancel,
+	}
+
+	go client.readLoop()
+	return client, nil
 }
 
 func ConnectWSPath(ctx context.Context, baseURL, path, token string) (*WSClient, error) {

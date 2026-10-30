@@ -103,6 +103,7 @@ func (u *UserService) AdminRejectPayoutRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_PAYOUT_REJECTED", "user-service", reviewer.ID, "", fmt.Sprintf("rejected payout %s: %s", payoutID, reason), handlerutil.GetClientIP(r))
+	u.recordAdminAudit(r, reviewer.ID, auditPayoutReject, "payout", payoutID, reason, "")
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"message":   "payout request rejected",

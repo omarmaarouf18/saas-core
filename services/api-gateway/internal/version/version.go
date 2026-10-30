@@ -2,6 +2,7 @@ package version
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -45,26 +46,34 @@ type Store struct {
 	useInMemory bool
 }
 
-// NewStore initializes a new version Store. If client is nil, falls back to in-memory mode.
+// NewStore initializes a new version Store. If client is nil, falls back to
+// in-memory mode. A seeding failure is ignored here; the gateway itself uses
+// NewMongoStore, which reports it.
 func NewStore(client *mongo.Client, dbName string) *Store {
-	store := &Store{
-		cached: DefaultVersions(),
+	if client == nil {
+		return &Store{cached: DefaultVersions(), useInMemory: true}
 	}
-
-	if client != nil {
-		if dbName == "" {
-			dbName = "saas_platform"
-		}
-		store.collection = client.Database(dbName).Collection("platform_versions")
-		// Seed default config into MongoDB if not present
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_ = store.seedInitialConfig(ctx)
-	} else {
-		store.useInMemory = true
-	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	store, _ := NewMongoStore(ctx, client, dbName)
 	return store
+}
+
+// NewMongoStore returns a MongoDB-backed Store and seeds the default policy
+// when none exists. It returns the store together with an error when
+// MongoDB cannot be read or seeded, so the caller can fail closed.
+func NewMongoStore(ctx context.Context, client *mongo.Client, dbName string) (*Store, error) {
+	if dbName == "" {
+		dbName = "saas_platform"
+	}
+	store := &Store{
+		cached:     DefaultVersions(),
+		collection: client.Database(dbName).Collection("platform_versions"),
+	}
+	if err := store.seedInitialConfig(ctx); err != nil {
+		return store, fmt.Errorf("version store: seed platform_versions: %w", err)
+	}
+	return store, nil
 }
 
 func (s *Store) seedInitialConfig(ctx context.Context) error {
@@ -86,11 +95,12 @@ func (s *Store) seedInitialConfig(ctx context.Context) error {
 		s.cached = initial
 		s.mu.Unlock()
 		return nil
-	} else if err == nil {
-		s.mu.Lock()
-		s.cached = existing
-		s.mu.Unlock()
+	} else if err != nil {
+		return err
 	}
+	s.mu.Lock()
+	s.cached = existing
+	s.mu.Unlock()
 	return nil
 }
 
@@ -138,6 +148,10 @@ func ValidateDownloadURL(raw string) error {
 	return nil
 }
 
+// ErrPersist marks an UpdateConfig failure to write MongoDB. The new config
+// is then not cached either: callers answer 503, never "saved".
+var ErrPersist = errors.New("failed to persist version config")
+
 // UpdateConfig updates the global PlatformVersions configuration in MongoDB and cache.
 func (s *Store) UpdateConfig(ctx context.Context, newConfig PlatformVersions) (PlatformVersions, error) {
 	newConfig.ID = "global"
@@ -170,7 +184,7 @@ func (s *Store) UpdateConfig(ctx context.Context, newConfig PlatformVersions) (P
 		var persisted PlatformVersions
 		err := s.collection.FindOneAndUpdate(ctx, bson.M{"_id": "global"}, update, opts).Decode(&persisted)
 		if err != nil {
-			return PlatformVersions{}, fmt.Errorf("failed to persist version config to MongoDB: %w", err)
+			return PlatformVersions{}, fmt.Errorf("%w to MongoDB: %w", ErrPersist, err)
 		}
 		newConfig = persisted
 	} else {

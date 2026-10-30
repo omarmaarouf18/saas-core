@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -101,6 +102,11 @@ type Auth struct {
 	userServiceURL       string
 	notificationClient   *resilience.ResilienceClient
 	notificationURL      string
+	chatServiceURL       string
+	gatewayInternalURL   string
+	// auditClient fans GET /admin/audit out to the other services' admin
+	// audit endpoints; each call also gets adminAuditSourceTimeout.
+	auditClient *http.Client
 }
 
 // NewAuth creates a new Auth handler group.
@@ -143,6 +149,9 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		userServiceURL:       cfg.UserServiceURL,
 		notificationClient:   notificationClient,
 		notificationURL:      cfg.NotificationServiceURL,
+		chatServiceURL:       cfg.ChatServiceURL,
+		gatewayInternalURL:   cfg.GatewayInternalURL,
+		auditClient:          &http.Client{Transport: client.Transport, Timeout: adminAuditSourceTimeout},
 	}
 }
 
@@ -190,6 +199,11 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/email-change/request", a.RequestEmailChange)
 	mux.HandleFunc("/auth/email-change/confirm", a.ConfirmEmailChange)
 	mux.HandleFunc("/auth/logout", a.Logout)
+	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
+	mux.HandleFunc("/auth/internal/user-by-phone", a.GetUserByPhone)
+	mux.HandleFunc("/auth/internal/audience-lookup", a.AudienceLookup)
+	mux.HandleFunc("/auth/admin/audit", a.AdminGetAuditLogs)
+	mux.HandleFunc("/admin/audit", a.AdminGetAuditLogs)
 }
 
 // ---------------------------------------------------------------------------
@@ -2138,6 +2152,7 @@ func (a *Auth) ReviewKYBKYESubmissions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "KYC_REVIEWED", "auth-service", reviewer.ID, req.UserID, fmt.Sprintf("action: %s, reason: %s", req.Action, req.Reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditKYCReview, "user", req.UserID, req.Reason, "decision="+req.Action)
 
 	// ADR-0021: fire-and-forget user notification. Deliberately decoupled from
 	// the review transaction — a dispatch failure must never fail the
@@ -2233,9 +2248,10 @@ func (a *Auth) dispatchReviewOutcomeNotification(targetUser *models.User, finalS
 }
 
 // GET /auth/reviewer/user-documents?user_id=...&reason=...
+// POST /auth/reviewer/user-documents (JSON body: {"user_id":"...","reason":"..."})
 func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET or POST"})
 		return
 	}
 
@@ -2245,14 +2261,35 @@ func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
-	email := strings.TrimSpace(r.URL.Query().Get("email"))
+	var reqBody struct {
+		UserID string `json:"user_id"`
+		Email  string `json:"email"`
+		Reason string `json:"reason"`
+	}
+	if r.Method == http.MethodPost && r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil && !errors.Is(err, io.EOF) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+			return
+		}
+	}
+
+	userID := strings.TrimSpace(reqBody.UserID)
+	if userID == "" {
+		userID = strings.TrimSpace(r.URL.Query().Get("user_id"))
+	}
+	email := strings.TrimSpace(reqBody.Email)
+	if email == "" {
+		email = strings.TrimSpace(r.URL.Query().Get("email"))
+	}
 	if userID == "" && email == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id or email is required"})
 		return
 	}
 
-	reason := strings.TrimSpace(r.URL.Query().Get("reason"))
+	reason := strings.TrimSpace(reqBody.Reason)
+	if reason == "" {
+		reason = strings.TrimSpace(r.URL.Query().Get("reason"))
+	}
 	if reason == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "reason is required for out-of-band document access"})
 		return
@@ -2349,6 +2386,7 @@ func (a *Auth) GetUserDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "USER_DOCUMENTS_RETRIEVED", "auth-service", reviewer.ID, u.ID, fmt.Sprintf("retrieved documents for user %s reason: %s", u.ID, reason), clientIP)
+	a.recordAdminAudit(r, reviewer.ID, auditUserDocumentsView, "user", u.ID, reason, "")
 
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -2379,6 +2417,7 @@ func (a *Auth) ViewDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(r.Context(), "DOCUMENT_VIEWED", "auth-service", reviewer.ID, "", fmt.Sprintf("accessed document key: %s", key), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditDocumentView, "document", key, "", "")
 
 	file, err := a.storage.OpenFile(key)
 	if err != nil {
@@ -2587,6 +2626,7 @@ func (a *Auth) SuspendAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_SUSPENDED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditAccountSuspend, "user", targetUserID, reason, "")
 
 	// Dispatch notification fire-and-forget
 	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusSuspended, reason)
@@ -2668,6 +2708,7 @@ func (a *Auth) ReactivateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handlerutil.ShipSecurityEvent(ctx, "ACCOUNT_REACTIVATED", "auth-service", reviewer.ID, targetUserID, fmt.Sprintf("reason: %s", reason), handlerutil.GetClientIP(r))
+	a.recordAdminAudit(r, reviewer.ID, auditAccountReactivate, "user", targetUserID, reason, "")
 
 	// Dispatch notification fire-and-forget
 	a.dispatchAccountStatusNotification(targetUser, models.AccountStatusActive, reason)
@@ -2763,6 +2804,51 @@ func hashToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func hashTokenPrefix(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	hexStr := hex.EncodeToString(sum[:])
+	if len(hexStr) > 16 {
+		return hexStr[:16]
+	}
+	return hexStr
+}
+
+// ConsoleClientIPHeader carries the reviewer's browser IP from the
+// kyc-reviewer-console (or the gateway's reviewer version handler) to
+// auth-service, for the per-IP reviewer rate limit.
+const ConsoleClientIPHeader = "X-Console-Client-IP"
+
+// getReviewerClientIP returns the key for the per-IP reviewer rate limit.
+// X-Forwarded-For and X-Real-IP are never trusted here: every hop can append
+// to them, and a caller that rotated them got a fresh per-IP budget on each
+// attempt. Only the dedicated X-Console-Client-IP header is trusted, and only
+// on a request that presents the valid X-Internal-Token (the console, or the
+// gateway's reviewer version handler, which both sit on saas-net) and whose
+// value parses as an IP. Everything else keys on RemoteAddr.
+func (a *Auth) getReviewerClientIP(r *http.Request) string {
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken != "" && subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) == 1 {
+		if ip := cleanIP(strings.TrimSpace(r.Header.Get(ConsoleClientIPHeader))); ip != "" && net.ParseIP(ip) != nil {
+			return ip
+		}
+	}
+	return cleanIP(r.RemoteAddr)
+}
+
+func cleanIP(ip string) string {
+	if strings.Contains(ip, "]") {
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+		ip = strings.Trim(ip, "[]")
+	} else if count := strings.Count(ip, ":"); count == 1 {
+		if idx := strings.LastIndex(ip, ":"); idx != -1 {
+			ip = ip[:idx]
+		}
+	}
+	return ip
+}
+
 // ReviewerRateLimitError indicates that the reviewer login attempt was rejected due to rate limiting.
 type ReviewerRateLimitError struct {
 	Remaining time.Duration
@@ -2786,7 +2872,7 @@ func writeReviewerAuthError(w http.ResponseWriter, err error) {
 // authenticateReviewer verifies the reviewer's credentials.
 // It checks both the X-Internal-Token and the X-Reviewer-Token headers.
 // Defaulting to requiring both as the safer option (internal network context + reviewer token).
-// Enforces 3 failed attempts -> 5-minute lockout rate limiting keyed by IP and hashed token.
+// Enforces rate limiting keyed by token hash prefix + forwarded client IP (trusted via internal token), with a global ceiling.
 func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// FLAGGED: Operationally, KYB/KYE reviews could be performed by internal staff via an internal network
 	// or remote staff over HTTPS. As it is unclear whether remote access is required without the internal token,
@@ -2802,26 +2888,37 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 		return nil, errors.New("unauthorized internal token")
 	}
 
-	clientIP := a.getClientIP(r)
+	// 2. Check global failed-attempt ceiling
+	if locked, remaining := a.limiter.IsReviewerGlobalLocked(); locked {
+		return nil, &ReviewerRateLimitError{Remaining: remaining}
+	}
+
+	// 3. Extract forwarded client IP (trusted because X-Internal-Token is valid)
+	clientIP := a.getReviewerClientIP(r)
 
 	// Check if client IP is currently locked out
 	if locked, remaining := a.limiter.IsReviewerLocked(clientIP); locked {
 		return nil, &ReviewerRateLimitError{Remaining: remaining}
 	}
 
-	// 2. Verify X-Reviewer-Token header
+	// 4. Verify X-Reviewer-Token header
 	reviewerToken := r.Header.Get("X-Reviewer-Token")
 	if reviewerToken == "" {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		if lockoutIP > 0 {
-			return nil, &ReviewerRateLimitError{Remaining: lockoutIP}
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
+		remaining := lockoutIP
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
+		}
+		if remaining > 0 {
+			return nil, &ReviewerRateLimitError{Remaining: remaining}
 		}
 		return nil, errors.New("missing reviewer token")
 	}
 
-	tokenHash := hashToken(reviewerToken)
-	// Check if attempted token hash is currently locked out
-	if locked, remaining := a.limiter.IsReviewerLocked(tokenHash); locked {
+	tokenPrefixKey := "tok_prefix:" + hashTokenPrefix(reviewerToken)
+	// Check if attempted token hash prefix is currently locked out
+	if locked, remaining := a.limiter.IsReviewerLocked(tokenPrefixKey); locked {
 		return nil, &ReviewerRateLimitError{Remaining: remaining}
 	}
 
@@ -2829,10 +2926,14 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	rev, err := a.store.GetReviewerByToken(ctx, reviewerToken)
 	if err != nil {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenPrefixKey)
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
 		remaining := lockoutIP
 		if lockoutTok > remaining {
 			remaining = lockoutTok
+		}
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
 		}
 		if remaining > 0 {
 			return nil, &ReviewerRateLimitError{Remaining: remaining}
@@ -2846,10 +2947,14 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 	// before comparison; legacy plaintext rows compare directly.
 	if !store.MatchesStoredReviewerCredential(rev.Token, reviewerToken) {
 		lockoutIP := a.limiter.RecordReviewerFailure(clientIP)
-		lockoutTok := a.limiter.RecordReviewerFailure(tokenHash)
+		lockoutTok := a.limiter.RecordReviewerFailure(tokenPrefixKey)
+		lockoutGlobal := a.limiter.RecordReviewerGlobalFailure()
 		remaining := lockoutIP
 		if lockoutTok > remaining {
 			remaining = lockoutTok
+		}
+		if lockoutGlobal > remaining {
+			remaining = lockoutGlobal
 		}
 		if remaining > 0 {
 			return nil, &ReviewerRateLimitError{Remaining: remaining}
@@ -2859,7 +2964,7 @@ func (a *Auth) authenticateReviewer(r *http.Request) (*models.Reviewer, error) {
 
 	// Reset failure counter on successful authentication
 	a.limiter.ResetReviewer(clientIP)
-	a.limiter.ResetReviewer(tokenHash)
+	a.limiter.ResetReviewer(tokenPrefixKey)
 
 	return rev, nil
 }
@@ -3869,5 +3974,173 @@ func (a *Auth) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 		"message": "Email updated successfully",
 		"token":   token,
 		"user":    updatedUser,
+	})
+}
+
+// GetInternalOverviewStats returns overview statistics for admin console aggregation.
+// GET /auth/internal/overview-stats
+func (a *Auth) GetInternalOverviewStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	pendingKYC, newToday, new7d, suspended, err := a.store.GetOverviewStats(r.Context())
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to get overview stats", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]int64{
+		"pending_kyb_kye":    pendingKYC,
+		"new_accounts_today": newToday,
+		"new_accounts_7d":    new7d,
+		"suspended_accounts": suspended,
+	})
+}
+
+// GetUserByPhone looks up a user by phone number for internal service calls.
+// GET /auth/internal/user-by-phone?phone=...
+func (a *Auth) GetUserByPhone(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	phone := strings.TrimSpace(r.URL.Query().Get("phone"))
+	if phone == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing phone parameter"})
+		return
+	}
+
+	user, err := a.store.GetUserByPhone(r.Context(), phone)
+	if err == nil && user == nil && !strings.HasPrefix(phone, "+") {
+		user, err = a.store.GetUserByPhone(r.Context(), "+"+phone)
+	}
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query user by phone", err)
+		return
+	}
+	if user == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"phone":    user.Phone,
+		"role":     user.Role,
+	})
+}
+
+// AudienceLookupRequest holds filters for internal audience resolution.
+type AudienceLookupRequest struct {
+	Kind     string `json:"kind"` // "user", "role", "tenant", "everyone"
+	UserID   string `json:"user_id,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Phone    string `json:"phone,omitempty"`
+	Role     string `json:"role,omitempty"` // "customers", "owners", "couriers"
+	TenantID string `json:"tenant_id,omitempty"`
+	Page     int    `json:"page"`
+	Limit    int    `json:"limit"`
+}
+
+// AudienceLookup resolves active user IDs matching audience criteria for admin notification broadcasts.
+// POST /auth/internal/audience-lookup
+func (a *Auth) AudienceLookup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+
+	internalToken := r.Header.Get("X-Internal-Token")
+	if a.internalServiceToken == "" || subtle.ConstantTimeCompare([]byte(internalToken), []byte(a.internalServiceToken)) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized internal token"})
+		return
+	}
+
+	var req AudienceLookupRequest
+	if r.Method == http.MethodPost && r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
+			return
+		}
+	}
+	if req.Kind == "" {
+		req.Kind = r.URL.Query().Get("kind")
+	}
+	if req.UserID == "" {
+		req.UserID = r.URL.Query().Get("user_id")
+	}
+	if req.Email == "" {
+		req.Email = r.URL.Query().Get("email")
+	}
+	if req.Phone == "" {
+		req.Phone = r.URL.Query().Get("phone")
+	}
+	if req.Role == "" {
+		req.Role = r.URL.Query().Get("role")
+	}
+	if req.TenantID == "" {
+		req.TenantID = r.URL.Query().Get("tenant_id")
+	}
+	if req.Page <= 0 {
+		if pStr := r.URL.Query().Get("page"); pStr != "" {
+			if p, err := strconv.Atoi(pStr); err == nil && p > 0 {
+				req.Page = p
+			}
+		}
+	}
+	if req.Limit <= 0 {
+		if lStr := r.URL.Query().Get("limit"); lStr != "" {
+			if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+				req.Limit = l
+			}
+		}
+	}
+
+	if req.Kind == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "kind is required (user, role, tenant, everyone)"})
+		return
+	}
+
+	userIDs, total, err := a.store.AudienceLookup(r.Context(), req.Kind, req.UserID, req.Email, req.Phone, req.Role, req.TenantID, req.Page, req.Limit)
+	if err != nil {
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to query audience", err)
+		return
+	}
+
+	if userIDs == nil {
+		userIDs = []string{}
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit < 1 {
+		limit = 500
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"user_ids": userIDs,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
 	})
 }

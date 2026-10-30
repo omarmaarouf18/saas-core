@@ -33,6 +33,10 @@ type Config struct {
 	AdminAPIToken   string
 	RedisURI        string
 	TrustedProxyIPs []string
+	MongoURI        string
+	AppEnv          string
+	MongoDatabase   string
+	AuthServiceURL  string
 }
 
 // Load reads configuration from environment variables.
@@ -109,6 +113,10 @@ func Load() (*Config, error) {
 		AdminAPIToken:        adminAPIToken,
 		RedisURI:             redisURI,
 		TrustedProxyIPs:      trustedProxyIPs,
+		MongoURI:             os.Getenv("MONGO_URI"),
+		AppEnv:               os.Getenv("APP_ENV"),
+		MongoDatabase:        envOrDefault("GATEWAY_MONGO_DATABASE", "gateway_db"),
+		AuthServiceURL:       envOrDefault("AUTH_SERVICE_URL", "https://auth-service:3002"),
 	}
 
 	// Each route is defined by: path prefix → env var → default address.
