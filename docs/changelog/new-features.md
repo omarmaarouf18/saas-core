@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Courier Application Shell: Offers, Active Job & My Jobs on Redesign A (FE-COURIER)
+
+- **Implementation Detail**: Built the complete courier mobile experience on Redesign A (`features/courier/`). Implemented `CourierShell`, incoming dispatch offer sheet with countdown ticker, active job progress view (pickup verification, cash-on-delivery collection), price negotiation responses, job history list (`MyJobsPage`), and suspended/paused account gate.
+- **Commit SHA**: ``8cdabeb693d55662bd5646009b4cc89f2c5ec98f``
+- **Verification**: per worklog (all courier widget and golden tests pass, state transitions verified).
+- **Worklog**: [docs/worklog/FE-COURIER.md](../worklog/FE-COURIER.md)
+
 ## Owner Service Setup, Fleet Map, Activity Log, Verification & Account (FE-OWNER-2, FE-OWNER-2b)
 
 - **Implementation Detail**: Completed tenant owner management suite on Redesign A. Implemented `ServiceSetupPage` with photo upload, `FleetMapPage` for real-time courier tracking on OpenStreetMap, `ActivityLogPage` with categorized audit events, shared `VerificationPage` for KYB/KYE document uploads, and owner `AccountPage` with read-only wallet and plan upgrade request ceremony.
