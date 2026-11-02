@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Repository Tidy: Historical Documentation Archive & Single Docs Index (CLN-02)
+
+- **Implementation Detail**: Archived 14 superseded historical documents into `docs/history/` to reduce clutter and documentation drift. Consolidated documentation navigation into a single authoritative index at `docs/README.md`. Updated all inbound markdown links across the repository and verified link integrity.
+- **Commit SHA**: ``31f20aa164f2fbdb4041d3802e36cfcd80379ec3``
+- **Verification**: per worklog (`make check` PASS, zero broken links across markdown files).
+- **Worklog**: [docs/worklog/CLN-02.md](../worklog/CLN-02.md)
+
 ## Re-baseline of 109 Remediation Findings (RB-01)
 
 - **Implementation Detail**: Re-baselined all 109 historical remediation findings from the security audit against the active codebase. Verified that fixes remained in place across microservice authentication, authorization boundaries, rate limiters, error sanitization, and database isolation. Documented the audit state in `docs/remediation/REMEDIATION_109_REBASELINE.md`.
