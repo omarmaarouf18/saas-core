@@ -167,3 +167,40 @@ Checked against `logic-exploitation` at base `a120d845`:
 ## Open questions
 - none
 
+## Fix pass (DOCS-FOLD-FIX)
+
+Owner review of the initial DOCS-FOLD branch diff identified that several changelog entries and shared doc summaries were written with unverified or invented details rather than strictly checked against code, git at base (`logic-exploitation` @ `a120d845`), or worklog decisions.
+
+### Fix Audit Table
+
+| Task / Doc Area | Initial Issue / Fabrication | Correction Applied | Evidence Used |
+| :--- | :--- | :--- | :--- |
+| `OPS-BACKUP`, `OPS-BACKUP2` | Cited `backup-to-s3.sh`, `test-restore.sh`, and "cron" | Replaced with `infrastructure/deploy/backup/backup.sh`, `restore.sh`, `install.sh`, `quickdelivery-backup.service`, `quickdelivery-backup.timer`, `test/e2e-local.sh`, and `docs/runbooks/BACKUP-RESTORE.md`. Scheduler is systemd timer. | `git show --stat 10dd01b3`, `13059c63` |
+| `OBS-MIN` | Cited `scripts/host-health-check.sh` and "Done" in AI_CONTEXT | Replaced with `infrastructure/deploy/monitor/hostcheck.sh`, `install.sh`, `quickdelivery-monitor.service`, `quickdelivery-monitor.timer`, `backup/backup.sh`, `docs/runbooks/MONITORING.md`. Changed status in AI_CONTEXT to **Partial** (external ping monitors pending owner setup). | `git show --stat 020d54cc`, `docs/runbooks/MONITORING.md` |
+| `OPS-HARDEN` | Cited `caddy-cutover-guard.sh` | Removed non-existent script; cited `docs/runbooks/OPS-HARDEN-cutover.md` and `infrastructure/deploy/deploy.yml`. | `git show --stat 9ed52917` |
+| `PROD-PHOTO-STORAGE` | Cited `backup-to-s3.sh` | Replaced with `infrastructure/deploy/backup/backup.sh` and `restore.sh`. | `git show --stat bca961e7` |
+| `FIX-APK-SITE` | Claimed rename from `quickdelivery-website` | Corrected rename from `logiclinc` to `logiclink` (`omarmaarouf18/logiclinc` to `omarmaarouf18/logiclink`) in `build-apk.yml` and `docs/REPOSITORY_MAP.md`. | `git diff 914751ab^1 914751ab` |
+| `DEPS-VULN` | Claimed "updated x/net" and "0 vulnerabilities" | Aligned `mongo-driver/v2` to v2.8.0, bumped `x/crypto` v0.54->v0.55, `x/text` v0.40->v0.41, `klauspost/compress` v1.17.6->v1.18.7. Documented `x/crypto` v0.56.0 held open for Go directive alignment. Clarified govulncheck reported 0 called vulnerabilities in application code. | `docs/worklog/DEPS-VULN.md`, `git show 40965554` |
+| `SEC-PAY` | Cited `POST /auth/change-email` and claimed surfaced store errors without distinguishing money paths | Corrected email change endpoints to `POST /auth/email-change/request` and `POST /auth/email-change/confirm`. Clarified that only non-money store errors were surfaced; money-path swallowed store errors were explicitly surveyed and left unfixed for a future money task. | `docs/worklog/SEC-PAY.md`, `services/auth-service/internal/handlers/auth.go` |
+| `FIX-E2E-EMAIL` | Cited non-existent `tests/contracts/auth_contract_test.go` and `tests/e2e/e2e_helpers.go` | Corrected to `tests/e2e/contract_auth_test.go` and `.github/workflows/release-gate-e2e.yml`. Corrected endpoint to `POST /auth/email-change/confirm`. | `git diff c4fb9205^1 c4fb9205` |
+| `FIX-E2E-PHOTO` | Vague description of photo test payload | Corrected to 64-hex key generation in `scripts/staging_up.sh`, 503 preservation across gateway proxy in `proxy.go`, body draining in `services_handlers.go`, and release gate documentation in `docs/RELEASE.md`. | `git diff baa1511d^1 baa1511d` |
+| `BE-GAPS-FIX` | Invented endpoint `DELETE /users/services/{id}/photo` | Recorded that service photo deletion occurs automatically on disk via `storage.Deleter` in `shared/infra/storage/storage.go` when `photo_url` is cleared or replaced in `UpdateService`. Recorded stable error codes (`conflict` / `job_state_changed`, 503 `photo_storage_unavailable`), event normalization, and saved address label validation. | `git show --stat 144d945d`, `docs/worklog/BE-GAPS-FIX.md` |
+| `FE-LINUX-BUILD` | Invented `frontend/linux/my_application.cc` and `G_APPLICATION` flags | Replaced with `frontend/linux/CMakeLists.txt` (`-Wno-deprecated-literal-operator` under Clang >= 15) and `frontend/CONNECTING_TO_BACKEND.md`. | `git diff 4ca68c89^1 4ca68c89` |
+| `PUSH-BE` | Claimed "upgraded from legacy API keys" and cited non-existent `internal/fcm/oauth.go` | Replaced with standard library RFC 7523 JWT-bearer OAuth token minting in `services/notification-service/internal/fcm/token.go` and `fcm.go` without external dependencies. Recorded high-priority channel `qd_default`, in-memory token cache with refresh, retry with backoff on 429/5xx, and safe stale token detection. | `docs/worklog/PUSH-BE.md`, `services/notification-service/internal/fcm/token.go` |
+| `USER-AUTH-BE` | Invented `/users/addresses` and `/users/services/{id}/photo` | Replaced with real routes: profile saved addresses `GET /auth/user`, `PUT /auth/user`, `PATCH /auth/user` (`saved_addresses`) in `auth-service`, and service photo handlers `GET /users/services/photo`, `POST /users/services/photo`, `POST /users/services/photo/upload` in `user-service`. | `services/auth-service/internal/handlers/auth.go`, `services/user-service/internal/handlers/handlers.go` |
+| `FE-BE-GAPS`, `FE-V2-CONSUME` | Invented filenames (`api_error_codes.dart`, `notification_tap_router.dart`, `text_limits.dart`) | Replaced with base-verified files: `push_tap_handler.dart`, `booking_rules.dart`, `courier_rules.dart`, `saved_address_rules.dart`. | `git ls-files frontend/lib/` |
+| `FE-COURIER` | Invented `MyJobsPage` and relative path `features/courier/` | Replaced with `frontend/lib/features/courier/jobs_page.dart` and `frontend/lib/features/courier/`. | `git cat-file -e logic-exploitation:frontend/lib/features/courier/jobs_page.dart` |
+| `FE-OWNER-1`, `FE-AUTH-ACCOUNT`, `FE-CUST-1`, `FE-CUST-2`, `FE-DS` | Incomplete or non-existent relative paths (`features/*`, `gallery/*`) | Replaced with base-verified paths (`frontend/lib/features/customer/order/order_detail_page.dart`, `frontend/lib/features/customer/market_page.dart`, `frontend/lib/ui/gallery/qd_gallery_screen.dart`, route `/qd-gallery`). | `git cat-file -e logic-exploitation:<path>` |
+| `RB-01` | Invented `docs/remediation/REMEDIATION_109_REBASELINE.md` | Replaced with real base path `docs/audit/REBASELINE-2026-10.md`. | `git show --stat 540fc574` |
+| `AI_CONTEXT.md` | Invented Job Model v2 details; LaTeX `$\le 5$MB`; cron backup; Done monitoring; removed XFF open item | Corrected Job model v2 to ADR-0028 content; wrote `≤ 5 MB` and verified 5 MB multipart cap + magic bytes; changed cron to systemd timer; changed monitoring to Partial; restored XFF open item with Caddy mitigation details. | `docs/adr/0028-job-model-v2.md`, `services_handlers.go:645-715`, `Caddyfile:21-34` |
+| `docs/README.md` | Invented ADR-0028 description | Replaced with exact ADR-0028 title: "Job model v2: recipient, address text, status history, pickup phase, ETA, and saved addresses". | `docs/adr/0028-job-model-v2.md` |
+| `docs/REPOSITORY_MAP.md` | Stale website repo name `logiclinc` | Updated to `logiclink` (`omarmaarouf18/logiclink`). | `git diff 914751ab^1 914751ab` |
+| `docs/frontend/STATUS.md` | Non-existent relative subpaths with slashes | Replaced with base-matching basenames (`job_timeline.dart`, `job_v2_sections.dart`, `push_permission_prompt.dart`, `announcement_detail_sheet.dart`). | `git cat-file -e logic-exploitation:<path>` |
+
+### Fix Commits
+51. `DOCS-FOLD-FIX: correct fabricated details across changelog entries`
+52. `DOCS-FOLD-FIX: correct Job model v2, monitoring, photos, and restore XFF open item in AI_CONTEXT.md`
+53. `DOCS-FOLD-FIX: align ADR-0028 in README, website repo in REPOSITORY_MAP, and STATUS.md`
+54. `DOCS-FOLD-FIX: document fix pass and verification evidence in worklog`
+
+
