@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Owner Service Setup, Fleet Map, Activity Log, Verification & Account (FE-OWNER-2, FE-OWNER-2b)
+
+- **Implementation Detail**: Completed tenant owner management suite on Redesign A. Implemented `ServiceSetupPage` with photo upload, `FleetMapPage` for real-time courier tracking on OpenStreetMap, `ActivityLogPage` with categorized audit events, shared `VerificationPage` for KYB/KYE document uploads, and owner `AccountPage` with read-only wallet and plan upgrade request ceremony.
+- **Commit SHA**: ``0fa4b130b7528934a8e81de7915ad16287e5cc08``
+- **Verification**: per worklog (32 golden tests pass, widget tests pass, `flutter analyze` 0 issues).
+- **Worklog**: [docs/worklog/FE-OWNER-2b.md](../worklog/FE-OWNER-2b.md)
+
 ## Job Model V2 Backend Support: Sub-Status, Recipient & Address Fields (JOB-V2-BE, ADR-0028)
 
 - **Implementation Detail**: Implemented backend Job Model V2 domain logic in `services/user-service` per ADR-0028. Added fields `SubStatus`, `StatusHistory` with atomic transitions, `Recipient` (name, unmasked phone window during active job), `PackageDetails` (size, weight, fragile), and structured addresses with street lines and landmark notes.
