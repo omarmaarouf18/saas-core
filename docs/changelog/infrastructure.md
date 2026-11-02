@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Go Toolchain Bump to 1.26.10 for Security Patch GO-2026-6809 (GO-1-26-10)
+
+- **Implementation Detail**: Updated canonical Go toolchain version to 1.26.10 in `tools/versions.env`, `go.work`, all service `go.mod` files, Dockerfiles, and GitHub CI workflow (`ci.yml`). Remediates Go standard library vulnerability GO-2026-6809.
+- **Commit SHA**: ``5a2bda660e6316edb33f7763a0adeb5c00a0d5c7``
+- **Verification**: per worklog (`scripts/check-go-version.sh` clean, `make ci-full` PASS, govulncheck clean).
+- **Worklog**: [docs/worklog/GO-1-26-10.md](../worklog/GO-1-26-10.md)
+
 ## Minimal Monitoring: Uptime Runbook, Backup Dead-Man Ping & Host Health (OBS-MIN)
 
 - **Implementation Detail**: Created minimal host monitoring and health check automation (`scripts/host-health-check.sh`). Configured automated dead-man's-snitch ping integration for daily off-host backups in `infrastructure/deploy/backup-to-s3.sh`. Published the authoritative operations runbook at `docs/runbooks/MONITORING.md`.
