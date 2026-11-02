@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Owner Daily Workflow Shell: Today, Orders & Team on Redesign A (FE-OWNER-1)
+
+- **Implementation Detail**: Implemented tenant owner core operations on Redesign A (`features/owner/`). Built `OwnerShell`, `TodayPage` (active orders, revenue summary, quick stats), `OrdersPage` with status filters, order detail inspector, and `TeamPage` for courier roster management, active status toggling, and courier onboarding.
+- **Commit SHA**: ``706d8f05ef1b8fd9a61872b8a813a8244f7d5979``
+- **Verification**: per worklog (widget and golden test suites pass for Today, Orders, and Team tabs).
+- **Worklog**: [docs/worklog/FE-OWNER-1.md](../worklog/FE-OWNER-1.md)
+
 ## Auth Gate, Launch Splash, Account & Support on Redesign A (FE-AUTH-ACCOUNT)
 
 - **Implementation Detail**: Migrated authentication, account settings, support tickets, and notifications to Redesign A (`features/auth/`, `features/account/`). Implemented `AuthGate` with session restore splash, 2FA toggle, password reset with verification codes, support ticket creation with context IDs, and universal notification inbox with role-based routing.
