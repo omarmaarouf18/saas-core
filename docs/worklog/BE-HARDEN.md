@@ -208,6 +208,130 @@
 
 ## Verification
 
+### Item 1 — gateway passes upstream 5xx through unchanged
+
+**Fails before the change** (the three implementation files were temporarily
+reverted to `logic-exploitation` while the new tests stayed in place — the
+new option does not exist there, so the packages do not even build):
+
+```
+$ (cd shared/infra && go test ./resilience/ -count=1 -run 'TestResilienceClient_Upstream5xx|TestResilienceRoundTripper_Upstream5xx')
+# github.com/project/shared/infra/resilience [github.com/project/shared/infra/resilience.test]
+resilience/resilience_test.go:488:3: undefined: WithUpstream5xxPassthrough
+resilience/resilience_test.go:488:3: too many arguments in call to NewClient
+	have (*http.Client, string, number, "time".Duration, unknown type)
+	want (*http.Client, string, int, "time".Duration)
+resilience/resilience_test.go:554:3: undefined: WithUpstream5xxPassthrough
+resilience/resilience_test.go:554:3: too many arguments in call to NewRoundTripper
+	have (http.RoundTripper, string, number, "time".Duration, unknown type)
+	want (http.RoundTripper, string, int, "time".Duration)
+FAIL	github.com/project/shared/infra/resilience [build failed]
+FAIL
+
+$ (cd services/api-gateway && go test ./internal/proxy/ -count=1 -run 'TestProxy_Upstream')
+# github.com/project/gateway/internal/proxy [github.com/project/gateway/internal/proxy.test]
+internal/proxy/proxy_test.go:586:3: too many arguments in call to resilience.NewRoundTripper
+	have (http.RoundTripper, string, number, "time".Duration, unknown type)
+	want (http.RoundTripper, string, int, "time".Duration)
+internal/proxy/proxy_test.go:586:14: undefined: resilience.WithUpstream5xxPassthrough
+internal/proxy/proxy_test.go:644:3: too many arguments in call to resilience.NewRoundTripper
+	have (http.RoundTripper, string, number, "time".Duration, unknown type)
+	want (http.RoundTripper, string, int, "time".Duration)
+internal/proxy/proxy_test.go:644:14: undefined: resilience.WithUpstream5xxPassthrough
+internal/proxy/proxy_test.go:698:3: too many arguments in call to resilience.NewRoundTripper
+	have (http.RoundTripper, string, number, "time".Duration, unknown type)
+	want (http.RoundTripper, string, int, "time".Duration)
+internal/proxy/proxy_test.go:698:14: undefined: resilience.WithUpstream5xxPassthrough
+FAIL	github.com/project/gateway/internal/proxy [build failed]
+FAIL
+```
+
+**Passes after the change:**
+
+```
+$ (cd shared/infra && go test ./resilience/ -count=1 -v -run 'TestResilienceClient_Upstream5xx|TestResilienceRoundTripper_Upstream5xx')
+=== RUN   TestResilienceClient_Upstream5xxPassthrough
+--- PASS: TestResilienceClient_Upstream5xxPassthrough (0.00s)
+=== RUN   TestResilienceClient_Upstream5xxWithoutPassthroughStillErrors
+--- PASS: TestResilienceClient_Upstream5xxWithoutPassthroughStillErrors (0.00s)
+=== RUN   TestResilienceRoundTripper_Upstream5xxPassthroughStillTripsBreaker
+2026/11/02 13:21:52 [SECURITY EVENT / DOWNSTREAM DEGRADED] Circuit breaker test-passthrough-breaker transitioned from closed to open
+--- PASS: TestResilienceRoundTripper_Upstream5xxPassthroughStillTripsBreaker (0.00s)
+PASS
+ok  	github.com/project/shared/infra/resilience	0.004s
+
+$ (cd services/api-gateway && go test ./internal/proxy/ -count=1 -v -run 'TestProxy_Upstream')
+=== RUN   TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503
+--- PASS: TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503 (0.00s)
+=== RUN   TestProxy_Upstream500BodyPassesThrough
+--- PASS: TestProxy_Upstream500BodyPassesThrough (0.22s)
+=== RUN   TestProxy_Upstream5xxStillOpensCircuitBreaker
+2026/11/02 13:21:52 [SECURITY EVENT / DOWNSTREAM DEGRADED] Circuit breaker test-user-route-breaker transitioned from closed to open
+2026/11/02 13:21:52 [PROXY ERROR] POST /users/jobs → http://127.0.0.1:34815: circuit breaker is open
+--- PASS: TestProxy_Upstream5xxStillOpensCircuitBreaker (0.00s)
+PASS
+ok  	github.com/project/gateway/internal/proxy	0.226s
+```
+
+### Item 2 — notification-service survives missing Redis and Mongo
+
+**Fails before the change** (the implementation files were temporarily
+reverted to `logic-exploitation` while the new tests stayed in place — the
+new sentinel and the new method do not exist there):
+
+```
+$ (cd shared/infra && go test ./ratelimit/ -count=1 -run 'TestRateLimiter_Nil|TestOtherLimiters_Nil')
+# github.com/project/shared/infra/ratelimit [github.com/project/shared/infra/ratelimit.test]
+ratelimit/nil_client_test.go:25:26: rl.CheckAndRecordDetailed undefined (type *RateLimiter has no field or method CheckAndRecordDetailed)
+ratelimit/nil_client_test.go:32:21: undefined: ErrNoRedisClient
+ratelimit/nil_client_test.go:40:24: rl.CheckAndRecordDetailed undefined (type *RateLimiter has no field or method CheckAndRecordDetailed)
+ratelimit/nil_client_test.go:44:21: undefined: ErrNoRedisClient
+FAIL	github.com/project/shared/infra/ratelimit [build failed]
+FAIL
+
+$ (cd services/notification-service && go test ./internal/handlers/ -count=1 -run 'TestSend_RateLimiterWithoutRedis|TestSend_TypedNilStore|TestStoreUsable')
+# github.com/project/notification-service/internal/handlers [github.com/project/notification-service/internal/handlers.test]
+internal/handlers/degraded_dependencies_test.go:121:5: undefined: storeUsable
+internal/handlers/degraded_dependencies_test.go:125:5: undefined: storeUsable
+FAIL	github.com/project/notification-service/internal/handlers [build failed]
+FAIL
+```
+
+**Passes after the change:**
+
+```
+$ (cd shared/infra && go test ./ratelimit/ -count=1 -v -run 'TestRateLimiter_Nil|TestOtherLimiters_Nil')
+=== RUN   TestRateLimiter_NilClientFailsClosed
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+--- PASS: TestRateLimiter_NilClientFailsClosed (0.00s)
+=== RUN   TestRateLimiter_NilLimiterFailsClosed
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+--- PASS: TestRateLimiter_NilLimiterFailsClosed (0.00s)
+=== RUN   TestOtherLimiters_NilClientDoesNotPanic
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis auth rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis auth rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis reviewer rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis reviewer rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+--- PASS: TestOtherLimiters_NilClientDoesNotPanic (0.00s)
+PASS
+ok  	github.com/project/shared/infra/ratelimit	0.003s
+
+$ (cd services/notification-service && go test ./internal/handlers/ -count=1 -v -run 'TestSend_RateLimiterWithoutRedis|TestSend_TypedNilStore|TestStoreUsable')
+=== RUN   TestSend_RateLimiterWithoutRedis_FailsClosedWith503
+2026/11/02 13:23:05 [SECURITY CRITICAL] Redis rate limiter unavailable (FAIL CLOSED): ratelimit: redis client is not available
+2026/11/02 13:23:05 [ERROR] 000d931276dafa04 service_unavailable POST /notifications/send: ratelimit: redis client is not available
+--- PASS: TestSend_RateLimiterWithoutRedis_FailsClosedWith503 (0.00s)
+=== RUN   TestSend_TypedNilStore_SkipsPersistenceAndDelivers
+2026/11/02 13:23:05 [NOTIF-STORE] notification persistence is unavailable; notifications are delivered live and over push only
+2026/11/02 13:23:05 [SSE-HUB] Broadcast: type=popup tenant=tenant-1 → 0 local clients
+--- PASS: TestSend_TypedNilStore_SkipsPersistenceAndDelivers (0.00s)
+=== RUN   TestStoreUsable_TypedNilIsNotUsable
+--- PASS: TestStoreUsable_TypedNilIsNotUsable (0.00s)
+PASS
+ok  	github.com/project/notification-service/internal/handlers	0.005s
+```
+
 ### Item 3 — internal device-token unregister endpoint
 
 **Fails before the change** (the implementation files were temporarily
@@ -639,13 +763,148 @@ $ GITLEAKS_BIN=… bash scripts/gitleaks-scan.sh worktree logic-exploitation
 gitleaks: no secrets found
 ```
 
-- (filled in as the task progresses)
-
 ## Unverified
-- (filled in as the task progresses)
+
+- **Item 1**: the upstream 5xx passthrough was verified against local test
+  servers (httptest) and with the real circuit breaker, but **not** against a
+  real upstream deployment that answers 5xx. The proxy still translates a
+  *transport* error (dial, timeout, open breaker) into its own 502 — only a
+  real upstream 5xx answer is passed through.
+- **Item 2**: the degraded paths were verified with a closed Mongo client and
+  a limiter without a Redis client (unit level). The behaviour against a
+  **real** Redis/Mongo outage (server down, not client nil) was not
+  reproduced; the nil-client case is the one the task asked for.
+- **Item 3**: the Mongo store method (`RemoveDeviceTokenFromAnyUser`) was
+  verified against the local MongoDB of this worktree, and the handler
+  against a fake store. The **round trip through a running auth-service**
+  (a real HTTP call with a real `X-Internal-Token` and a real Mongo) was not
+  executed; the contract test checks that both sides agree on route, method,
+  header and body field, not the live call.
+- **Item 3**: the new endpoint is **not** in the docgen `KnownEndpoints` map
+  (out of lane), so its row in `docs/APPLICATION_MAP.md` carries a
+  `<!-- TODO: verify manually -->` cell. The row itself was generated by
+  `make docs` and reflects the real route, but the map's hand-written
+  context is not updated for it.
+- **Item 4**: the masking was verified with unit tests over the helper and
+  the list handler. No **frontend** consumer of `GET /admin/jobs` exists, so
+  no client had to be adapted — but that was confirmed by searching the
+  frontend, not by running a frontend against a live admin list.
+- **Item 5**: the store failure was forced by closing the Mongo client. The
+  two job endpoints (`cancel`, `complete-stuck-cod`) could not be forced to
+  fail in a test (their first store call is the job lookup, which fails
+  earlier with a 404); they are covered by the AST guard instead, not by a
+  behavioural test.
+- **Item 6**: the `::add-mask::` commands were verified locally (the script
+  emits the right command, at the right point, with the right values). The
+  **runner** behaviour (GitHub Actions consuming the command and redacting
+  the value in the log) was not reproduced — there is no CI runner here. It
+  is the documented behaviour of the platform.
+- **Item 7**: the refusal was verified through `config.Load()` and through
+  the real `--check-env` pre-flight of both services. It was **not** verified
+  against the production environment itself: whether the production env file
+  still carries the published dev key is unknown (the production env file
+  is not in the repository). If it does, the next deploy of the
+  user-service/auth-service will fail the pre-flight — see the deploy notes.
+- The whole `make check` gate (full scope, including the frontend analyze
+  and test stages) passed before every one of the seven commits; the exact
+  gate output is not pasted into this worklog, it is reproducible with
+  `make check`.
 
 ## Follow-ups / out-of-lane findings
-- (filled in as the task progresses)
+
+These were found while working on the task and are **not** fixed here,
+because the files are outside this task's lane (or the change would exceed
+the item's scope). They are listed with their exact location so the owner
+can pick them up:
+
+- **chat-service still leaks raw store/JWT error text** in admin and chat
+  responses (`services/chat-service/internal/handlers/admin_tickets.go`
+  lines 106, 283, 287, 431, 435 and `chat.go` line 1119). The pattern is
+  the same one item 5 removed from the user-service admin handlers:
+  `writeJSON(w, <status>, map[string]string{"error": err.Error()})`. The
+  chat-service is outside this task's lane.
+- **The user-service still leaks raw store text in its non-admin paths**:
+  `services/user-service/internal/handlers/reconciliation_handlers.go`
+  lines 509 and 513 (404/409 bodies) and
+  `services/user-service/internal/handlers/jobs_handlers.go` lines 475, 589
+  and 966 (409 bodies). These are curated "not found" / "already exists"
+  answers, but they are built from the raw store error, so a store error
+  that happens to contain one of those words would be passed through
+  verbatim. Item 5 deliberately limited itself to the admin handlers.
+- **`docs/APPLICATION_MAP.md` line 122 is stale**: it still says
+  "`POST /auth/device-token` (`unregister`) removes a token FCM reports as
+  stale", which is the old, broken contract that item 3 replaced. The file
+  may only be regenerated with `make docs`, and the docgen
+  `KnownEndpoints` map (`shared/infra/docgen/generator.go`, out of lane)
+  drives the table — the hand-written prose is not regenerated. The new
+  route is in the generated table (line 206) with a
+  `<!-- TODO: verify manually -->` cell in the `Targets` column, because
+  the docgen does not know the new endpoint yet.
+- **The auth-service only refuses an empty `DOCUMENT_ENCRYPTION_KEY` when
+  `APP_ENV` is exactly `production`** (`services/auth-service/internal/config/config.go`,
+  the `appEnv == "production"` comparison). `APP_ENV=Production` or
+  `APP_ENV=production ` would skip that check. The new item-7 check is
+  case-insensitive and trimmed; the pre-existing empty-key check was left
+  untouched because changing it is a different (behaviour-changing) fix.
+- **The script test harness of the repo is out of lane**
+  (`scripts/test_staging_up.sh`, `scripts/run_script_tests.sh`): item 6
+  could not add a regression test there, so the masking was verified with a
+  manual reproduction instead (see the item 6 section). The existing
+  harness was run and still passes.
+- **The local dev stack still ships the published dev key**
+  (`infrastructure/.env.example` line 108, `APP_ENV=local`). That is
+  exactly what item 7 allows, but it means every local document is
+  encrypted with a public key — acceptable for local development, not for
+  anything else.
 
 ## Open questions
-- (filled in as the task progresses)
+
+- **Does the production env file still carry the published dev
+  `DOCUMENT_ENCRYPTION_KEY`?** If it does, item 7 turns the next deploy of
+  the user-service/auth-service into a failed pre-flight
+  (`PREFLIGHT FAILED: … DOCUMENT_ENCRYPTION_KEY is the published development
+  key`) instead of a silent start with a public key. That is the intended
+  behaviour, but it is a *deployment-visible* change and the owner has to
+  know about it before the release.
+- **Should the item-1 passthrough become the default** instead of an opt-in
+  option? It is opt-in because only the api-gateway proxy wants it; every
+  other consumer of `shared/infra/resilience` still gets an error on an
+  upstream 5xx. A follow-up task could decide whether the other consumers
+  (chat-service, notification-service) need the same treatment.
+- **Should the dev-key blocklist grow** (e.g. the other published
+  placeholders of `infrastructure/.env.example` — `JWT_SECRET`,
+  `INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`)? Item 7 covers only
+  `DOCUMENT_ENCRYPTION_KEY`, because that is the key that encrypts user
+  data. The other placeholders protect tokens, not documents, and they are
+  not valid 64-hex keys in every case.
+
+## Deploy notes
+
+- **Nothing beyond the normal release.** No new environment variable, no
+  new configuration key, no changed port, no changed image and no changed
+  default: every item is a behaviour change inside an existing request path
+  or a new internal endpoint behind the existing `X-Internal-Token`.
+- Item 1 changes what the api-gateway answers when an upstream service
+  answers 5xx: the upstream status and body are passed through instead of
+  being turned into a gateway 502. Clients that relied on the gateway 502
+  for an upstream 5xx will now see the upstream status.
+- Item 2 changes the notification-service answer when Redis is unavailable:
+  503 `service_unavailable` instead of a panic (500). The plain rate-limit
+  answer (429) is unchanged.
+- Item 3 adds `POST /auth/internal/device-token/unregister` to the
+  auth-service. It is internal (same `X-Internal-Token` as the other
+  `/auth/internal/*` endpoints) and needs no route, port or env change.
+- Item 4 changes the body of `GET /admin/jobs`: the recipient phone is
+  masked there. The unmasked phone stays in `GET /admin/jobs/{id}`. No
+  frontend consumer of the list exists.
+- Item 5 changes the **body** of six admin endpoints on a store failure:
+  they now answer `{"error": "<stable message>", "code": "internal_error",
+  "request_id": "…"}` instead of a body that carried the store error text.
+  The status code (500) is unchanged.
+- Item 6 changes only the CI log of the release-gate workflow (the secrets
+  are now registered as GitHub Actions log masks). No runtime behaviour.
+- Item 7 makes the user-service and the auth-service **refuse to start**
+  when `DOCUMENT_ENCRYPTION_KEY` is the published dev key and `APP_ENV` is
+  not `local`/`test`. This is the one item that can stop a deployment: see
+  the open question above. The staging stack is unaffected (it uses a
+  random key), and the local dev stack is unaffected (`APP_ENV=local`).
