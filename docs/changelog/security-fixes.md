@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Email-Change Revocation, Store Error Visibility & COD-Only Guard (SEC-PAY)
+
+- **Implementation Detail**: Enhanced `POST /auth/change-email` to immediately revoke all existing user sessions upon email change. Surfaced underlying MongoDB errors cleanly in `user-service` store operations rather than swallowing failures. Added fail-closed runtime checks enforcing COD-only payment processing unless `ALLOW_TEST_PAYMENT_BYPASS=true` in non-production environments.
+- **Commit SHA**: ``ed5f2ba1328bbf9f341647b5efba22b65cdf000f``
+- **Verification**: per worklog (unit and integration tests verify token invalidation on email change and rejection of non-COD payments in prod).
+- **Worklog**: [docs/worklog/SEC-PAY.md](../worklog/SEC-PAY.md)
+
 ## Session Revocation Fails Closed on Password Reset and Suspension (SEC-07b)
 
 - **Implementation Detail**: revoke-before-state-change in the remaining session-revocation paths (all in `auth-service`), closing the "state saved, revocation failed and was swallowed" gap. The worklog also records the round-2 owner decision: do not save a state change whose revocation failed — while Redis is down every token is already rejected by `ValidateToken`, and saving would silently re-enable the old tokens the moment Redis returns.
