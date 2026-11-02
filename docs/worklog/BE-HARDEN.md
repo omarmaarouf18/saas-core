@@ -170,6 +170,32 @@
   substitution puts two more generated values into the env file. Those two
   are masked as well — they are real literals of the env file, even though
   they only appear inside a comment.
+- **Item 7**: the `DOCUMENT_ENCRYPTION_KEY` published in
+  `infrastructure/.env.example` (line 108, the `deadbeef…` value) is a
+  syntactically valid AES-256 key, so it passes every format check the
+  services do today — but it is public in the repository, so every document
+  encrypted with it can be decrypted by anyone. Both the user-service and
+  the auth-service now refuse to start when `DOCUMENT_ENCRYPTION_KEY` is
+  that value and `APP_ENV` is not `local`/`test`. The refusal is a hard
+  config error, so it also fails the CD pre-flight (`--check-env`).
+- **Item 7**: `APP_ENV` is compared **trimmed and case-insensitively**
+  (`local`, `test` — in any case, with any surrounding whitespace). An unset
+  `APP_ENV` means `production` in both services, so it is refused as well.
+  The local dev stack is not affected: `infrastructure/.env.example` ships
+  `APP_ENV=local` together with the dev key, and the staging example uses
+  `CHANGE_ME_64_HEX` (a random key) — so only a deployment that copied the
+  example file into a production-shaped environment is refused.
+- **Item 7**: the error names the variable (`DOCUMENT_ENCRYPTION_KEY`) but
+  never the key value — the same rule the existing
+  `ValidateDocumentEncryptionKey` follows. The published value itself is
+  kept in one unexported constant per service (the two services are
+  separate Go modules and no `go.mod` may be touched by this task, so the
+  constant cannot be shared).
+- **Item 7**: each service has its own test. The test repeats the published
+  value as a literal on purpose — it has to pin the *published* value, not
+  the constant of the package, so a drifting blocklist fails the test.
+  The test also checks that the error names the variable and does not leak
+  the key.
 
 ## Changes per commit (message only — NO SHAs)
 1. `BE-HARDEN: item 1 - gateway passes upstream 5xx through unchanged`
@@ -442,6 +468,175 @@ Static checks:
 ```
 $ bash -n scripts/staging_up.sh && shellcheck scripts/staging_up.sh && echo "syntax+shellcheck OK"
 syntax+shellcheck OK
+```
+
+### Item 7 — refuse the dev DOCUMENT_ENCRYPTION_KEY outside local/test
+
+> The published dev key itself is written as `deadbeef…` here: the
+> repository's md-sha gate treats every 40-character hex string in a
+> markdown file as a commit SHA and blocks the commit when it is not one.
+> The full value is in `infrastructure/.env.example` (line 108) and in the
+> two service configs.
+
+**Fails before the change** (the two `config.go` files were temporarily
+reverted to `logic-exploitation` while the new tests stayed in place):
+
+```
+$ (cd services/user-service && go test ./internal/config/ -count=1 -run 'TestLoad_RefusesPublishedDevDocumentEncryptionKey' -v)
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_
+    config_test.go:226: APP_ENV="": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production
+    config_test.go:226: APP_ENV="production": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION
+    config_test.go:226: APP_ENV="PRODUCTION": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_
+    config_test.go:226: APP_ENV=" production ": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging
+    config_test.go:226: APP_ENV="staging": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod
+    config_test.go:226: APP_ENV="prod": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_
+--- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_ (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_ (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_ (0.00s)
+FAIL
+FAIL	github.com/project/user-service/internal/config	0.002s
+FAIL
+```
+
+```
+$ (cd services/auth-service && go test ./internal/config/ -count=1 -run 'TestLoad_RefusesPublishedDevDocumentEncryptionKey' -v)
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_
+    config_test.go:282: APP_ENV="": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production
+    config_test.go:282: APP_ENV="production": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION
+    config_test.go:282: APP_ENV="PRODUCTION": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_
+    config_test.go:282: APP_ENV=" production ": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging
+    config_test.go:282: APP_ENV="staging": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod
+    config_test.go:282: APP_ENV="prod": expected Load to refuse the published dev key, got nil
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST
+=== RUN   TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_
+--- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_ (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_ (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging (0.00s)
+    --- FAIL: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_ (0.00s)
+FAIL
+FAIL	github.com/project/auth-service/internal/config	0.001s
+FAIL
+```
+
+**Passes after the change:**
+
+```
+$ (cd services/user-service && go test ./internal/config/ -count=1 -v -run 'TestLoad_RefusesPublishedDevDocumentEncryptionKey')
+--- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_ (0.00s)
+PASS
+ok  	github.com/project/user-service/internal/config	0.001s
+
+$ (cd services/auth-service && go test ./internal/config/ -count=1 -v -run 'TestLoad_RefusesPublishedDevDocumentEncryptionKey')
+--- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_production (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_PRODUCTION (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses__production_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_staging (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/refuses_prod (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_local (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_LOCAL (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__local_ (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_test (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows_TEST (0.00s)
+    --- PASS: TestLoad_RefusesPublishedDevDocumentEncryptionKey/allows__test_ (0.00s)
+PASS
+ok  	github.com/project/auth-service/internal/config	0.002s
+```
+
+End-to-end proof through the CD pre-flight (`--check-env`), with the
+published dev key in the environment:
+
+```
+$ (cd services/user-service && env JWT_SECRET=… INTERNAL_SERVICE_TOKEN=… TLS_CERT_PATH=… TLS_KEY_PATH=… TLS_CA_PATH=… REDIS_URI=… APP_ENV=production DOCUMENT_ENCRYPTION_KEY=<the published dev key> go run ./cmd --check-env)
+PREFLIGHT FAILED: config: refusing to start: DOCUMENT_ENCRYPTION_KEY is the published development key; generate a unique key (openssl rand -hex 32) before deploying outside local/test
+exit status 1
+user-service --check-env exit=1
+
+$ (cd services/auth-service && env JWT_SECRET=… DOCUMENT_SIGNING_SECRET=… GATEWAY_SECRET=… INTERNAL_SERVICE_TOKEN=… TLS_CERT_PATH=… TLS_KEY_PATH=… TLS_CA_PATH=… REDIS_URI=… APP_ENV=production DOCUMENT_ENCRYPTION_KEY=<the published dev key> go run ./cmd --check-env)
+PREFLIGHT FAILED: config: refusing to start: DOCUMENT_ENCRYPTION_KEY is the published development key; generate a unique key (openssl rand -hex 32) before deploying outside local/test
+exit status 1
+auth-service --check-env exit=1
+```
+
+The local development shape (the example file: `APP_ENV=local` + the dev
+key) still starts:
+
+```
+$ (cd services/user-service && env … APP_ENV=local DOCUMENT_ENCRYPTION_KEY=<the published dev key> go run ./cmd --check-env)
+PREFLIGHT OK: user-service config validated
+user-service --check-env (APP_ENV=local) exit=0
+
+$ (cd services/auth-service && env … APP_ENV=local DOCUMENT_ENCRYPTION_KEY=<the published dev key> go run ./cmd --check-env)
+PREFLIGHT OK: auth-service config validated
+auth-service --check-env (APP_ENV=local) exit=0
+```
+
+Static checks:
+
+```
+$ gofmt -l services/user-service/internal/config/ services/auth-service/internal/config/
+(no output)
+$ (cd services/user-service && go build ./... && go vet ./... && echo "user-service build+vet OK")
+user-service build+vet OK
+$ (cd services/auth-service && go build ./... && go vet ./... && echo "auth-service build+vet OK")
+auth-service build+vet OK
+$ GITLEAKS_BIN=… bash scripts/gitleaks-scan.sh worktree logic-exploitation
+-- gitleaks: scanning 2263a516..HEAD + staged + unstaged + untracked --
+gitleaks: no secrets found
 ```
 
 - (filled in as the task progresses)

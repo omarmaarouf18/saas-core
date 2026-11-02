@@ -189,3 +189,62 @@ func TestLoad_DocumentEncryptionKey(t *testing.T) {
 		}
 	})
 }
+
+// publishedDevDocKey is the DOCUMENT_ENCRYPTION_KEY published in
+// infrastructure/.env.example. The literal is repeated here on purpose: the
+// test has to pin the published value, not the constant of the package, so a
+// drifting blocklist fails the test.
+const publishedDevDocKey = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+
+// BE-HARDEN item 7: the published development key is a valid AES-256 key, so
+// it passes every format check — but it is public, so every document
+// encrypted with it can be decrypted by anyone. The service must refuse to
+// start with it outside local/test.
+func TestLoad_RefusesPublishedDevDocumentEncryptionKey(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-12345678901234567890")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "test-internal-token")
+	t.Setenv("TLS_CERT_PATH", "/tmp/cert.pem")
+	t.Setenv("TLS_KEY_PATH", "/tmp/key.pem")
+	t.Setenv("TLS_CA_PATH", "/tmp/ca.pem")
+	t.Setenv("REDIS_URI", "redis://localhost:6379")
+	t.Setenv("ALLOW_TEST_PAYMENT_BYPASS", "")
+	t.Setenv("DOCUMENT_ENCRYPTION_KEY", publishedDevDocKey)
+
+	// Every environment that is not local/test refuses to start. APP_ENV is
+	// compared trimmed and case-insensitively; an unset APP_ENV means
+	// production.
+	for _, env := range []string{"", "production", "PRODUCTION", " production ", "staging", "prod"} {
+		t.Run("refuses "+env, func(t *testing.T) {
+			if env == "" {
+				t.Setenv("APP_ENV", "")
+				os.Unsetenv("APP_ENV")
+			} else {
+				t.Setenv("APP_ENV", env)
+			}
+			_, err := Load()
+			if err == nil {
+				t.Fatalf("APP_ENV=%q: expected Load to refuse the published dev key, got nil", env)
+			}
+			if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+				t.Errorf("APP_ENV=%q: the error must name the variable, got: %v", env, err)
+			}
+			if strings.Contains(err.Error(), publishedDevDocKey) {
+				t.Errorf("APP_ENV=%q: the error must not contain the key: %v", env, err)
+			}
+		})
+	}
+
+	// local and test may use it: the local dev stack copies the example file.
+	for _, env := range []string{"local", "LOCAL", " local ", "test", "TEST", " test "} {
+		t.Run("allows "+env, func(t *testing.T) {
+			t.Setenv("APP_ENV", env)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("APP_ENV=%q: expected Load to accept the published dev key, got: %v", env, err)
+			}
+			if len(cfg.Warnings) != 0 {
+				t.Errorf("APP_ENV=%q: unexpected warnings %v", env, cfg.Warnings)
+			}
+		})
+	}
+}

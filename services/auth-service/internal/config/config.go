@@ -34,6 +34,25 @@ type Config struct {
 	ResendFromEmail    string
 }
 
+// devDocumentEncryptionKey is the DOCUMENT_ENCRYPTION_KEY published in
+// infrastructure/.env.example. It is a syntactically valid AES-256 key, so a
+// deployment that copies the example file passes every other check — but
+// every document encrypted with it can be decrypted by everyone who reads
+// the repository. Outside local/test the service refuses to start. The value
+// is never written to a log or to an error message.
+const devDocumentEncryptionKey = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+
+// isDevOnlyAppEnv reports whether appEnv names an environment that may use
+// the published development key: local development and the test suite.
+func isDevOnlyAppEnv(appEnv string) bool {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "local", "test":
+		return true
+	default:
+		return false
+	}
+}
+
 func Load() (*Config, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -101,6 +120,13 @@ func Load() (*Config, error) {
 	docEncryptionKey := os.Getenv("DOCUMENT_ENCRYPTION_KEY")
 	if docEncryptionKey == "" && appEnv == "production" {
 		return nil, errors.New("config: required env var DOCUMENT_ENCRYPTION_KEY is empty in production")
+	}
+	// BE-HARDEN item 7: the key published in infrastructure/.env.example is a
+	// valid key, so it passes the checks above — but it is public, so every
+	// document encrypted with it is readable by anyone. Refuse to start
+	// outside local/test. The error names the variable, never the key.
+	if docEncryptionKey == devDocumentEncryptionKey && !isDevOnlyAppEnv(appEnv) {
+		return nil, errors.New("config: refusing to start: DOCUMENT_ENCRYPTION_KEY is the published development key; generate a unique key (openssl rand -hex 32) before deploying outside local/test")
 	}
 
 	storageBaseDir := os.Getenv("STORAGE_BASE_DIR")
