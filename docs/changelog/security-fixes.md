@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Reviewer Console Operations API, Edge Security & Fail-Closed Version Store (ADMIN-API, ADMIN-API-FIX)
+
+- **Implementation Detail**: Secured reviewer operations console (`kyc.logiclinkeg.tech`): enforced HTTP basic_auth with bcrypt in Caddy edge proxy, blocked external `/admin/*` gateway access via client certificates (`ADMIN-API-FIX`), stripped incoming client `X-Internal-Token` headers, forwarded client IP via `X-Console-Client-IP` to prevent rate-limit bypasses, and made `api-gateway` platform version store MongoDB-backed and fail-closed.
+- **Commit SHA**: ``2263a51628b4e5d99bb5f8f42b9051c0b7ac6b8d``
+- **Verification**: per worklog (`TestE2E_AdminConsoleEndpoints` PASS covering all edge security, cert, and audit checks).
+- **Worklog**: [docs/worklog/ADMIN-API.md](../worklog/ADMIN-API.md)
+
 ## Go Dependency Vulnerability Triage & Module Upgrades (DEPS-VULN)
 
 - **Implementation Detail**: Triaged and upgraded Go module dependencies across all 5 microservices to remediate vulnerabilities reported by `govulncheck`. Updated `golang.org/x/net`, `golang.org/x/crypto`, and Mongo Go driver dependencies while maintaining contract stability.

@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Operations & Reviewer Console API Endpoints (ADMIN-API, ADMIN-API-FIX)
+
+- **Implementation Detail**: Implemented complete reviewer console operations backend across microservices: `GET /admin/overview` aggregation, `GET /admin/jobs` multi-field search and unmasked detail, admin job cancellation and stuck COD completion (`POST /admin/jobs/{id}/complete-stuck-cod`), services moderation (hide/unhide/photo removal), subscriptions queue (`pending_payment`), merged audit log viewer, and admin announcements push fan-out (`POST /admin/notifications/send`). Documented in `docs/api/ADMIN_API.md`.
+- **Commit SHA**: ``2263a51628b4e5d99bb5f8f42b9051c0b7ac6b8d``
+- **Verification**: per worklog (comprehensive E2E test suite `TestE2E_AdminConsoleEndpoints` PASS).
+- **Worklog**: [docs/worklog/ADMIN-API.md](../worklog/ADMIN-API.md)
+
 ## Android FCM Push Notification Client Integration & Local Channel Sync (PUSH-FCM)
 
 - **Implementation Detail**: Integrated Firebase Cloud Messaging (`firebase_core 4.15.0`, `firebase_messaging 16.7.0`) and `flutter_local_notifications 22.3.1` in the Flutter app. Created notification channel `qd_default` with localized names ("Order updates" / "تحديثات الطلبات"). Added in-app permission prompt sheet, account settings notification toggle, and foreground push presentation. Documented architecture in `frontend/docs/PUSH.md`.
