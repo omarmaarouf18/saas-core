@@ -92,10 +92,18 @@ func main() {
 	}
 
 	// Connect to MongoDB for notification persistence.
+	//
+	// The store is kept in a store.Store interface variable that stays nil
+	// when MongoDB is unreachable: a typed nil (*store.MongoDB) would make
+	// the interface non-nil and the first InsertNotification would panic on
+	// the nil receiver. Without persistence the service still delivers
+	// notifications live and over push.
+	var notifStore store.Store
 	mongoStore, err := store.NewMongoDB(context.Background(), cfg.MongoURI, cfg.MongoDatabase)
 	if err != nil {
 		log.Printf("[WARN] MongoDB initialization failed (%v) - running without notification persistence", err)
 	} else {
+		notifStore = mongoStore
 		defer func() {
 			closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -103,7 +111,7 @@ func main() {
 		}()
 	}
 
-	notifHandlers := handlers.NewNotification(sseHub, mongoStore, cfg, redisClient)
+	notifHandlers := handlers.NewNotification(sseHub, notifStore, cfg, redisClient)
 
 	mux := http.NewServeMux()
 	notifHandlers.RegisterRoutes(mux)

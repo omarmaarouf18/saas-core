@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,14 +37,17 @@ type Notification struct {
 	store                store.Store
 	authServiceURL       string
 	allowedOrigin        string
-	limiter              *handlerutil.RateLimiter
-	streamLimiter        *handlerutil.RateLimiter
-	adminSendLimiter     *handlerutil.RateLimiter
+	limiter              *ratelimit.RateLimiter
+	streamLimiter        *ratelimit.RateLimiter
+	adminSendLimiter     *ratelimit.RateLimiter
 	streamCaps           map[string]int
 	streamCapsMu         sync.Mutex
 	internalServiceToken string
 	resilienceClient     *resilience.ResilienceClient
 	httpClient           *http.Client
+	// persistWarnOnce logs the "persistence is off" notice once, so a
+	// Mongo-less instance does not repeat it on every notification.
+	persistWarnOnce sync.Once
 }
 
 // NewNotification creates a new handler group.
@@ -76,9 +80,9 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 		store:                st,
 		authServiceURL:       cfg.AuthServiceURL,
 		allowedOrigin:        allowedOrigin,
-		limiter:              handlerutil.NewRateLimiter(rl),
-		streamLimiter:        handlerutil.NewRateLimiter(streamRl),
-		adminSendLimiter:     handlerutil.NewRateLimiter(adminSendRl),
+		limiter:              rl,
+		streamLimiter:        streamRl,
+		adminSendLimiter:     adminSendRl,
 		streamCaps:           make(map[string]int),
 		internalServiceToken: cfg.InternalServiceToken,
 		resilienceClient:     resClient,
@@ -89,6 +93,87 @@ func NewNotification(h *hub.SSEHub, st store.Store, cfg *config.Config, rdb *red
 // SetStore dynamically sets the persistence store.
 func (n *Notification) SetStore(st store.Store) {
 	n.store = st
+}
+
+// storeUsable reports whether the persistence store can really be used.
+//
+// A typed nil (a *store.MongoDB that is nil because MongoDB was unreachable
+// at startup) must never reach the store.Store interface: the interface
+// value would be non-nil and the first InsertNotification would panic on the
+// nil receiver. The store is skipped instead, so the notification is still
+// delivered live and over push.
+func storeUsable(st store.Store) bool {
+	if st == nil {
+		return false
+	}
+	v := reflect.ValueOf(st)
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan, reflect.UnsafePointer:
+		return !v.IsNil()
+	default:
+		return true
+	}
+}
+
+// persistNotification stores the notification when a persistence store is
+// available. Without one the notification is only delivered live and over
+// push (the service starts with "running without notification persistence"),
+// and the notice is logged once, not on every notification.
+func (n *Notification) persistNotification(ctx context.Context, notif *hub.Notification, roles []string) {
+	storeDoc := &store.Notification{
+		ID:        notif.ID,
+		Type:      notif.Type,
+		TenantID:  notif.TenantID,
+		UserID:    notif.UserID,
+		UserIDs:   notif.UserIDs,
+		JobID:     notif.JobID,
+		Global:    notif.Global,
+		Title:     notif.Title,
+		Body:      notif.Body,
+		Roles:     roles,
+		Timestamp: notif.Timestamp,
+		Params:    notif.Params,
+	}
+	n.persistStoreDoc(ctx, storeDoc, notif.ID)
+}
+
+// persistStoreDoc writes one document to the persistence store when a store
+// is available. Without one the document is skipped, so a notification is
+// still delivered live and over push.
+func (n *Notification) persistStoreDoc(ctx context.Context, doc *store.Notification, notificationID string) {
+	if !storeUsable(n.store) {
+		n.persistWarnOnce.Do(func() {
+			log.Printf("[NOTIF-STORE] notification persistence is unavailable; notifications are delivered live and over push only")
+		})
+		return
+	}
+	if err := n.store.InsertNotification(ctx, doc); err != nil {
+		log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notificationID, err)
+	}
+}
+
+// rateLimit evaluates the Redis-backed rate limiter for key.
+//
+// The limiter fails closed: a limiter without a usable Redis client (Redis
+// was unreachable at startup) cannot evaluate the budget, so it denies the
+// request and the caller answers 503 service_unavailable. A real rate limit
+// hit is reported as limited and keeps its 429 answer.
+func (n *Notification) rateLimit(limiter *ratelimit.RateLimiter, key string) (limited bool, remaining time.Duration, unavailable bool) {
+	if limiter == nil {
+		return false, 0, false
+	}
+	limited, remaining, err := limiter.CheckAndRecordDetailed(key)
+	if err != nil {
+		return false, 0, true
+	}
+	return limited, remaining, false
+}
+
+// writeRateLimiterUnavailable answers the stable 503 body for a limiter that
+// could not run.
+func writeRateLimiterUnavailable(w http.ResponseWriter, r *http.Request, err error) {
+	handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable,
+		"rate limiter unavailable, please try again later", err)
 }
 
 // RegisterRoutes mounts notification endpoints.
@@ -172,7 +257,12 @@ func (n *Notification) Stream(w http.ResponseWriter, r *http.Request) {
 
 	// Rate-limit new stream registrations per tenant and cap concurrent
 	// streams per tenant so one identity cannot exhaust server resources.
-	if limited, remaining := n.streamLimiter.CheckAndRecord("sse:" + tenantID); limited {
+	limited, remaining, unavailable := n.rateLimit(n.streamLimiter, "sse:"+tenantID)
+	if unavailable {
+		writeRateLimiterUnavailable(w, r, ratelimit.ErrNoRedisClient)
+		return
+	}
+	if limited {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
 		writeBytes(w, []byte(fmt.Sprintf(`{"error":"too many requests","message":"stream registration limit exceeded; retry in %.0f seconds"}`, remaining.Seconds())))
@@ -383,7 +473,12 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ip := handlerutil.GetIP(r)
-	if limited, remaining := n.limiter.CheckAndRecord(ip); limited {
+	limited, remaining, unavailable := n.rateLimit(n.limiter, ip)
+	if unavailable {
+		writeRateLimiterUnavailable(w, r, ratelimit.ErrNoRedisClient)
+		return
+	}
+	if limited {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
 			"error": fmt.Sprintf("too many requests, locked out for %.0f seconds", remaining.Seconds()),
 		})
@@ -426,29 +521,11 @@ func (n *Notification) Send(w http.ResponseWriter, r *http.Request) {
 		notif.Type = "popup"
 	}
 
-	if n.store != nil {
-		roles := make([]string, len(notif.Roles))
-		for i, r := range notif.Roles {
-			roles[i] = string(r)
-		}
-		storeDoc := &store.Notification{
-			ID:        notif.ID,
-			Type:      notif.Type,
-			TenantID:  notif.TenantID,
-			UserID:    notif.UserID,
-			UserIDs:   notif.UserIDs,
-			JobID:     notif.JobID,
-			Global:    notif.Global,
-			Title:     notif.Title,
-			Body:      notif.Body,
-			Roles:     roles,
-			Timestamp: notif.Timestamp,
-			Params:    notif.Params,
-		}
-		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
-			log.Printf("[NOTIF-STORE] Failed to persist notification %s: %v", notif.ID, err)
-		}
+	roles := make([]string, len(notif.Roles))
+	for i, r := range notif.Roles {
+		roles[i] = string(r)
 	}
+	n.persistNotification(r.Context(), &notif, roles)
 
 	n.hub.Broadcast(notif)
 
@@ -508,27 +585,23 @@ func (n *Notification) BroadcastJobAlert(w http.ResponseWriter, r *http.Request)
 		Params:    map[string]string{"service_name": req.ServiceName},
 	}
 
-	if n.store != nil {
-		roles := make([]string, len(notif.Roles))
-		for i, r := range notif.Roles {
-			roles[i] = string(r)
-		}
-		storeDoc := &store.Notification{
-			ID:        notif.ID,
-			Type:      notif.Type,
-			TenantID:  notif.TenantID,
-			UserID:    "", // Clear persisted UserID so role-broadcast alert is scoped by Roles, not an exclusive single employee
-			JobID:     notif.JobID,
-			Title:     notif.Title,
-			Body:      notif.Body,
-			Roles:     roles,
-			Timestamp: notif.Timestamp,
-			Params:    notif.Params,
-		}
-		if err := n.store.InsertNotification(r.Context(), storeDoc); err != nil {
-			log.Printf("[NOTIF-STORE] Failed to persist job alert %s: %v", notif.ID, err)
-		}
+	roles := make([]string, len(notif.Roles))
+	for i, r := range notif.Roles {
+		roles[i] = string(r)
 	}
+	storeDoc := &store.Notification{
+		ID:        notif.ID,
+		Type:      notif.Type,
+		TenantID:  notif.TenantID,
+		UserID:    "", // Clear persisted UserID so role-broadcast alert is scoped by Roles, not an exclusive single employee
+		JobID:     notif.JobID,
+		Title:     notif.Title,
+		Body:      notif.Body,
+		Roles:     roles,
+		Timestamp: notif.Timestamp,
+		Params:    notif.Params,
+	}
+	n.persistStoreDoc(r.Context(), storeDoc, notif.ID)
 
 	n.hub.Broadcast(notif)
 
@@ -576,7 +649,7 @@ func (n *Notification) History(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if n.store == nil {
+	if !storeUsable(n.store) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"notifications": []store.Notification{},
 			"has_more":      false,
@@ -672,7 +745,7 @@ func (n *Notification) MarkRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		roles := resolveUserRoles(role)
 		err := n.store.MarkRead(r.Context(), tenantID, userID, roles, id)
 		if err != nil {
@@ -706,7 +779,7 @@ func (n *Notification) ReadAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		roles := resolveUserRoles(role)
 		if err := n.store.MarkAllRead(r.Context(), tenantID, userID, roles); err != nil {
 			log.Printf("[NOTIF] Failed to mark all read: %v", err)
@@ -744,7 +817,7 @@ func (n *Notification) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		roles := resolveUserRoles(role)
 		err := n.store.Delete(r.Context(), tenantID, userID, roles, id)
 		if err != nil {
@@ -778,7 +851,7 @@ func (n *Notification) DeleteAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		roles := resolveUserRoles(role)
 		if err := n.store.DeleteAll(r.Context(), tenantID, userID, roles); err != nil {
 			log.Printf("[NOTIF] Failed to delete all: %v", err)

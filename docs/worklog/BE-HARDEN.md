@@ -34,6 +34,23 @@
 - **Item 1**: the proxy `ErrorHandler` now only sees real transport errors
   (dial, timeout, open breaker) and keeps its existing 502 answer and body.
   The `Sscanf` branch and the `/photo` special case are gone.
+- **Item 2**: the rate limiter gained `CheckAndRecordDetailed` plus the
+  sentinel `ratelimit.ErrNoRedisClient`. A limiter without a Redis client
+  fails closed (deny) instead of panicking; `CheckAndRecord` keeps its old
+  signature and its old answers for every existing caller, so only the
+  notification-service sees the new `error` and answers 503 with the stable
+  code `service_unavailable`. A plain rate-limit hit and a Redis error keep
+  their historical 429 answer. The notification-service now holds the
+  `*ratelimit.RateLimiter` directly (instead of the `handlerutil` wrapper)
+  so it can tell "rate limited" from "the limiter could not run".
+- **Item 2**: `cmd/main.go` keeps the MongoDB store in a `store.Store`
+  variable that stays nil when MongoDB is unreachable — a typed nil
+  `*store.MongoDB` would make the interface non-nil and the first
+  `InsertNotification` would panic on the nil receiver. Every store access
+  in the handlers additionally goes through `storeUsable`, which rejects a
+  typed nil, so persistence is skipped and the notification is still
+  delivered live and over push. The "persistence is unavailable" notice is
+  logged once.
 
 ## Changes per commit (message only — NO SHAs)
 1. `BE-HARDEN: item 1 - gateway passes upstream 5xx through unchanged`
