@@ -49,7 +49,7 @@ func newAdminAuditID() string {
 // is logged and shipped as ADMIN_AUDIT_WRITE_FAILED but does not undo the
 // action. ShipSecurityEvent calls stay alongside it.
 func (n *Notification) recordAdminAudit(r *http.Request, actorID, action, targetType, targetID, reason, details string) {
-	if n.store == nil {
+	if !storeUsable(n.store) {
 		return
 	}
 	rec := &store.AdminAuditRecord{

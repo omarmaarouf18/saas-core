@@ -154,7 +154,14 @@ func main() {
 
 	// ---- Register reverse proxy routes ----
 	registerServiceRoutes(mux, cfg.Routes, func(route config.ServiceRoute) (http.Handler, error) {
-		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second)
+		// The gateway is the only caller that asks for the upstream 5xx
+		// passthrough: an upstream 5xx (for example user-service's
+		// 503 photo_storage_unavailable) reaches the client with its
+		// original status, headers and body instead of a fabricated one.
+		// The circuit breaker still counts the 5xx as a failure and the
+		// retry policy is unchanged.
+		resilientTransport := resilience.NewRoundTripper(clientTransport, route.Prefix, 2, 5*time.Second,
+			resilience.WithUpstream5xxPassthrough())
 		return proxy.New(route, cfg.GatewaySecret, cfg.TrustedProxyIPs, resilientTransport)
 	})
 

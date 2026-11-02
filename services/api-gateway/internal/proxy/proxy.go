@@ -68,18 +68,11 @@ func New(route config.ServiceRoute, gatewaySecret string, trustedProxies []strin
 			log.Printf("[PROXY ERROR] %s %s → %s: %v",
 				r.Method, r.URL.Path, route.Target, err)
 
-			var statusCode int
-			if n, scanErr := fmt.Sscanf(err.Error(), "HTTP status %d", &statusCode); scanErr == nil && n == 1 && statusCode >= 500 && statusCode < 600 {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(statusCode)
-				if statusCode == http.StatusServiceUnavailable && strings.Contains(r.URL.Path, "/photo") {
-					_, _ = w.Write([]byte(`{"error":"photo storage unavailable","code":"photo_storage_unavailable"}`))
-				} else {
-					_, _ = w.Write([]byte(fmt.Sprintf(`{"error": "service unavailable", "target": %q}`, route.Prefix)))
-				}
-				return
-			}
-
+			// A real transport error only: the upstream could not be reached
+			// (dial, timeout) or the circuit breaker is open. An upstream 5xx
+			// never reaches this handler: the transport passes it through
+			// unchanged (resilience.WithUpstream5xxPassthrough), so the client
+			// sees the upstream status, headers and body.
 			http.Error(w,
 				fmt.Sprintf(`{"error": "service unavailable", "target": %q}`, route.Prefix),
 				http.StatusBadGateway,

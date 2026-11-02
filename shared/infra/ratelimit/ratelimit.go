@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 )
+
+// ErrNoRedisClient marks a rate limiter that has no Redis client at all
+// (Redis was unreachable when the service started). Such a limiter cannot
+// evaluate the request, so it fails closed: the request is denied and the
+// caller is told why, instead of the limiter panicking on the nil client.
+var ErrNoRedisClient = errors.New("ratelimit: redis client is not available")
 
 // NewRedisClient creates and pings a Redis client to ensure reachability.
 // It is Sentinel-aware: if REDIS_SENTINEL_ADDRS is set, it constructs a failover client
@@ -135,9 +142,31 @@ end
 return {0, 0}
 `
 
+// CheckAndRecord evaluates the sliding window for key and records the hit.
+// It fails closed: an unreachable Redis denies the request. A limiter without
+// a Redis client denies it too (see ErrNoRedisClient); use
+// CheckAndRecordDetailed when the caller has to tell "rate limited" apart
+// from "the limiter could not run".
 func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
+	limited, ttl, _ := rl.CheckAndRecordDetailed(key)
+	return limited, ttl
+}
+
+// CheckAndRecordDetailed is CheckAndRecord plus the reason the request was
+// denied. The error is non-nil only when the limiter could not evaluate the
+// request at all, because it has no Redis client (ErrNoRedisClient); the
+// request is denied in that case as well (fail closed). A plain rate limit
+// hit and a Redis error keep the historical (limited, ttl) answer with a nil
+// error, so existing callers see no change.
+func (rl *RateLimiter) CheckAndRecordDetailed(key string) (bool, time.Duration, error) {
 	if key == "" {
-		return false, 0
+		return false, 0, nil
+	}
+
+	if rl == nil || rl.client == nil {
+		// FAIL CLOSED: without Redis the budget cannot be evaluated.
+		log.Printf("[SECURITY CRITICAL] Redis rate limiter unavailable (FAIL CLOSED): %v", ErrNoRedisClient)
+		return true, 30 * time.Second, ErrNoRedisClient
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -150,19 +179,19 @@ func (rl *RateLimiter) CheckAndRecord(key string) (bool, time.Duration) {
 	if err != nil {
 		// FAIL CLOSED: Log critical error and block request
 		log.Printf("[SECURITY CRITICAL] Redis rate limiter error (FAIL CLOSED): %v. Restricting traffic for key: %s", err, key)
-		return true, 30 * time.Second
+		return true, 30 * time.Second, nil
 	}
 
 	results, ok := res.([]interface{})
 	if !ok || len(results) < 2 {
 		log.Printf("[SECURITY CRITICAL] Unexpected rate limiter response: %v. Fail closed for key: %s", res, key)
-		return true, 30 * time.Second
+		return true, 30 * time.Second, nil
 	}
 
 	limited := results[0].(int64) == 1
 	ttl := results[1].(int64)
 
-	return limited, time.Duration(ttl) * time.Second
+	return limited, time.Duration(ttl) * time.Second, nil
 }
 
 // AuthRateLimiter is a Redis-backed dual-key lockout tracker (IP + email).
@@ -204,6 +233,11 @@ func (rl *AuthRateLimiter) IsLocked(key string) (bool, time.Duration) {
 	if key == "" {
 		return false, 0
 	}
+	if rl == nil || rl.client == nil {
+		// FAIL CLOSED: without Redis the lockout state is unknown.
+		log.Printf("[SECURITY CRITICAL] Redis auth rate limiter unavailable (FAIL CLOSED): %v", ErrNoRedisClient)
+		return true, 5 * time.Minute
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -223,6 +257,11 @@ func (rl *AuthRateLimiter) IsLocked(key string) (bool, time.Duration) {
 func (rl *AuthRateLimiter) RecordFailure(key string) time.Duration {
 	if key == "" {
 		return 0
+	}
+	if rl == nil || rl.client == nil {
+		// FAIL CLOSED: without Redis the failure cannot be recorded.
+		log.Printf("[SECURITY CRITICAL] Redis auth rate limiter unavailable (FAIL CLOSED): %v", ErrNoRedisClient)
+		return 5 * time.Minute
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -302,8 +341,13 @@ return 0
 
 // IsLocked checks if a reviewer key (IP or token hash) is currently locked out.
 func (rl *ReviewerRateLimiter) IsLocked(key string) (bool, time.Duration) {
-	if key == "" || rl == nil || rl.client == nil {
+	if key == "" {
 		return false, 0
+	}
+	if rl == nil || rl.client == nil {
+		// FAIL CLOSED: without Redis the lockout state is unknown.
+		log.Printf("[SECURITY CRITICAL] Redis reviewer rate limiter unavailable (FAIL CLOSED): %v", ErrNoRedisClient)
+		return true, 5 * time.Minute
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -323,8 +367,13 @@ func (rl *ReviewerRateLimiter) IsLocked(key string) (bool, time.Duration) {
 
 // RecordFailure increments the failure count for a reviewer key and returns the lockout duration if locked.
 func (rl *ReviewerRateLimiter) RecordFailure(key string) time.Duration {
-	if key == "" || rl == nil || rl.client == nil {
+	if key == "" {
 		return 0
+	}
+	if rl == nil || rl.client == nil {
+		// FAIL CLOSED: without Redis the failure cannot be recorded.
+		log.Printf("[SECURITY CRITICAL] Redis reviewer rate limiter unavailable (FAIL CLOSED): %v", ErrNoRedisClient)
+		return 5 * time.Minute
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

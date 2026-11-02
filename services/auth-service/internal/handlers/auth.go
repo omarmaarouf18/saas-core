@@ -107,6 +107,11 @@ type Auth struct {
 	// auditClient fans GET /admin/audit out to the other services' admin
 	// audit endpoints; each call also gets adminAuditSourceTimeout.
 	auditClient *http.Client
+	// deviceTokenStore is the narrow store capability used by the internal
+	// device-token endpoint. It stays nil when the Mongo store is not
+	// available, so the endpoint can answer "unavailable" instead of
+	// dereferencing a nil store.
+	deviceTokenStore DeviceTokenUnregisterStore
 }
 
 // NewAuth creates a new Auth handler group.
@@ -137,6 +142,14 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 	userServiceClient := resilience.NewClient(client, "user-service", 2, 5*time.Second)
 	notificationClient := resilience.NewClient(client, "notification-service", 2, 5*time.Second)
 
+	// A typed nil (*store.MongoDB)(nil) would make the interface non-nil and
+	// the first store call would panic, so the narrow store capability is
+	// only wired when the store exists.
+	var deviceTokenStore DeviceTokenUnregisterStore
+	if s != nil {
+		deviceTokenStore = s
+	}
+
 	return &Auth{
 		store:                s,
 		dispatcher:           dispatcher,
@@ -152,6 +165,7 @@ func NewAuth(s *store.MongoDB, dispatcher otp.OTPDispatcher, cfg *config.Config,
 		chatServiceURL:       cfg.ChatServiceURL,
 		gatewayInternalURL:   cfg.GatewayInternalURL,
 		auditClient:          &http.Client{Transport: client.Transport, Timeout: adminAuditSourceTimeout},
+		deviceTokenStore:     deviceTokenStore,
 	}
 }
 
@@ -202,6 +216,7 @@ func (a *Auth) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/internal/overview-stats", a.GetInternalOverviewStats)
 	mux.HandleFunc("/auth/internal/user-by-phone", a.GetUserByPhone)
 	mux.HandleFunc("/auth/internal/audience-lookup", a.AudienceLookup)
+	mux.HandleFunc("/auth/internal/device-token/unregister", a.UnregisterStaleDeviceToken)
 	mux.HandleFunc("/auth/admin/audit", a.AdminGetAuditLogs)
 	mux.HandleFunc("/admin/audit", a.AdminGetAuditLogs)
 }

@@ -469,3 +469,119 @@ func TestResilienceRoundTripper_SwitchingProtocolsPreserved(t *testing.T) {
 		t.Errorf("expected resp.Body to implement io.ReadWriteCloser for WebSocket upgrades, got %T", resp.Body)
 	}
 }
+
+// TestResilienceClient_Upstream5xxPassthrough covers BE-HARDEN item 1: with
+// WithUpstream5xxPassthrough the upstream 5xx response reaches the caller
+// unchanged (status, headers, body) with a nil error.
+func TestResilienceClient_Upstream5xxPassthrough(t *testing.T) {
+	const upstreamBody = `{"error":"photo storage unavailable","code":"photo_storage_unavailable","request_id":"0123456789abcdef"}` + "\n"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Upstream-Marker", "user-service")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(upstreamBody))
+	}))
+	defer ts.Close()
+
+	client := NewClient(http.DefaultClient, "test-passthrough-5xx", 0, 50*time.Millisecond,
+		WithUpstream5xxPassthrough())
+
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("expected no error for an upstream 5xx with the passthrough enabled, got %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", resp.StatusCode)
+	}
+	if got := resp.Header.Get("X-Upstream-Marker"); got != "user-service" {
+		t.Errorf("expected the upstream header to survive, got %q", got)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("reading the upstream body failed: %v", err)
+	}
+	if string(body) != upstreamBody {
+		t.Errorf("expected the upstream body byte for byte, got %q", string(body))
+	}
+}
+
+// TestResilienceClient_Upstream5xxWithoutPassthroughStillErrors is the
+// regression guard for every non-gateway caller (auth, chat, notification and
+// user service clients): without the option a 5xx is still an error.
+func TestResilienceClient_Upstream5xxWithoutPassthroughStillErrors(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	client := NewClient(http.DefaultClient, "test-no-passthrough-5xx", 0, 50*time.Millisecond)
+
+	req, _ := http.NewRequest("GET", ts.URL, nil)
+	resp, err := client.Do(req)
+	if err == nil {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		t.Fatal("expected an error for an upstream 5xx without the passthrough")
+	}
+	if resp != nil {
+		resp.Body.Close()
+	}
+	// The message format is parsed by chat-service (upstreamStatusPattern).
+	if !strings.Contains(err.Error(), "HTTP status 500") {
+		t.Errorf("expected the unchanged %q error, got %q", "HTTP status 500", err.Error())
+	}
+}
+
+// TestResilienceRoundTripper_Upstream5xxPassthroughStillTripsBreaker covers
+// BE-HARDEN item 1: the passthrough must not stop the circuit breaker from
+// counting the 5xx as a failure.
+func TestResilienceRoundTripper_Upstream5xxPassthroughStillTripsBreaker(t *testing.T) {
+	var hits int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer ts.Close()
+
+	// A POST is not idempotent, so every request makes exactly one attempt
+	// and therefore counts exactly one failure.
+	rt := NewRoundTripper(http.DefaultTransport, "test-passthrough-breaker", 0, 50*time.Millisecond,
+		WithUpstream5xxPassthrough())
+
+	for i := 0; i < 5; i++ {
+		req, _ := http.NewRequest("POST", ts.URL, nil)
+		resp, err := rt.RoundTrip(req)
+		if err != nil {
+			t.Fatalf("request %d: expected no error with the passthrough enabled, got %v", i+1, err)
+		}
+		if resp.StatusCode != http.StatusServiceUnavailable {
+			t.Fatalf("request %d: expected 503, got %d", i+1, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+
+	if got := atomic.LoadInt32(&hits); got != 5 {
+		t.Fatalf("expected 5 upstream hits, got %d", got)
+	}
+	if rt.breaker.State() != gobreaker.StateOpen {
+		t.Fatalf("expected the breaker to be open after 5 upstream 5xx, got %s", rt.breaker.State())
+	}
+
+	// The breaker is open: the request never reaches the upstream any more.
+	req, _ := http.NewRequest("POST", ts.URL, nil)
+	resp, err := rt.RoundTrip(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+	if err != gobreaker.ErrOpenState {
+		t.Fatalf("expected the breaker open error, got %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 5 {
+		t.Errorf("expected the upstream not to be reached with an open breaker, got %d hits", got)
+	}
+}

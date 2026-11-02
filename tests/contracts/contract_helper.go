@@ -189,6 +189,141 @@ func InspectMapKeysInFunction(t *testing.T, rootDir, relPath, funcName string) [
 	return allMapKeys
 }
 
+// InspectRouteRegistrations parses the Go file at relPath and returns the
+// routes registered by the given function (path -> handler name). It only
+// looks at mux.HandleFunc("<path>", x.Handler) calls.
+func InspectRouteRegistrations(t *testing.T, rootDir, relPath, funcName string) map[string]string {
+	t.Helper()
+	fullPath := filepath.Join(rootDir, relPath)
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, fullPath, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("Failed to parse Go file %s: %v", fullPath, err)
+	}
+
+	routes := map[string]string{}
+	found := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != funcName {
+			return true
+		}
+		found = true
+		ast.Inspect(fn.Body, func(inner ast.Node) bool {
+			call, ok := inner.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok || sel.Sel.Name != "HandleFunc" || len(call.Args) < 2 {
+				return true
+			}
+			pathLit, ok := call.Args[0].(*ast.BasicLit)
+			if !ok || pathLit.Kind != token.STRING {
+				return true
+			}
+			path := strings.Trim(pathLit.Value, "\"")
+			switch handler := call.Args[1].(type) {
+			case *ast.SelectorExpr:
+				routes[path] = handler.Sel.Name
+			case *ast.FuncLit:
+				routes[path] = "<inline>"
+			}
+			return true
+		})
+		return false
+	})
+
+	if !found {
+		t.Fatalf("Function %q not found in %s", funcName, relPath)
+	}
+	return routes
+}
+
+// InspectFunctionStringLiterals parses the Go file at relPath and returns
+// every string literal used in the given function's body.
+func InspectFunctionStringLiterals(t *testing.T, rootDir, relPath, funcName string) []string {
+	t.Helper()
+	fullPath := filepath.Join(rootDir, relPath)
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, fullPath, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("Failed to parse Go file %s: %v", fullPath, err)
+	}
+
+	var literals []string
+	found := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != funcName {
+			return true
+		}
+		found = true
+		ast.Inspect(fn.Body, func(inner ast.Node) bool {
+			lit, ok := inner.(*ast.BasicLit)
+			if ok && lit.Kind == token.STRING {
+				literals = append(literals, strings.Trim(lit.Value, "\""))
+			}
+			return true
+		})
+		return false
+	})
+
+	if !found {
+		t.Fatalf("Function %q not found in %s", funcName, relPath)
+	}
+	return literals
+}
+
+// InspectFunctionSelectorNames parses the Go file at relPath and returns the
+// names of every selector used in the given function's body (for example
+// "MethodPost" for http.MethodPost).
+func InspectFunctionSelectorNames(t *testing.T, rootDir, relPath, funcName string) []string {
+	t.Helper()
+	fullPath := filepath.Join(rootDir, relPath)
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, fullPath, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("Failed to parse Go file %s: %v", fullPath, err)
+	}
+
+	var names []string
+	found := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != funcName {
+			return true
+		}
+		found = true
+		ast.Inspect(fn.Body, func(inner ast.Node) bool {
+			sel, ok := inner.(*ast.SelectorExpr)
+			if ok {
+				names = append(names, sel.Sel.Name)
+			}
+			return true
+		})
+		return false
+	})
+
+	if !found {
+		t.Fatalf("Function %q not found in %s", funcName, relPath)
+	}
+	return names
+}
+
+// ContainsString reports whether values contains want.
+func ContainsString(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
+
 func extractFieldsFromStruct(st *ast.StructType, fields map[string]StructFieldInfo) {
 	for _, field := range st.Fields.List {
 		jsonTag := ""

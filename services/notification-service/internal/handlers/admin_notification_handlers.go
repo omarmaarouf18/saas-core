@@ -18,6 +18,7 @@ import (
 	"github.com/project/notification-service/internal/hub"
 	"github.com/project/notification-service/internal/store"
 	"github.com/project/shared/infra/handlerutil"
+	"github.com/project/shared/infra/ratelimit"
 )
 
 // Allowed in-app deep link patterns (orders, plans, verification, tickets)
@@ -254,7 +255,7 @@ func (n *Notification) AdminSendNotification(w http.ResponseWriter, r *http.Requ
 	req.Audience.Kind = kind
 
 	// 5. Idempotency key check
-	if req.IdempotencyKey != "" && n.store != nil {
+	if req.IdempotencyKey != "" && storeUsable(n.store) {
 		existing, err := n.store.GetAdminNotificationSendByIdempotencyKey(r.Context(), req.IdempotencyKey)
 		if err == nil && existing != nil {
 			writeJSON(w, http.StatusOK, map[string]any{
@@ -310,7 +311,12 @@ func (n *Notification) AdminSendNotification(w http.ResponseWriter, r *http.Requ
 	// 9. Rate limit per reviewer (5 sends / hour)
 	if n.adminSendLimiter != nil {
 		rateKey := "admin_notif_send:" + reviewer.ID
-		if limited, remaining := n.adminSendLimiter.CheckAndRecord(rateKey); limited {
+		limited, remaining, unavailable := n.rateLimit(n.adminSendLimiter, rateKey)
+		if unavailable {
+			writeRateLimiterUnavailable(w, r, ratelimit.ErrNoRedisClient)
+			return
+		}
+		if limited {
 			writeJSON(w, http.StatusTooManyRequests, map[string]string{
 				"error":   "rate_limit_exceeded",
 				"code":    "rate_limit_exceeded",
@@ -346,7 +352,7 @@ func (n *Notification) AdminSendNotification(w http.ResponseWriter, r *http.Requ
 		UpdatedAt:      time.Now().UTC(),
 	}
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		if err := n.store.CreateAdminNotificationSend(ctx, sendJob); err != nil {
 			handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to record send job", err)
 			return
@@ -371,7 +377,7 @@ func (n *Notification) fanOutAdminNotification(job *store.AdminNotificationSend,
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	if n.store != nil {
+	if storeUsable(n.store) {
 		_ = n.store.UpdateAdminNotificationSendProgress(ctx, job.ID, store.SendStatusSending, 0, 0, "")
 	}
 
@@ -398,7 +404,7 @@ func (n *Notification) fanOutAdminNotification(job *store.AdminNotificationSend,
 			},
 		}
 
-		if n.store != nil {
+		if storeUsable(n.store) {
 			storeDoc := &store.Notification{
 				ID:        notif.ID,
 				Type:      notif.Type,
@@ -449,7 +455,7 @@ func (n *Notification) fanOutAdminNotification(job *store.AdminNotificationSend,
 	if sentCount == 0 && failedCount > 0 {
 		status = store.SendStatusFailed
 	}
-	if n.store != nil {
+	if storeUsable(n.store) {
 		_ = n.store.UpdateAdminNotificationSendProgress(ctx, job.ID, status, sentCount, failedCount, "")
 	}
 }
@@ -483,7 +489,7 @@ func (n *Notification) AdminListNotificationSends(w http.ResponseWriter, r *http
 		}
 	}
 
-	if n.store == nil {
+	if !storeUsable(n.store) {
 		writeJSON(w, http.StatusOK, map[string]any{"sends": []any{}, "total": 0, "page": page, "limit": limit})
 		return
 	}
@@ -530,7 +536,7 @@ func (n *Notification) AdminGetNotificationSend(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if n.store == nil {
+	if !storeUsable(n.store) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "send job not found"})
 		return
 	}
