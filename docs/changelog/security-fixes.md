@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Go Dependency Vulnerability Triage & Module Upgrades (DEPS-VULN)
+
+- **Implementation Detail**: Triaged and upgraded Go module dependencies across all 5 microservices to remediate vulnerabilities reported by `govulncheck`. Updated `golang.org/x/net`, `golang.org/x/crypto`, and Mongo Go driver dependencies while maintaining contract stability.
+- **Commit SHA**: ``409655540ede37c622674148bc2cec3f4fef1b0d``
+- **Verification**: per worklog (`govulncheck ./...` 0 vulnerabilities, full test suite passes across all Go modules).
+- **Worklog**: [docs/worklog/DEPS-VULN.md](../worklog/DEPS-VULN.md)
+
 ## Email-Change Revocation, Store Error Visibility & COD-Only Guard (SEC-PAY)
 
 - **Implementation Detail**: Enhanced `POST /auth/change-email` to immediately revoke all existing user sessions upon email change. Surfaced underlying MongoDB errors cleanly in `user-service` store operations rather than swallowing failures. Added fail-closed runtime checks enforcing COD-only payment processing unless `ALLOW_TEST_PAYMENT_BYPASS=true` in non-production environments.
