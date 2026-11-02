@@ -239,10 +239,83 @@ String? ticketIdFromBody(String body) {
   return id == null || id.isEmpty ? null : id;
 }
 
-/// Title and body shown for [n]: localized copy for the types the
-/// services send (their own text is English and, for an accepted order,
-/// quotes the fare in dollars), the server text otherwise.
+/// Title and body shown for [n]:
+/// 1. texts[<app language>] when present and non-empty
+/// 2. the existing local l10n copy per type
+/// 3. the server title/body
+/// For admin_announcement: params.title_ar/body_ar or title_en/body_en by
+/// app language (the other language as fallback).
 (String, String) notificationCopy(AppLocalizations l10n, NotificationModel n) {
+  final isAr = l10n.localeName.startsWith('ar');
+  final lang = isAr ? 'ar' : 'en';
+
+  if (n.type == 'admin_announcement') {
+    final titleAr = (n.params['title_ar']?.trim().isNotEmpty ?? false)
+        ? n.params['title_ar']!.trim()
+        : (n.texts['ar']?.title.trim().isNotEmpty ?? false)
+            ? n.texts['ar']!.title.trim()
+            : '';
+    final bodyAr = (n.params['body_ar']?.trim().isNotEmpty ?? false)
+        ? n.params['body_ar']!.trim()
+        : (n.texts['ar']?.body.trim().isNotEmpty ?? false)
+            ? n.texts['ar']!.body.trim()
+            : '';
+    final titleEn = (n.params['title_en']?.trim().isNotEmpty ?? false)
+        ? n.params['title_en']!.trim()
+        : (n.texts['en']?.title.trim().isNotEmpty ?? false)
+            ? n.texts['en']!.title.trim()
+            : '';
+    final bodyEn = (n.params['body_en']?.trim().isNotEmpty ?? false)
+        ? n.params['body_en']!.trim()
+        : (n.texts['en']?.body.trim().isNotEmpty ?? false)
+            ? n.texts['en']!.body.trim()
+            : '';
+
+    final hasAr = titleAr.isNotEmpty || bodyAr.isNotEmpty;
+    final hasEn = titleEn.isNotEmpty || bodyEn.isNotEmpty;
+
+    if (isAr) {
+      if (hasAr) {
+        return (
+          titleAr.isNotEmpty ? titleAr : n.title,
+          bodyAr.isNotEmpty ? bodyAr : n.body,
+        );
+      }
+      if (hasEn) {
+        return (
+          titleEn.isNotEmpty ? titleEn : n.title,
+          bodyEn.isNotEmpty ? bodyEn : n.body,
+        );
+      }
+    } else {
+      if (hasEn) {
+        return (
+          titleEn.isNotEmpty ? titleEn : n.title,
+          bodyEn.isNotEmpty ? bodyEn : n.body,
+        );
+      }
+      if (hasAr) {
+        return (
+          titleAr.isNotEmpty ? titleAr : n.title,
+          bodyAr.isNotEmpty ? bodyAr : n.body,
+        );
+      }
+    }
+    return (n.title, n.body);
+  }
+
+  // 1. texts[<app language>] when present and non-empty
+  final serverText = n.texts[lang];
+  if (serverText != null &&
+      (serverText.title.trim().isNotEmpty ||
+          serverText.body.trim().isNotEmpty)) {
+    return (
+      serverText.title.trim().isNotEmpty ? serverText.title : n.title,
+      serverText.body.trim().isNotEmpty ? serverText.body : n.body,
+    );
+  }
+
+  // 2. existing local l10n copy per type
   switch (n.type) {
     case 'job_accepted':
       return (l10n.ntfAcceptedTitle, l10n.ntfAcceptedBody);
@@ -286,6 +359,8 @@ String? ticketIdFromBody(String body) {
     case 'kyc_rejected':
       return (l10n.ntfKycRejectedTitle, n.body);
   }
+
+  // 3. server title/body
   return (n.title, n.body);
 }
 
