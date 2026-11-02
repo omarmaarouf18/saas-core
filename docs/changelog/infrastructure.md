@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Real-Redis Integration Test Isolation & Seed Context Hardening (TST-01, TST-02)
+
+- **Implementation Detail**: Isolated real-Redis integration tests using per-run unique keys and channels (`shared/infra/testutil`) to prevent data contamination during concurrent test execution. Hardened handler tests in `services/auth-service` and `services/user-service` to execute test seed writes with their own distinct context and fail loudly on setup errors instead of masking failure modes.
+- **Commit SHA**: ``11d863e6694b24a8d68c244cbc3625dcce5f800a``
+- **Verification**: per worklog (`make check` PASS, concurrent integration test suites green).
+- **Worklog**: [docs/worklog/TST-01.md](../worklog/TST-01.md), [docs/worklog/TST-02.md](../worklog/TST-02.md)
+
 ## Push Gate Hardening & Commit/Worktree Helper Fixes (WF-02)
 
 - **Implementation Detail**: hardened the pre-push gate and the local workflow helpers (WF-01 findings F1–F4 plus the follow-up owner request). All mechanics are documented in `docs/WORKFLOW.md` and `docs/CI_CD_AND_HOOKS.md`.
