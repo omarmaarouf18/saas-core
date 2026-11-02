@@ -151,6 +151,9 @@ const Set<String> kCourierTaskNotificationTypes = {'job_offer', 'job_alert'};
 /// a courier page, and a role the app does not know gets none (the old
 /// screen linked whatever the role).
 NotificationTarget notificationTarget(NotificationModel n, String? role) {
+  if (n.type == 'admin_announcement') {
+    return parseAnnouncementDeepLink(n.params['deep_link'], role);
+  }
   final byType = _targetByType(n, role);
   final jobId = n.jobId;
   if (byType == NotificationTarget.none &&
@@ -161,6 +164,73 @@ NotificationTarget notificationTarget(NotificationModel n, String? role) {
     return NotificationTarget(NotificationTargetKind.job, jobId, byType);
   }
   return byType;
+}
+
+/// Parses an admin announcement's deep link for [role].
+///
+/// Supported forms (validated by the server):
+/// - `/orders/{id}` and `/jobs/{id}`:
+///     customer (`user`) -> that order (`job`);
+///     owner (`owner`) -> that order (`order`);
+///     courier (`employee`) -> My jobs (`jobs`).
+/// - `/tickets` -> `tickets`; `/tickets/{id}` -> `ticket(id)` (user, owner, employee).
+/// - `/plan`, `/plans`, `/subscription`, `/subscriptions` -> `plan` (owner only).
+/// - `/verification`, `/kyc`, `/kyb`, `/kye` -> `verification` (owner/employee only).
+/// Any invalid form, whitespace, protocol injection, or target not permitted for [role]
+/// yields [NotificationTarget.none].
+NotificationTarget parseAnnouncementDeepLink(String? rawLink, String? role) {
+  if (rawLink == null || rawLink.isEmpty) {
+    return NotificationTarget.none;
+  }
+  if (role != 'user' && role != 'owner' && role != 'employee') {
+    return NotificationTarget.none;
+  }
+  if (rawLink.contains(RegExp(r'\s')) ||
+      rawLink.startsWith('//') ||
+      rawLink.contains('://')) {
+    return NotificationTarget.none;
+  }
+
+  final orderJobMatch = RegExp(r'^/(?:orders|jobs)/([A-Za-z0-9_\-.:]{1,64})$')
+      .firstMatch(rawLink);
+  if (orderJobMatch != null) {
+    final id = orderJobMatch.group(1)!;
+    switch (role) {
+      case 'user':
+        return NotificationTarget(NotificationTargetKind.job, id);
+      case 'owner':
+        return NotificationTarget(NotificationTargetKind.order, id);
+      case 'employee':
+        return const NotificationTarget(NotificationTargetKind.jobs);
+    }
+  }
+
+  final ticketMatch =
+      RegExp(r'^/tickets(?:/([A-Za-z0-9_\-.:]{1,64}))?$').firstMatch(rawLink);
+  if (ticketMatch != null) {
+    final id = ticketMatch.group(1);
+    if (id != null && id.isNotEmpty) {
+      return NotificationTarget(NotificationTargetKind.ticket, id);
+    }
+    return const NotificationTarget(NotificationTargetKind.tickets);
+  }
+
+  if (RegExp(r'^/(?:plan|plans|subscription|subscriptions)$')
+      .hasMatch(rawLink)) {
+    if (role == 'owner') {
+      return const NotificationTarget(NotificationTargetKind.plan);
+    }
+    return NotificationTarget.none;
+  }
+
+  if (RegExp(r'^/(?:verification|kyc|kyb|kye)$').hasMatch(rawLink)) {
+    if (role == 'owner' || role == 'employee') {
+      return const NotificationTarget(NotificationTargetKind.verification);
+    }
+    return NotificationTarget.none;
+  }
+
+  return NotificationTarget.none;
 }
 
 /// The link by type alone (no job id, or a type that is not about a job).

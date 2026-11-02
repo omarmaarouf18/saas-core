@@ -5,6 +5,7 @@ import '../../../l10n/l10n.dart';
 import '../../../models/notification_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/notification_tap_router.dart';
+import 'announcement_detail_sheet.dart';
 import 'notification_rules.dart';
 
 /// Placed inside each role shell, below its [NotificationShellScope]:
@@ -62,7 +63,15 @@ class _PushTapHandlerState extends State<PushTapHandler> {
     final role = context.read<AuthProvider>().user?.role;
     if (role == null) return; // followed once the profile is known
     final tap = router.takeTap();
-    if (tap != null) _links.follow(context, notificationTarget(tap, role));
+    if (tap != null) {
+      final target = notificationTarget(tap, role);
+      if (tap.type == 'admin_announcement' &&
+          target == NotificationTarget.none) {
+        showAnnouncementDetail(context, tap);
+      } else {
+        _links.follow(context, target);
+      }
+    }
     final shown = router.takeForeground();
     if (shown != null) _showForeground(shown, role);
   }
@@ -96,17 +105,26 @@ class _PushTapHandlerState extends State<PushTapHandler> {
     final (title, _) = notificationCopy(l10n, n);
     final links = _links;
     final ctx = context;
+    final isAnnouncementWithoutTarget =
+        n.type == 'admin_announcement' && target == NotificationTarget.none;
+    final hasAction =
+        target != NotificationTarget.none || isAnnouncementWithoutTarget;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         key: const Key('ntf_push_foreground'),
         content: Text(title.isEmpty ? n.body : title),
-        action: target == NotificationTarget.none
+        action: !hasAction
             ? null
             : SnackBarAction(
                 label: l10n.ntfPushView,
                 onPressed: () {
-                  if (ctx.mounted) links.follow(ctx, target);
+                  if (!ctx.mounted) return;
+                  if (isAnnouncementWithoutTarget) {
+                    showAnnouncementDetail(ctx, n);
+                  } else {
+                    links.follow(ctx, target);
+                  }
                 },
               ),
       ));
