@@ -465,7 +465,11 @@ func (h *SSEHub) dispatchPush(n Notification) {
 			isStale, err := fcmDisp.SendPush(ctx, target.Token, title, body, dataMap)
 			if isStale {
 				log.Printf("[FCM-PUSH] Cleaning up stale token for user %s", userID)
-				_ = fetcher.UnregisterStaleToken(ctx, userID, target.Token)
+				if err := fetcher.UnregisterStaleToken(ctx, userID, target.Token); err != nil {
+					// The cleanup failed: the stale token stays registered and
+					// every following notification retries the same push.
+					log.Printf("[FCM-PUSH] Failed to unregister stale token for user %s: %v", userID, err)
+				}
 			} else if err != nil {
 				log.Printf("[FCM-PUSH] Push to user %s failed: %v", userID, err)
 			}

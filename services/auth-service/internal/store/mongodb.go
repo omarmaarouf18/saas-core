@@ -1086,6 +1086,28 @@ func (s *MongoDB) RemoveDeviceToken(ctx context.Context, userID, tokenStr string
 	return nil
 }
 
+// RemoveDeviceTokenFromAnyUser removes a device token from every user record
+// that holds it and returns how many user records were changed.
+//
+// The push cleanup runs in the notification-service, which knows the token but
+// not necessarily the account that still owns it (a stale token may have been
+// re-registered by another account in the meantime), so the removal must not
+// be scoped to one user ID.
+func (s *MongoDB) RemoveDeviceTokenFromAnyUser(ctx context.Context, tokenStr string) (int64, error) {
+	if strings.TrimSpace(tokenStr) == "" {
+		return 0, fmt.Errorf("device token cannot be empty")
+	}
+
+	res, err := s.users.UpdateMany(ctx,
+		bson.M{"device_tokens.token": tokenStr},
+		bson.M{"$pull": bson.M{"device_tokens": bson.M{"token": tokenStr}}},
+	)
+	if err != nil {
+		return 0, fmt.Errorf("store: remove device token from all users: %w", err)
+	}
+	return res.ModifiedCount, nil
+}
+
 // GetOverviewStats returns counts for pending KYB/KYE, accounts created today, accounts created in the last 7 days, and suspended accounts.
 func (s *MongoDB) GetOverviewStats(ctx context.Context) (pendingKYC int64, newToday int64, new7d int64, suspended int64, err error) {
 	now := time.Now().UTC()

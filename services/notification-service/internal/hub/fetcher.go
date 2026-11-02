@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -82,10 +83,23 @@ func (f *HTTPDeviceTokenFetcher) GetUserPushTargets(ctx context.Context, userID 
 	return targets, nil
 }
 
+// UnregisterStaleToken asks auth-service to drop a stale push device token.
+//
+// The internal endpoint removes the token from every user that still holds
+// it, so the notification-service does not need to know the owning account
+// (the userID is kept for the interface and for logging only). A non-2xx
+// answer is an error: the old code ignored the status code, so a rejected
+// cleanup looked like a successful one and the stale token was pushed to
+// again on every following notification.
+//
+// POST /auth/internal/device-token/unregister
 func (f *HTTPDeviceTokenFetcher) UnregisterStaleToken(ctx context.Context, userID, token string) error {
-	url := fmt.Sprintf("%s/auth/device-token", f.authServiceURL)
-	body := strings.NewReader(fmt.Sprintf(`{"token":%q,"action":"unregister"}`, token))
-	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+	url := fmt.Sprintf("%s/auth/internal/device-token/unregister", f.authServiceURL)
+	body, err := json.Marshal(map[string]string{"token": token})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -97,5 +111,9 @@ func (f *HTTPDeviceTokenFetcher) UnregisterStaleToken(ctx context.Context, userI
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("auth-service device-token unregister returned status %d", resp.StatusCode)
+	}
 	return nil
 }
