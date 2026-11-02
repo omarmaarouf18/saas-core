@@ -14,6 +14,13 @@ This file tracks historical entries for the primary category: **Infrastructure &
 - **Commit SHA**: ``57e9c403898549498c67fc3d879a3f8db1639f65``
 - **Verification**: `make ci` green before each of the item commits (each log ends `== pre-push gate: all checks passed ==`); literal acceptance runs: a real push from a scratch clone waited on the shared lock held by another gate, delete-only push skipped (`delete-only push: gate skipped`, rc=0), the `make commit` cases (mv/rm/typo/extra-staged/MSG_FILE/file-mode), `worktree-new` with and without flutter on PATH, and govulncheck blocking (`GOVULNCHECK_BIN=/bin/false` rc=2; deliberate syntax error and a third-party finding both rc=1). Unverified: the CI workflow changes have not run on GitHub; the main-worktree push path was not exercised (main runs the old hook until merge — the lock path was shown from a scratch clone); mixed delete+update pushes were checked only with the extracted stdin snippet. ✅
 
+## Parallel Agent Worktree Workflow & Verification (WF-01)
+
+- **Implementation Detail**: Implemented the multi-agent parallel git worktree workflow (`scripts/agent-worktree.sh`, `Makefile`), enforcing isolated sibling worktrees (`../saas-core-wt/<TASK-ID>`), two-layer push prevention (Layer A per-worktree push URL override, Layer B `.githooks/pre-push` guard), and scoped check gates. Documented the complete lifecycle in `docs/WORKFLOW.md` and the worklog template in `docs/worklog/README.md`.
+- **Commit SHA**: ``6d062a51dc1fc17389c94da3f93d0db58ad5edde``
+- **Verification**: per worklog (`make check` PASS, worktree creation/removal tested with and without Flutter).
+- **Worklog**: [docs/worklog/WF-01.md](../worklog/WF-01.md)
+
 ## Redis Sentinel High Availability Support & JWT Validation Graceful Degradation
 
 - **Implementation Detail**:
