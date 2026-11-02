@@ -243,8 +243,8 @@
  * **Services**:
    * `push_notification_service.dart`
    * `notification_tap_router.dart` (FE-BE-GAPS: push taps from Firebase Messaging — cold start, background, foreground — held for the role shells)
-   * `push_setup.dart` (PUSH-FCM: Firebase messaging initialization, FCM token generation, foreground message handling, token refresh handler)
-   * `local_notifications.dart` (PUSH-FCM: FlutterLocalNotificationsPlugin wrapper, `qd_default` high-importance notification channel configuration)
+   * `frontend/lib/services/push_setup.dart` (PUSH-FCM: Firebase messaging initialization, FCM token generation, foreground message handling, token refresh handler)
+   * `frontend/lib/services/local_notifications.dart` (PUSH-FCM: FlutterLocalNotificationsPlugin wrapper, `qd_default` high-importance notification channel configuration)
  * **Providers**:
    * `theme_provider.dart`
    * `locale_provider.dart`
