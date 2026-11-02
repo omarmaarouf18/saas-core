@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Auth Gate Launch Splash Scoped to Session Restore Only (HOTFIX-LOGIN)
+
+- **Implementation Detail**: Fixed an issue where `LaunchSplash` was erroneously displayed during routine credential sign-in and registration attempts. Scoped splash display exclusively to initial application boot session restoration in `features/auth/auth_gate.dart`.
+- **Commit SHA**: ``60748cf2221aa202764d47ac12567dee2c25fe98``
+- **Verification**: per worklog (widget tests verify splash displays on app boot and does not intercept login/signup).
+- **Worklog**: [docs/worklog/HOTFIX-LOGIN.md](../worklog/HOTFIX-LOGIN.md)
+
 ## COD Delivery Completion Before Distance Reconciliation (FIX-COD-RECON)
 
 - **Implementation Detail**: Fixed a state machine deadlock in `services/user-service/internal/handlers/jobs_handlers.go`: when a COD delivery completed with actual travel distance under 70% of booked distance, `CompleteJob` previously failed with 409 requiring escrow reconciliation. Since COD requires no escrow fund movement, COD jobs now transition directly to `completed` and record distance mismatch audit notes without blocking completion.
