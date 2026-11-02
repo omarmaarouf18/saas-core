@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Frontend Integration of Service Photos, Saved Addresses & Error Code Handling (FE-BE-GAPS)
+
+- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`api_error_codes.dart`), and push notification tap routing (`notification_tap_router.dart`).
+- **Commit SHA**: ``a5b3667066e96ef4f0437a1cf3cce3c2863d2248``
+- **Verification**: per worklog (`flutter test` PASS across 1,287 tests, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-BE-GAPS.md](../worklog/FE-BE-GAPS.md)
+
 ## Backend Endpoints for Redesign A: Saved Addresses, Service Photos & KYE (USER-AUTH-BE)
 
 - **Implementation Detail**: Built supporting backend endpoints required by the mobile redesign: customer saved addresses CRUD (`/users/addresses`), service photo upload and retrieval (`/users/services/{id}/photo`), employee KYE verification document upload handlers in `auth-service`, and reviewer endpoints for KYE inspection.
