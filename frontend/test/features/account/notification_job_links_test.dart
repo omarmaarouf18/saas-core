@@ -55,7 +55,7 @@ void main() {
       expect(
           notificationTarget(n('cancellation_requested', jobId: 'j2'), 'owner'),
           const NotificationTarget(
-              job, 'j2', NotificationTarget(NotificationTargetKind.orders)));
+              job, 'j2', NotificationTarget(NotificationTargetKind.order, 'j2')));
       expect(
           notificationTarget(n('job_offer', jobId: 'j3'), 'employee'),
           const NotificationTarget(

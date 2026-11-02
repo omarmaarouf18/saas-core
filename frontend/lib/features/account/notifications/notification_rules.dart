@@ -151,6 +151,9 @@ const Set<String> kCourierTaskNotificationTypes = {'job_offer', 'job_alert'};
 /// a courier page, and a role the app does not know gets none (the old
 /// screen linked whatever the role).
 NotificationTarget notificationTarget(NotificationModel n, String? role) {
+  if (n.type == 'admin_announcement') {
+    return parseAnnouncementDeepLink(n.params['deep_link'], role);
+  }
   final byType = _targetByType(n, role);
   final jobId = n.jobId;
   if (byType == NotificationTarget.none &&
@@ -163,14 +166,81 @@ NotificationTarget notificationTarget(NotificationModel n, String? role) {
   return byType;
 }
 
+/// Parses an admin announcement's deep link for [role].
+///
+/// Supported forms (validated by the server):
+/// - `/orders/{id}` and `/jobs/{id}`:
+///     customer (`user`) -> that order (`job`);
+///     owner (`owner`) -> that order (`order`);
+///     courier (`employee`) -> My jobs (`jobs`).
+/// - `/tickets` -> `tickets`; `/tickets/{id}` -> `ticket(id)` (user, owner, employee).
+/// - `/plan`, `/plans`, `/subscription`, `/subscriptions` -> `plan` (owner only).
+/// - `/verification`, `/kyc`, `/kyb`, `/kye` -> `verification` (owner/employee only).
+/// Any invalid form, whitespace, protocol injection, or target not permitted for [role]
+/// yields [NotificationTarget.none].
+NotificationTarget parseAnnouncementDeepLink(String? rawLink, String? role) {
+  if (rawLink == null || rawLink.isEmpty) {
+    return NotificationTarget.none;
+  }
+  if (role != 'user' && role != 'owner' && role != 'employee') {
+    return NotificationTarget.none;
+  }
+  if (rawLink.contains(RegExp(r'\s')) ||
+      rawLink.startsWith('//') ||
+      rawLink.contains('://')) {
+    return NotificationTarget.none;
+  }
+
+  final orderJobMatch = RegExp(r'^/(?:orders|jobs)/([A-Za-z0-9_\-.:]{1,64})$')
+      .firstMatch(rawLink);
+  if (orderJobMatch != null) {
+    final id = orderJobMatch.group(1)!;
+    switch (role) {
+      case 'user':
+        return NotificationTarget(NotificationTargetKind.job, id);
+      case 'owner':
+        return NotificationTarget(NotificationTargetKind.order, id);
+      case 'employee':
+        return const NotificationTarget(NotificationTargetKind.jobs);
+    }
+  }
+
+  final ticketMatch =
+      RegExp(r'^/tickets(?:/([A-Za-z0-9_\-.:]{1,64}))?$').firstMatch(rawLink);
+  if (ticketMatch != null) {
+    final id = ticketMatch.group(1);
+    if (id != null && id.isNotEmpty) {
+      return NotificationTarget(NotificationTargetKind.ticket, id);
+    }
+    return const NotificationTarget(NotificationTargetKind.tickets);
+  }
+
+  if (RegExp(r'^/(?:plan|plans|subscription|subscriptions)$')
+      .hasMatch(rawLink)) {
+    if (role == 'owner') {
+      return const NotificationTarget(NotificationTargetKind.plan);
+    }
+    return NotificationTarget.none;
+  }
+
+  if (RegExp(r'^/(?:verification|kyc|kyb|kye)$').hasMatch(rawLink)) {
+    if (role == 'owner' || role == 'employee') {
+      return const NotificationTarget(NotificationTargetKind.verification);
+    }
+    return NotificationTarget.none;
+  }
+
+  return NotificationTarget.none;
+}
+
 /// The link by type alone (no job id, or a type that is not about a job).
 NotificationTarget _targetByType(NotificationModel n, String? role) {
   if (role != 'user' && role != 'owner' && role != 'employee') {
     return NotificationTarget.none;
   }
   if (kTicketNotificationTypes.contains(n.type)) {
-    final id = ticketIdFromBody(n.body);
-    return id == null
+    final id = n.params['ticket_id']?.trim();
+    return (id == null || id.isEmpty)
         ? const NotificationTarget(NotificationTargetKind.tickets)
         : NotificationTarget(NotificationTargetKind.ticket, id);
   }
@@ -190,8 +260,8 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
         return const NotificationTarget(NotificationTargetKind.team);
       }
       if (kOwnerOrderNotificationTypes.contains(n.type)) {
-        final id = jobIdFromBody(n.body);
-        return id == null
+        final id = n.jobId;
+        return (id == null || id.isEmpty)
             ? const NotificationTarget(NotificationTargetKind.orders)
             : NotificationTarget(NotificationTargetKind.order, id);
       }
@@ -203,11 +273,13 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
         return const NotificationTarget(NotificationTargetKind.task);
       }
       if (n.type == 'cancellation_resolved') {
-        // Approved: the job is cancelled, so it is in My jobs. Declined:
-        // the courier keeps it, so it is the current job.
-        return n.body.toLowerCase().contains('approved')
-            ? const NotificationTarget(NotificationTargetKind.jobs)
-            : const NotificationTarget(NotificationTargetKind.task);
+        // params.variant: 'accept' -> My jobs, 'decline' -> current task.
+        // When variant is unknown (push tap), open My jobs (it lists both outcomes), not the task page.
+        final variant = n.params['variant']?.trim().toLowerCase();
+        if (variant == 'decline') {
+          return const NotificationTarget(NotificationTargetKind.task);
+        }
+        return const NotificationTarget(NotificationTargetKind.jobs);
       }
       if (n.type == 'dispute_resolved' || n.type.startsWith('job_')) {
         return const NotificationTarget(NotificationTargetKind.jobs);
@@ -216,33 +288,83 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
   return NotificationTarget.none;
 }
 
-/// The job id user-service puts in owner and courier notification bodies:
-/// "... cancellation of job <id>: ...", "... and job <id> returned to
-/// dispatch." Ids carry a digit, so words after "job" ("job offer for
-/// job <id>") are skipped. Null when the body names no job.
-String? jobIdFromBody(String body) =>
-    RegExp(r'\bjob ([A-Za-z_-]*[0-9][A-Za-z0-9_-]*)')
-        .firstMatch(body)
-        ?.group(1);
-
-/// The ticket id chat-service puts in ticket notification bodies:
-/// "Your ticket (<id>) has been resolved: …", "… joined your ticket (<id>)".
-/// Same parsing as the old screen: the first parenthesised token, else a
-/// raw `tkt-…` / `ticket-…` token.
-String? ticketIdFromBody(String body) {
-  final paren = RegExp(r'\(([^)\s]+)\)').firstMatch(body)?.group(1);
-  final raw = RegExp(r'\b(tkt-[a-zA-Z0-9_-]+|ticket-[a-zA-Z0-9_-]+)\b',
-          caseSensitive: false)
-      .firstMatch(body)
-      ?.group(1);
-  final id = paren ?? raw;
-  return id == null || id.isEmpty ? null : id;
-}
-
-/// Title and body shown for [n]: localized copy for the types the
-/// services send (their own text is English and, for an accepted order,
-/// quotes the fare in dollars), the server text otherwise.
+/// Title and body shown for [n]:
+/// 1. texts[<app language>] when present and non-empty
+/// 2. the existing local l10n copy per type
+/// 3. the server title/body
+/// For admin_announcement: params.title_ar/body_ar or title_en/body_en by
+/// app language (the other language as fallback).
 (String, String) notificationCopy(AppLocalizations l10n, NotificationModel n) {
+  final isAr = l10n.localeName.startsWith('ar');
+  final lang = isAr ? 'ar' : 'en';
+
+  if (n.type == 'admin_announcement') {
+    final titleAr = (n.params['title_ar']?.trim().isNotEmpty ?? false)
+        ? n.params['title_ar']!.trim()
+        : (n.texts['ar']?.title.trim().isNotEmpty ?? false)
+            ? n.texts['ar']!.title.trim()
+            : '';
+    final bodyAr = (n.params['body_ar']?.trim().isNotEmpty ?? false)
+        ? n.params['body_ar']!.trim()
+        : (n.texts['ar']?.body.trim().isNotEmpty ?? false)
+            ? n.texts['ar']!.body.trim()
+            : '';
+    final titleEn = (n.params['title_en']?.trim().isNotEmpty ?? false)
+        ? n.params['title_en']!.trim()
+        : (n.texts['en']?.title.trim().isNotEmpty ?? false)
+            ? n.texts['en']!.title.trim()
+            : '';
+    final bodyEn = (n.params['body_en']?.trim().isNotEmpty ?? false)
+        ? n.params['body_en']!.trim()
+        : (n.texts['en']?.body.trim().isNotEmpty ?? false)
+            ? n.texts['en']!.body.trim()
+            : '';
+
+    final hasAr = titleAr.isNotEmpty || bodyAr.isNotEmpty;
+    final hasEn = titleEn.isNotEmpty || bodyEn.isNotEmpty;
+
+    if (isAr) {
+      if (hasAr) {
+        return (
+          titleAr.isNotEmpty ? titleAr : n.title,
+          bodyAr.isNotEmpty ? bodyAr : n.body,
+        );
+      }
+      if (hasEn) {
+        return (
+          titleEn.isNotEmpty ? titleEn : n.title,
+          bodyEn.isNotEmpty ? bodyEn : n.body,
+        );
+      }
+    } else {
+      if (hasEn) {
+        return (
+          titleEn.isNotEmpty ? titleEn : n.title,
+          bodyEn.isNotEmpty ? bodyEn : n.body,
+        );
+      }
+      if (hasAr) {
+        return (
+          titleAr.isNotEmpty ? titleAr : n.title,
+          bodyAr.isNotEmpty ? bodyAr : n.body,
+        );
+      }
+    }
+    return (n.title, n.body);
+  }
+
+  // 1. texts[<app language>] when present and non-empty
+  final serverText = n.texts[lang];
+  if (serverText != null &&
+      (serverText.title.trim().isNotEmpty ||
+          serverText.body.trim().isNotEmpty)) {
+    return (
+      serverText.title.trim().isNotEmpty ? serverText.title : n.title,
+      serverText.body.trim().isNotEmpty ? serverText.body : n.body,
+    );
+  }
+
+  // 2. existing local l10n copy per type
   switch (n.type) {
     case 'job_accepted':
       return (l10n.ntfAcceptedTitle, l10n.ntfAcceptedBody);
@@ -286,6 +408,8 @@ String? ticketIdFromBody(String body) {
     case 'kyc_rejected':
       return (l10n.ntfKycRejectedTitle, n.body);
   }
+
+  // 3. server title/body
   return (n.title, n.body);
 }
 

@@ -17,6 +17,10 @@ String encodePushPayload(NotificationModel n) => jsonEncode({
       if (n.jobId != null) 'job_id': n.jobId,
       'title': n.title,
       'body': n.body,
+      if (n.params.isNotEmpty) 'params': n.params,
+      if (n.texts.isNotEmpty)
+        'texts': n.texts.map((k, v) => MapEntry(k, v.toJson())),
+      if (n.params.containsKey('deep_link')) 'deep_link': n.params['deep_link'],
     });
 
 /// The notification in a local notification's payload; null when it is

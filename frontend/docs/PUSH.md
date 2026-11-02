@@ -29,7 +29,7 @@ One FCM message per registered device token of the notification's user
 | Part | Value |
 |---|---|
 | `notification.title` / `.body` | The text in the language the token registered with (PUSH-L10N, §1.1), e.g. "طلبك اتستلم" / "Your order was picked up". Tokens from apps that send no language get the server's English text (e.g. "Courier Picked Up"). |
-| `data` | `id`, `type`, `tenant_id` always; `job_id` and `event_type` (= `type`) for job notifications. All strings. |
+| `data` | `id`, `type`, `tenant_id` always; `job_id` and `event_type` (= `type`) for job notifications; `event_type=admin_announcement` and `deep_link` (when set) for admin announcements. All strings. |
 | `android.priority` | `HIGH` |
 | `android.notification.channel_id` | `qd_default` |
 
@@ -44,10 +44,11 @@ Job events and who gets them:
 | `job_delivered` | customer | job completed (COD and escrow) |
 | `job_cancelled` | customer | cancelled by someone else (owner, approved courier request, system) |
 | `cancellation_requested`, `cancellation_request_expired`, `cancellation_resolved`, `dispute_resolved` | owner / courier | cancellation flow |
+| `admin_announcement` | broadcast / user | admin console (with optional `deep_link`) |
 
 There is no `job_in_transit`: "picked up" is the in-transit event.
 
-### 1.1 Language of the push text (PUSH-L10N)
+### 1.1 Language of the push text (PUSH-L10N, FE-NOTIF-RENDER)
 
 When the app is in the background or closed, Android shows the push as the
 server wrote it, so the server needs each phone's language:
@@ -65,9 +66,38 @@ server wrote it, so the server needs each phone's language:
   "1,250.50 ج.م", never `$`.
 - Tokens without a language (1.x / 2.0.0 builds without PUSH-L10N) and types without a template
   get the server's English text, as before.
-- The list (history / SSE) also carries `params` and `texts.ar` / `texts.en`
-  per item (see docs/APPLICATION_MAP.md, "Push language"). The app does not
-  use them yet: it keeps localizing titles by type.
+- In-app text resolution (history / SSE / push payload) follows this order:
+  1. `texts[<app language>]` when present and non-empty (server-rendered translation)
+  2. The local l10n copy per type
+  3. The server `title`/`body`
+- For `admin_announcement`: resolved from `params.title_ar`/`body_ar` vs `title_en`/`body_en`
+  by active app language, with cross-language fallback to the other language, never showing raw
+  English sender text when localized text exists.
+
+### 1.2 Routing table and structured data rule (FE-NOTIF-RENDER)
+
+#### The "Structured data, not body text" rule
+Links are resolved strictly from structured fields (`job_id`, `params.ticket_id`, `params.variant`, `params.deep_link`), never by parsing IDs or English keywords from localized title/body text.
+All regex body parsing (`jobIdFromBody`, `ticketIdFromBody`) and English keyword checks (`body.contains('approved')`) have been removed: push bodies are translated to Egyptian Arabic on Arabic devices, which previously caused English substring checks to fail.
+
+#### Routing Table
+
+| Notification Type / Event | Available Data | Role | Target | Destination |
+|---|---|---|---|---|
+| `job_*`, `cancellation_*`, `dispute_resolved` | `job_id` | `user` (Customer) | `job(id)` | Order tracking / detail page |
+| `job_*`, `cancellation_*`, `dispute_resolved` | `job_id` | `owner` (Owner) | `job(id)` (fallback `order`) | Order detail |
+| `job_*`, `cancellation_*`, `dispute_resolved` | `job_id` | `employee` (Courier) | `job(id)` (fallback `task`/`jobs`) | Task (offer/current job) or My jobs |
+| `ticket_resolved`, `ticket_assigned` | `params.ticket_id` | `user`, `owner`, `employee` | `ticket(id)` | Support ticket chat (read-only if resolved) |
+| `ticket_resolved`, `ticket_assigned` | (no ticket ID) | `user`, `owner`, `employee` | `tickets` | Support tickets list |
+| `cancellation_resolved` | `params.variant == 'decline'` | `employee` (Courier) | `task` | Current Task page |
+| `cancellation_resolved` | `params.variant == 'accept'` or missing (push tap) | `employee` (Courier) | `jobs` | My jobs tab (lists both outcomes) |
+| `admin_announcement` | `deep_link: /orders/{id}` or `/jobs/{id}` | Customer → `job(id)`<br>Owner → `order(id)`<br>Courier → `jobs` | That order / My jobs | Strict ID regex: `[A-Za-z0-9_\-.:]{1,64}` |
+| `admin_announcement` | `deep_link: /tickets[/{id}]` | `user`, `owner`, `employee` | `ticket(id)` / `tickets` | Ticket chat or tickets list |
+| `admin_announcement` | `deep_link: /plan`, `/plans`, `/subscription`, `/subscriptions` | `owner` | `plan` | Plan & subscription page (no-op for other roles) |
+| `admin_announcement` | `deep_link: /verification`, `/kyc`, `/kyb`, `/kye` | `owner`, `employee` | `verification` | Verification page (no-op for customer) |
+| `admin_announcement` | No deep link, invalid link, or target role mismatch | Any role | None (detail sheet) | Opens `AnnouncementDetailSheet` bottom sheet with full title & body |
+
+Push taps follow the exact same routing table (`PushTapHandler` via `NotificationTapRouter`). Foreground push notices with announcements without links provide a "View" button that opens `AnnouncementDetailSheet`.
 
 ### What the app does
 
@@ -81,7 +111,7 @@ server wrote it, so the server needs each phone's language:
 | Account page → App | "Phone notifications: On / Off" row (asks again while Android still allows it, else opens the app's notification settings) and, when refused, a hint with "Open settings". Re-read when the app resumes. Hidden when push is off in the build. | `pushSettingsTile`, `PushOffHint` |
 | Push, app open | Added to the notifications list and badge at once (deduped with the live stream by id), and shown as a system notification on `qd_default` with the app's own localized title/body for the type. | `PushTapHandler`, `NotificationsProvider.addFromPush` |
 | Push, app in background or killed | Android shows the server's title/body on `qd_default` with the small icon `ic_stat_notification`. The background handler does nothing (every push has a `notification` part). | Firebase Messaging |
-| Tap (any state) | The FE-BE-GAPS links: `event_type` (else `type`) + `job_id`, role-checked. A job that is gone or not the user's → "We couldn't open that order…" and the role's order list. A cold-start tap waits until the session is restored. | `NotificationTapRouter`, `notification_rules.dart` |
+| Tap (any state) | Role-checked deep links from structured data (§1.2). Announcements without a link open the announcement detail sheet. A job that is gone or not the user's → "We couldn't open that order…" and the role's order list. A cold-start tap waits until the session is restored. | `NotificationTapRouter`, `push_tap_handler.dart`, `notification_rules.dart` |
 | Sign-out | `POST /auth/device-token {action: "unregister"}` and the token is deleted on the phone. | `unregisterDeviceToken` |
 | Session expired | No API call possible: the token is deleted on the phone; FCM answers the next send with `UNREGISTERED` and the server drops it. | `forgetLocalToken` |
 
@@ -183,12 +213,19 @@ repeat a step: no push arrives.
 
 ## 5. Known server-side limits
 
-From the contract check (PUSH-FCM item 5, read-only):
+From the contract check (PUSH-FCM item 5, read-only) and FE-NOTIF-RENDER findings:
 
 - ~~`notification.title` / `body` are English strings; the `job_accepted`
   body names a fare with a `$` sign~~: fixed by PUSH-L10N (§1.1).
 - Notifications without a `user_id` (role / tenant broadcasts) are never
   pushed, only streamed to open apps.
+- **Tenant filtering in history & SSE (NOTIF-CUSTOMER):** Notification history and SSE filter by
+  `tenant_id`, so customers (empty tenant) may not see job notifications in the in-app list, and
+  announcements may be missing from some users' lists. Push is not affected. (Scheduled for a backend task).
+- **Push data lacks `params`:** FCM push data does not include template parameters (e.g. `variant`
+  or `ticket_id`). As a result, push taps on `cancellation_resolved` fall back to opening My jobs
+  (which displays both outcomes) rather than directly opening the task. Adding `params` (or `variant`
+  and `ticket_id`) to FCM push data will allow exact routing.
 
 ---
 

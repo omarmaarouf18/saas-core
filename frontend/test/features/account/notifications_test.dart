@@ -47,8 +47,13 @@ Future<(FakeFeed, RecordedLinks, AccountTestDeps)> _pump(
 
 void main() {
   group('rules', () {
-    NotificationTargetKind kind(String type, String? role, {String? body}) =>
-        notificationTarget(notif('1', type, body: body ?? ''), role).kind;
+    NotificationTargetKind kind(String type, String? role,
+            {String? body, String? jobId, Map<String, String>? params}) =>
+        notificationTarget(
+                notif('1', type,
+                    body: body ?? '', jobId: jobId, params: params),
+                role)
+            .kind;
 
     test('customers: order types open My orders, nothing else links', () {
       for (final type in kOrderNotificationTypes) {
@@ -70,20 +75,22 @@ void main() {
         () {
       expect(
           notificationTarget(
-              notif('1', 'cancellation_requested',
-                  body: 'Courier e1 requested cancellation of job j-42: '
-                      'flat tyre. Respond within 15 minutes.'),
+              notif('1', 'cancellation_requested', jobId: 'j-42'),
               'owner'),
-          const NotificationTarget(NotificationTargetKind.order, 'j-42'));
+          const NotificationTarget(NotificationTargetKind.job, 'j-42',
+              NotificationTarget(NotificationTargetKind.order, 'j-42')));
       expect(
           notificationTarget(
-              notif('1', 'cancellation_request_expired',
-                  body: 'The cancellation request window lapsed with no '
-                      'response; courier e1 was unassigned and job abc_9 '
-                      'returned to dispatch.'),
+              notif('1', 'cancellation_request_expired', jobId: 'abc_9'),
               'owner'),
-          const NotificationTarget(NotificationTargetKind.order, 'abc_9'));
-      expect(kind('dispute_resolved', 'owner', body: 'Refunded.'),
+          const NotificationTarget(NotificationTargetKind.job, 'abc_9',
+              NotificationTarget(NotificationTargetKind.order, 'abc_9')));
+      expect(
+          notificationTarget(
+              notif('1', 'cancellation_requested'),
+              'owner'),
+          const NotificationTarget(NotificationTargetKind.orders));
+      expect(kind('dispute_resolved', 'owner'),
           NotificationTargetKind.orders);
       expect(
           kind('kyc_rejected', 'owner'), NotificationTargetKind.verification);
@@ -107,13 +114,14 @@ void main() {
       expect(kind('job_alert', 'employee'), NotificationTargetKind.task);
       expect(
           kind('cancellation_resolved', 'employee',
-              body: 'Your cancellation request for job j1 was declined by the '
-                  'business owner. You remain assigned.'),
+              params: {'variant': 'decline'}),
           NotificationTargetKind.task);
       expect(
           kind('cancellation_resolved', 'employee',
-              body: 'Your cancellation request for job j1 was approved by the '
-                  'business owner. The job has been cancelled.'),
+              params: {'variant': 'accept'}),
+          NotificationTargetKind.jobs);
+      expect(
+          kind('cancellation_resolved', 'employee'),
           NotificationTargetKind.jobs);
       expect(kind('dispute_resolved', 'employee'), NotificationTargetKind.jobs);
       expect(kind('kyc_rejected', 'employee'),
@@ -145,30 +153,21 @@ void main() {
       }
     });
 
-    test('job id from the body', () {
-      expect(jobIdFromBody('You have an incoming job offer for job 65f1a. '),
-          '65f1a');
-      expect(jobIdFromBody('No job here'), isNull);
-    });
-
-    test('ticket links carry the ticket id from the body', () {
+    test('ticket links carry the ticket id from params', () {
       expect(
           notificationTarget(
-              notif('1', 'ticket_resolved',
-                  body: 'Your ticket (tkt-42) has been resolved: refunded'),
+              notif('1', 'ticket_resolved', params: {'ticket_id': 'tkt-42'}),
               'user'),
           const NotificationTarget(NotificationTargetKind.ticket, 'tkt-42'));
       expect(
           notificationTarget(
-              notif('1', 'ticket_assigned',
-                  body: 'Sara has joined your ticket (abc-123)'),
+              notif('1', 'ticket_assigned', params: {'ticket_id': 'abc-123'}),
               'user'),
           const NotificationTarget(NotificationTargetKind.ticket, 'abc-123'));
       expect(
           notificationTarget(
-              notif('1', 'ticket_resolved', body: 'Done'), 'user'),
+              notif('1', 'ticket_resolved'), 'user'),
           const NotificationTarget(NotificationTargetKind.tickets));
-      expect(ticketIdFromBody('see ticket-77 now'), 'ticket-77');
     });
 
     test('copy: localized for known types, server text otherwise', () {
@@ -206,6 +205,7 @@ void main() {
           notif('n2', 'ticket_resolved',
               read: true,
               at: now.subtract(const Duration(hours: 3)),
+              params: {'ticket_id': 'tkt-9'},
               body: 'Your ticket (tkt-9) has been resolved: Refund sent'),
           notif('n3', 'job_cancelled', at: DateTime(2026, 10, 18, 20)),
           notif('n4', 'job_offer', at: DateTime(2026, 10, 10, 9), read: true),
@@ -275,6 +275,7 @@ void main() {
           tester,
           [
             notif('o1', 'cancellation_requested',
+                jobId: 'j-7',
                 body: 'Courier e1 requested cancellation of job j-7: late.'),
             notif('o2', 'kyc_rejected',
                 body: 'Your KYB verification was rejected. Reason: blurry'),
@@ -285,7 +286,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       await tester.tap(find.text("Your verification wasn't accepted"));
       await tester.pump(const Duration(milliseconds: 600));
-      expect(links.opened, ['order:j-7', 'verification']);
+      expect(links.opened, ['job:j-7', 'verification']);
     });
 
     testWidgets('courier: an offer opens the Task tab', (tester) async {
@@ -414,6 +415,7 @@ void main() {
                             ctx,
                             notificationTarget(
                                 notif('x', 'cancellation_requested',
+                                    jobId: 'j-3',
                                     body: 'cancellation of job j-3: x'),
                                 'owner')),
                         child: const Text('owner link'))))),

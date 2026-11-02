@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/notifications_provider.dart';
 import '../../../ui/qd_ui.dart';
 import '../account_nav.dart';
+import 'announcement_detail_sheet.dart';
 import 'notification_rules.dart';
 
 /// Notifications (A-Notifs): grouped by day, newest first.
@@ -79,8 +80,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final provider = context.read<NotificationsProvider>();
     if (!n.isRead) provider.markAsRead(n.id);
     final role = context.read<AuthProvider>().user?.role;
-    _links.follow(context, notificationTarget(n, role),
-        resolved: n.type == 'ticket_resolved');
+    final target = notificationTarget(n, role);
+    if (n.type == 'admin_announcement' && target == NotificationTarget.none) {
+      showAnnouncementDetail(context, n);
+      return;
+    }
+    _links.follow(context, target, resolved: n.type == 'ticket_resolved');
   }
 
   Future<void> _clearAll() async {
@@ -325,6 +330,11 @@ class _NotificationTile extends StatelessWidget {
   /// cancelled or rejected, amber for cancellation requests, muted
   /// otherwise).
   (IconData, Color, Color) _icon(QdColors c, String type) => switch (type) {
+        'admin_announcement' => (
+            Icons.campaign,
+            c.gold,
+            c.onGold,
+          ),
         'job_accepted' || 'job_offer' || 'job_alert' => (
             Icons.inventory_2_outlined,
             c.gold,
@@ -401,9 +411,13 @@ class _NotificationTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: QdText.rowTitleSm
-                                .copyWith(color: c.textPrimary)),
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              QdText.rowTitleSm.copyWith(color: c.textPrimary),
+                        ),
                         if (body.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(body,

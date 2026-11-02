@@ -72,16 +72,22 @@ final DateTime now = DateTime(2026, 10, 19, 15, 30);
 NotificationModel notif(String id, String type,
         {DateTime? at,
         bool read = false,
+        String? jobId,
+        Map<String, String>? params,
+        Map<String, NotificationLocalizedText>? texts,
         String title = 'Server title',
         String body = 'Server body'}) =>
     NotificationModel(
       id: id,
       type: type,
       tenantId: 't',
+      jobId: jobId,
       title: title,
       body: body,
       timestamp: at ?? now.subtract(const Duration(minutes: 5)),
       isRead: read,
+      params: params,
+      texts: texts,
     );
 
 class FakeFeed extends ChangeNotifier implements NotificationsProvider {
