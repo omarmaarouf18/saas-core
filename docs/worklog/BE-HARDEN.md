@@ -108,6 +108,28 @@
   `masked_phone_jobs=...` instead of `unmasked_phone_jobs=...`. The
   `docs/api/ADMIN_API.md` PII section, the list example and the audit table
   were updated accordingly.
+- **Item 5**: the six user-service admin handlers that answered a store
+  failure with `"failed to ...: " + err.Error()` now use
+  `handlerutil.WriteSafeError`: the store error is logged server-side
+  (together with a request id) and the client gets the stable sanitized body
+  `{"error": "<stable message>", "code": "internal_error", "request_id": "…"}`.
+  The affected endpoints are `GET /admin/services`,
+  `POST /admin/services/{id}/hide`, `POST /admin/services/{id}/unhide`,
+  `POST /admin/services/{id}/photo/remove`,
+  `POST /admin/jobs/{id}/cancel` and
+  `POST /admin/jobs/{id}/complete-stuck-cod`.
+- **Item 5**: the curated client answers were left alone: the `404`
+  ("job not found", "service not found") and `409` (state conflict) bodies
+  are intentional business messages, not store internals. The customer and
+  owner job-cancellation path was already sanitized by
+  `writeCancellationError` (A3) and needed no change.
+- **Item 5**: the regression guard is twofold: a behavioural test that closes
+  the Mongo client and checks that the four admin service endpoints answer
+  with the sanitized body (no "mongo", "store: ", "client is disconnected",
+  … in the response), and an AST guard over the `admin_*.go` files of the
+  package that fails when a `500` body is built from `err.Error()` — the
+  guard covers the two job endpoints whose store failure cannot be forced
+  in a test (their first store call is the job lookup).
 
 ## Changes per commit (message only — NO SHAs)
 1. `BE-HARDEN: item 1 - gateway passes upstream 5xx through unchanged`
@@ -237,6 +259,54 @@ ok  	github.com/project/user-service/internal/handlers	0.006s
 
 $ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count=1 -run 'TestAdminJobs|TestAdminAudit|TestMask')
 ok  	github.com/project/user-service/internal/handlers	2.506s
+```
+
+### Item 5 — admin 500s no longer leak store errors
+
+**Fails before the change** (the two admin handler files were temporarily
+reverted to `logic-exploitation` while the new test stayed in place):
+
+```
+$ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count=1 -run 'TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError' -v)
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/list_services
+    admin_error_leak_test.go:88: expected the code "internal_error", got body {"error":"failed to list services: store: count services: client is disconnected"}
+    admin_error_leak_test.go:88: request_id missing/malformed in {"error":"failed to list services: store: count services: client is disconnected"}
+    admin_error_leak_test.go:88: internal detail "client is disconnected" leaked in body {"error":"failed to list services: store: count services: client is disconnected"}
+    admin_error_leak_test.go:88: internal detail "store: " leaked in body {"error":"failed to list services: store: count services: client is disconnected"}
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/hide_service
+    admin_error_leak_test.go:88: expected the code "internal_error", got body {"error":"failed to hide service: store: update service visibility: client is disconnected"}
+...
+--- FAIL: TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError (0.62s)
+FAIL
+FAIL	github.com/project/user-service/internal/handlers	0.621s
+
+$ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count=1 -run 'TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError' -v)
+=== RUN   TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError
+    admin_error_leak_test.go:163: admin_jobs_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+    admin_error_leak_test.go:163: admin_jobs_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+    admin_error_leak_test.go:163: admin_services_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+    admin_error_leak_test.go:163: admin_services_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+    admin_error_leak_test.go:163: admin_services_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+    admin_error_leak_test.go:163: admin_services_handlers.go: a 500 response body is built from err.Error() — use handlerutil.WriteSafeError instead
+--- FAIL: TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError (0.00s)
+FAIL
+FAIL	github.com/project/user-service/internal/handlers	0.005s
+```
+
+**Passes after the change:**
+
+```
+$ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count=1 -run 'TestAdminHandlers_' -v)
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/list_services
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/hide_service
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/unhide_service
+=== RUN   TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError/remove_service_photo
+--- PASS: TestAdminHandlers_StoreFailureDoesNotLeakTheStoreError (0.62s)
+=== RUN   TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError
+--- PASS: TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError (0.00s)
+PASS
+ok  	github.com/project/user-service/internal/handlers	0.623s
 ```
 
 - (filled in as the task progresses)

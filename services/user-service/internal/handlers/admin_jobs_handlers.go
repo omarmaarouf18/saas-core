@@ -537,7 +537,9 @@ func (u *UserService) AdminCancelJob(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to cancel job: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to cancel job", err)
 		return
 	}
 
@@ -619,7 +621,9 @@ func (u *UserService) AdminCompleteStuckCODJob(w http.ResponseWriter, r *http.Re
 			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to complete stuck COD job: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to complete stuck COD job", err)
 		return
 	}
 

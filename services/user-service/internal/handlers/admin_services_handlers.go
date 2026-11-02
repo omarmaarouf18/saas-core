@@ -131,7 +131,9 @@ func (u *UserService) AdminListServices(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	svcs, total, err := u.store.AdminListServices(ctx, tenantID, name, hasPhoto, hidden, page, limit)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list services: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to list services", err)
 		return
 	}
 
@@ -193,7 +195,9 @@ func (u *UserService) AdminHideService(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to hide service: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to hide service", err)
 		return
 	}
 
@@ -263,7 +267,9 @@ func (u *UserService) AdminUnhideService(w http.ResponseWriter, r *http.Request)
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "service not found"})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to unhide service: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to unhide service", err)
 		return
 	}
 
@@ -335,7 +341,9 @@ func (u *UserService) AdminRemoveServicePhoto(w http.ResponseWriter, r *http.Req
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service has no photo to remove"})
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to remove service photo: " + err.Error()})
+		// The store error is logged server-side (with a request id); the
+		// client only gets a stable message.
+		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "failed to remove service photo", err)
 		return
 	}
 
