@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Backend Parity Fix: Event Name Normalization, Error Codes & Service Photo Delete (BE-GAPS-FIX)
+
+- **Implementation Detail**: Resolved contract mismatches identified during frontend integration: normalized notification event types across SSE, history, and FCM to stable `type` field; mapped server validation error codes consistently; implemented service photo deletion endpoint `DELETE /users/services/{id}/photo` removing stored files from disk.
+- **Commit SHA**: ``144d945d699b420a03abe90a5647f59f8ca6f7b9``
+- **Verification**: per worklog (`TestE2E_BEGapsFix` PASS, unit tests green in auth and user services).
+- **Worklog**: [docs/worklog/BE-GAPS-FIX.md](../worklog/BE-GAPS-FIX.md)
+
 ## Linux Desktop Build Clang Compilation Fix (FE-LINUX-BUILD)
 
 - **Implementation Detail**: Fixed Linux desktop compilation failure under newer clang toolchains in `frontend/linux/my_application.cc` by adding explicit cast for `G_APPLICATION` flags. Restored clean local Linux desktop build execution for developer testing.
