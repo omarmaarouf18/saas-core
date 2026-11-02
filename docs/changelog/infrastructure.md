@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Universal APK Distribution Channel & Version Code Alignment (FE-APK-CHANNEL)
+
+- **Implementation Detail**: Updated `build-apk.yml` to build a universal release APK (`app-release.apk`) in addition to per-ABI splits (arm64-v8a, armeabi-v7a, x86_64). Aligned version code assignment so in-app version update prompts and website downloads deliver consistent universal binaries. Added `scripts/test_apk_channel.sh` regression guard.
+- **Commit SHA**: ``c3fe2c5d2795635a2a31c90c2e29c739277f742b``
+- **Verification**: per worklog (`scripts/test_apk_channel.sh` PASS, workflow dry-run verified).
+- **Worklog**: [docs/worklog/FE-APK-CHANNEL.md](../worklog/FE-APK-CHANNEL.md)
+
 ## Mobile Website Repository Rename in APK Publish Workflow (FIX-APK-SITE)
 
 - **Implementation Detail**: Updated `frontend/.github/workflows/build-apk.yml` to reflect the rename of the mobile distribution website repository from `quickdelivery-website` to `logiclink`. Fixed automated publishing of `app-release.json` and direct APK download links.
