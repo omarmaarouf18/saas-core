@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Android FCM Push Notification Client Integration & Local Channel Sync (PUSH-FCM)
+
+- **Implementation Detail**: Integrated Firebase Cloud Messaging (`firebase_core 4.15.0`, `firebase_messaging 16.7.0`) and `flutter_local_notifications 22.3.1` in the Flutter app. Created notification channel `qd_default` with localized names ("Order updates" / "تحديثات الطلبات"). Added in-app permission prompt sheet, account settings notification toggle, and foreground push presentation. Documented architecture in `frontend/docs/PUSH.md`.
+- **Commit SHA**: ``b40726f59f53ab60962bc0d4a39370681c7da4bb``
+- **Verification**: per worklog (widget and unit tests pass with mocked method channels, clean analyze).
+- **Worklog**: [docs/worklog/PUSH-FCM.md](../worklog/PUSH-FCM.md)
+
 ## FCM HTTP v1 OAuth2 Push Delivery in Notification Service (PUSH-BE)
 
 - **Implementation Detail**: Upgraded FCM delivery in `services/notification-service` from legacy API keys to modern FCM HTTP v1 REST API with Google Cloud service account OAuth2 token authentication (`internal/fcm/oauth.go`). Added automatic token refresh, non-blocking fan-out via `PushDispatcher`, and stale device token cleanup upon receiving 404/Unregistered responses.
