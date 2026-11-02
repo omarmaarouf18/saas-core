@@ -20,7 +20,7 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ## Re-baseline of 109 Remediation Findings (RB-01)
 
-- **Implementation Detail**: Re-baselined all 109 historical remediation findings from the security audit against the active codebase. Verified that fixes remained in place across microservice authentication, authorization boundaries, rate limiters, error sanitization, and database isolation. Documented the audit state in `docs/remediation/REMEDIATION_109_REBASELINE.md`.
+- **Implementation Detail**: Re-baselined all 109 historical remediation findings from the security audit against the active codebase. Verified that fixes remained in place across microservice authentication, authorization boundaries, rate limiters, error sanitization, and database isolation. Documented the audit state in `docs/audit/REBASELINE-2026-10.md`.
 - **Commit SHA**: ``540fc5748445aeece361bcc60345535e28200250``
 - **Verification**: per worklog (`make check` PASS, all unit and contract tests green).
 - **Worklog**: [docs/worklog/RB-01.md](../worklog/RB-01.md)

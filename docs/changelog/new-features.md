@@ -25,35 +25,35 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## FCM HTTP v1 OAuth2 Push Delivery in Notification Service (PUSH-BE)
 
-- **Implementation Detail**: Upgraded FCM delivery in `services/notification-service` from legacy API keys to modern FCM HTTP v1 REST API with Google Cloud service account OAuth2 token authentication (`internal/fcm/oauth.go`). Added automatic token refresh, non-blocking fan-out via `PushDispatcher`, and stale device token cleanup upon receiving 404/Unregistered responses.
+- **Implementation Detail**: Implemented FCM HTTP v1 REST delivery in `services/notification-service` using standard library RFC 7523 JWT-bearer token minting (`services/notification-service/internal/fcm/token.go`, `services/notification-service/internal/fcm/fcm.go`) without external dependencies. Added in-memory OAuth2 token caching with refresh, retry with backoff on 429/5xx, safe stale token detection, and high-priority Android notifications (`channel_id: "qd_default"`).
 - **Commit SHA**: ``ccdee0ab3364121fd2b93ba35fe6398af07dcb53``
 - **Verification**: per worklog (`TestPushBE_NotificationServiceDeliversViaFCMOAuth` PASS, unit tests green).
 - **Worklog**: [docs/worklog/PUSH-BE.md](../worklog/PUSH-BE.md)
 
 ## Frontend Integration of Service Photos, Saved Addresses & Error Code Handling (FE-BE-GAPS)
 
-- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`api_error_codes.dart`), and push notification tap routing (`notification_tap_router.dart`).
+- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`booking_rules.dart`, `courier_rules.dart`), and push notification tap routing (`frontend/lib/features/account/notifications/push_tap_handler.dart`).
 - **Commit SHA**: ``a5b3667066e96ef4f0437a1cf3cce3c2863d2248``
 - **Verification**: per worklog (`flutter test` PASS across 1,287 tests, `flutter analyze` clean).
 - **Worklog**: [docs/worklog/FE-BE-GAPS.md](../worklog/FE-BE-GAPS.md)
 
 ## Backend Endpoints for Redesign A: Saved Addresses, Service Photos & KYE (USER-AUTH-BE)
 
-- **Implementation Detail**: Built supporting backend endpoints required by the mobile redesign: customer saved addresses CRUD (`/users/addresses`), service photo upload and retrieval (`/users/services/{id}/photo`), employee KYE verification document upload handlers in `auth-service`, and reviewer endpoints for KYE inspection.
+- **Implementation Detail**: Built supporting backend endpoints required by the mobile redesign: customer saved addresses profile management in `services/auth-service/internal/handlers/auth.go` (`GET /auth/user`, `PUT /auth/user`, `PATCH /auth/user` with `saved_addresses`), service photo upload and retrieval in `services/user-service/internal/handlers/handlers.go` (`GET /users/services/photo`, `POST /users/services/photo`, `POST /users/services/photo/upload`), and employee KYE verification document upload handlers in `auth-service`.
 - **Commit SHA**: ``fd40b1112b482a34912ebf99f31e6ac9740ad50a``
 - **Verification**: per worklog (`TestE2E_UserAuthBEGaps` PASS, unit tests green across auth and user services).
 - **Worklog**: [docs/worklog/USER-AUTH-BE.md](../worklog/USER-AUTH-BE.md)
 
 ## Consume Job Model V2 in Flutter Frontend: Recipient, Package & Address (FE-V2-CONSUME)
 
-- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`text_limits.dart`), and direct call/map actions via `url_launcher 6.3.2`.
+- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`saved_address_rules.dart`), and direct call/map actions via `url_launcher 6.3.2`.
 - **Commit SHA**: ``758f01b4143e02ba6172409559dfa70449c64495``
 - **Verification**: per worklog (widget tests verify client field validation and server 400 error mapping).
 - **Worklog**: [docs/worklog/FE-V2-CONSUME.md](../worklog/FE-V2-CONSUME.md)
 
 ## Courier Application Shell: Offers, Active Job & My Jobs on Redesign A (FE-COURIER)
 
-- **Implementation Detail**: Built the complete courier mobile experience on Redesign A (`features/courier/`). Implemented `CourierShell`, incoming dispatch offer sheet with countdown ticker, active job progress view (pickup verification, cash-on-delivery collection), price negotiation responses, job history list (`MyJobsPage`), and suspended/paused account gate.
+- **Implementation Detail**: Built the complete courier mobile experience on Redesign A (`frontend/lib/features/courier/`). Implemented `CourierShell`, incoming dispatch offer sheet with countdown ticker, active job progress view (pickup verification, cash-on-delivery collection), price negotiation responses, job history list (`frontend/lib/features/courier/jobs_page.dart`), and suspended/paused account gate.
 - **Commit SHA**: ``8cdabeb693d55662bd5646009b4cc89f2c5ec98f``
 - **Verification**: per worklog (all courier widget and golden tests pass, state transitions verified).
 - **Worklog**: [docs/worklog/FE-COURIER.md](../worklog/FE-COURIER.md)
@@ -74,35 +74,35 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## Owner Daily Workflow Shell: Today, Orders & Team on Redesign A (FE-OWNER-1)
 
-- **Implementation Detail**: Implemented tenant owner core operations on Redesign A (`features/owner/`). Built `OwnerShell`, `TodayPage` (active orders, revenue summary, quick stats), `OrdersPage` with status filters, order detail inspector, and `TeamPage` for courier roster management, active status toggling, and courier onboarding.
+- **Implementation Detail**: Implemented tenant owner core operations on Redesign A (`frontend/lib/features/owner/`). Built `OwnerShell`, `TodayPage` (active orders, revenue summary, quick stats), `OrdersPage` with status filters, order detail inspector, and `TeamPage` for courier roster management, active status toggling, and courier onboarding.
 - **Commit SHA**: ``706d8f05ef1b8fd9a61872b8a813a8244f7d5979``
 - **Verification**: per worklog (widget and golden test suites pass for Today, Orders, and Team tabs).
 - **Worklog**: [docs/worklog/FE-OWNER-1.md](../worklog/FE-OWNER-1.md)
 
 ## Auth Gate, Launch Splash, Account & Support on Redesign A (FE-AUTH-ACCOUNT)
 
-- **Implementation Detail**: Migrated authentication, account settings, support tickets, and notifications to Redesign A (`features/auth/`, `features/account/`). Implemented `AuthGate` with session restore splash, 2FA toggle, password reset with verification codes, support ticket creation with context IDs, and universal notification inbox with role-based routing.
+- **Implementation Detail**: Migrated authentication, account settings, support tickets, and notifications to Redesign A (`frontend/lib/features/auth/`, `frontend/lib/features/account/`). Implemented `AuthGate` with session restore splash, 2FA toggle, password reset with verification codes, support ticket creation with context IDs, and universal notification inbox with role-based routing.
 - **Commit SHA**: ``11475037d9b2196e9ceafa5d703e5bc22a36e293``
 - **Verification**: per worklog (`flutter test` PASS across auth, account, and support suites, 24 goldens verified).
 - **Worklog**: [docs/worklog/FE-AUTH-ACCOUNT.md](../worklog/FE-AUTH-ACCOUNT.md)
 
 ## Customer Order Detail, Timeline & Post-Booking Actions on Redesign A (FE-CUST-2)
 
-- **Implementation Detail**: Implemented customer order tracking on Redesign A (`features/customer/order_detail_page.dart`). Added visual phase timeline (searching, proposed, active, completed, closed), courier call actions, live chat navigation, counter-offer response cards, and post-delivery blind rating submission.
+- **Implementation Detail**: Implemented customer order tracking on Redesign A (`frontend/lib/features/customer/order/order_detail_page.dart`). Added visual phase timeline (searching, proposed, active, completed, closed), courier call actions, live chat navigation, counter-offer response cards, and post-delivery blind rating submission.
 - **Commit SHA**: ``125c8e5421d81675d0884c34e83f4f107def404d``
 - **Verification**: per worklog (widget tests for all 5 order lifecycle phases pass, golden tests pass).
 - **Worklog**: [docs/worklog/FE-CUST-2.md](../worklog/FE-CUST-2.md)
 
 ## Customer Booking Flow & Marketplace Shell on Redesign A (FE-CUST-1)
 
-- **Implementation Detail**: Built the redesigned customer shell (`features/customer/customer_shell.dart`), marketplace directory (`market_page.dart`), and booking dialog on top of Design System A. Added location picker with interactive pin placement and landmark notes, category filtering (Delivery, Ride, Shipping), and price calculation before booking confirmation.
+- **Implementation Detail**: Built the redesigned customer shell (`frontend/lib/features/customer/customer_shell.dart`), marketplace directory (`frontend/lib/features/customer/market_page.dart`), and booking dialog on top of Design System A. Added location picker with interactive pin placement and landmark notes, category filtering (Delivery, Ride, Shipping), and price calculation before booking confirmation.
 - **Commit SHA**: ``9778326e4747b2b741f124a7358bc619cfdb2cf0``
 - **Verification**: per worklog (customer booking widget and golden tests pass, `flutter analyze` clean).
 - **Worklog**: [docs/worklog/FE-CUST-1.md](../worklog/FE-CUST-1.md)
 
 ## Redesign A Design System: Tokens, Components & UI Kit (FE-DS)
 
-- **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`tokens.dart`), light/dark themes (`qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at `/qd-gallery` (`gallery/qd_gallery_screen.dart`) for visual verification of components across states.
+- **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`tokens.dart`), light/dark themes (`qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at route `/qd-gallery` (`frontend/lib/ui/gallery/qd_gallery_screen.dart`) for visual verification of components across states.
 - **Commit SHA**: ``20bc2532731cede9cbb3605f9a621b898c2f0149``
 - **Verification**: per worklog (`flutter test` PASS across design system component tests, `flutter analyze` 0 issues).
 - **Worklog**: [docs/worklog/FE-DS.md](../worklog/FE-DS.md)

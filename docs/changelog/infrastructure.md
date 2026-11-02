@@ -11,7 +11,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Production Service Photo Volume Persistence, Encryption & Daily Backup (PROD-PHOTO-STORAGE)
 
-- **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `backup-to-s3.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration.
+- **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `infrastructure/deploy/backup/backup.sh` and `restore.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration and documented procedures in `docs/runbooks/BACKUP-RESTORE.md` and `docs/DEPLOYMENT.md`.
 - **Commit SHA**: ``bca961e7fcaf1f6cce3856e97a6672f819ce604a``
 - **Verification**: per worklog (backup and restore scripts verify photo archive encryption and extraction).
 - **Worklog**: [docs/worklog/PROD-PHOTO-STORAGE.md](../worklog/PROD-PHOTO-STORAGE.md)
@@ -25,7 +25,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Mobile Website Repository Rename in APK Publish Workflow (FIX-APK-SITE)
 
-- **Implementation Detail**: Updated `frontend/.github/workflows/build-apk.yml` to reflect the rename of the mobile distribution website repository from `quickdelivery-website` to `logiclink`. Fixed automated publishing of `app-release.json` and direct APK download links.
+- **Implementation Detail**: Updated `frontend/.github/workflows/build-apk.yml` to reflect the rename of the mobile distribution website repository from `logiclinc` to `logiclink` (GitHub repo target `omarmaarouf18/logiclink`, previously `omarmaarouf18/logiclinc`). Fixed automated publishing of `app-release.json` and direct APK download links.
 - **Commit SHA**: ``914751aba2138d42bf174a92a002cc20e43eacce``
 - **Verification**: per worklog (YAML workflow validation clean, repository target URL verified).
 - **Worklog**: [docs/worklog/FE-APK-CHANNEL.md](../worklog/FE-APK-CHANNEL.md)
@@ -39,7 +39,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Minimal Monitoring: Uptime Runbook, Backup Dead-Man Ping & Host Health (OBS-MIN)
 
-- **Implementation Detail**: Created minimal host monitoring and health check automation (`scripts/host-health-check.sh`). Configured automated dead-man's-snitch ping integration for daily off-host backups in `infrastructure/deploy/backup-to-s3.sh`. Published the authoritative operations runbook at `docs/runbooks/MONITORING.md`.
+- **Implementation Detail**: Created host monitoring automation with `infrastructure/deploy/monitor/hostcheck.sh`, systemd service `quickdelivery-monitor.service`, and systemd timer `quickdelivery-monitor.timer`. Added dead-man ping integration to `infrastructure/deploy/backup/backup.sh` (pinging healthchecks.io/UptimeRobot via curl). Published operations runbook at `docs/runbooks/MONITORING.md`. External uptime monitor setup remains pending owner portal configuration.
 - **Commit SHA**: ``020d54cced1856c12dc6663e48c8a78847030e11``
 - **Verification**: per worklog (health check script executed, curl alerts verified, documentation checks passed).
 - **Worklog**: [docs/worklog/OBS-MIN.md](../worklog/OBS-MIN.md)
@@ -53,7 +53,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Encrypted Daily Off-Host Backups with Tested Restore & Age-Encrypted Env (OPS-BACKUP, OPS-BACKUP2)
 
-- **Implementation Detail**: Implemented automated daily off-host backup script `infrastructure/deploy/backup-to-s3.sh` dumping MongoDB with `mongodump`, compressing with zstd, and encrypting archives with `age` recipient public keys. Created automated restore verification test `infrastructure/deploy/test-restore.sh`. Added age-encrypted `.env` packaging (`OPS-BACKUP2`) ensuring deployment configuration survives disaster recovery.
+- **Implementation Detail**: Implemented daily encrypted backups in `infrastructure/deploy/backup/backup.sh` (dumping MongoDB with `mongodump`, compressing with zstd, encrypting with `age` via `backup-recipient.pub`, and uploading to S3-compatible storage), scheduled daily via systemd timer `quickdelivery-backup.timer` and service `quickdelivery-backup.service`. Added tested restore script `infrastructure/deploy/backup/restore.sh`, local e2e test `infrastructure/deploy/backup/test/e2e-local.sh`, and runbook `docs/runbooks/BACKUP-RESTORE.md`. Added age-encrypted `.env` packaging (`OPS-BACKUP2`).
 - **Commit SHA**: ``10dd01b3183ceac3ed01ea7d35558e1093d5b29d``
 - **Verification**: per worklog (dump, encryption, upload, and clean test restore verified against staging).
 - **Worklog**: [docs/worklog/OPS-BACKUP.md](../worklog/OPS-BACKUP.md), [docs/worklog/OPS-BACKUP2.md](../worklog/OPS-BACKUP2.md)
@@ -67,7 +67,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Production Compose Hardening: Caddy Reverse Proxy & Private Gateway (OPS-HARDEN)
 
-- **Implementation Detail**: Hardened `infrastructure/deploy/docker-compose.prod.yml` to run Caddy inside Docker Compose, routing external traffic over a private Docker network and removing direct host port exposure for `api-gateway`. Configured container log rotation (max 100MB, 3 files) and memory limits across all services. Added automatic one-time cutover guard script `infrastructure/deploy/caddy-cutover-guard.sh`.
+- **Implementation Detail**: Hardened `infrastructure/deploy/docker-compose.prod.yml` to run Caddy inside Docker Compose, routing external traffic over a private Docker network and removing direct host port exposure for `api-gateway`. Configured container log rotation (max 100MB, 3 files) and memory limits across all services. Documented cutover procedure in `docs/runbooks/OPS-HARDEN-cutover.md` and updated `infrastructure/deploy/deploy.yml`.
 - **Commit SHA**: ``9ed529176e609c87c2ce6f3b06b666790a16022c``
 - **Verification**: per worklog (`docker compose config` valid, cutover script tested on staging, compose health checks green).
 - **Worklog**: [docs/worklog/OPS-HARDEN.md](../worklog/OPS-HARDEN.md)
@@ -93,7 +93,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Parallel Agent Worktree Workflow & Verification (WF-01)
 
-- **Implementation Detail**: Implemented the multi-agent parallel git worktree workflow (`scripts/agent-worktree.sh`, `Makefile`), enforcing isolated sibling worktrees (`../saas-core-wt/<TASK-ID>`), two-layer push prevention (Layer A per-worktree push URL override, Layer B `.githooks/pre-push` guard), and scoped check gates. Documented the complete lifecycle in `docs/WORKFLOW.md` and the worklog template in `docs/worklog/README.md`.
+- **Implementation Detail**: Implemented the multi-agent parallel git worktree workflow (`scripts/agent-worktree.sh`, `Makefile`), enforcing isolated sibling worktrees (under parent directory `saas-core-wt`), two-layer push prevention (Layer A per-worktree push URL override, Layer B `.githooks/pre-push` guard), and scoped check gates. Documented the complete lifecycle in `docs/WORKFLOW.md` and the worklog template in `docs/worklog/README.md`.
 - **Commit SHA**: ``6d062a51dc1fc17389c94da3f93d0db58ad5edde``
 - **Verification**: per worklog (`make check` PASS, worktree creation/removal tested with and without Flutter).
 - **Worklog**: [docs/worklog/WF-01.md](../worklog/WF-01.md)

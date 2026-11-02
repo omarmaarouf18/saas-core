@@ -11,16 +11,16 @@ This file tracks historical entries for the primary category: **Security Fixes C
 
 ## Go Dependency Vulnerability Triage & Module Upgrades (DEPS-VULN)
 
-- **Implementation Detail**: Triaged and upgraded Go module dependencies across all 5 microservices to remediate vulnerabilities reported by `govulncheck`. Updated `golang.org/x/net`, `golang.org/x/crypto`, and Mongo Go driver dependencies while maintaining contract stability.
+- **Implementation Detail**: Triaged vulnerabilities with `govulncheck` and upgraded Go dependencies across microservices. Aligned `mongo-driver/v2` to v2.8.0 across all microservices and upgraded `x/crypto` from v0.54.0 to v0.55.0, `x/text` from v0.40.0 to v0.41.0, and `klauspost/compress` from v1.17.6 to v1.18.7. Documented triage analysis in `docs/security/VULN-TRIAGE-2026-10.md`. Upgrading `x/crypto` to v0.56.0 was left open pending Go version directive alignment across modules.
 - **Commit SHA**: ``409655540ede37c622674148bc2cec3f4fef1b0d``
-- **Verification**: per worklog (`govulncheck ./...` 0 vulnerabilities, full test suite passes across all Go modules).
+- **Verification**: per worklog (`govulncheck` reported 0 vulnerabilities called by application code; uncalled indirect findings documented; all module test suites pass).
 - **Worklog**: [docs/worklog/DEPS-VULN.md](../worklog/DEPS-VULN.md)
 
 ## Email-Change Revocation, Store Error Visibility & COD-Only Guard (SEC-PAY)
 
-- **Implementation Detail**: Enhanced `POST /auth/change-email` to immediately revoke all existing user sessions upon email change. Surfaced underlying MongoDB errors cleanly in `user-service` store operations rather than swallowing failures. Added fail-closed runtime checks enforcing COD-only payment processing unless `ALLOW_TEST_PAYMENT_BYPASS=true` in non-production environments.
+- **Implementation Detail**: Updated email change confirmation (`POST /auth/email-change/confirm` in `services/auth-service/internal/handlers/auth.go`, initiated via `/auth/email-change/request`) to revoke all existing user sessions upon email change (SEC-07c). In `services/user-service/internal/store/mongodb.go`, surfaced store errors in non-money paths (`CreateService`, startup config/seed, courier stale lock self-heal, admin subscription activation) while swallowed store errors in money paths (escrow, deposits, payouts, ledger entries) were surveyed and left unfixed (deferred to future money task). Added fail-closed runtime checks enforcing COD-only payment processing (`DIGITAL_PAYMENTS_ENABLED=false`) in `POST /users/jobs/track` unless bypass is enabled in local/test.
 - **Commit SHA**: ``ed5f2ba1328bbf9f341647b5efba22b65cdf000f``
-- **Verification**: per worklog (unit and integration tests verify token invalidation on email change and rejection of non-COD payments in prod).
+- **Verification**: per worklog (`TestConfirmEmailChange_RevokesOldSessions` PASS, unit and integration tests pass).
 - **Worklog**: [docs/worklog/SEC-PAY.md](../worklog/SEC-PAY.md)
 
 ## Session Revocation Fails Closed on Password Reset and Suspension (SEC-07b)
