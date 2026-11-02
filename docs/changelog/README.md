@@ -8,4 +8,4 @@ This directory contains categorized, detailed changelogs tracking the history an
 *   [Bug Fixes](bug-fixes.md) — 142 entries detailing non-security fixes, consistency audits, race condition resolutions, error handling, and zero-commission cleanup.
 *   [Documentation](documentation.md) — 51 entries for documentation updates, application map sync, and audit reports.
 *   [Localization Infrastructure](localization-infrastructure.md) — 4 entries covering i18n, Egyptian Arabic localization, and RTL support.
-*   [Refactoring](refactoring.md) — 10 entries documenting handler decompositions and module extractions.
+*   [Refactoring](refactoring.md) — 11 entries documenting handler decompositions and module extractions.

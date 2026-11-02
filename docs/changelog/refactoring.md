@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Refactoring Changelog**.
 
+## Frontend Redesign A Promoted to Primary UI: Legacy Screens & Widgets Purge (FE-CLEANUP)
+
+- **Implementation Detail**: Promoted Redesign A to the sole application frontend (version 2.0.0). Removed all `QD_REDESIGN_*` feature flags. Completely purged legacy directories `frontend/lib/screens/` (33 files) and `frontend/lib/widgets/` (37 files), migrating all application roles exclusively to `frontend/lib/features/` and `frontend/lib/ui/`. Removed unused dependencies `google_fonts` and `flutter_svg`.
+- **Commit SHA**: ``76ba59e677ffaff09e4490b84eac87eae3cdb8a6``
+- **Verification**: per worklog (`flutter analyze` 0 issues, full test suite PASS, zero legacy screen references).
+- **Worklog**: [docs/worklog/FE-CLEANUP.md](../worklog/FE-CLEANUP.md)
+
 ## Owner Service Consolidation: ServiceScreen & CreateServiceDialog Removal
 
 - **Implementation Detail**:
