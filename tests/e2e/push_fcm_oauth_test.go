@@ -37,7 +37,11 @@ import (
 // token and log "push enabled (project X, token ok)"; POST
 // /notifications/send over mTLS reaches FCM with a Bearer token and the
 // payload the app routes on; a token FCM reports as UNREGISTERED is
-// unregistered at auth-service.
+// unregistered at auth-service through the internal route
+// POST /auth/internal/device-token/unregister {token}, which answers 204
+// like the real handler (services/auth-service/internal/handlers/internal_device_token.go).
+// The removed POST /auth/device-token answers 410 and fails the test, so a
+// regression back to the old cleanup route cannot pass silently.
 //
 // The service itself runs outside the staging stack (the staging compose
 // cannot point notification-service at a fake Google without a hot-path
@@ -158,8 +162,11 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 	defer fcmSrv.Close()
 
 	// Fake auth-service: device tokens and stale-token unregistration.
+	// The cleanup uses the internal route (BE-HARDEN item 3):
+	// POST /auth/internal/device-token/unregister {"token": "..."} -> 204.
 	const internalToken = "e2e-internal-token"
 	var unregistered []string
+	var violations []string
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Internal-Token") != internalToken {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -169,13 +176,31 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 		case "/auth/user":
 			_ = json.NewEncoder(w).Encode(map[string]any{"id": r.URL.Query().Get("id"),
 				"device_tokens": []map[string]string{{"token": "device-good"}, {"token": "device-stale"}}})
-		case "/auth/device-token":
+		case "/auth/internal/device-token/unregister":
+			if r.Method != http.MethodPost {
+				mu.Lock()
+				violations = append(violations, fmt.Sprintf("%s %s (the unregister route only accepts POST)",
+					r.Method, r.URL.Path))
+				mu.Unlock()
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
 			var body map[string]string
 			_ = json.NewDecoder(r.Body).Decode(&body)
 			mu.Lock()
-			unregistered = append(unregistered, body["action"]+":"+body["token"])
+			unregistered = append(unregistered, body["token"])
 			mu.Unlock()
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
+		case "/auth/device-token":
+			// Removed for internal cleanups: answer 410 Gone and record the
+			// regression, so the test fails with a clear message.
+			var body map[string]string
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			mu.Lock()
+			violations = append(violations, fmt.Sprintf("%s %s (action=%q): the stale-token cleanup must POST /auth/internal/device-token/unregister",
+				r.Method, r.URL.Path, body["action"]))
+			mu.Unlock()
+			w.WriteHeader(http.StatusGone)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -306,7 +331,11 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 	for {
 		mu.Lock()
 		nCalls, unreg := len(fcmCalls), append([]string(nil), unregistered...)
+		viol := append([]string(nil), violations...)
 		mu.Unlock()
+		if len(viol) > 0 {
+			t.Fatalf("stale-token cleanup used the wrong route: %v\n%s", viol, logs.String())
+		}
 		if nCalls >= 2 && len(unreg) >= 1 {
 			break
 		}
@@ -318,6 +347,7 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 
 	mu.Lock()
 	calls, unreg := append([]fcmCall(nil), fcmCalls...), append([]string(nil), unregistered...)
+	viol := append([]string(nil), violations...)
 	mu.Unlock()
 	for _, c := range calls {
 		if c.Path != "/v1/projects/qd-e2e/messages:send" {
@@ -335,8 +365,11 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 			t.Errorf("android block %+v", m.Android)
 		}
 	}
-	if len(unreg) != 1 || unreg[0] != "unregister:device-stale" {
-		t.Errorf("unregistered = %v, want [unregister:device-stale]", unreg)
+	if len(viol) > 0 {
+		t.Errorf("stale-token cleanup used the wrong route: %v", viol)
+	}
+	if len(unreg) != 1 || unreg[0] != "device-stale" {
+		t.Errorf("unregistered = %v, want [device-stale]", unreg)
 	}
 	cancel()
 	_ = svc.Wait()
