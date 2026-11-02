@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Scoped Local Gate, Pass Stamp & Gitleaks Scan (WF-03)
+
+- **Implementation Detail**: Replaced monolithic gate with scoped local verification via `scripts/changed-scope.sh`, mapping changed paths to required test stages. Introduced gate pass stamps (`scripts/gate-stamp.sh`) required by `make commit` and `.githooks/pre-commit`. Integrated `gitleaks` secret scanning and serialized Redis/Mongo integration tests under a shared CI lock (`scripts/ci-lock.sh`).
+- **Commit SHA**: ``75367b57e7016d87c90bd0b528a11a55af9c12d7``
+- **Verification**: per worklog (`make check` PASS across scoped paths, lock serialization verified, gitleaks clean).
+- **Worklog**: [docs/worklog/WF-03.md](../worklog/WF-03.md)
+
 ## Production Compose Hardening: Caddy Reverse Proxy & Private Gateway (OPS-HARDEN)
 
 - **Implementation Detail**: Hardened `infrastructure/deploy/docker-compose.prod.yml` to run Caddy inside Docker Compose, routing external traffic over a private Docker network and removing direct host port exposure for `api-gateway`. Configured container log rotation (max 100MB, 3 files) and memory limits across all services. Added automatic one-time cutover guard script `infrastructure/deploy/caddy-cutover-guard.sh`.
