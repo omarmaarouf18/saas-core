@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Frontend Quickwins: Shipping Tile, Auth Splash, 8-Rune Password & Disposal Race (FE-QUICKWINS)
+
+- **Implementation Detail**: Resolved six frontend defects: updated shipping home tile copy, removed misleading mock trends from wallet dashboard, added branded auth launch splash, updated client password validation to 8 runes matching SEC-03, handled 503/500 backend unavailable states gracefully, and eliminated a disposal race condition in `notifications_provider.dart`.
+- **Commit SHA**: ``d6a45be4ac920aba665bccb5755d1f82e7e7290a``
+- **Verification**: per worklog (`flutter test` PASS across all affected widget and provider tests, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-QUICKWINS.md](../worklog/FE-QUICKWINS.md)
+
 ## Auth ID/OTP Generators Return Errors Instead of Exiting on crypto/rand Failure (BE-20)
 
 - **Implementation Detail**: `generateID` and `generate6DigitOTP` in `services/auth-service/internal/handlers/auth.go` called `log.Fatalf` when the crypto/rand read failed — a process-wide exit from inside a request handler. Both now return `(string, error)` via a package-level `cryptoRandRead = rand.Read` seam (tests inject a failing reader; production code must not reassign it), and every call site (`Signup` OTP + user ID, `Login` OTP, `VerifyOTP` user ID) propagates the failure as a sanitized 500 `internal_error` through `handlerutil.WriteSafeError` before any state is written.
