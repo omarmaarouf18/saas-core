@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Auth Gate, Launch Splash, Account & Support on Redesign A (FE-AUTH-ACCOUNT)
+
+- **Implementation Detail**: Migrated authentication, account settings, support tickets, and notifications to Redesign A (`features/auth/`, `features/account/`). Implemented `AuthGate` with session restore splash, 2FA toggle, password reset with verification codes, support ticket creation with context IDs, and universal notification inbox with role-based routing.
+- **Commit SHA**: ``11475037d9b2196e9ceafa5d703e5bc22a36e293``
+- **Verification**: per worklog (`flutter test` PASS across auth, account, and support suites, 24 goldens verified).
+- **Worklog**: [docs/worklog/FE-AUTH-ACCOUNT.md](../worklog/FE-AUTH-ACCOUNT.md)
+
 ## Customer Order Detail, Timeline & Post-Booking Actions on Redesign A (FE-CUST-2)
 
 - **Implementation Detail**: Implemented customer order tracking on Redesign A (`features/customer/order_detail_page.dart`). Added visual phase timeline (searching, proposed, active, completed, closed), courier call actions, live chat navigation, counter-offer response cards, and post-delivery blind rating submission.
