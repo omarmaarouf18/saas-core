@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Production Service Photo Volume Persistence, Encryption & Daily Backup (PROD-PHOTO-STORAGE)
+
+- **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `backup-to-s3.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration.
+- **Commit SHA**: ``bca961e7fcaf1f6cce3856e97a6672f819ce604a``
+- **Verification**: per worklog (backup and restore scripts verify photo archive encryption and extraction).
+- **Worklog**: [docs/worklog/PROD-PHOTO-STORAGE.md](../worklog/PROD-PHOTO-STORAGE.md)
+
 ## Universal APK Distribution Channel & Version Code Alignment (FE-APK-CHANNEL)
 
 - **Implementation Detail**: Updated `build-apk.yml` to build a universal release APK (`app-release.apk`) in addition to per-ABI splits (arm64-v8a, armeabi-v7a, x86_64). Aligned version code assignment so in-app version update prompts and website downloads deliver consistent universal binaries. Added `scripts/test_apk_channel.sh` regression guard.
