@@ -195,12 +195,16 @@ Owner review of the initial DOCS-FOLD branch diff identified that several change
 | `AI_CONTEXT.md` | Invented Job Model v2 details; LaTeX $\le 5$MB; cron backup; Done monitoring; removed XFF open item | Corrected Job model v2 to ADR-0028 content; wrote ≤ 5 MB and verified 5 MB multipart cap + magic bytes; changed cron to systemd timer; changed monitoring to Partial; restored XFF open item with Caddy mitigation details. | `docs/adr/0028-job-model-v2.md`, `services_handlers.go` (line 645-715), `Caddyfile` (line 21-34) |
 | `docs/README.md` | Invented ADR-0028 description | Replaced with exact ADR-0028 title: "Job model v2: recipient, address text, status history, pickup phase, ETA, and saved addresses". | `docs/adr/0028-job-model-v2.md` |
 | `docs/REPOSITORY_MAP.md` | Stale website repo name logiclinc | Updated to `logiclink` (`omarmaarouf18/logiclink`). | `git diff 914751ab^1 914751ab` |
-| `docs/frontend/STATUS.md` | Non-existent relative subpaths with slashes | Replaced with base-matching basenames (`job_timeline.dart`, `job_v2_sections.dart`, `push_permission_prompt.dart`, `announcement_detail_sheet.dart`). | `git cat-file -e logic-exploitation:<path>` |
+| `FIX-COD-RECON` | Cited non-existent jobs_handlers_test.go | Replaced with real base test paths `services/user-service/internal/handlers/cod_distance_review_regression_test.go` and `tests/e2e/cod_under_distance_test.go`. | `git show --stat a7ccfcb2`, `333d45bc` |
+| `docs/changelog/**`, `docs/frontend/STATUS.md` | Short basenames in backticks (`restore.sh`, `ci.yml`, `booking_rules.dart`, `courier_rules.dart`, `saved_address_rules.dart`, `tokens.dart`, `qd_theme.dart`) | Canonicalized to exact repository paths (`infrastructure/deploy/backup/restore.sh`, `.github/workflows/ci.yml`, `frontend/lib/features/customer/booking_rules.dart`, `frontend/lib/features/courier/courier_rules.dart`, `frontend/lib/features/account/saved_address_rules.dart`, `frontend/lib/ui/tokens.dart`, `frontend/lib/ui/qd_theme.dart`, etc.) so `git cat-file -e logic-exploitation:<path>` exits 0 directly. | `git ls-tree -r --name-only logic-exploitation` |
 
 ### Fix Commits
 51. `DOCS-FOLD-FIX: correct fabricated details across changelog entries`
 52. `DOCS-FOLD-FIX: correct Job model v2, monitoring, photos, and restore XFF open item in AI_CONTEXT.md`
 53. `DOCS-FOLD-FIX: align ADR-0028 in README, website repo in REPOSITORY_MAP, and STATUS.md`
 54. `DOCS-FOLD-FIX: document fix pass and verification evidence in worklog`
+55. `DOCS-FOLD-FIX: format evidence paths and commit SHAs in worklog`
+56. `DOCS-FOLD-FIX: canonicalize exact in-repo paths in changelog and STATUS.md`
+57. `DOCS-FOLD-FIX: finalize worklog verification evidence for acceptance checks`
 
 
