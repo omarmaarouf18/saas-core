@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Backend Endpoints for Redesign A: Saved Addresses, Service Photos & KYE (USER-AUTH-BE)
+
+- **Implementation Detail**: Built supporting backend endpoints required by the mobile redesign: customer saved addresses CRUD (`/users/addresses`), service photo upload and retrieval (`/users/services/{id}/photo`), employee KYE verification document upload handlers in `auth-service`, and reviewer endpoints for KYE inspection.
+- **Commit SHA**: ``fd40b1112b482a34912ebf99f31e6ac9740ad50a``
+- **Verification**: per worklog (`TestE2E_UserAuthBEGaps` PASS, unit tests green across auth and user services).
+- **Worklog**: [docs/worklog/USER-AUTH-BE.md](../worklog/USER-AUTH-BE.md)
+
 ## Consume Job Model V2 in Flutter Frontend: Recipient, Package & Address (FE-V2-CONSUME)
 
 - **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`text_limits.dart`), and direct call/map actions via `url_launcher 6.3.2`.
