@@ -74,17 +74,96 @@
 - `FE-OWNER-2`: `0fa4b130 2026-10-23 10:14:03 +0300 Merge branch 'agent/FE-OWNER-2-owner-setup-map-log' into logic-exploitation` (covered in `FE-OWNER-2b.md` and commits; target: `new-features.md`, STATUS.md impact: Yes, AI_CONTEXT impact: Yes)
 - `FIX-APK-SITE`: `914751ab 2026-10-23 10:12:56 +0300 Merge branch 'agent/FIX-APK-SITE-website-repo-rename' into logic-exploitation` (target: `bug-fixes.md`, `infrastructure.md`, STATUS.md impact: No, AI_CONTEXT impact: No)
 
+## AI_CONTEXT Open Items Re-check Evidence
+
+Checked against `logic-exploitation` at base `a120d845`:
+- **Gateway version store not Mongo-backed**: Closed. Fixed in commit `7bd78bb6` (ADMIN-API item 1) and `19ca6d3e` (ADMIN-API-FIX item 1) with persistent fail-closed MongoDB store in `services/api-gateway/cmd/main.go`.
+- **XFF parsing takes first entry / reviewer client IP**: Closed. Fixed in commit `19ca6d3e` and `01912613` (ADMIN-API-FIX item 2) using `X-Console-Client-IP` forwarded on `saas-net` and trusted only after internal token verification.
+- **Password 6-character minimum advertised in app**: Closed. Fixed in commit `c4155b1` (FE-QUICKWINS) and FE-AUTH-ACCOUNT (`password_policy.dart` enforcing 8 runes minimum, `app_en.arb` string `passwordTooShort: "Password must be at least 8 characters"`).
+- **Console `app.js` modularization**: Closed. Modularized into ES modules in CONSOLE-V2.
+- **Audit-log pagination**: Open (`services/auth-service/internal/store/mongodb.go:898` sorts without limit).
+- **Chat token cache unbounded**: Open (`services/chat-service/internal/handlers/chat.go:62` unbounded map).
+- **`TestComplaintRoutingConcurrency` retry loop**: Open (`services/chat-service/internal/handlers/chat_test.go:456` has 3-attempt retry loop).
+- **SSE `Last-Event-ID` replay**: Open (not implemented).
+- **Chat `Hub.Run()` loops forever without stop context**: Open (`services/chat-service/internal/chat/hub.go:227`).
+- **`BroadcastLocation` channel format validation**: Open (`services/chat-service/internal/handlers/chat.go:824` checks only empty string).
+- **Stale push-token cleanup gets 401**: Open (`services/notification-service/internal/hub/fetcher.go:86` calls `POST /auth/device-token` with internal token; in progress, BE-HARDEN).
+- **Tenant filter hides customer job notifications**: Open (`services/notification-service/internal/handlers/handlers.go` tenant filtering hides customer notifications).
+- **FCM message payload `data` omits `variant`, `ticket_id`, and `params`**: Open (`services/notification-service/internal/hub/hub.go:440-449`).
+- **Notification service panics without Redis/Mongo**: Open (in progress, BE-HARDEN).
+- **Storage traversal guard missing trailing separator**: Open (`shared/infra/storage/storage.go:154`).
+- **Inter-service URLs without `url.Values`**: Open.
+- **Dev-grade mTLS CA**: Open (`infrastructure/certs/generate-certs.sh`).
+- **Deep-link ID regex accepts `..`**: Open (`frontend/lib/features/account/notifications/notification_rules.dart:194, 209`).
+- **Typed address not required**: Open (`frontend/lib/features/customer/booking_rules.dart:10` fields optional).
+
 ## Changes per commit (message only — NO SHAs)
 1. `DOCS-FOLD: item 1 - worklog inventory table of folded vs unfolded tasks`
+2. `DOCS-FOLD: fold WF-01 worklog into infrastructure changelog`
+3. `DOCS-FOLD: fold CLN-01 worklog into documentation changelog`
+4. `DOCS-FOLD: fold RB-01 worklog into documentation changelog`
+5. `DOCS-FOLD: fold TST-01 and TST-02 worklogs into infrastructure changelog`
+6. `DOCS-FOLD: fold OPS-HARDEN worklog into infrastructure changelog`
+7. `DOCS-FOLD: fold WF-03 worklog into infrastructure changelog`
+8. `DOCS-FOLD: fold OPS-BACKUP and OPS-BACKUP2 worklogs into infrastructure changelog`
+9. `DOCS-FOLD: fold FE-QUICKWINS worklog into bug-fixes changelog`
+10. `DOCS-FOLD: fold CLN-02 worklog into documentation changelog`
+11. `DOCS-FOLD: fold SEC-PAY worklog into security-fixes changelog`
+12. `DOCS-FOLD: fold WF-04 worklog into infrastructure changelog`
+13. `DOCS-FOLD: fold OBS-MIN worklog into infrastructure changelog`
+14. `DOCS-FOLD: fold FE-DS worklog into new-features changelog`
+15. `DOCS-FOLD: fold FE-CUST-1 worklog into new-features changelog`
+16. `DOCS-FOLD: fold JOB-MODEL-V2-ADR worklog into documentation changelog`
+17. `DOCS-FOLD: fold FE-CUST-2 worklog into new-features changelog`
+18. `DOCS-FOLD: fold FIX-COD-RECON worklog into bug-fixes changelog`
+19. `DOCS-FOLD: fold FE-AUTH-ACCOUNT worklog into new-features changelog`
+20. `DOCS-FOLD: fold HOTFIX-LOGIN worklog into bug-fixes changelog`
+21. `DOCS-FOLD: fold FIX-E2E-EMAIL worklog into bug-fixes changelog`
+22. `DOCS-FOLD: fold FE-LINUX-BUILD worklog into bug-fixes changelog`
+23. `DOCS-FOLD: fold GO-1-26-10 worklog into infrastructure changelog`
+24. `DOCS-FOLD: fold DEPS-VULN worklog into security-fixes changelog`
+25. `DOCS-FOLD: fold FE-OWNER-1 worklog into new-features changelog`
+26. `DOCS-FOLD: fold JOB-V2-BE worklog into new-features changelog`
+27. `DOCS-FOLD: fold FIX-APK-SITE into infrastructure changelog`
+28. `DOCS-FOLD: fold FE-OWNER-2 and FE-OWNER-2b worklogs into new-features changelog`
+29. `DOCS-FOLD: fold FE-COURIER worklog into new-features changelog`
+30. `DOCS-FOLD: fold FE-V2-CONSUME worklog into new-features changelog`
+31. `DOCS-FOLD: fold USER-AUTH-BE worklog into new-features changelog`
+32. `DOCS-FOLD: fold FE-CLEANUP worklog into refactoring changelog`
+33. `DOCS-FOLD: fold FE-APK-CHANNEL worklog into infrastructure changelog`
+34. `DOCS-FOLD: fold FE-BE-GAPS worklog into new-features changelog`
+35. `DOCS-FOLD: fold BE-GAPS-FIX worklog into bug-fixes changelog`
+36. `DOCS-FOLD: fold PROD-PHOTO-STORAGE worklog into infrastructure changelog`
+37. `DOCS-FOLD: fold PUSH-BE worklog into new-features changelog`
+38. `DOCS-FOLD: fold WF-RELEASE worklog into infrastructure changelog`
+39. `DOCS-FOLD: fold PUSH-FCM worklog into new-features changelog`
+40. `DOCS-FOLD: fold PUSH-L10N worklog into localization-infrastructure changelog`
+41. `DOCS-FOLD: fold FIX-E2E-PHOTO worklog into bug-fixes changelog`
+42. `DOCS-FOLD: fold ADMIN-API and ADMIN-API-FIX worklogs into security and features changelogs`
+43. `DOCS-FOLD: fold FE-NOTIF-RENDER worklog into new-features changelog`
+44. `DOCS-FOLD: item 3 - update docs/frontend/STATUS.md with push and notification files`
+45. `DOCS-FOLD: item 4 - rewrite stale parts of AI_CONTEXT.md`
+46. `DOCS-FOLD: item 5 - index unindexed docs in docs/README.md`
+47. `DOCS-FOLD: item 5 - align docs/adr/README.md status with ADR files`
+48. `DOCS-FOLD: item 5 - update docs/REPOSITORY_MAP.md for console v2 and release flows`
+49. `DOCS-FOLD: item 5 - document owner --no-ff integration practice in docs/WORKFLOW.md`
+50. `DOCS-FOLD: item 6 - finalize worklog with open-items evidence, verification, and findings`
 
 ## Verification
-- `make check` — PASS
+- `make check` — PASS across all commits (scoped gate: docs infra-tests)
+- SHA ancestor check loop — PASS (all 42 cited 40-character SHAs verified as ancestors of `logic-exploitation` at base `a120d845`)
+- `make docs-check` — PASS
+- `git diff --name-only logic-exploitation..HEAD` — strictly in lane (15 files)
 
 ## Unverified
-- none
+- Physical on-device delivery of FCM push notifications (unverified pending physical device run with live credentials; code and unit/widget test harnesses verified).
 
 ## Follow-ups / out-of-lane findings
-- none
+- `docs/local/APP_MAP.md`: Cited in prompt item 5 as existing but unindexed; verified that no `docs/local/` directory or `APP_MAP.md` file exists on disk or git history at `logic-exploitation` (`a120d845`). Intentionally not added to `docs/README.md` to avoid broken links.
+- `docs/adr/0028-job-model-v2.md`: Filename was referred to as `0028-job-model-v2-and-pricing-clarifications.md` in some prompt text, but actual file path at base is `docs/adr/0028-job-model-v2.md` and header status is Accepted.
+- `services/notification-service/internal/hub/fetcher.go:86`: `UnregisterStaleToken` calls `POST /auth/device-token` with `X-Internal-Token`, but auth-service requires user JWT or internal endpoint, resulting in 401 Unauthorized (being fixed in parallel BE-HARDEN).
+- `frontend/lib/features/account/notifications/notification_rules.dart:194, 209`: Deep link parser regex `([A-Za-z0-9_\-.:]{1,64})` allows `..` path segments.
 
 ## Open questions
 - none
+
