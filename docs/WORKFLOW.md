@@ -124,7 +124,7 @@ In the main worktree:
 
 ```bash
 cd "/path/to/repo"
-git merge --ff-only agent/<TASK-ID>-<slug>
+git merge --no-ff --no-edit agent/<TASK-ID>-<slug>
 ```
 
 Fold the task's worklog into the shared docs — `AI_CONTEXT.md`,
@@ -200,8 +200,7 @@ task). It removes the worktree and deletes `agent/<TASK-ID>-<slug>` with
   the fold for that task's worklog, not by merging agent-side doc edits.
 - **Code conflicts**: rebase the second branch in its worktree
   (`git rebase logic-exploitation`), resolve the conflict there, run
-  `make check`, then `git merge --ff-only` from the main worktree. Do not create
-  merge bubbles on `logic-exploitation`.
+  `make check`, then `git merge --no-ff --no-edit agent/<TASK-ID>-<slug>` from the main worktree.
 - **Hot-path collisions** (e.g. two tasks both editing `go.work` or the
   `Makefile`): expect the second rebase to conflict. Resolve in favor of the
   combination of both changes and re-run `make check` before merging. Avoid this

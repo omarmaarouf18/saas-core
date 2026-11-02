@@ -4,6 +4,34 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Job Model V2 Architecture Decision Record (JOB-MODEL-V2-ADR, ADR-0028)
+
+- **Implementation Detail**: Authored [ADR-0028](../adr/0028-job-model-v2.md) defining Job Model V2. Standardized sub-status state transitions, status change history audit trails, recipient details (name, unmasked phone window), package metadata (size, weight, description), and structured addresses with street lines and landmark notes.
+- **Commit SHA**: ``2832673939387c89a554df20531935c228093e8b``
+- **Verification**: per worklog (`make docs-check` PASS, ADR index updated).
+- **Worklog**: [docs/worklog/JOB-MODEL-V2-ADR.md](../worklog/JOB-MODEL-V2-ADR.md)
+
+## Repository Tidy: Historical Documentation Archive & Single Docs Index (CLN-02)
+
+- **Implementation Detail**: Archived 14 superseded historical documents into `docs/history/` to reduce clutter and documentation drift. Consolidated documentation navigation into a single authoritative index at `docs/README.md`. Updated all inbound markdown links across the repository and verified link integrity.
+- **Commit SHA**: ``31f20aa164f2fbdb4041d3802e36cfcd80379ec3``
+- **Verification**: per worklog (`make check` PASS, zero broken links across markdown files).
+- **Worklog**: [docs/worklog/CLN-02.md](../worklog/CLN-02.md)
+
+## Re-baseline of 109 Remediation Findings (RB-01)
+
+- **Implementation Detail**: Re-baselined all 109 historical remediation findings from the security audit against the active codebase. Verified that fixes remained in place across microservice authentication, authorization boundaries, rate limiters, error sanitization, and database isolation. Documented the audit state in `docs/audit/REBASELINE-2026-10.md`.
+- **Commit SHA**: ``540fc5748445aeece361bcc60345535e28200250``
+- **Verification**: per worklog (`make check` PASS, all unit and contract tests green).
+- **Worklog**: [docs/worklog/RB-01.md](../worklog/RB-01.md)
+
+## Repository & Documentation Diet and Slim AI_CONTEXT Swap (CLN-01)
+
+- **Implementation Detail**: Archived historical sections of `AI_CONTEXT.md` (architecture delivery records, done narratives, closed open items) into `docs/history/ai-context-archive-2026-09.md` with boundary markers. Swapped in a condensed `AI_CONTEXT.md` focused on current state, active architecture, standing rules, and open items. Created the initial unified `docs/README.md` index.
+- **Commit SHA**: ``8dee2c05ae49fbae4faa70ff196871c80d716794``
+- **Verification**: per worklog (`make check` PASS, mechanical diff extraction between markers, markdown link check).
+- **Worklog**: [docs/worklog/CLN-01.md](../worklog/CLN-01.md)
+
 ## UI Visual Audit 2026-09 + DESIGN_SYSTEM Drift Refresh (Process/Documentation)
 
 - **Implementation Detail**: This entry is process/documentation, not shippable behavior — no application code changed. (a) New audit `docs/frontend/UI_VISUAL_AUDIT_2026-09.md`: fresh visual-design-only pass (token compliance, reuse, consistency, identity gaps) over all 31 production screens + 36 shared widgets against `DESIGN_SYSTEM.md` + `theme.dart`, with the color palette explicitly frozen and `design/stitch-export/` explicitly excluded as non-identity. Records 9 fixed groups, 1 reverted-with-rationale (employee-history escrow decimals: `toFixed(2)` overflows the RouteTimeline metrics row at 360dp and the `Flexible` rescue truncates fitting labels — redesign deferred, not dropped), 9 documented suggestions/observations, and better-practice notes P1–P5. (b) `DESIGN_SYSTEM.md` refresh: dialog-radius truth (`md` standard), container/scrim/semantic token rows, `smMd` + `labelUppercase` rows, all 26 stale catalog param cells corrected, widget count 34→36 with 2 new rows, debt table `service_screen` purge (55→53). (c) `ThemedInlineSpinner` demo row in the live `component_library_screen.dart` catalog.

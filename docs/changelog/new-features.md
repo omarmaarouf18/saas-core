@@ -2,6 +2,111 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Structured Notification Data Rendering & In-App Admin Announcements (FE-NOTIF-RENDER)
+
+- **Implementation Detail**: Migrated in-app notification rendering from fragile regex body parsing to structured payload resolution (`texts[lang]`, `params['deep_link']`, `params['ticket_id']`, `params['variant']`). Added megaphone badge and localized `AnnouncementDetailSheet` for admin announcements without usable links, and updated push routing rules in `frontend/docs/PUSH.md`.
+- **Commit SHA**: ``a120d845b53c03fad93c775795d0e19111158a73``
+- **Verification**: per worklog (all unit and widget tests pass: structured links, announcement sheet, and push tap routing).
+- **Worklog**: [docs/worklog/FE-NOTIF-RENDER.md](../worklog/FE-NOTIF-RENDER.md)
+
+## Operations & Reviewer Console API Endpoints (ADMIN-API, ADMIN-API-FIX)
+
+- **Implementation Detail**: Implemented complete reviewer console operations backend across microservices: `GET /admin/overview` aggregation, `GET /admin/jobs` multi-field search and unmasked detail, admin job cancellation and stuck COD completion (`POST /admin/jobs/{id}/complete-stuck-cod`), services moderation (hide/unhide/photo removal), subscriptions queue (`pending_payment`), merged audit log viewer, and admin announcements push fan-out (`POST /admin/notifications/send`). Documented in `docs/api/ADMIN_API.md`.
+- **Commit SHA**: ``2263a51628b4e5d99bb5f8f42b9051c0b7ac6b8d``
+- **Verification**: per worklog (comprehensive E2E test suite `TestE2E_AdminConsoleEndpoints` PASS).
+- **Worklog**: [docs/worklog/ADMIN-API.md](../worklog/ADMIN-API.md)
+
+## Android FCM Push Notification Client Integration & Local Channel Sync (PUSH-FCM)
+
+- **Implementation Detail**: Integrated Firebase Cloud Messaging (`firebase_core 4.15.0`, `firebase_messaging 16.7.0`) and `flutter_local_notifications 22.3.1` in the Flutter app. Created notification channel `qd_default` with localized names ("Order updates" / "تحديثات الطلبات"). Added in-app permission prompt sheet, account settings notification toggle, and foreground push presentation. Documented architecture in `frontend/docs/PUSH.md`.
+- **Commit SHA**: ``b40726f59f53ab60962bc0d4a39370681c7da4bb``
+- **Verification**: per worklog (widget and unit tests pass with mocked method channels, clean analyze).
+- **Worklog**: [docs/worklog/PUSH-FCM.md](../worklog/PUSH-FCM.md)
+
+## FCM HTTP v1 OAuth2 Push Delivery in Notification Service (PUSH-BE)
+
+- **Implementation Detail**: Implemented FCM HTTP v1 REST delivery in `services/notification-service` using standard library RFC 7523 JWT-bearer token minting (`services/notification-service/internal/fcm/token.go`, `services/notification-service/internal/fcm/fcm.go`) without external dependencies. Added in-memory OAuth2 token caching with refresh, retry with backoff on 429/5xx, safe stale token detection, and high-priority Android notifications (`channel_id: "qd_default"`).
+- **Commit SHA**: ``ccdee0ab3364121fd2b93ba35fe6398af07dcb53``
+- **Verification**: per worklog (`TestPushBE_NotificationServiceDeliversViaFCMOAuth` PASS, unit tests green).
+- **Worklog**: [docs/worklog/PUSH-BE.md](../worklog/PUSH-BE.md)
+
+## Frontend Integration of Service Photos, Saved Addresses & Error Code Handling (FE-BE-GAPS)
+
+- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`frontend/lib/features/customer/booking_rules.dart`, `frontend/lib/features/courier/courier_rules.dart`), and push notification tap routing (`frontend/lib/features/account/notifications/push_tap_handler.dart`).
+- **Commit SHA**: ``a5b3667066e96ef4f0437a1cf3cce3c2863d2248``
+- **Verification**: per worklog (`flutter test` PASS across 1,287 tests, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-BE-GAPS.md](../worklog/FE-BE-GAPS.md)
+
+## Backend Endpoints for Redesign A: Saved Addresses, Service Photos & KYE (USER-AUTH-BE)
+
+- **Implementation Detail**: Built supporting backend endpoints required by the mobile redesign: customer saved addresses profile management in `services/auth-service/internal/handlers/auth.go` (`GET /auth/user`, `PUT /auth/user`, `PATCH /auth/user` with `saved_addresses`), service photo upload and retrieval in `services/user-service/internal/handlers/handlers.go` (`GET /users/services/photo`, `POST /users/services/photo`, `POST /users/services/photo/upload`), and employee KYE verification document upload handlers in `auth-service`.
+- **Commit SHA**: ``fd40b1112b482a34912ebf99f31e6ac9740ad50a``
+- **Verification**: per worklog (`TestE2E_UserAuthBEGaps` PASS, unit tests green across auth and user services).
+- **Worklog**: [docs/worklog/USER-AUTH-BE.md](../worklog/USER-AUTH-BE.md)
+
+## Consume Job Model V2 in Flutter Frontend: Recipient, Package & Address (FE-V2-CONSUME)
+
+- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`frontend/lib/features/account/saved_address_rules.dart`), and direct call/map actions via `url_launcher 6.3.2`.
+- **Commit SHA**: ``758f01b4143e02ba6172409559dfa70449c64495``
+- **Verification**: per worklog (widget tests verify client field validation and server 400 error mapping).
+- **Worklog**: [docs/worklog/FE-V2-CONSUME.md](../worklog/FE-V2-CONSUME.md)
+
+## Courier Application Shell: Offers, Active Job & My Jobs on Redesign A (FE-COURIER)
+
+- **Implementation Detail**: Built the complete courier mobile experience on Redesign A (`frontend/lib/features/courier/`). Implemented `CourierShell`, incoming dispatch offer sheet with countdown ticker, active job progress view (pickup verification, cash-on-delivery collection), price negotiation responses, job history list (`frontend/lib/features/courier/jobs_page.dart`), and suspended/paused account gate.
+- **Commit SHA**: ``8cdabeb693d55662bd5646009b4cc89f2c5ec98f``
+- **Verification**: per worklog (all courier widget and golden tests pass, state transitions verified).
+- **Worklog**: [docs/worklog/FE-COURIER.md](../worklog/FE-COURIER.md)
+
+## Owner Service Setup, Fleet Map, Activity Log, Verification & Account (FE-OWNER-2, FE-OWNER-2b)
+
+- **Implementation Detail**: Completed tenant owner management suite on Redesign A. Implemented `ServiceSetupPage` with photo upload, `FleetMapPage` for real-time courier tracking on OpenStreetMap, `ActivityLogPage` with categorized audit events, shared `VerificationPage` for KYB/KYE document uploads, and owner `AccountPage` with read-only wallet and plan upgrade request ceremony.
+- **Commit SHA**: ``0fa4b130b7528934a8e81de7915ad16287e5cc08``
+- **Verification**: per worklog (32 golden tests pass, widget tests pass, `flutter analyze` 0 issues).
+- **Worklog**: [docs/worklog/FE-OWNER-2b.md](../worklog/FE-OWNER-2b.md)
+
+## Job Model V2 Backend Support: Sub-Status, Recipient & Address Fields (JOB-V2-BE, ADR-0028)
+
+- **Implementation Detail**: Implemented backend Job Model V2 domain logic in `services/user-service` per ADR-0028. Added fields `SubStatus`, `StatusHistory` with atomic transitions, `Recipient` (name, unmasked phone window during active job), `PackageDetails` (size, weight, fragile), and structured addresses with street lines and landmark notes.
+- **Commit SHA**: ``10b1855c8fa15cd2a1c87b7c47143281a6df40aa``
+- **Verification**: per worklog (unit and E2E tests `TestE2E_JobModelV2_CODPickupAndPhoneWindow` PASS).
+- **Worklog**: [docs/worklog/JOB-V2-BE.md](../worklog/JOB-V2-BE.md)
+
+## Owner Daily Workflow Shell: Today, Orders & Team on Redesign A (FE-OWNER-1)
+
+- **Implementation Detail**: Implemented tenant owner core operations on Redesign A (`frontend/lib/features/owner/`). Built `OwnerShell`, `TodayPage` (active orders, revenue summary, quick stats), `OrdersPage` with status filters, order detail inspector, and `TeamPage` for courier roster management, active status toggling, and courier onboarding.
+- **Commit SHA**: ``706d8f05ef1b8fd9a61872b8a813a8244f7d5979``
+- **Verification**: per worklog (widget and golden test suites pass for Today, Orders, and Team tabs).
+- **Worklog**: [docs/worklog/FE-OWNER-1.md](../worklog/FE-OWNER-1.md)
+
+## Auth Gate, Launch Splash, Account & Support on Redesign A (FE-AUTH-ACCOUNT)
+
+- **Implementation Detail**: Migrated authentication, account settings, support tickets, and notifications to Redesign A (`frontend/lib/features/auth/`, `frontend/lib/features/account/`). Implemented `AuthGate` with session restore splash, 2FA toggle, password reset with verification codes, support ticket creation with context IDs, and universal notification inbox with role-based routing.
+- **Commit SHA**: ``11475037d9b2196e9ceafa5d703e5bc22a36e293``
+- **Verification**: per worklog (`flutter test` PASS across auth, account, and support suites, 24 goldens verified).
+- **Worklog**: [docs/worklog/FE-AUTH-ACCOUNT.md](../worklog/FE-AUTH-ACCOUNT.md)
+
+## Customer Order Detail, Timeline & Post-Booking Actions on Redesign A (FE-CUST-2)
+
+- **Implementation Detail**: Implemented customer order tracking on Redesign A (`frontend/lib/features/customer/order/order_detail_page.dart`). Added visual phase timeline (searching, proposed, active, completed, closed), courier call actions, live chat navigation, counter-offer response cards, and post-delivery blind rating submission.
+- **Commit SHA**: ``125c8e5421d81675d0884c34e83f4f107def404d``
+- **Verification**: per worklog (widget tests for all 5 order lifecycle phases pass, golden tests pass).
+- **Worklog**: [docs/worklog/FE-CUST-2.md](../worklog/FE-CUST-2.md)
+
+## Customer Booking Flow & Marketplace Shell on Redesign A (FE-CUST-1)
+
+- **Implementation Detail**: Built the redesigned customer shell (`frontend/lib/features/customer/customer_shell.dart`), marketplace directory (`frontend/lib/features/customer/market_page.dart`), and booking dialog on top of Design System A. Added location picker with interactive pin placement and landmark notes, category filtering (Delivery, Ride, Shipping), and price calculation before booking confirmation.
+- **Commit SHA**: ``9778326e4747b2b741f124a7358bc619cfdb2cf0``
+- **Verification**: per worklog (customer booking widget and golden tests pass, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-CUST-1.md](../worklog/FE-CUST-1.md)
+
+## Redesign A Design System: Tokens, Components & UI Kit (FE-DS)
+
+- **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`frontend/lib/ui/tokens.dart`), light/dark themes (`frontend/lib/ui/qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at route `/qd-gallery` (`frontend/lib/ui/gallery/qd_gallery_screen.dart`) for visual verification of components across states.
+- **Commit SHA**: ``20bc2532731cede9cbb3605f9a621b898c2f0149``
+- **Verification**: per worklog (`flutter test` PASS across design system component tests, `flutter analyze` 0 issues).
+- **Worklog**: [docs/worklog/FE-DS.md](../worklog/FE-DS.md)
+
 ## Employee Propose-a-Price (ADR-0006 ProposePrice, Employee Side)
 
 - **Implementation Detail**: Closed the other deferred half of the employee pricing UI: the employee can now INITIATE the one-shot fare proposal (previously only respond). Backend `ProposePrice` (`POST /users/jobs/propose-price`) needed no changes — verified it already branches `proposerRole = "employee"` for the assigned employee, that fresh transport jobs sit in `awaiting_price_response` with `SuggestedPrice` and nil proposal (so `ProposedPrice == null` is exactly the propose state), and that the one-shot/no-re-propose constraint is structural (store CAS filter on `proposed_price: nil` + terminal `cancelled` decline path — left untouched, confirmed as-is). Frontend: new `EmployeeJobsProvider.proposePrice` (`frontend/lib/providers/employee_jobs_provider.dart`) mirroring `MarketplaceProvider.proposePrice`'s exact shape (`job_id`, `proposed_price`, `requester_token` via `ApiClient.proposePrice` — same endpoint, no second path), replacing the local entry with the server job plus `lastErrorStatusCode` (S5). `employee_jobs_screen.dart` gates three mutually exclusive states off `proposedPrice`/`proposedBy` (structural if/else — never both): propose form (new `employee_price_propose_panel_`, same 50–150% client bounds + inline `enterValidNumberError`/`priceRangeError` + responsive 340bp layout as the customer counter-offer form, new `employeeProposePriceTitle/Body` EN + Egyptian-AR) vs the existing respond panel (other party's proposal, byte-identical) vs a waiting countdown with no actions (own proposal — backend 400s self-responses; the customer already rendered `ProposedBy == "employee"` as its waiting case, so zero customer changes). Error matrix traced from the handler (no string-branching — copy decided from refreshed domain state): client bounds inline; 429 verbatim lockout with no retry and no refresh; 400/409 refresh-then-decide (other's proposal → `employeeProposalRacedError` notice above the converged respond actions with no retry; terminal/gone → `jobStateChangedError`; still-clean → bounds fallback); 404 refresh + friendly notFound; else friendly. Success flips the card to the waiting panel with `employeeProposeSuccessMsg`. No color-token changes (`AppColors` only); no shared-widget changes; no backend diff. Docs: `AI_CONTEXT.md` Issue-1 propose follow-up, `docs/frontend/STATUS.md` Phase-11 entry, ADR-0006 proposal appendix (decision text preserved).

@@ -25,14 +25,20 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment guide (Azure VM, compose, Caddy) | Current | 2026-09-02 | 11 | |
 | [README.md](README.md) | This index | Current | 2026-10-15 | n/a | |
 | [RELEASE-GATE.md](RELEASE-GATE.md) | Release gate specification (quality gates before staging and prod) | Current | 2026-09-13 | 2 | |
+| [RELEASE.md](RELEASE.md) | Release procedure from `logic-exploitation` to `main`, pre-release checks, and deploy verification | Current | 2026-10-28 | 8 | |
 | [REPOSITORY_MAP.md](REPOSITORY_MAP.md) | Four-repo ecosystem and deployment map | Current | 2026-09-01 | 4 | |
 | [RUNBOOK.md](RUNBOOK.md) | Release and server deployment runbook | Current | 2026-09-21 | 4 | |
 | [STAGING.md](STAGING.md) | Staging environment architecture and runbook | Current | 2026-09-11 | 2 | |
 | [WORKFLOW.md](WORKFLOW.md) | Owner/agent workflow, worktree setup, verification loop, and commit rules | Current | 2026-10-16 | 11 | Complemented by [CI_CD_AND_HOOKS.md](CI_CD_AND_HOOKS.md) |
+| [api/ADMIN_API.md](api/ADMIN_API.md) | Admin API specification for ops console (overview, jobs, services, subscriptions, audit, app versions, admin notifications) | Current | 2026-10-29 | 4 | |
 | [architecture/tier-matrix.md](architecture/tier-matrix.md) | Paid-tier gating matrix per endpoint | Current | 2026-09-10 | 2 | |
 | [audit/REBASELINE-2026-10.md](audit/REBASELINE-2026-10.md) | Full codebase rebaseline audit and finding inventory | Current | 2026-10-16 | 1 | |
+| [design/DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Redesign A design system specification (tokens, components, theme) | Reference | 2026-10-26 | 11 | |
 | [qa/QA-COVERAGE.md](qa/QA-COVERAGE.md) | QA strategy and regression coverage matrix (82 KB). Living source of truth for QA | Current | 2026-09-17 | 1 | |
+| [runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md) | Production backup, off-host push, verification, and disaster-recovery restore runbook | Current | 2026-10-27 | 7 | |
+| [runbooks/MONITORING.md](runbooks/MONITORING.md) | Production monitoring, host health snitch, disk space alert, and notification runbook | Current | 2026-10-19 | 4 | |
 | [runbooks/OPS-HARDEN-cutover.md](runbooks/OPS-HARDEN-cutover.md) | Production cutover runbook for OPS-HARDEN compose changes | Current | 2026-10-16 | 1 | |
+| [security/VULN-TRIAGE-2026-10.md](security/VULN-TRIAGE-2026-10.md) | Vulnerability triage report for dependencies and static analysis | Historical | 2026-10-21 | 1 | |
 | [worklog/](worklog/README.md) | Agent task worklogs recording execution and verification | Historical | 2026-10-15 | n/a | |
 | [adr/README.md](adr/README.md) | ADR index and status | Reference | 2026-09-24 | 3 | |
 | [adr/0001-owner-authenticated-employee-provisioning.md](adr/0001-owner-authenticated-employee-provisioning.md) | Owner-authenticated employee provisioning | Reference | 2026-07-13 | 3 | |
@@ -62,6 +68,7 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [adr/0025-working-hours-based-closed-badge.md](adr/0025-working-hours-based-closed-badge.md) | Working-hours out-of-service gate | Reference | 2026-09-23 | 2 | |
 | [adr/0026-two-phase-password-reset.md](adr/0026-two-phase-password-reset.md) | Two-phase password reset | Reference | 2026-09-24 | 1 | |
 | [adr/0027-employee-cancellation-request-workflow.md](adr/0027-employee-cancellation-request-workflow.md) | Employee cancellation request workflow | Reference | 2026-09-24 | 1 | |
+| [adr/0028-job-model-v2.md](adr/0028-job-model-v2.md) | Job model v2: recipient, address text, status history, pickup phase, ETA, and saved addresses | Reference | 2026-10-27 | 4 | |
 | [changelog/README.md](changelog/README.md) | Changelog index | Current | 2026-09-28 | 2 | |
 | [changelog/bug-fixes.md](changelog/bug-fixes.md) | Bug fixes (253 KB) | Current | 2026-09-28 | 5 | |
 | [changelog/documentation.md](changelog/documentation.md) | Documentation changes | Current | 2026-09-26 | 2 | |

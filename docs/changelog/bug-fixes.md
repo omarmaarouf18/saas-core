@@ -4,6 +4,55 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Staging Encryption Key Alignment & 502 Bad Gateway Fix in Release Gate E2E (FIX-E2E-PHOTO)
+
+- **Implementation Detail**: Resolved Release Gate E2E failures on staging: updated `scripts/staging_up.sh` to generate 64-hex random keys for `DOCUMENT_ENCRYPTION_KEY`, updated `services/api-gateway/internal/proxy/proxy.go` to preserve 503 status and `photo_storage_unavailable` error code across the proxy rather than falling back to 502 Bad Gateway, and updated `services/user-service/internal/handlers/services_handlers.go` to drain the request body before returning 503 when photo storage is disabled. Documented release gate behavior in `docs/RELEASE.md`.
+- **Commit SHA**: ``baa1511dba3983dc005cc53a1d35a5516447ae08``
+- **Verification**: per worklog (`TestE2E_ReleaseGate_PhotosDisabledFailsClosedWith503` and full E2E suite PASS).
+- **Worklog**: [docs/worklog/FIX-E2E-PHOTO.md](../worklog/FIX-E2E-PHOTO.md)
+
+## Backend Parity Fix: Event Name Normalization, Error Codes & Service Photo Delete (BE-GAPS-FIX)
+
+- **Implementation Detail**: Resolved contract mismatches identified during frontend integration: normalized notification event types across SSE, history, and FCM to stable `type` field; mapped server validation error codes consistently (`conflict` / `job_state_changed` on lost pickup race, `photo_storage_unavailable` 503 on upload storage failure); added label validation (required, max 100 runes) for saved addresses in `services/auth-service/internal/handlers/auth.go`; and implemented automatic disk cleanup of replaced or cleared service photos via `storage.Deleter` in `shared/infra/storage/storage.go`.
+- **Commit SHA**: ``144d945d699b420a03abe90a5647f59f8ca6f7b9``
+- **Verification**: per worklog (`TestE2E_BEGapsFix` PASS, unit tests green in auth and user services).
+- **Worklog**: [docs/worklog/BE-GAPS-FIX.md](../worklog/BE-GAPS-FIX.md)
+
+## Linux Desktop Build Clang Compilation Fix (FE-LINUX-BUILD)
+
+- **Implementation Detail**: Fixed Linux desktop compilation failure under Clang >= 15 toolchains in `frontend/linux/CMakeLists.txt` by adding `-Wno-deprecated-literal-operator` to prevent build failures on bundled plugin headers (e.g. `flutter_secure_storage_linux`) compiled with `-Wall -Werror`. Documented backend connectivity instructions in `frontend/CONNECTING_TO_BACKEND.md`.
+- **Commit SHA**: ``4ca68c8913e9989afdf984507ccf15f636e6265c``
+- **Verification**: per worklog (`flutter build linux` succeeds without compiler warnings or errors).
+- **Worklog**: [docs/worklog/FE-LINUX-BUILD.md](../worklog/FE-LINUX-BUILD.md)
+
+## Contract Test Token Refresh After Email Change (FIX-E2E-EMAIL)
+
+- **Implementation Detail**: Updated `tests/e2e/contract_auth_test.go` to re-authenticate with the fresh token returned by email-change confirmation (`POST /auth/email-change/confirm`) and verify that the prior token receives 401 Unauthorized following SEC-PAY's session revocation.
+- **Commit SHA**: ``c4fb9205f0092bf3fde08fcfcfd1dc107dc22519``
+- **Verification**: per worklog (`make contract-test` and E2E test suite PASS).
+- **Worklog**: [docs/worklog/FIX-E2E-EMAIL.md](../worklog/FIX-E2E-EMAIL.md)
+
+## Auth Gate Launch Splash Scoped to Session Restore Only (HOTFIX-LOGIN)
+
+- **Implementation Detail**: Fixed an issue where `LaunchSplash` was erroneously displayed during routine credential sign-in and registration attempts. Scoped splash display exclusively to initial application boot session restoration in `frontend/lib/features/auth/auth_gate.dart`.
+- **Commit SHA**: ``60748cf2221aa202764d47ac12567dee2c25fe98``
+- **Verification**: per worklog (widget tests verify splash displays on app boot and does not intercept login/signup).
+- **Worklog**: [docs/worklog/HOTFIX-LOGIN.md](../worklog/HOTFIX-LOGIN.md)
+
+## COD Delivery Completion Before Distance Reconciliation (FIX-COD-RECON)
+
+- **Implementation Detail**: Fixed a state machine deadlock in `services/user-service/internal/handlers/jobs_handlers.go`: when a COD delivery completed with actual travel distance under 70% of booked distance, `CompleteJob` previously failed with 409 requiring escrow reconciliation. Since COD requires no escrow fund movement, COD jobs now transition directly to `completed` and record distance mismatch audit notes without blocking completion.
+- **Commit SHA**: ``f0f4aae5629e90427d5e019f67db80bde96403ec``
+- **Verification**: per worklog (regression tests in `services/user-service/internal/handlers/cod_distance_review_regression_test.go` and `tests/e2e/cod_under_distance_test.go`).
+- **Worklog**: [docs/worklog/FIX-COD-RECON.md](../worklog/FIX-COD-RECON.md)
+
+## Frontend Quickwins: Shipping Tile, Auth Splash, 8-Rune Password & Disposal Race (FE-QUICKWINS)
+
+- **Implementation Detail**: Resolved six frontend defects: updated shipping home tile copy, removed misleading mock trends from wallet dashboard, added branded auth launch splash, updated client password validation to 8 runes matching SEC-03, handled 503/500 backend unavailable states gracefully, and eliminated a disposal race condition in `frontend/lib/providers/notifications_provider.dart`.
+- **Commit SHA**: ``d6a45be4ac920aba665bccb5755d1f82e7e7290a``
+- **Verification**: per worklog (`flutter test` PASS across all affected widget and provider tests, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-QUICKWINS.md](../worklog/FE-QUICKWINS.md)
+
 ## Auth ID/OTP Generators Return Errors Instead of Exiting on crypto/rand Failure (BE-20)
 
 - **Implementation Detail**: `generateID` and `generate6DigitOTP` in `services/auth-service/internal/handlers/auth.go` called `log.Fatalf` when the crypto/rand read failed — a process-wide exit from inside a request handler. Both now return `(string, error)` via a package-level `cryptoRandRead = rand.Read` seam (tests inject a failing reader; production code must not reassign it), and every call site (`Signup` OTP + user ID, `Login` OTP, `VerifyOTP` user ID) propagates the failure as a sanitized 500 `internal_error` through `handlerutil.WriteSafeError` before any state is written.

@@ -1,5 +1,12 @@
 # Frontend Localization & Egyptian Arabic Support
 
+## Per-Device Arabic & English Push Notification Localization (PUSH-L10N)
+
+- **Implementation Detail**: Added device language preference tracking (`lang: "ar"` / `"en"`) to `POST /auth/device-token`. Updated `services/notification-service` to dispatch push notification titles and bodies matching each device recipient's chosen language. Standardized currency formatting in push texts to Egyptian Pounds (`EGP` / `ج.م`) instead of USD `$`.
+- **Commit SHA**: ``748de0dc55b193d30422fc26c3bf954dba876514``
+- **Verification**: per worklog (`TestPushL10N_DeviceLanguagePerToken` PASS, unit tests green).
+- **Worklog**: [docs/worklog/PUSH-L10N.md](../worklog/PUSH-L10N.md)
+
 ## Overview
 Added full internationalization (i18n) infrastructure and Egyptian Colloquial Arabic (`ar_EG`) localization for the Quick Delivery Flutter client per ADR-0014 specifications.
 

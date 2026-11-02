@@ -11,7 +11,7 @@
 The Quick Delivery platform operates across 4 decoupled GitHub repositories and 1 production cloud Virtual Private Server (VPS target `quickdelivery-vm`). Monorepo source code (`omarmaarouf18/saas-core`) is strictly isolated from production deployment manifests, standalone mobile app builds, and static marketing website release metadata.
 
 > [!NOTE]
-> **Client Application Repositories & Scoping**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md), [ADR-0021](adr/0021-kyc-kyb-kye-reviewer-console.md), [ADR-0022](adr/0022-account-suspension-and-reviewer-directory.md), and [ADR-0023](adr/0023-modular-ops-console-expansion.md), reviewer and administrative capabilities are strictly excluded from `frontend/` (`quick-delivery-mobile`). A standalone Reviewer & Operations Console exists at `omarmaarouf18/kyc-reviewer-console` (port 8090, `kyc.logiclinkeg.tech`), housing KYC/KYB/KYE review, Accounts Directory & suspensions, Disputes & Reconciliation, Subscriptions, and Support Tickets (superseding a hypothetical separate support-agent-console repo).
+> **Client Application Repositories & Scoping**: Per [ADR-0013](adr/0013-support-agent-console-as-separate-client-application.md), [ADR-0021](adr/0021-kyc-kyb-kye-reviewer-console.md), [ADR-0022](adr/0022-account-suspension-and-reviewer-directory.md), and [ADR-0023](adr/0023-modular-ops-console-expansion.md), reviewer and administrative capabilities are strictly excluded from `frontend/` (`quick-delivery-mobile`). A standalone Reviewer & Operations Console exists at `omarmaarouf18/kyc-reviewer-console` (port 8090, `kyc.logiclinkeg.tech`), housing console v2 with 12 administrative tabs: Overview, KYC, Accounts, Jobs, Services moderation, Subscriptions queue, Tickets, Disputes, Payouts, Audit, App versions, and Notifications (see [docs/api/ADMIN_API.md](api/ADMIN_API.md)).
 
 ```mermaid
 flowchart TD
@@ -106,8 +106,10 @@ The repository enforces a strict two-tier branch safety model:
 
 ## 4. Day-to-Day Operator Runbook & Verification Commands
 
-### 4.1 Merging `logic-exploitation` to `main` (Promoting a Release)
-To trigger a production build and update `saas-core-deploy`:
+### 4.1 Releasing `logic-exploitation` to `main` (Promoting a Release)
+Release promotion is managed via `make release` (see [docs/RELEASE.md](RELEASE.md)), which verifies that the tree is clean, CI/E2E workflows pass, merges `logic-exploitation` into `main`, and pushes to `origin/main`.
+
+Alternatively, manual promotion:
 ```bash
 git checkout main
 git pull origin main
@@ -116,8 +118,11 @@ git push origin main
 git checkout logic-exploitation
 ```
 
-### 4.2 Production VM Stack Deployment (`quickdelivery-vm`)
-Deployment is **automated** via the self-hosted GitHub Actions runner (`saas-vm-runner`) on `quickdelivery-vm`. When `saas-core` pushes to `main`, `build-and-publish.yml` updates `saas-core-deploy:main`, triggering `deploy.yml` on the production VM. Per [ADR-0015](adr/0015-strict-cd-preflight-validation.md) and OPS-HARDEN:
+### 4.2 Automated Release Flow & Production Deployment (`quickdelivery-vm`)
+1. **Backend Service Deployment**: When `main` is updated, GitHub Actions workflow `build-and-publish.yml` compiles multi-stage production Docker images, pushes them to GitHub Container Registry (`ghcr.io/omarmaarouf18/saas-core-*:<sha>`), and commits updated image tags to `omarmaarouf18/saas-core-deploy:main`. This triggers `deploy.yml` on the self-hosted runner (`saas-vm-runner`) on `quickdelivery-vm`.
+2. **Mobile App Release Pipeline**: When commits touching `frontend/**` land on `main`, `sync-mobile-frontend.yml` splits the `frontend/` subtree and pushes to `omarmaarouf18/quick-delivery-mobile:main`. That repository's `build-apk.yml` compiles release APKs (universal + split ABIs), creates a GitHub Release `app-release-<sha>`, and updates `app-release.json` in `omarmaarouf18/logiclink` (Vercel marketing site at `logiclinkeg.tech`) with the latest APK download URL. (Internal pipeline steps in `quick-delivery-mobile` and `logiclink` are unverified here).
+
+Per [ADR-0015](adr/0015-strict-cd-preflight-validation.md) and OPS-HARDEN:
 - Caddy runs as a compose-managed service (`saas-caddy`), using `infrastructure/deploy/Caddyfile` and persisting TLS certificates across deployments via the external `caddy_data` volume. Caddy is never started by hand.
 - The API Gateway (`api-gateway`) has no published host port. All external traffic terminates at Caddy (ports 80/443). Internal health checks from the VM host execute inside the container: `docker exec saas-api-gateway curl -sk https://localhost:8080/health`.
 - The admin API (`/api/v1/admin/*`, version configuration) returns `404` at Caddy edge and is strictly accessible from the VM host via `docker exec saas-api-gateway` with `X-Admin-Token`.

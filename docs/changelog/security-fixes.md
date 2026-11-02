@@ -2,6 +2,27 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Reviewer Console Operations API, Edge Security & Fail-Closed Version Store (ADMIN-API, ADMIN-API-FIX)
+
+- **Implementation Detail**: Secured reviewer operations console (`kyc.logiclinkeg.tech`): enforced HTTP basic_auth with bcrypt in Caddy edge proxy, blocked external `/admin/*` gateway access via client certificates (`ADMIN-API-FIX`), stripped incoming client `X-Internal-Token` headers, forwarded client IP via `X-Console-Client-IP` to prevent rate-limit bypasses, and made `api-gateway` platform version store MongoDB-backed and fail-closed.
+- **Commit SHA**: ``2263a51628b4e5d99bb5f8f42b9051c0b7ac6b8d``
+- **Verification**: per worklog (`TestE2E_AdminConsoleEndpoints` PASS covering all edge security, cert, and audit checks).
+- **Worklog**: [docs/worklog/ADMIN-API.md](../worklog/ADMIN-API.md)
+
+## Go Dependency Vulnerability Triage & Module Upgrades (DEPS-VULN)
+
+- **Implementation Detail**: Triaged vulnerabilities with `govulncheck` and upgraded Go dependencies across microservices. Aligned `mongo-driver/v2` to v2.8.0 across all microservices and upgraded `x/crypto` from v0.54.0 to v0.55.0, `x/text` from v0.40.0 to v0.41.0, and `klauspost/compress` from v1.17.6 to v1.18.7. Documented triage analysis in `docs/security/VULN-TRIAGE-2026-10.md`. Upgrading `x/crypto` to v0.56.0 was left open pending Go version directive alignment across modules.
+- **Commit SHA**: ``409655540ede37c622674148bc2cec3f4fef1b0d``
+- **Verification**: per worklog (`govulncheck` reported 0 vulnerabilities called by application code; uncalled indirect findings documented; all module test suites pass).
+- **Worklog**: [docs/worklog/DEPS-VULN.md](../worklog/DEPS-VULN.md)
+
+## Email-Change Revocation, Store Error Visibility & COD-Only Guard (SEC-PAY)
+
+- **Implementation Detail**: Updated email change confirmation (`POST /auth/email-change/confirm` in `services/auth-service/internal/handlers/auth.go`, initiated via `/auth/email-change/request`) to revoke all existing user sessions upon email change (SEC-07c). In `services/user-service/internal/store/mongodb.go`, surfaced store errors in non-money paths (`CreateService`, startup config/seed, courier stale lock self-heal, admin subscription activation) while swallowed store errors in money paths (escrow, deposits, payouts, ledger entries) were surveyed and left unfixed (deferred to future money task). Added fail-closed runtime checks enforcing COD-only payment processing (`DIGITAL_PAYMENTS_ENABLED=false`) in `POST /users/jobs/track` unless bypass is enabled in local/test.
+- **Commit SHA**: ``ed5f2ba1328bbf9f341647b5efba22b65cdf000f``
+- **Verification**: per worklog (`TestConfirmEmailChange_RevokesOldSessions` PASS, unit and integration tests pass).
+- **Worklog**: [docs/worklog/SEC-PAY.md](../worklog/SEC-PAY.md)
+
 ## Session Revocation Fails Closed on Password Reset and Suspension (SEC-07b)
 
 - **Implementation Detail**: revoke-before-state-change in the remaining session-revocation paths (all in `auth-service`), closing the "state saved, revocation failed and was swallowed" gap. The worklog also records the round-2 owner decision: do not save a state change whose revocation failed — while Redis is down every token is already rejected by `ValidateToken`, and saving would silently re-enable the old tokens the moment Redis returns.
