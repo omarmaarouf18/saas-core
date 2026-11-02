@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Customer Booking Flow & Marketplace Shell on Redesign A (FE-CUST-1)
+
+- **Implementation Detail**: Built the redesigned customer shell (`features/customer/customer_shell.dart`), marketplace directory (`market_page.dart`), and booking dialog on top of Design System A. Added location picker with interactive pin placement and landmark notes, category filtering (Delivery, Ride, Shipping), and price calculation before booking confirmation.
+- **Commit SHA**: ``9778326e4747b2b741f124a7358bc619cfdb2cf0``
+- **Verification**: per worklog (customer booking widget and golden tests pass, `flutter analyze` clean).
+- **Worklog**: [docs/worklog/FE-CUST-1.md](../worklog/FE-CUST-1.md)
+
 ## Redesign A Design System: Tokens, Components & UI Kit (FE-DS)
 
 - **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`tokens.dart`), light/dark themes (`qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at `/qd-gallery` (`gallery/qd_gallery_screen.dart`) for visual verification of components across states.
