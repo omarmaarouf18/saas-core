@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Staging Encryption Key Alignment & 502 Bad Gateway Fix in Release Gate E2E (FIX-E2E-PHOTO)
+
+- **Implementation Detail**: Resolved Release Gate E2E failures on staging: aligned `DOCUMENT_ENCRYPTION_KEY` generation in `scripts/staging_up.sh` to valid 64-hex format, fixed photo upload test payload structure to prevent 502 Bad Gateway proxy errors, and ensured clean teardown between runs.
+- **Commit SHA**: ``baa1511dba3983dc005cc53a1d35a5516447ae08``
+- **Verification**: per worklog (full E2E test suite green against local staging stack).
+- **Worklog**: [docs/worklog/FIX-E2E-PHOTO.md](../worklog/FIX-E2E-PHOTO.md)
+
 ## Backend Parity Fix: Event Name Normalization, Error Codes & Service Photo Delete (BE-GAPS-FIX)
 
 - **Implementation Detail**: Resolved contract mismatches identified during frontend integration: normalized notification event types across SSE, history, and FCM to stable `type` field; mapped server validation error codes consistently; implemented service photo deletion endpoint `DELETE /users/services/{id}/photo` removing stored files from disk.
