@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## FCM HTTP v1 OAuth2 Push Delivery in Notification Service (PUSH-BE)
+
+- **Implementation Detail**: Upgraded FCM delivery in `services/notification-service` from legacy API keys to modern FCM HTTP v1 REST API with Google Cloud service account OAuth2 token authentication (`internal/fcm/oauth.go`). Added automatic token refresh, non-blocking fan-out via `PushDispatcher`, and stale device token cleanup upon receiving 404/Unregistered responses.
+- **Commit SHA**: ``ccdee0ab3364121fd2b93ba35fe6398af07dcb53``
+- **Verification**: per worklog (`TestPushBE_NotificationServiceDeliversViaFCMOAuth` PASS, unit tests green).
+- **Worklog**: [docs/worklog/PUSH-BE.md](../worklog/PUSH-BE.md)
+
 ## Frontend Integration of Service Photos, Saved Addresses & Error Code Handling (FE-BE-GAPS)
 
 - **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`api_error_codes.dart`), and push notification tap routing (`notification_tap_router.dart`).
