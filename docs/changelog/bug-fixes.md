@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Linux Desktop Build Clang Compilation Fix (FE-LINUX-BUILD)
+
+- **Implementation Detail**: Fixed Linux desktop compilation failure under newer clang toolchains in `frontend/linux/my_application.cc` by adding explicit cast for `G_APPLICATION` flags. Restored clean local Linux desktop build execution for developer testing.
+- **Commit SHA**: ``4ca68c8913e9989afdf984507ccf15f636e6265c``
+- **Verification**: per worklog (`flutter build linux` succeeds without compiler warnings or errors).
+- **Worklog**: [docs/worklog/FE-LINUX-BUILD.md](../worklog/FE-LINUX-BUILD.md)
+
 ## Contract Test Token Refresh After Email Change (FIX-E2E-EMAIL)
 
 - **Implementation Detail**: Updated `tests/contracts/auth_contract_test.go` and `tests/e2e/e2e_helpers.go` to re-authenticate and acquire a fresh JWT session after invoking `POST /auth/change-email`, resolving contract test failures caused by SEC-PAY's session invalidation.
