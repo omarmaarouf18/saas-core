@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Guarded Single-Command Production Release Automation (WF-RELEASE)
+
+- **Implementation Detail**: Created guarded release tooling: `make release-status` to inspect release readiness ahead of `origin/main`, `make release` to fast-forward `main` after verifying clean CI and Release Gate runs, and `make hotfix NAME=<slug>` for isolated production hotfixes. Published authoritative release documentation at `docs/RELEASE.md`. Added automated test suite `scripts/test_release.sh`.
+- **Commit SHA**: ``fcee43be1bb4a60efdf9d6125aecbc9f9256f29e``
+- **Verification**: per worklog (`scripts/test_release.sh` and `scripts/test_release_status.sh` PASS).
+- **Worklog**: [docs/worklog/WF-RELEASE.md](../worklog/WF-RELEASE.md)
+
 ## Production Service Photo Volume Persistence, Encryption & Daily Backup (PROD-PHOTO-STORAGE)
 
 - **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `backup-to-s3.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration.
