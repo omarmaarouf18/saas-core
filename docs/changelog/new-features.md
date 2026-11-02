@@ -32,7 +32,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## Frontend Integration of Service Photos, Saved Addresses & Error Code Handling (FE-BE-GAPS)
 
-- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`booking_rules.dart`, `courier_rules.dart`), and push notification tap routing (`frontend/lib/features/account/notifications/push_tap_handler.dart`).
+- **Implementation Detail**: Integrated backend capabilities in Flutter client: implemented `ServicePhotoScope` and `ServicePhotoStore` with in-memory caching and multipart upload, customer saved address management in place pickers, rune-length counters (`QdTextField.maxRunes`), server error code translation (`frontend/lib/features/customer/booking_rules.dart`, `frontend/lib/features/courier/courier_rules.dart`), and push notification tap routing (`frontend/lib/features/account/notifications/push_tap_handler.dart`).
 - **Commit SHA**: ``a5b3667066e96ef4f0437a1cf3cce3c2863d2248``
 - **Verification**: per worklog (`flutter test` PASS across 1,287 tests, `flutter analyze` clean).
 - **Worklog**: [docs/worklog/FE-BE-GAPS.md](../worklog/FE-BE-GAPS.md)
@@ -46,7 +46,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## Consume Job Model V2 in Flutter Frontend: Recipient, Package & Address (FE-V2-CONSUME)
 
-- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`saved_address_rules.dart`), and direct call/map actions via `url_launcher 6.3.2`.
+- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`frontend/lib/features/account/saved_address_rules.dart`), and direct call/map actions via `url_launcher 6.3.2`.
 - **Commit SHA**: ``758f01b4143e02ba6172409559dfa70449c64495``
 - **Verification**: per worklog (widget tests verify client field validation and server 400 error mapping).
 - **Worklog**: [docs/worklog/FE-V2-CONSUME.md](../worklog/FE-V2-CONSUME.md)
@@ -102,7 +102,7 @@ This file tracks historical entries for the primary category: **New Features Cha
 
 ## Redesign A Design System: Tokens, Components & UI Kit (FE-DS)
 
-- **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`tokens.dart`), light/dark themes (`qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at route `/qd-gallery` (`frontend/lib/ui/gallery/qd_gallery_screen.dart`) for visual verification of components across states.
+- **Implementation Detail**: Built the foundational Design System A in `frontend/lib/ui/`, establishing canonical tokens (`frontend/lib/ui/tokens.dart`), light/dark themes (`frontend/lib/ui/qd_theme.dart`), and reusable primitives (`QdButton`, `QdCard`, `QdTextField`, `QdBadge`). Added a debug-only interactive gallery at route `/qd-gallery` (`frontend/lib/ui/gallery/qd_gallery_screen.dart`) for visual verification of components across states.
 - **Commit SHA**: ``20bc2532731cede9cbb3605f9a621b898c2f0149``
 - **Verification**: per worklog (`flutter test` PASS across design system component tests, `flutter analyze` 0 issues).
 - **Worklog**: [docs/worklog/FE-DS.md](../worklog/FE-DS.md)

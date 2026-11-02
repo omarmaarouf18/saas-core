@@ -11,14 +11,14 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Production Service Photo Volume Persistence, Encryption & Daily Backup (PROD-PHOTO-STORAGE)
 
-- **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `infrastructure/deploy/backup/backup.sh` and `restore.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration and documented procedures in `docs/runbooks/BACKUP-RESTORE.md` and `docs/DEPLOYMENT.md`.
+- **Implementation Detail**: Configured persistent Docker volume `service_photos` in `infrastructure/deploy/docker-compose.prod.yml` ensuring uploaded service photos survive container deployments. Extended `infrastructure/deploy/backup/backup.sh` and `infrastructure/deploy/backup/restore.sh` to archive and age-encrypt service photos alongside database dumps. Added staging photo storage configuration and documented procedures in `docs/runbooks/BACKUP-RESTORE.md` and `docs/DEPLOYMENT.md`.
 - **Commit SHA**: ``bca961e7fcaf1f6cce3856e97a6672f819ce604a``
 - **Verification**: per worklog (backup and restore scripts verify photo archive encryption and extraction).
 - **Worklog**: [docs/worklog/PROD-PHOTO-STORAGE.md](../worklog/PROD-PHOTO-STORAGE.md)
 
 ## Universal APK Distribution Channel & Version Code Alignment (FE-APK-CHANNEL)
 
-- **Implementation Detail**: Updated `build-apk.yml` to build a universal release APK (`app-release.apk`) in addition to per-ABI splits (arm64-v8a, armeabi-v7a, x86_64). Aligned version code assignment so in-app version update prompts and website downloads deliver consistent universal binaries. Added `scripts/test_apk_channel.sh` regression guard.
+- **Implementation Detail**: Updated `frontend/.github/workflows/build-apk.yml` to build a universal release APK (`app-release.apk`) in addition to per-ABI splits (arm64-v8a, armeabi-v7a, x86_64). Aligned version code assignment so in-app version update prompts and website downloads deliver consistent universal binaries. Added `scripts/test_apk_channel.sh` regression guard.
 - **Commit SHA**: ``c3fe2c5d2795635a2a31c90c2e29c739277f742b``
 - **Verification**: per worklog (`scripts/test_apk_channel.sh` PASS, workflow dry-run verified).
 - **Worklog**: [docs/worklog/FE-APK-CHANNEL.md](../worklog/FE-APK-CHANNEL.md)
@@ -32,14 +32,14 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Go Toolchain Bump to 1.26.10 for Security Patch GO-2026-6809 (GO-1-26-10)
 
-- **Implementation Detail**: Updated canonical Go toolchain version to 1.26.10 in `tools/versions.env`, `go.work`, all service `go.mod` files, Dockerfiles, and GitHub CI workflow (`ci.yml`). Remediates Go standard library vulnerability GO-2026-6809.
+- **Implementation Detail**: Updated canonical Go toolchain version to 1.26.10 in `tools/versions.env`, `go.work`, all service `go.mod` files, Dockerfiles, and GitHub CI workflow (`.github/workflows/ci.yml`). Remediates Go standard library vulnerability GO-2026-6809.
 - **Commit SHA**: ``5a2bda660e6316edb33f7763a0adeb5c00a0d5c7``
 - **Verification**: per worklog (`scripts/check-go-version.sh` clean, `make ci-full` PASS, govulncheck clean).
 - **Worklog**: [docs/worklog/GO-1-26-10.md](../worklog/GO-1-26-10.md)
 
 ## Minimal Monitoring: Uptime Runbook, Backup Dead-Man Ping & Host Health (OBS-MIN)
 
-- **Implementation Detail**: Created host monitoring automation with `infrastructure/deploy/monitor/hostcheck.sh`, systemd service `quickdelivery-monitor.service`, and systemd timer `quickdelivery-monitor.timer`. Added dead-man ping integration to `infrastructure/deploy/backup/backup.sh` (pinging healthchecks.io/UptimeRobot via curl). Published operations runbook at `docs/runbooks/MONITORING.md`. External uptime monitor setup remains pending owner portal configuration.
+- **Implementation Detail**: Created host monitoring automation with `infrastructure/deploy/monitor/hostcheck.sh`, systemd service `infrastructure/deploy/monitor/quickdelivery-monitor.service`, and systemd timer `infrastructure/deploy/monitor/quickdelivery-monitor.timer`. Added dead-man ping integration to `infrastructure/deploy/backup/backup.sh` (pinging healthchecks.io/UptimeRobot via curl). Published operations runbook at `docs/runbooks/MONITORING.md`. External uptime monitor setup remains pending owner portal configuration.
 - **Commit SHA**: ``020d54cced1856c12dc6663e48c8a78847030e11``
 - **Verification**: per worklog (health check script executed, curl alerts verified, documentation checks passed).
 - **Worklog**: [docs/worklog/OBS-MIN.md](../worklog/OBS-MIN.md)
@@ -53,7 +53,7 @@ This file tracks historical entries for the primary category: **Infrastructure &
 
 ## Encrypted Daily Off-Host Backups with Tested Restore & Age-Encrypted Env (OPS-BACKUP, OPS-BACKUP2)
 
-- **Implementation Detail**: Implemented daily encrypted backups in `infrastructure/deploy/backup/backup.sh` (dumping MongoDB with `mongodump`, compressing with zstd, encrypting with `age` via `backup-recipient.pub`, and uploading to S3-compatible storage), scheduled daily via systemd timer `quickdelivery-backup.timer` and service `quickdelivery-backup.service`. Added tested restore script `infrastructure/deploy/backup/restore.sh`, local e2e test `infrastructure/deploy/backup/test/e2e-local.sh`, and runbook `docs/runbooks/BACKUP-RESTORE.md`. Added age-encrypted `.env` packaging (`OPS-BACKUP2`).
+- **Implementation Detail**: Implemented daily encrypted backups in `infrastructure/deploy/backup/backup.sh` (dumping MongoDB with `mongodump`, compressing with zstd, encrypting with `age` via `backup-recipient.pub`, and uploading to S3-compatible storage), scheduled daily via systemd timer `infrastructure/deploy/backup/quickdelivery-backup.timer` and service `infrastructure/deploy/backup/quickdelivery-backup.service`. Added tested restore script `infrastructure/deploy/backup/restore.sh`, local e2e test `infrastructure/deploy/backup/test/e2e-local.sh`, and runbook `docs/runbooks/BACKUP-RESTORE.md`. Added age-encrypted `.env` packaging (`OPS-BACKUP2`).
 - **Commit SHA**: ``10dd01b3183ceac3ed01ea7d35558e1093d5b29d``
 - **Verification**: per worklog (dump, encryption, upload, and clean test restore verified against staging).
 - **Worklog**: [docs/worklog/OPS-BACKUP.md](../worklog/OPS-BACKUP.md), [docs/worklog/OPS-BACKUP2.md](../worklog/OPS-BACKUP2.md)
