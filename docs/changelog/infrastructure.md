@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Production Compose Hardening: Caddy Reverse Proxy & Private Gateway (OPS-HARDEN)
+
+- **Implementation Detail**: Hardened `infrastructure/deploy/docker-compose.prod.yml` to run Caddy inside Docker Compose, routing external traffic over a private Docker network and removing direct host port exposure for `api-gateway`. Configured container log rotation (max 100MB, 3 files) and memory limits across all services. Added automatic one-time cutover guard script `infrastructure/deploy/caddy-cutover-guard.sh`.
+- **Commit SHA**: ``9ed529176e609c87c2ce6f3b06b666790a16022c``
+- **Verification**: per worklog (`docker compose config` valid, cutover script tested on staging, compose health checks green).
+- **Worklog**: [docs/worklog/OPS-HARDEN.md](../worklog/OPS-HARDEN.md)
+
 ## Real-Redis Integration Test Isolation & Seed Context Hardening (TST-01, TST-02)
 
 - **Implementation Detail**: Isolated real-Redis integration tests using per-run unique keys and channels (`shared/infra/testutil`) to prevent data contamination during concurrent test execution. Hardened handler tests in `services/auth-service` and `services/user-service` to execute test seed writes with their own distinct context and fail loudly on setup errors instead of masking failure modes.
