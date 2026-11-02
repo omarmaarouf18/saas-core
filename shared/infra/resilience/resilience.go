@@ -2,6 +2,7 @@ package resilience
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -52,6 +53,64 @@ type BreakerStats struct {
 	Successes      uint32 `json:"successes"`
 }
 
+// Option customises a resilience client or round tripper.
+type Option func(*options)
+
+type options struct {
+	// passthroughUpstream5xx makes an upstream 5xx response reach the caller
+	// unchanged instead of being turned into a synthetic error.
+	passthroughUpstream5xx bool
+}
+
+// WithUpstream5xxPassthrough hands a final upstream 5xx response back to the
+// caller with its original status, headers and body and a nil error, instead
+// of the synthetic "HTTP status N" error every other caller sees.
+//
+// The circuit breaker still counts the 5xx as a failure and the retry policy
+// is unchanged (an idempotent request is still retried, a non-idempotent one
+// is not); only the response of the last attempt is passed through.
+//
+// This is opt-in: every existing caller keeps the error behaviour unless it
+// asks for the passthrough. Only the API gateway proxy transport uses it, so
+// the edge can relay an upstream 5xx (for example user-service's
+// photo_storage_unavailable) to the client byte for byte.
+func WithUpstream5xxPassthrough() Option {
+	return func(o *options) {
+		o.passthroughUpstream5xx = true
+	}
+}
+
+func newOptions(opts []Option) *options {
+	o := &options{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(o)
+		}
+	}
+	return o
+}
+
+// upstream5xxError marks an upstream 5xx response. It is handed to the
+// circuit breaker so the 5xx counts as a failure, but with
+// WithUpstream5xxPassthrough the client converts it back into the original
+// response for the caller.
+//
+// The message is unchanged ("HTTP status N") because chat-service parses it
+// with a regular expression to keep the upstream outage status visible.
+type upstream5xxError struct {
+	status int
+}
+
+func (e *upstream5xxError) Error() string {
+	return fmt.Sprintf("HTTP status %d", e.status)
+}
+
+// isUpstream5xx reports whether err marks an upstream 5xx response.
+func isUpstream5xx(err error) bool {
+	var upErr *upstream5xxError
+	return errors.As(err, &upErr)
+}
+
 var (
 	breakersMu sync.RWMutex
 	breakers   = make(map[string]*gobreaker.CircuitBreaker[*http.Response])
@@ -99,9 +158,10 @@ type ResilienceClient struct {
 	initialBackoff time.Duration
 	maxBackoff     time.Duration
 	attemptTimeout time.Duration
+	opts           *options
 }
 
-func NewClient(client *http.Client, serviceName string, maxRetries int, attemptTimeout time.Duration) *ResilienceClient {
+func NewClient(client *http.Client, serviceName string, maxRetries int, attemptTimeout time.Duration, opts ...Option) *ResilienceClient {
 	cbSettings := gobreaker.Settings{
 		Name:        serviceName,
 		MaxRequests: 3, // consecutive successes needed in half-open state to close
@@ -125,6 +185,7 @@ func NewClient(client *http.Client, serviceName string, maxRetries int, attemptT
 		initialBackoff: 100 * time.Millisecond,
 		maxBackoff:     1 * time.Second,
 		attemptTimeout: attemptTimeout,
+		opts:           newOptions(opts),
 	}
 }
 
@@ -185,13 +246,27 @@ func (rc *ResilienceClient) Do(req *http.Request) (*http.Response, error) {
 			}
 
 			if resp.StatusCode >= 500 {
-				return resp, fmt.Errorf("HTTP status %d", resp.StatusCode)
+				return resp, &upstream5xxError{status: resp.StatusCode}
 			}
 
 			return resp, nil
 		})
 
 		if lastErr != nil {
+			if isUpstream5xx(lastErr) {
+				// The upstream answered 5xx. The retry policy is unchanged:
+				// the next attempt runs when there is one left.
+				if rc.opts.passthroughUpstream5xx && attempt == maxAttempts-1 {
+					// Last attempt: hand the upstream response to the caller
+					// unchanged. The body is still open, so it is readable.
+					// The breaker already counted the 5xx.
+					return lastResp, nil
+				}
+				if lastResp != nil && lastResp.Body != nil {
+					_ = lastResp.Body.Close()
+				}
+				continue
+			}
 			if lastResp != nil && lastResp.Body != nil {
 				_ = lastResp.Body.Close()
 			}
@@ -214,9 +289,10 @@ type ResilienceRoundTripper struct {
 	initialBackoff time.Duration
 	maxBackoff     time.Duration
 	attemptTimeout time.Duration
+	opts           *options
 }
 
-func NewRoundTripper(underlying http.RoundTripper, serviceName string, maxRetries int, attemptTimeout time.Duration) *ResilienceRoundTripper {
+func NewRoundTripper(underlying http.RoundTripper, serviceName string, maxRetries int, attemptTimeout time.Duration, opts ...Option) *ResilienceRoundTripper {
 	cbSettings := gobreaker.Settings{
 		Name:        serviceName,
 		MaxRequests: 3,
@@ -240,6 +316,7 @@ func NewRoundTripper(underlying http.RoundTripper, serviceName string, maxRetrie
 		initialBackoff: 100 * time.Millisecond,
 		maxBackoff:     1 * time.Second,
 		attemptTimeout: attemptTimeout,
+		opts:           newOptions(opts),
 	}
 }
 
@@ -298,13 +375,27 @@ func (rt *ResilienceRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 			}
 
 			if resp.StatusCode >= 500 {
-				return resp, fmt.Errorf("HTTP status %d", resp.StatusCode)
+				return resp, &upstream5xxError{status: resp.StatusCode}
 			}
 
 			return resp, nil
 		})
 
 		if lastErr != nil {
+			if isUpstream5xx(lastErr) {
+				// The upstream answered 5xx. The retry policy is unchanged:
+				// the next attempt runs when there is one left.
+				if rt.opts.passthroughUpstream5xx && attempt == maxAttempts-1 {
+					// Last attempt: hand the upstream response to the caller
+					// unchanged. The body is still open, so it is readable.
+					// The breaker already counted the 5xx.
+					return lastResp, nil
+				}
+				if lastResp != nil && lastResp.Body != nil {
+					_ = lastResp.Body.Close()
+				}
+				continue
+			}
 			if lastResp != nil && lastResp.Body != nil {
 				_ = lastResp.Body.Close()
 			}

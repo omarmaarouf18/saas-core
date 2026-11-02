@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -564,10 +565,14 @@ func TestProxyStreamingResponse_WithLoggingMiddleware_FlushesImmediately(t *test
 
 func TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503(t *testing.T) {
 	gatewaySecret := "my-secret"
+	// The exact bytes user-service writes for a broken photo storage
+	// (handlerutil.WriteSafeError: error, stable code and request id).
+	const upstreamBody = `{"error":"photo storage unavailable","code":"photo_storage_unavailable","request_id":"0123456789abcdef"}` + "\n"
+
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		_, _ = w.Write([]byte(`{"error":"photo storage unavailable","code":"photo_storage_unavailable"}`))
+		_, _ = w.Write([]byte(upstreamBody))
 	}))
 	defer backend.Close()
 
@@ -577,7 +582,8 @@ func TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503(t *testing.
 		StripPrefix: "/api/v1",
 	}
 
-	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-user-route", 2, 5*time.Second)
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-user-route", 2, 5*time.Second,
+		resilience.WithUpstream5xxPassthrough())
 	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
 	if err != nil {
 		t.Fatalf("failed to create proxy: %v", err)
@@ -600,6 +606,135 @@ func TestProxy_Upstream503PhotoStorageUnavailable_PassesThroughAs503(t *testing.
 	}
 	if !strings.Contains(string(body), "photo_storage_unavailable") {
 		t.Fatalf("expected body to contain photo_storage_unavailable, got: %s", string(body))
+	}
+	// BE-HARDEN item 1: the upstream response reaches the client byte for
+	// byte. The gateway used to fabricate its own body from the status code
+	// and a "/photo" path check, which dropped the request id.
+	if string(body) != upstreamBody {
+		t.Errorf("expected the upstream body byte for byte, got %q", string(body))
+	}
+	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
+		t.Errorf("expected the upstream Content-Type, got %q", ct)
+	}
+}
+
+// TestProxy_Upstream500BodyPassesThrough covers BE-HARDEN item 1: an
+// upstream 5xx that is not a photo path is relayed unchanged too. Before the
+// fix the gateway answered with its own {"error": "service unavailable",
+// "target": ...} body.
+func TestProxy_Upstream500BodyPassesThrough(t *testing.T) {
+	gatewaySecret := "my-secret"
+	const upstreamBody = `{"error":"internal failure","detail":"upstream exploded"}` + "\n"
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Upstream-Marker", "user-service")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(upstreamBody))
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{
+		Prefix:      "/api/v1/users/",
+		Target:      backend.URL,
+		StripPrefix: "/api/v1",
+	}
+
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-user-route-500", 2, 5*time.Second,
+		resilience.WithUpstream5xxPassthrough())
+	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/users/jobs")
+	if err != nil {
+		t.Fatalf("GET through gateway failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d: %s", resp.StatusCode, string(body))
+	}
+	if string(body) != upstreamBody {
+		t.Errorf("expected the upstream body byte for byte, got %q", string(body))
+	}
+	if got := resp.Header.Get("X-Upstream-Marker"); got != "user-service" {
+		t.Errorf("expected the upstream header to survive, got %q", got)
+	}
+}
+
+// TestProxy_Upstream5xxStillOpensCircuitBreaker covers BE-HARDEN item 1: the
+// passthrough must not stop the circuit breaker from counting the upstream
+// 5xx as a failure. After five consecutive 5xx the breaker is open and the
+// gateway answers 502 without reaching the upstream.
+func TestProxy_Upstream5xxStillOpensCircuitBreaker(t *testing.T) {
+	gatewaySecret := "my-secret"
+	var hits int32
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"error":"upstream down"}`))
+	}))
+	defer backend.Close()
+
+	route := config.ServiceRoute{
+		Prefix:      "/api/v1/users/",
+		Target:      backend.URL,
+		StripPrefix: "/api/v1",
+	}
+
+	// A POST is not idempotent, so every request makes exactly one attempt
+	// and therefore counts exactly one failure.
+	resilientTransport := resilience.NewRoundTripper(http.DefaultTransport, "test-user-route-breaker", 2, 5*time.Second,
+		resilience.WithUpstream5xxPassthrough())
+	proxyHandler, err := New(route, gatewaySecret, []string{"127.0.0.1", "::1"}, resilientTransport)
+	if err != nil {
+		t.Fatalf("failed to create proxy: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle(route.Prefix, proxyHandler)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	for i := 0; i < 5; i++ {
+		resp, err := http.Post(srv.URL+"/api/v1/users/jobs", "application/json", strings.NewReader("{}"))
+		if err != nil {
+			t.Fatalf("request %d through the gateway failed: %v", i+1, err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusServiceUnavailable {
+			t.Fatalf("request %d: expected 503, got %d: %s", i+1, resp.StatusCode, string(body))
+		}
+	}
+
+	if got := atomic.LoadInt32(&hits); got != 5 {
+		t.Fatalf("expected 5 upstream hits, got %d", got)
+	}
+
+	// The breaker is open now: the gateway answers 502 and the upstream is
+	// not reached any more.
+	resp, err := http.Post(srv.URL+"/api/v1/users/jobs", "application/json", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatalf("request through the open breaker failed: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502 with an open breaker, got %d: %s", resp.StatusCode, string(body))
+	}
+	if got := atomic.LoadInt32(&hits); got != 5 {
+		t.Errorf("expected the upstream not to be reached with an open breaker, got %d hits", got)
 	}
 }
 
