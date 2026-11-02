@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## Contract Test Token Refresh After Email Change (FIX-E2E-EMAIL)
+
+- **Implementation Detail**: Updated `tests/contracts/auth_contract_test.go` and `tests/e2e/e2e_helpers.go` to re-authenticate and acquire a fresh JWT session after invoking `POST /auth/change-email`, resolving contract test failures caused by SEC-PAY's session invalidation.
+- **Commit SHA**: ``c4fb9205f0092bf3fde08fcfcfd1dc107dc22519``
+- **Verification**: per worklog (`make contract-test` and E2E test suite PASS).
+- **Worklog**: [docs/worklog/FIX-E2E-EMAIL.md](../worklog/FIX-E2E-EMAIL.md)
+
 ## Auth Gate Launch Splash Scoped to Session Restore Only (HOTFIX-LOGIN)
 
 - **Implementation Detail**: Fixed an issue where `LaunchSplash` was erroneously displayed during routine credential sign-in and registration attempts. Scoped splash display exclusively to initial application boot session restoration in `features/auth/auth_gate.dart`.
