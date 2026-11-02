@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Encrypted Daily Off-Host Backups with Tested Restore & Age-Encrypted Env (OPS-BACKUP, OPS-BACKUP2)
+
+- **Implementation Detail**: Implemented automated daily off-host backup script `infrastructure/deploy/backup-to-s3.sh` dumping MongoDB with `mongodump`, compressing with zstd, and encrypting archives with `age` recipient public keys. Created automated restore verification test `infrastructure/deploy/test-restore.sh`. Added age-encrypted `.env` packaging (`OPS-BACKUP2`) ensuring deployment configuration survives disaster recovery.
+- **Commit SHA**: ``10dd01b3183ceac3ed01ea7d35558e1093d5b29d``
+- **Verification**: per worklog (dump, encryption, upload, and clean test restore verified against staging).
+- **Worklog**: [docs/worklog/OPS-BACKUP.md](../worklog/OPS-BACKUP.md), [docs/worklog/OPS-BACKUP2.md](../worklog/OPS-BACKUP2.md)
+
 ## Scoped Local Gate, Pass Stamp & Gitleaks Scan (WF-03)
 
 - **Implementation Detail**: Replaced monolithic gate with scoped local verification via `scripts/changed-scope.sh`, mapping changed paths to required test stages. Introduced gate pass stamps (`scripts/gate-stamp.sh`) required by `make commit` and `.githooks/pre-commit`. Integrated `gitleaks` secret scanning and serialized Redis/Mongo integration tests under a shared CI lock (`scripts/ci-lock.sh`).
