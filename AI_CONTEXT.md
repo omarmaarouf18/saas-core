@@ -71,8 +71,8 @@ Status words: **Done** (in code, tested), **Partial**, **Deferred** (by decision
 | Ops console v2 + admin API (overview, jobs, services moderation, subscriptions queue, audit, app versions, admin notifications) | Done | ADR-0023, ADMIN-API, ADMIN-API-FIX, [docs/api/ADMIN_API.md](docs/api/ADMIN_API.md) |
 | Admin announcements in the app | Done | In-app announcement tile, `AnnouncementDetailSheet`, deep links (FE-NOTIF-RENDER) |
 | Services directory, owner config, geofence radius | Done | ADR-0014 |
-| Service photos: encrypted volume on host + daily backup, multipart upload, JPEG/PNG $\le 5$MB | Done | PROD-PHOTO-STORAGE, FE-BE-GAPS |
-| Job model v2: ADR-0028 multi-leg routing, recipient name/phone/notes, parcel dimensions, ride/transport wording | Done | ADR-0028, `services/user-service`, `frontend/lib/features/customer/` |
+| Service photos: encrypted volume on host + daily backup, multipart upload (cap 5 MB), JPEG/PNG magic bytes check ≤ 5 MB | Done | PROD-PHOTO-STORAGE, PUSH-BE, FE-BE-GAPS |
+| Job model v2: recipient, address text, status history, pickup phase, ETA, saved addresses | Done | ADR-0028, JOB-MODEL-V2-ADR, JOB-V2-BE, FE-V2-CONSUME, FE-BE-GAPS |
 | Saved addresses: customer profile (up to 10), label, address, note, coordinates | Done | FE-BE-GAPS, ADR-0028 §2.8 |
 | Expired-subscription closed status | Done | ADR-0024 |
 | Working-hours out-of-service badge and booking gate | Done | ADR-0025 |
@@ -89,8 +89,8 @@ Status words: **Done** (in code, tested), **Partial**, **Deferred** (by decision
 | App 2.0.0 redesign A only: all roles on redesign A, legacy screens/widgets removed | Done | FE-CLEANUP |
 | Client app version gate: persistent Mongo-backed store, fail-closed, admin API | Done | ADR-0018, ADMIN-API, ADMIN-API-FIX |
 | Release tooling: `make release`, deploy verification | Done | WF-RELEASE, [docs/RELEASE.md](docs/RELEASE.md) |
-| Off-host backups: encrypted daily off-host backup, cron, verify, restore runbook | Done | OPS-BACKUP, OPS-BACKUP2, [docs/runbooks/BACKUP-RESTORE.md](docs/runbooks/BACKUP-RESTORE.md) |
-| Monitoring: host health check, dead-man snitch, disk/container alerts | Done | OBS-MIN, [docs/runbooks/MONITORING.md](docs/runbooks/MONITORING.md) |
+| Off-host backups: encrypted daily off-host backup, systemd timer, verify, restore runbook | Done | OPS-BACKUP, OPS-BACKUP2, [docs/runbooks/BACKUP-RESTORE.md](docs/runbooks/BACKUP-RESTORE.md) |
+| Monitoring: host health check, systemd timer, dead-man ping, disk/container alerts | Partial (external uptime monitors pending owner portal setup) | OBS-MIN, [docs/runbooks/MONITORING.md](docs/runbooks/MONITORING.md) |
 | Localization EN and Egyptian Arabic, RTL | Done | `frontend/lib/l10n/`, changelog localization-infrastructure |
 | Frontend UX behaviour audit 2026-09 (62 findings) | Done | [docs/frontend/UI_UX_AUDIT_2026-09.md](docs/frontend/UI_UX_AUDIT_2026-09.md) |
 | Frontend visual audit 2026-09 | Done (step V3 reverted) | [docs/history/frontend/UI_VISUAL_AUDIT_2026-09.md](docs/history/frontend/UI_VISUAL_AUDIT_2026-09.md) |
@@ -131,6 +131,7 @@ Backend:
 - Chat `Hub.Run()` (`services/chat-service/internal/chat/hub.go`) loops forever with no context or stop path.
   This interacts with ADR-0005 and needs an ADR addendum.
 - `BroadcastLocation` does not validate the `job:`/`fleet:` channel format. Only `X-Internal-Token` gates it.
+- XFF parsing takes the first entry: `ResolveClientIP` in `services/api-gateway/internal/iputil/iputil.go` splits on comma and returns `parts[0]`. Production is mitigated because Caddy's `reverse_proxy` overwrites incoming `X-Forwarded-For` with the remote client IP (`infrastructure/deploy/Caddyfile`, lines 21–34); the trusted-proxy-count decision remains open (ADR-level).
 - Stale push-token cleanup gets 401: `UnregisterStaleToken` in `notification-service` calls `POST /auth/device-token` with `X-Internal-Token` instead of user JWT or internal route (in progress, BE-HARDEN).
 - Tenant filter in `notification-service` hides customer job notifications in SSE stream and history (sent with owner's tenant ID).
 - FCM message payload `data` contains only `job_id`, `event_type`, and `deep_link`, omitting `variant`, `ticket_id`, and other params.
