@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Job Model V2 Architecture Decision Record (JOB-MODEL-V2-ADR, ADR-0028)
+
+- **Implementation Detail**: Authored [ADR-0028](../adr/0028-job-model-v2.md) defining Job Model V2. Standardized sub-status state transitions, status change history audit trails, recipient details (name, unmasked phone window), package metadata (size, weight, description), and structured addresses with street lines and landmark notes.
+- **Commit SHA**: ``2832673939387c89a554df20531935c228093e8b``
+- **Verification**: per worklog (`make docs-check` PASS, ADR index updated).
+- **Worklog**: [docs/worklog/JOB-MODEL-V2-ADR.md](../worklog/JOB-MODEL-V2-ADR.md)
+
 ## Repository Tidy: Historical Documentation Archive & Single Docs Index (CLN-02)
 
 - **Implementation Detail**: Archived 14 superseded historical documents into `docs/history/` to reduce clutter and documentation drift. Consolidated documentation navigation into a single authoritative index at `docs/README.md`. Updated all inbound markdown links across the repository and verified link integrity.
