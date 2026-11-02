@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Consume Job Model V2 in Flutter Frontend: Recipient, Package & Address (FE-V2-CONSUME)
+
+- **Implementation Detail**: Wired ADR-0028 V2 fields into customer booking and order detail screens: added recipient contact information ("Who receives it?"), package size/fragility options, structured street address text inputs with character limiters (`text_limits.dart`), and direct call/map actions via `url_launcher 6.3.2`.
+- **Commit SHA**: ``758f01b4143e02ba6172409559dfa70449c64495``
+- **Verification**: per worklog (widget tests verify client field validation and server 400 error mapping).
+- **Worklog**: [docs/worklog/FE-V2-CONSUME.md](../worklog/FE-V2-CONSUME.md)
+
 ## Courier Application Shell: Offers, Active Job & My Jobs on Redesign A (FE-COURIER)
 
 - **Implementation Detail**: Built the complete courier mobile experience on Redesign A (`features/courier/`). Implemented `CourierShell`, incoming dispatch offer sheet with countdown ticker, active job progress view (pickup verification, cash-on-delivery collection), price negotiation responses, job history list (`MyJobsPage`), and suspended/paused account gate.
