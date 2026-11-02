@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Repository & Documentation Diet and Slim AI_CONTEXT Swap (CLN-01)
+
+- **Implementation Detail**: Archived historical sections of `AI_CONTEXT.md` (architecture delivery records, done narratives, closed open items) into `docs/history/ai-context-archive-2026-09.md` with boundary markers. Swapped in a condensed `AI_CONTEXT.md` focused on current state, active architecture, standing rules, and open items. Created the initial unified `docs/README.md` index.
+- **Commit SHA**: ``8dee2c05ae49fbae4faa70ff196871c80d716794``
+- **Verification**: per worklog (`make check` PASS, mechanical diff extraction between markers, markdown link check).
+- **Worklog**: [docs/worklog/CLN-01.md](../worklog/CLN-01.md)
+
 ## UI Visual Audit 2026-09 + DESIGN_SYSTEM Drift Refresh (Process/Documentation)
 
 - **Implementation Detail**: This entry is process/documentation, not shippable behavior — no application code changed. (a) New audit `docs/frontend/UI_VISUAL_AUDIT_2026-09.md`: fresh visual-design-only pass (token compliance, reuse, consistency, identity gaps) over all 31 production screens + 36 shared widgets against `DESIGN_SYSTEM.md` + `theme.dart`, with the color palette explicitly frozen and `design/stitch-export/` explicitly excluded as non-identity. Records 9 fixed groups, 1 reverted-with-rationale (employee-history escrow decimals: `toFixed(2)` overflows the RouteTimeline metrics row at 360dp and the `Flexible` rescue truncates fitting labels — redesign deferred, not dropped), 9 documented suggestions/observations, and better-practice notes P1–P5. (b) `DESIGN_SYSTEM.md` refresh: dialog-radius truth (`md` standard), container/scrim/semantic token rows, `smMd` + `labelUppercase` rows, all 26 stale catalog param cells corrected, widget count 34→36 with 2 new rows, debt table `service_screen` purge (55→53). (c) `ThemedInlineSpinner` demo row in the live `component_library_screen.dart` catalog.
