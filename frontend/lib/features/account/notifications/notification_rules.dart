@@ -169,8 +169,8 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
     return NotificationTarget.none;
   }
   if (kTicketNotificationTypes.contains(n.type)) {
-    final id = ticketIdFromBody(n.body);
-    return id == null
+    final id = n.params['ticket_id']?.trim();
+    return (id == null || id.isEmpty)
         ? const NotificationTarget(NotificationTargetKind.tickets)
         : NotificationTarget(NotificationTargetKind.ticket, id);
   }
@@ -190,8 +190,8 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
         return const NotificationTarget(NotificationTargetKind.team);
       }
       if (kOwnerOrderNotificationTypes.contains(n.type)) {
-        final id = jobIdFromBody(n.body);
-        return id == null
+        final id = n.jobId;
+        return (id == null || id.isEmpty)
             ? const NotificationTarget(NotificationTargetKind.orders)
             : NotificationTarget(NotificationTargetKind.order, id);
       }
@@ -203,40 +203,19 @@ NotificationTarget _targetByType(NotificationModel n, String? role) {
         return const NotificationTarget(NotificationTargetKind.task);
       }
       if (n.type == 'cancellation_resolved') {
-        // Approved: the job is cancelled, so it is in My jobs. Declined:
-        // the courier keeps it, so it is the current job.
-        return n.body.toLowerCase().contains('approved')
-            ? const NotificationTarget(NotificationTargetKind.jobs)
-            : const NotificationTarget(NotificationTargetKind.task);
+        // params.variant: 'accept' -> My jobs, 'decline' -> current task.
+        // When variant is unknown (push tap), open My jobs (it lists both outcomes), not the task page.
+        final variant = n.params['variant']?.trim().toLowerCase();
+        if (variant == 'decline') {
+          return const NotificationTarget(NotificationTargetKind.task);
+        }
+        return const NotificationTarget(NotificationTargetKind.jobs);
       }
       if (n.type == 'dispute_resolved' || n.type.startsWith('job_')) {
         return const NotificationTarget(NotificationTargetKind.jobs);
       }
   }
   return NotificationTarget.none;
-}
-
-/// The job id user-service puts in owner and courier notification bodies:
-/// "... cancellation of job <id>: ...", "... and job <id> returned to
-/// dispatch." Ids carry a digit, so words after "job" ("job offer for
-/// job <id>") are skipped. Null when the body names no job.
-String? jobIdFromBody(String body) =>
-    RegExp(r'\bjob ([A-Za-z_-]*[0-9][A-Za-z0-9_-]*)')
-        .firstMatch(body)
-        ?.group(1);
-
-/// The ticket id chat-service puts in ticket notification bodies:
-/// "Your ticket (<id>) has been resolved: …", "… joined your ticket (<id>)".
-/// Same parsing as the old screen: the first parenthesised token, else a
-/// raw `tkt-…` / `ticket-…` token.
-String? ticketIdFromBody(String body) {
-  final paren = RegExp(r'\(([^)\s]+)\)').firstMatch(body)?.group(1);
-  final raw = RegExp(r'\b(tkt-[a-zA-Z0-9_-]+|ticket-[a-zA-Z0-9_-]+)\b',
-          caseSensitive: false)
-      .firstMatch(body)
-      ?.group(1);
-  final id = paren ?? raw;
-  return id == null || id.isEmpty ? null : id;
 }
 
 /// Title and body shown for [n]:
