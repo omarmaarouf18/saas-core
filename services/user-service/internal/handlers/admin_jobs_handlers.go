@@ -16,7 +16,9 @@ import (
 	"github.com/project/user-service/internal/store"
 )
 
-// AdminJobSummary represents a job in the admin jobs list view with unmasked phones.
+// AdminJobSummary represents a job in the admin jobs list view. The recipient
+// phone is masked (country code and last three digits only); the unmasked
+// phone is only available in the job detail view.
 type AdminJobSummary struct {
 	ID                 string                 `json:"id"`
 	Status             models.JobStatus       `json:"status"`
@@ -200,7 +202,8 @@ func (u *UserService) fetchJobNotifications(ctx context.Context, jobID string) [
 
 // AdminListJobs handles GET /admin/jobs & GET /users/admin/jobs.
 // Filters by job id, customer/owner/courier id, phone exact match, status, and date range.
-// Phones are visible unmasked for support operations and every listing is audit-logged.
+// The recipient phones in the list are masked; the unmasked phone is only in
+// the job detail view. Every listing is audit-logged.
 func (u *UserService) AdminListJobs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
@@ -311,7 +314,7 @@ func (u *UserService) AdminListJobs(w http.ResponseWriter, r *http.Request) {
 			ActualCashAmount:   j.ActualCashAmount,
 			LockedEscrowAmount: j.LockedEscrowAmount,
 			CustomerName:       j.CustomerName,
-			Recipient:          j.Recipient,
+			Recipient:          maskedRecipient(j.Recipient),
 			PackageDetails:     j.PackageDetails,
 			DistanceReview:     j.DistanceReview,
 			CreatedAt:          j.CreatedAt,
@@ -321,17 +324,18 @@ func (u *UserService) AdminListJobs(w http.ResponseWriter, r *http.Request) {
 
 	handlerutil.ShipSecurityEvent(ctx, "ADMIN_JOBS_LISTED", "user-service", reviewer.ID, "", fmt.Sprintf("listed %d jobs (total=%d, page=%d)", len(items), total, page), handlerutil.GetClientIP(r))
 
-	// The list returns recipient phones unmasked, so a page that carries any
-	// is an unmasked view and gets an admin audit record listing the job ids.
-	var unmaskedIDs []string
+	// The list returns recipient phones masked, so a page that carries any is
+	// still a contact-data view and gets an admin audit record listing the
+	// job ids.
+	var contactIDs []string
 	for _, it := range items {
 		if it.Recipient != nil && it.Recipient.Phone != "" {
-			unmaskedIDs = append(unmaskedIDs, it.ID)
+			contactIDs = append(contactIDs, it.ID)
 		}
 	}
-	if len(unmaskedIDs) > 0 {
+	if len(contactIDs) > 0 {
 		u.recordAdminAudit(r, reviewer.ID, auditJobSearch, "job", jobID, "",
-			fmt.Sprintf("page=%d results=%d unmasked_phone_jobs=%s", page, len(items), strings.Join(unmaskedIDs, ",")))
+			fmt.Sprintf("page=%d results=%d masked_phone_jobs=%s", page, len(items), strings.Join(contactIDs, ",")))
 	}
 
 	writeJSON(w, http.StatusOK, AdminJobListResponse{

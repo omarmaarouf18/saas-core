@@ -88,7 +88,7 @@ func TestAdminAudit_UserServiceActionsPersistAndServeInternally(t *testing.T) {
 		t.Fatalf("service.hide record: %+v", r)
 	}
 
-	// A list page that returns an unmasked recipient phone is audited too.
+	// A list page that returns a (masked) recipient phone is audited too.
 	if err := mongoStore.CreateJob(ctx, &models.Job{ID: "job-audit-phone", OwnerID: "tenant-audit-1", UserID: "user-audit-1", ServiceID: testSvc.ID,
 		Status: models.JobStatusActive, PaymentMethod: "cod", Recipient: &models.JobRecipient{Name: "R", Phone: "+201055554444"},
 		CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC()}); err != nil {
@@ -99,7 +99,7 @@ func TestAdminAudit_UserServiceActionsPersistAndServeInternally(t *testing.T) {
 	}
 	searches, _, err := mongoStore.ListAdminAudit(ctx, store.AdminAuditFilter{Action: "job.search"}, 10)
 	if err != nil || len(searches) != 1 || searches[0].TargetID != "job-audit-phone" || searches[0].RequestID != "req-search-1" ||
-		!strings.Contains(searches[0].Details, "unmasked_phone_jobs=job-audit-phone") {
+		!strings.Contains(searches[0].Details, "masked_phone_jobs=job-audit-phone") {
 		t.Fatalf("job.search record: %+v (err %v)", searches, err)
 	}
 

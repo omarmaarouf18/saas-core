@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -247,11 +248,24 @@ func TestAdminJobs_ListingAndFiltering(t *testing.T) {
 		if resp.Total != 3 {
 			t.Errorf("expected 3 total jobs, got %d", resp.Total)
 		}
-		// Phones must be visible unmasked
-		if len(resp.Jobs) > 0 && resp.Jobs[0].Recipient != nil {
-			if resp.Jobs[0].Recipient.Phone == "" {
-				t.Errorf("expected unmasked phone, got empty")
+		// The list must not expose the recipient phones in full
+		maskedPhones := map[string]string{}
+		for _, job := range resp.Jobs {
+			if job.Recipient == nil || job.Recipient.Phone == "" {
+				continue
 			}
+			maskedPhones[job.ID] = job.Recipient.Phone
+			if !strings.Contains(job.Recipient.Phone, "•") {
+				t.Errorf("expected the recipient phone of %s to be masked, got %q", job.ID, job.Recipient.Phone)
+			}
+			if strings.Contains(job.Recipient.Phone, "2222222") ||
+				strings.Contains(job.Recipient.Phone, "4444444") ||
+				strings.Contains(job.Recipient.Phone, "5555555") {
+				t.Errorf("the recipient phone of %s is not masked: %q", job.ID, job.Recipient.Phone)
+			}
+		}
+		if got := maskedPhones["job-alpha-101"]; got != "+20•••••••222" {
+			t.Errorf("expected the masked phone %q for job-alpha-101, got %q", "+20•••••••222", got)
 		}
 	})
 

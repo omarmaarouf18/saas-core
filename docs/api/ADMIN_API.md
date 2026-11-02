@@ -44,7 +44,7 @@ The console must set `X-Console-Client-IP` to the reviewer's browser IP (as seen
 - **Error bodies**: user-service, chat-service and the gateway answer `{"error": "<message>"}` without a `code`; notification-service adds `code` and `message`; `WriteSafeError` paths add `code` and `request_id`.
 - **Compare-And-Swap (CAS)**: state changes are conditional updates on the current status. A job or record in the wrong state answers `409 Conflict` with the store error as `error`.
 - **Audit**: every mutation and unmasked view writes an `admin_audit` record in the owning service (section 10) and still emits its `ShipSecurityEvent`.
-- **PII Protection**: `GET /admin/jobs/{id}` returns customer, courier and recipient phones unmasked (audited as `job.view`); `GET /admin/jobs` returns recipient phones unmasked (audited as `job.search` when a page contains any). Other reviewer listings do not return phones, except the subscription queue's owner contact.
+- **PII Protection**: `GET /admin/jobs/{id}` returns customer, courier and recipient phones unmasked (audited as `job.view`); `GET /admin/jobs` returns the recipient phone **masked** (country code and last three digits only, e.g. `+20•••••••222`; audited as `job.search` when a page contains any). Other reviewer listings do not return phones, except the subscription queue's owner contact.
 
 ---
 
@@ -115,7 +115,7 @@ Searches jobs across tenants, newest first.
       "payment_method": "cod",
       "suggested_price": 85.5,
       "customer_name": "Mona",
-      "recipient": {"name": "Mona Recipient", "phone": "+201011112222"},
+      "recipient": {"name": "Mona Recipient", "phone": "+20•••••••222"},
       "created_at": "2026-10-29T08:15:00Z",
       "updated_at": "2026-10-29T08:35:12Z"
     }
@@ -127,7 +127,9 @@ Searches jobs across tenants, newest first.
 ```
 Optional fields (`sub_status`, `employee_id`, `agreed_price`, `actual_cash_amount`, `locked_escrow_amount`, `customer_name`, `recipient`, `package_details`, `distance_review`) are omitted when empty.
 
-**Audit**: `ShipSecurityEvent` `ADMIN_JOBS_LISTED`, plus an `admin_audit` `job.search` record when the page returns any recipient phone (unmasked).
+The `recipient.phone` in the list is masked: the first three characters (the country code, e.g. `+20`) and the last three digits stay readable, everything in between is replaced by `•`. The unmasked phone is only returned by `GET /admin/jobs/{id}`. The `phone` query parameter still matches the stored phone exactly (the lookup happens server-side).
+
+**Audit**: `ShipSecurityEvent` `ADMIN_JOBS_LISTED`, plus an `admin_audit` `job.search` record when the page returns any recipient phone (masked).
 
 ---
 
@@ -704,7 +706,7 @@ Every reviewer mutation and every unmasked view writes one record to the **ownin
 
 | Action | Service | Written by |
 | :--- | :--- | :--- |
-| `job.search` | user-service | `GET /admin/jobs` when the page returns at least one unmasked recipient phone (`details` lists those job ids) |
+| `job.search` | user-service | `GET /admin/jobs` when the page returns at least one recipient phone (masked; `details` lists those job ids) |
 | `job.view` | user-service | `GET /admin/jobs/{id}` (unmasked phones) |
 | `job.cancel` | user-service | `POST /admin/jobs/{id}/cancel` |
 | `job.complete_stuck_cod` | user-service | `POST /admin/jobs/{id}/complete-stuck-cod` |

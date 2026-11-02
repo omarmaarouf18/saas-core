@@ -88,6 +88,26 @@
   (auth-service module) and the real consumer (notification-service module).
   The obsolete contract for the old `{"token":...,"action":"unregister"}`
   payload was replaced.
+- **Item 4**: the admin job **list** (`GET /admin/jobs`) now returns the
+  recipient phone masked; the unmasked phone stays in the job **detail** view
+  (`GET /admin/jobs/{id}`), which is the audited `job.view` path. The mask
+  keeps the first three characters (the country code, e.g. `+20`) and the
+  last three digits and replaces everything in between with `•`
+  (`+201011112222` → `+20•••••••222`); a value of six characters or less is
+  masked completely, so nothing identifying leaks. The helper (`maskPhone`,
+  `maskedRecipient`) lives in the user-service
+  (`services/user-service/internal/handlers/admin_mask.go`) and not in
+  `shared/infra/redact`, which is for secrets and tokens.
+- **Item 4**: the list masks a **copy** of the recipient
+  (`maskedRecipient`), so the stored job is never modified. The `phone`
+  query parameter still matches the stored phone exactly — the lookup happens
+  server-side, so the reviewer does not need the unmasked number in the
+  response.
+- **Item 4**: the `job.search` admin audit record is kept (a listing that
+  carries recipient contact data stays auditable), but its details now say
+  `masked_phone_jobs=...` instead of `unmasked_phone_jobs=...`. The
+  `docs/api/ADMIN_API.md` PII section, the list example and the audit table
+  were updated accordingly.
 
 ## Changes per commit (message only — NO SHAs)
 1. `BE-HARDEN: item 1 - gateway passes upstream 5xx through unchanged`
@@ -197,6 +217,26 @@ $ (cd tests/contracts && go test -count=1 -run 'TestContract_NotifToAuth_Unregis
     --- PASS: TestContract_NotifToAuth_UnregisterStaleToken/Strict_Round-Trip:_Provider_Deserialization_of_Unregister_Payload (0.00s)
 PASS
 ok  	github.com/project/tests/contracts	0.008s
+```
+
+### Item 4 — mask phones in the admin job list
+
+```
+$ (cd services/user-service && go test ./internal/handlers/ -count=1 -run 'TestMaskPhone|TestMaskedRecipient' -v)
+--- PASS: TestMaskPhone (0.00s)
+    --- PASS: TestMaskPhone/empty (0.00s)
+    --- PASS: TestMaskPhone/blank (0.00s)
+    --- PASS: TestMaskPhone/egyptian_mobile (0.00s)
+    --- PASS: TestMaskPhone/egyptian_mobile_13_characters (0.00s)
+    --- PASS: TestMaskPhone/local_trunk_form (0.00s)
+    --- PASS: TestMaskPhone/too_short_to_keep_a_head_and_a_tail (0.00s)
+--- PASS: TestMaskedRecipient_KeepsTheStoredRecipientUntouched (0.00s)
+--- PASS: TestMaskedRecipient_HandlesTheEmptyCases (0.00s)
+PASS
+ok  	github.com/project/user-service/internal/handlers	0.006s
+
+$ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count=1 -run 'TestAdminJobs|TestAdminAudit|TestMask')
+ok  	github.com/project/user-service/internal/handlers	2.506s
 ```
 
 - (filled in as the task progresses)
