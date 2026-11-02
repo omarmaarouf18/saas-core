@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Job Model V2 Backend Support: Sub-Status, Recipient & Address Fields (JOB-V2-BE, ADR-0028)
+
+- **Implementation Detail**: Implemented backend Job Model V2 domain logic in `services/user-service` per ADR-0028. Added fields `SubStatus`, `StatusHistory` with atomic transitions, `Recipient` (name, unmasked phone window during active job), `PackageDetails` (size, weight, fragile), and structured addresses with street lines and landmark notes.
+- **Commit SHA**: ``10b1855c8fa15cd2a1c87b7c47143281a6df40aa``
+- **Verification**: per worklog (unit and E2E tests `TestE2E_JobModelV2_CODPickupAndPhoneWindow` PASS).
+- **Worklog**: [docs/worklog/JOB-V2-BE.md](../worklog/JOB-V2-BE.md)
+
 ## Owner Daily Workflow Shell: Today, Orders & Team on Redesign A (FE-OWNER-1)
 
 - **Implementation Detail**: Implemented tenant owner core operations on Redesign A (`features/owner/`). Built `OwnerShell`, `TodayPage` (active orders, revenue summary, quick stats), `OrdersPage` with status filters, order detail inspector, and `TeamPage` for courier roster management, active status toggling, and courier onboarding.
