@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Bug Fixes Change
 
 ---
 
+## COD Delivery Completion Before Distance Reconciliation (FIX-COD-RECON)
+
+- **Implementation Detail**: Fixed a state machine deadlock in `services/user-service/internal/handlers/jobs_handlers.go`: when a COD delivery completed with actual travel distance under 70% of booked distance, `CompleteJob` previously failed with 409 requiring escrow reconciliation. Since COD requires no escrow fund movement, COD jobs now transition directly to `completed` and record distance mismatch audit notes without blocking completion.
+- **Commit SHA**: ``f0f4aae5629e90427d5e019f67db80bde96403ec``
+- **Verification**: per worklog (regression tests in `jobs_handlers_test.go` and E2E COD test pass).
+- **Worklog**: [docs/worklog/FIX-COD-RECON.md](../worklog/FIX-COD-RECON.md)
+
 ## Frontend Quickwins: Shipping Tile, Auth Splash, 8-Rune Password & Disposal Race (FE-QUICKWINS)
 
 - **Implementation Detail**: Resolved six frontend defects: updated shipping home tile copy, removed misleading mock trends from wallet dashboard, added branded auth launch splash, updated client password validation to 8 runes matching SEC-03, handled 503/500 backend unavailable states gracefully, and eliminated a disposal race condition in `notifications_provider.dart`.
