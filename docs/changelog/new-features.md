@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Customer Order Detail, Timeline & Post-Booking Actions on Redesign A (FE-CUST-2)
+
+- **Implementation Detail**: Implemented customer order tracking on Redesign A (`features/customer/order_detail_page.dart`). Added visual phase timeline (searching, proposed, active, completed, closed), courier call actions, live chat navigation, counter-offer response cards, and post-delivery blind rating submission.
+- **Commit SHA**: ``125c8e5421d81675d0884c34e83f4f107def404d``
+- **Verification**: per worklog (widget tests for all 5 order lifecycle phases pass, golden tests pass).
+- **Worklog**: [docs/worklog/FE-CUST-2.md](../worklog/FE-CUST-2.md)
+
 ## Customer Booking Flow & Marketplace Shell on Redesign A (FE-CUST-1)
 
 - **Implementation Detail**: Built the redesigned customer shell (`features/customer/customer_shell.dart`), marketplace directory (`market_page.dart`), and booking dialog on top of Design System A. Added location picker with interactive pin placement and landmark notes, category filtering (Delivery, Ride, Shipping), and price calculation before booking confirmation.
