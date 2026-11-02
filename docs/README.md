@@ -68,7 +68,7 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [adr/0025-working-hours-based-closed-badge.md](adr/0025-working-hours-based-closed-badge.md) | Working-hours out-of-service gate | Reference | 2026-09-23 | 2 | |
 | [adr/0026-two-phase-password-reset.md](adr/0026-two-phase-password-reset.md) | Two-phase password reset | Reference | 2026-09-24 | 1 | |
 | [adr/0027-employee-cancellation-request-workflow.md](adr/0027-employee-cancellation-request-workflow.md) | Employee cancellation request workflow | Reference | 2026-09-24 | 1 | |
-| [adr/0028-job-model-v2.md](adr/0028-job-model-v2.md) | Job model v2: multi-leg routing, parcel dimensions, and recipient details | Reference | 2026-10-27 | 4 | |
+| [adr/0028-job-model-v2.md](adr/0028-job-model-v2.md) | Job model v2: recipient, address text, status history, pickup phase, ETA, and saved addresses | Reference | 2026-10-27 | 4 | |
 | [changelog/README.md](changelog/README.md) | Changelog index | Current | 2026-09-28 | 2 | |
 | [changelog/bug-fixes.md](changelog/bug-fixes.md) | Bug fixes (253 KB) | Current | 2026-09-28 | 5 | |
 | [changelog/documentation.md](changelog/documentation.md) | Documentation changes | Current | 2026-09-26 | 2 | |
