@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Structured Notification Data Rendering & In-App Admin Announcements (FE-NOTIF-RENDER)
+
+- **Implementation Detail**: Migrated in-app notification rendering from fragile regex body parsing to structured payload resolution (`texts[lang]`, `params['deep_link']`, `params['ticket_id']`, `params['variant']`). Added megaphone badge and localized `AnnouncementDetailSheet` for admin announcements without usable links, and updated push routing rules in `frontend/docs/PUSH.md`.
+- **Commit SHA**: ``a120d845b53c03fad93c775795d0e19111158a73``
+- **Verification**: per worklog (all unit and widget tests pass: structured links, announcement sheet, and push tap routing).
+- **Worklog**: [docs/worklog/FE-NOTIF-RENDER.md](../worklog/FE-NOTIF-RENDER.md)
+
 ## Operations & Reviewer Console API Endpoints (ADMIN-API, ADMIN-API-FIX)
 
 - **Implementation Detail**: Implemented complete reviewer console operations backend across microservices: `GET /admin/overview` aggregation, `GET /admin/jobs` multi-field search and unmasked detail, admin job cancellation and stuck COD completion (`POST /admin/jobs/{id}/complete-stuck-cod`), services moderation (hide/unhide/photo removal), subscriptions queue (`pending_payment`), merged audit log viewer, and admin announcements push fan-out (`POST /admin/notifications/send`). Documented in `docs/api/ADMIN_API.md`.
