@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Mobile Website Repository Rename in APK Publish Workflow (FIX-APK-SITE)
+
+- **Implementation Detail**: Updated `frontend/.github/workflows/build-apk.yml` to reflect the rename of the mobile distribution website repository from `quickdelivery-website` to `logiclink`. Fixed automated publishing of `app-release.json` and direct APK download links.
+- **Commit SHA**: ``914751aba2138d42bf174a92a002cc20e43eacce``
+- **Verification**: per worklog (YAML workflow validation clean, repository target URL verified).
+- **Worklog**: [docs/worklog/FE-APK-CHANNEL.md](../worklog/FE-APK-CHANNEL.md)
+
 ## Go Toolchain Bump to 1.26.10 for Security Patch GO-2026-6809 (GO-1-26-10)
 
 - **Implementation Detail**: Updated canonical Go toolchain version to 1.26.10 in `tools/versions.env`, `go.work`, all service `go.mod` files, Dockerfiles, and GitHub CI workflow (`ci.yml`). Remediates Go standard library vulnerability GO-2026-6809.
