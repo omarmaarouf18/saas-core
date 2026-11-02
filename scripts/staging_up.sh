@@ -10,6 +10,98 @@ STAGING_DIR="${STAGING_DIR:-$REPO_ROOT/infrastructure/staging}"
 COMPOSE_FILE="${COMPOSE_FILE:-$STAGING_DIR/docker-compose.staging.yml}"
 ENV_FILE="${ENV_FILE:-$STAGING_DIR/.env.staging}"
 
+# =============================================================================
+# Secret masking (BE-HARDEN item 6)
+# =============================================================================
+# GitHub Actions redacts a value from the workflow log only after it has been
+# registered with the `::add-mask::` workflow command. The staging secrets have
+# to be registered BEFORE anything can print them:
+#   * `docker compose config` interpolates the env file into the compose model
+#     and dumps it — the validation fallback below prints the whole model,
+#   * the passwords and tokens travel into the container environment.
+# Outside GitHub Actions the helper is a no-op, so a local run never prints a
+# secret and never writes a `::add-mask::` line into the terminal.
+MASK_SECRETS_ENABLED=0
+if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  MASK_SECRETS_ENABLED=1
+fi
+
+# The values that were already registered. GitHub accepts the same mask twice,
+# but every secret should be announced exactly once.
+MASKED_VALUES=""
+
+# The env file is written by a loop whose stdout is redirected to the file, so
+# the mask commands have to go to the original stdout instead.
+exec 3>&1
+
+# mask_secret <value> — register <value> as a secret in the GitHub Actions log.
+mask_secret() {
+  local value="${1:-}"
+  [ "$MASK_SECRETS_ENABLED" -eq 1 ] || return 0
+  # An empty value is not a secret: GitHub rejects an empty mask, and masking
+  # the empty string would blank out unrelated output.
+  [ -n "$value" ] || return 0
+  # A placeholder that was never replaced is not a secret either — masking it
+  # would redact the placeholder text wherever it shows up.
+  case "$value" in
+    *CHANGE_ME*) return 0 ;;
+  esac
+  if printf '%s\n' "$MASKED_VALUES" | grep -Fxq -- "$value"; then
+    return 0
+  fi
+  MASKED_VALUES="${MASKED_VALUES}${value}"$'\n'
+  printf '::add-mask::%s\n' "$value" >&3
+}
+
+# The keys of the staging env file that hold a secret. Everything else in the
+# file (ports, service URLs, feature flags) is not a secret and has to stay
+# readable in the log.
+STAGING_SECRET_KEYS=(
+  MONGO_INITDB_ROOT_PASSWORD
+  MONGO_URI
+  REDIS_PASSWORD
+  REDIS_URI
+  JWT_SECRET
+  GATEWAY_SECRET
+  INTERNAL_SERVICE_TOKEN
+  ADMIN_API_TOKEN
+  OTP_AES_KEY
+  DOCUMENT_SIGNING_SECRET
+  DOCUMENT_ENCRYPTION_KEY
+  RESEND_API_KEY
+  FCM_SERVICE_ACCOUNT_JSON_B64
+)
+
+# env_file_value <KEY> — print the value of KEY from the staging env file.
+# The file is read line by line instead of being sourced, so a value is never
+# expanded or evaluated.
+env_file_value() {
+  local key="$1" line value=""
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      "$key="*) value="${line#*=}" ;;
+    esac
+  done < "$ENV_FILE"
+  # An inline comment (`KEY=value # comment`) is not part of the value — strip
+  # it the way the compose env-file parser does, then trim the whitespace.
+  case "$value" in
+    *" #"*) value="${value%% #*}" ;;
+  esac
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
+# mask_env_secrets — register every secret of the staging env file as a
+# GitHub Actions log mask.
+mask_env_secrets() {
+  local key value
+  for key in "${STAGING_SECRET_KEYS[@]}"; do
+    value="$(env_file_value "$key")"
+    mask_secret "$value"
+  done
+}
+
 echo "== [STAGING] Validating Staging Environment =="
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -17,6 +109,9 @@ if [ ! -f "$ENV_FILE" ]; then
   # Generate random passwords for mongo and redis (URL-safe hex to avoid URI encoding issues)
   MONGO_PASS="$(openssl rand -hex 16)"
   REDIS_PASS="$(openssl rand -hex 16)"
+  # Register the fresh secrets before they can reach the log.
+  mask_secret "$MONGO_PASS"
+  mask_secret "$REDIS_PASS"
 
   touch "$ENV_FILE"
   chmod 600 "$ENV_FILE"
@@ -37,18 +132,24 @@ if [ ! -f "$ENV_FILE" ]; then
         ;;
       *CHANGE_ME_PASSWORD*)
         extra_pw="$(openssl rand -hex 16)"
+        mask_secret "$extra_pw"
         line="${line/CHANGE_ME_PASSWORD/$extra_pw}"
         ;;
     esac
 
     while [[ "$line" == *"CHANGE_ME_64_HEX"* ]]; do
       hex32="$(openssl rand -hex 32)"
+      mask_secret "$hex32"
       line="${line/CHANGE_ME_64_HEX/$hex32}"
     done
 
     printf '%s\n' "$line"
   done < "$STAGING_DIR/.env.staging.example" > "$ENV_FILE"
 fi
+
+# Register the secrets of the (freshly created or pre-existing) env file before
+# the compose validation below can print them.
+mask_env_secrets
 
 if [ "${STAGING_ENV_ONLY:-0}" = "1" ] || [ "${1:-}" = "--env-only" ]; then
   exit 0

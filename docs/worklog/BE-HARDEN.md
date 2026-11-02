@@ -130,6 +130,46 @@
   package that fails when a `500` body is built from `err.Error()` — the
   guard covers the two job endpoints whose store failure cannot be forced
   in a test (their first store call is the job lookup).
+- **Item 6**: `scripts/staging_up.sh` now registers the staging secrets as
+  GitHub Actions log masks (`::add-mask::<value>`) before anything can print
+  them. The leak vector is real: `docker compose … config` interpolates the
+  env file into the compose model and dumps it — the validation fallback
+  prints the whole model when the validation fails, and a local
+  reproduction shows 15 secret-bearing lines in that dump. The runner
+  redacts a value from the workflow log only after it was registered with
+  `::add-mask::`, so the registration has to happen *before* the compose
+  validation.
+- **Item 6**: the masking is a **no-op outside GitHub Actions**
+  (`GITHUB_ACTIONS=true` is required). Printing `::add-mask::<secret>` on a
+  developer machine would put the secret into the terminal transcript
+  instead of hiding it, so the helper stays silent when the variable is not
+  set. An empty value and an unreplaced `CHANGE_ME…` placeholder are
+  skipped as well: GitHub rejects an empty mask, and masking a placeholder
+  would redact the placeholder text everywhere it appears.
+- **Item 6**: the secrets are registered from two places. (1) At creation:
+  every value the script generates (`MONGO_PASS`, `REDIS_PASS` and the
+  per-line passwords/keys) is registered as soon as it is generated, before
+  it is written into the env file. (2) After the env file exists: the
+  secret keys of the file are read back and registered, which also covers a
+  **pre-existing** `.env.staging` (the release gate runner may have one, and
+  the script never rewrites it). The key list covers the Mongo/Redis
+  passwords and URIs, `JWT_SECRET`, `GATEWAY_SECRET`,
+  `INTERNAL_SERVICE_TOKEN`, `ADMIN_API_TOKEN`, `OTP_AES_KEY`,
+  `DOCUMENT_SIGNING_SECRET`, `DOCUMENT_ENCRYPTION_KEY`, `RESEND_API_KEY`
+  and `FCM_SERVICE_ACCOUNT_JSON_B64`.
+- **Item 6**: the env file is read line by line instead of being sourced,
+  so a value is never expanded or evaluated; an inline comment
+  (`KEY=value # comment`) is stripped the way the compose env-file parser
+  strips it, so a comment is never mistaken for a secret. The mask commands
+  are written to the original stdout (file descriptor 3), because the
+  creation loop redirects its stdout into the env file — without that, the
+  `::add-mask::` lines would land *inside* the env file.
+- **Item 6**: the same value is registered only once (a small in-script
+  list), and the `.env.staging.example` comment lines also carry the
+  placeholder text (`#   - CHANGE_ME_64_HEX: …`), so the pre-existing
+  substitution puts two more generated values into the env file. Those two
+  are masked as well — they are real literals of the env file, even though
+  they only appear inside a comment.
 
 ## Changes per commit (message only — NO SHAs)
 1. `BE-HARDEN: item 1 - gateway passes upstream 5xx through unchanged`
@@ -307,6 +347,101 @@ $ (cd services/user-service && MONGO_URI=... go test ./internal/handlers/ -count
 --- PASS: TestAdminHandlers_NoInternalServerErrorBodyCarriesTheStoreError (0.00s)
 PASS
 ok  	github.com/project/user-service/internal/handlers	0.623s
+```
+
+### Item 6 — mask CI secrets in staging_up.sh
+
+The script test harness of this repo (`scripts/test_staging_up.sh` and
+`scripts/run_script_tests.sh`) is **outside this task's lane**, so no test
+was added there; the change is verified with a manual reproduction (the
+runner lives in `/tmp/opencode/be-harden-item6-verify.sh`, it is not part of
+the repository). The existing harness was still run to prove that the
+change does not regress it.
+
+> The secret values inside the `::add-mask::` lines below are written as
+> `<redacted>`: the repository's md-sha gate rejects every 40-character hex
+> string in a markdown file that is not an existing commit SHA
+> (`docs/CI_CD_AND_HOOKS.md`), so the generated secrets cannot be pasted
+> verbatim. Everything else — the command lines, the order, the counts and
+> the check results — is the literal output.
+
+```
+$ bash /tmp/opencode/be-harden-item6-verify.sh
+== Scenario 1: fresh .env.staging, GITHUB_ACTIONS=true ==
+exit=0
+--- stdout ---
+== [STAGING] Validating Staging Environment ==
+[STAGING] .env.staging not found, creating from .env.staging.example...
+::add-mask::<redacted>            (MONGO_PASS, 32 hex)
+::add-mask::<redacted>            (REDIS_PASS, 32 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::<redacted>            (generated key, 64 hex)
+::add-mask::mongodb://staging_root:<redacted>@mongo:27017/?authSource=admin
+::add-mask::redis://:<redacted>@redis:6379
+--- stderr ---
+mask commands emitted: 13
+ok   every secret of the env file is registered as a mask
+ok   the generated env file contains no mask command
+ok   no secret is printed outside a ::add-mask:: command
+ok   no duplicate mask command
+
+== Scenario 2: pre-existing .env.staging, GITHUB_ACTIONS=true ==
+exit=0
+--- stdout ---
+== [STAGING] Validating Staging Environment ==
+::add-mask::preloadedpassword
+::add-mask::mongodb://staging_root:preloadedpassword@mongo:27017/?authSource=admin
+::add-mask::redis://:preloadedpassword@redis:6379
+::add-mask::<redacted>            (the pre-loaded 64-hex key)
+ok   the pre-existing env file is not rewritten
+ok   every secret of the pre-existing env file is registered as a mask
+
+== Scenario 3: no GitHub Actions (local run) ==
+exit=0
+--- stdout ---
+== [STAGING] Validating Staging Environment ==
+[STAGING] .env.staging not found, creating from .env.staging.example...
+ok   a local run prints no ::add-mask:: command
+ok   a local run prints no secret in clear text
+
+== Scenario 4: the existing script regression test still passes ==
+ok   .env.staging created when missing
+ok   no CHANGE_ME_64_HEX in created .env.staging
+ok   no CHANGE_ME_PASSWORD in created .env.staging
+ok   all 7 secrets are valid 64-hex strings
+ok   all generated 64-hex keys are unique
+ok   Mongo URI password matches root password
+ok   Redis URI password matches redis password
+ok   .env.staging permissions are 600
+ok   existing .env.staging is never overwritten
+all staging_up environment provisioning checks passed
+ok   scripts/test_staging_up.sh passes
+
+all item 6 checks passed
+```
+
+The leak vector the masks protect, reproduced locally with the same env
+file (the compose validation dump that the workflow log would print):
+
+```
+$ docker compose -f infrastructure/staging/docker-compose.staging.yml --env-file "$tmp/staging/.env.staging" config --quiet && echo "compose validation exit=0 (OK)"
+compose validation exit=0 (OK)
+$ docker compose -f infrastructure/staging/docker-compose.staging.yml --env-file "$tmp/staging/.env.staging" config | grep -c 'MONGO_INITDB_ROOT_PASSWORD\|REDIS_PASSWORD\|JWT_SECRET\|INTERNAL_SERVICE_TOKEN\|ADMIN_API_TOKEN'
+15
+```
+
+Static checks:
+
+```
+$ bash -n scripts/staging_up.sh && shellcheck scripts/staging_up.sh && echo "syntax+shellcheck OK"
+syntax+shellcheck OK
 ```
 
 - (filled in as the task progresses)
