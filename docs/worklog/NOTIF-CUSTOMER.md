@@ -48,11 +48,12 @@
   - Excluded free-text keys: `title_ar`, `title_en`, `body_ar`, `body_en`, `note`, `reason`, `agent_name`, etc.
 - Detail sheet bilingual text analysis:
   On a push tap, `NotificationModel.fromPushData` only receives `title` and `body` in the recipient device's language (rendered by the server at push dispatch). Because `data['params']` strictly omits `title_*`/`body_*` to enforce the 4096-byte FCM limit, `notificationCopy` falls back to `(n.title, n.body)` in that language. It does not get the alternate language's text unless fetched from history by ID. This is recorded as a follow-up for the frontend (see below).
-- Validated deep links reject id segments that are `.` or `..` or contain `..`.
+- Validated deep links reject id segments that are `.` or `..` or contain `..` (issue #33).
 
 ## Changes per commit (message only — NO SHAs)
 1. `notif: recipient-first scoping for live delivery and history`
 2. `notif: add filtered params to FCM data payload`
+3. `notif: reject dot segments in admin announcement deep-link ids`
 
 ## Verification
 - `services/notification-service` unit & integration tests:
@@ -60,6 +61,7 @@
   - `go test -v -count=1 -run TestMongoDB_RecipientFirstScoping_Issue8 ./services/notification-service/internal/store` — PASS
   - `go test -v -count=1 ./services/notification-service/internal/handlers -run TestHistory` — PASS
   - `go test -v -run TestBuildPushDataMap_AllowListAndSizeLimit ./services/notification-service/internal/hub` — PASS (worst-case payload: 288 bytes, well under 4096-byte limit)
+  - `go test -v -run TestValidateDeepLink_RejectDotSegments ./services/notification-service/internal/handlers` — PASS (42/42 valid/invalid route test cases)
   - All unit & integration tests in `services/notification-service` pass cleanly against local Mongo & Redis.
 - `make check` — PASS (scope: full).
 
@@ -71,9 +73,11 @@
 - The user granted lane permission to bump `github.com/klauspost/compress` to `v1.20.2` in `services/notification-service/go.mod` and `go.sum`, resolving the vulnerability cleanly.
 - The same failure exists on clean `logic-exploitation` (`a9e8e53b`) across other services using mongo-driver (`user-service`, `chat-service`, etc.), which should be updated on the base branch by the owner.
 - Frontend follow-up (Item 2): When tapping a push for an announcement that opens the `AnnouncementDetailSheet`, the app receives only the active device locale's text. To view the alternate language, the app should be updated to fetch the full bilingual notification model from `/notifications` history by ID when presenting the sheet.
+- Out-of-lane note (Item 3): `kyc-reviewer-console` maintains its own deep-link allow-list in a separate repository (out of lane). Client-side deep-link validation on the Flutter mobile app side is deferred to a future frontend task.
 
 ## Open questions
 - none (resolved: lane permission granted to bump klauspost/compress in services/notification-service).
+
 
 
 
