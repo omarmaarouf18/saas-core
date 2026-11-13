@@ -3344,10 +3344,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courCallRecipient => 'Call the recipient';
 
   @override
-  String get bookAddressLabel => 'Address · optional';
+  String get bookAddressLabel => 'Address';
 
   @override
-  String get bookAddressHint => 'Street, building, area';
+  String get bookAddressHint => 'Street, area';
 
   @override
   String get bookRecipientTitle => 'Who receives it?';
@@ -3863,4 +3863,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get acctPushOpenSettings => 'Open settings';
+
+  @override
+  String bookErrAddressTooShort(int min) {
+    return 'An address is too short. Use at least $min characters.';
+  }
+
+  @override
+  String get addrBuildingLabel => 'Building · optional';
+
+  @override
+  String get addrBuildingHint => 'e.g. 12';
+
+  @override
+  String get addrFloorLabel => 'Floor · optional';
+
+  @override
+  String get addrFloorHint => 'e.g. 3';
+
+  @override
+  String get addrApartmentLabel => 'Apartment · optional';
+
+  @override
+  String get addrApartmentHint => 'e.g. 7';
+
+  @override
+  String addrDetailsBuilding(String building) {
+    return 'Building $building';
+  }
+
+  @override
+  String addrDetailsFloor(String floor) {
+    return 'Floor $floor';
+  }
+
+  @override
+  String addrDetailsApartment(String apartment) {
+    return 'Apt $apartment';
+  }
 }

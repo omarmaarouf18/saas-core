@@ -79,8 +79,14 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
 
   BookingExtras _extras(PickedPlace dropoff) => BookingExtras(
         pickupAddress: _pickup.trimmedAddress,
+        pickupBuilding: _pickup.trimmedBuilding,
+        pickupFloor: _pickup.trimmedFloor,
+        pickupApartment: _pickup.trimmedApartment,
         pickupNote: _pickup.trimmedNote,
         dropoffAddress: dropoff.trimmedAddress,
+        dropoffBuilding: dropoff.trimmedBuilding,
+        dropoffFloor: dropoff.trimmedFloor,
+        dropoffApartment: dropoff.trimmedApartment,
         dropoffNote: dropoff.trimmedNote,
         someoneElse: _someoneElse,
         recipientName: _recipientName.text,
@@ -165,7 +171,13 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         pickupAddressNote: _pickup.trimmedNote,
         destinationAddressNote: dropoff.trimmedNote,
         pickupAddress: extras.pickupAddress,
+        pickupBuilding: extras.pickupBuilding,
+        pickupFloor: extras.pickupFloor,
+        pickupApartment: extras.pickupApartment,
         destinationAddress: extras.dropoffAddress,
+        destinationBuilding: extras.dropoffBuilding,
+        destinationFloor: extras.dropoffFloor,
+        destinationApartment: extras.dropoffApartment,
         recipient: extras.recipient,
         packageDetails: extras.package,
       );

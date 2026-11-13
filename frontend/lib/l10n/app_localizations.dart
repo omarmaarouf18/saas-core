@@ -5963,13 +5963,13 @@ abstract class AppLocalizations {
   /// FE-V2-CONSUME picker: street address text field label.
   ///
   /// In en, this message translates to:
-  /// **'Address · optional'**
+  /// **'Address'**
   String get bookAddressLabel;
 
   /// FE-V2-CONSUME picker: street address hint.
   ///
   /// In en, this message translates to:
-  /// **'Street, building, area'**
+  /// **'Street, area'**
   String get bookAddressHint;
 
   /// FE-V2-CONSUME booking: recipient section title (delivery, shipping).
@@ -6859,6 +6859,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get acctPushOpenSettings;
+
+  /// Error shown when a typed address is shorter than the minimum length
+  ///
+  /// In en, this message translates to:
+  /// **'An address is too short. Use at least {min} characters.'**
+  String bookErrAddressTooShort(int min);
+
+  /// Optional building label for addresses
+  ///
+  /// In en, this message translates to:
+  /// **'Building · optional'**
+  String get addrBuildingLabel;
+
+  /// Building input hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 12'**
+  String get addrBuildingHint;
+
+  /// Optional floor label for addresses
+  ///
+  /// In en, this message translates to:
+  /// **'Floor · optional'**
+  String get addrFloorLabel;
+
+  /// Floor input hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 3'**
+  String get addrFloorHint;
+
+  /// Optional apartment label for addresses
+  ///
+  /// In en, this message translates to:
+  /// **'Apartment · optional'**
+  String get addrApartmentLabel;
+
+  /// Apartment input hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 7'**
+  String get addrApartmentHint;
+
+  /// Formatted building component for address details
+  ///
+  /// In en, this message translates to:
+  /// **'Building {building}'**
+  String addrDetailsBuilding(String building);
+
+  /// Formatted floor component for address details
+  ///
+  /// In en, this message translates to:
+  /// **'Floor {floor}'**
+  String addrDetailsFloor(String floor);
+
+  /// Formatted apartment component for address details
+  ///
+  /// In en, this message translates to:
+  /// **'Apt {apartment}'**
+  String addrDetailsApartment(String apartment);
 }
 
 class _AppLocalizationsDelegate

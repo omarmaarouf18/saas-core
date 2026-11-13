@@ -13,8 +13,14 @@ import '../../models/job.dart';
 /// Limits in characters (runes), as the server counts them since
 /// USER-AUTH-BE item 9 (it counted the note in UTF-8 bytes before).
 
-/// `location.address` / `destination.address` (server: 250).
+/// `location.address` / `destination.address` (server: 5–250).
+const int kAddressMinLength = 5;
 const int kAddressMaxLength = kAddressTextMaxRunes;
+
+/// Structured address details (server caps: 50, 20, 20).
+const int kBuildingMaxLength = 50;
+const int kFloorMaxLength = 20;
+const int kApartmentMaxLength = 20;
 
 const int kRecipientNameMaxLength = kNameMaxRunes;
 const int kRecipientPhoneMaxLength = 20;
@@ -65,6 +71,7 @@ enum BookingField {
 
 enum BookingProblem {
   tooLong,
+  tooShort,
   invalidPhone,
   invalidSize,
   noteTooLong,
@@ -74,28 +81,37 @@ enum BookingProblem {
 }
 
 class BookingError {
-  const BookingError(this.problem, [this.max]);
+  const BookingError(this.problem, [this.limit]);
 
   final BookingProblem problem;
-  final int? max;
+  final int? limit;
+
+  int? get max => limit;
+  int? get min => limit;
 
   @override
   bool operator ==(Object other) =>
-      other is BookingError && other.problem == problem && other.max == max;
+      other is BookingError && other.problem == problem && other.limit == limit;
 
   @override
-  int get hashCode => Object.hash(problem, max);
+  int get hashCode => Object.hash(problem, limit);
 
   @override
-  String toString() => 'BookingError($problem, $max)';
+  String toString() => 'BookingError($problem, $limit)';
 }
 
 /// What the customer typed in the booking form (raw text).
 class BookingExtras {
   const BookingExtras({
     this.pickupAddress,
+    this.pickupBuilding,
+    this.pickupFloor,
+    this.pickupApartment,
     this.pickupNote,
     this.dropoffAddress,
+    this.dropoffBuilding,
+    this.dropoffFloor,
+    this.dropoffApartment,
     this.dropoffNote,
     this.someoneElse = false,
     this.recipientName = '',
@@ -107,8 +123,14 @@ class BookingExtras {
   });
 
   final String? pickupAddress;
+  final String? pickupBuilding;
+  final String? pickupFloor;
+  final String? pickupApartment;
   final String? pickupNote;
   final String? dropoffAddress;
+  final String? dropoffBuilding;
+  final String? dropoffFloor;
+  final String? dropoffApartment;
   final String? dropoffNote;
 
   /// "Someone else" receives it; false = "I am the recipient" (no
@@ -152,9 +174,47 @@ class BookingExtras {
 Map<BookingField, BookingError> validateBooking(BookingExtras b) {
   final errors = <BookingField, BookingError>{};
   for (final a in [b.pickupAddress, b.dropoffAddress]) {
-    if (a != null && _runes(a) > kAddressMaxLength) {
+    final runes = a == null ? 0 : _runes(a);
+    if (runes == 0) {
+      errors[BookingField.route] = const BookingError(BookingProblem.missing);
+      break;
+    }
+    if (runes < kAddressMinLength) {
+      errors[BookingField.route] =
+          const BookingError(BookingProblem.tooShort, kAddressMinLength);
+      break;
+    }
+    if (runes > kAddressMaxLength) {
       errors[BookingField.route] =
           const BookingError(BookingProblem.tooLong, kAddressMaxLength);
+      break;
+    }
+  }
+  if (!errors.containsKey(BookingField.route)) {
+    for (final bld in [b.pickupBuilding, b.dropoffBuilding]) {
+      if (bld != null && _runes(bld) > kBuildingMaxLength) {
+        errors[BookingField.route] =
+            const BookingError(BookingProblem.tooLong, kBuildingMaxLength);
+        break;
+      }
+    }
+  }
+  if (!errors.containsKey(BookingField.route)) {
+    for (final fl in [b.pickupFloor, b.dropoffFloor]) {
+      if (fl != null && _runes(fl) > kFloorMaxLength) {
+        errors[BookingField.route] =
+            const BookingError(BookingProblem.tooLong, kFloorMaxLength);
+        break;
+      }
+    }
+  }
+  if (!errors.containsKey(BookingField.route)) {
+    for (final apt in [b.pickupApartment, b.dropoffApartment]) {
+      if (apt != null && _runes(apt) > kApartmentMaxLength) {
+        errors[BookingField.route] =
+            const BookingError(BookingProblem.tooLong, kApartmentMaxLength);
+        break;
+      }
     }
   }
   if (!errors.containsKey(BookingField.route)) {
@@ -162,6 +222,7 @@ Map<BookingField, BookingError> validateBooking(BookingExtras b) {
       if (n != null && _runes(n) > kAddressNoteMaxRunes) {
         errors[BookingField.route] =
             const BookingError(BookingProblem.noteTooLong);
+        break;
       }
     }
   }
@@ -205,14 +266,22 @@ MapEntry<BookingField, BookingError>? serverBookingError(Object e) {
   return switch (code) {
     'address_required' =>
       const MapEntry(BookingField.route, BookingError(BookingProblem.missing)),
+    'address_too_short' => const MapEntry(BookingField.route,
+        BookingError(BookingProblem.tooShort, kAddressMinLength)),
+    'address_too_long' => const MapEntry(BookingField.route,
+        BookingError(BookingProblem.tooLong, kAddressMaxLength)),
+    'building_too_long' => const MapEntry(BookingField.route,
+        BookingError(BookingProblem.tooLong, kBuildingMaxLength)),
+    'floor_too_long' => const MapEntry(BookingField.route,
+        BookingError(BookingProblem.tooLong, kFloorMaxLength)),
+    'apartment_too_long' => const MapEntry(BookingField.route,
+        BookingError(BookingProblem.tooLong, kApartmentMaxLength)),
     'recipient_name_required' => const MapEntry(
         BookingField.recipientName, BookingError(BookingProblem.missing)),
     'recipient_phone_required' => const MapEntry(
         BookingField.recipientPhone, BookingError(BookingProblem.missing)),
     'package_details_required' => const MapEntry(
         BookingField.packageSize, BookingError(BookingProblem.missing)),
-    'address_too_long' => const MapEntry(BookingField.route,
-        BookingError(BookingProblem.tooLong, kAddressMaxLength)),
     'address_note_too_long' => const MapEntry(
         BookingField.route, BookingError(BookingProblem.noteTooLong)),
     'recipient_name_too_long' => const MapEntry(BookingField.recipientName,
@@ -233,9 +302,12 @@ MapEntry<BookingField, BookingError>? serverBookingError(Object e) {
 String bookingErrorText(
         AppLocalizations l10n, BookingField field, BookingError error) =>
     switch (error.problem) {
+      BookingProblem.tooShort when field == BookingField.route =>
+        l10n.bookErrAddressTooShort(error.min ?? kAddressMinLength),
       BookingProblem.tooLong when field == BookingField.route =>
         l10n.bookErrAddressTooLong(error.max ?? kAddressMaxLength),
       BookingProblem.tooLong => l10n.bookErrTooLong(error.max ?? 0),
+      BookingProblem.tooShort => l10n.bookErrAddressTooShort(error.min ?? 0),
       BookingProblem.noteTooLong => l10n.bookErrNoteTooLong,
       BookingProblem.invalidPhone => l10n.bookErrPhone,
       BookingProblem.invalidSize => l10n.bookErrSize,

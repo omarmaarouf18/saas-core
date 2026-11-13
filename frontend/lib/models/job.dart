@@ -13,11 +13,19 @@ class JobLocation {
   /// the customer at booking. Null on legacy jobs and when none was given.
   final String? address;
 
+  /// Structured address details (ADDR-REQUIRED). Optional.
+  final String? building;
+  final String? floor;
+  final String? apartment;
+
   JobLocation(
       {required this.latitude,
       required this.longitude,
       this.addressNote,
-      this.address});
+      this.address,
+      this.building,
+      this.floor,
+      this.apartment});
 
   /// Shared, testable "lat, lon" formatter for per-job route display
   /// (e.g. RouteTimeline detail lines). Fixed 4-decimal precision matches
@@ -43,6 +51,9 @@ class JobLocation {
           ? (json['address_note'] as String).trim()
           : null,
       address: _optionalText(json['address']),
+      building: _optionalText(json['building']),
+      floor: _optionalText(json['floor']),
+      apartment: _optionalText(json['apartment']),
     );
   }
 
@@ -52,6 +63,9 @@ class JobLocation {
         if (addressNote != null && addressNote!.isNotEmpty)
           'address_note': addressNote,
         if (address != null && address!.isNotEmpty) 'address': address,
+        if (building != null && building!.isNotEmpty) 'building': building,
+        if (floor != null && floor!.isNotEmpty) 'floor': floor,
+        if (apartment != null && apartment!.isNotEmpty) 'apartment': apartment,
       };
 }
 

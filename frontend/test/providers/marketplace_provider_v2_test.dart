@@ -35,7 +35,11 @@ void main() {
       paymentMethod: 'cod',
       pickupAddressNote: 'Floor 3',
       pickupAddress: ' 15 Kasr El Nil St ',
+      pickupBuilding: ' Building 12 ',
+      pickupFloor: ' 3 ',
+      pickupApartment: ' 4B ',
       destinationAddress: '4 Tahrir St, Dokki',
+      destinationBuilding: ' Tower A ',
       recipient: const JobRecipient(
           name: ' Mahmoud ', phone: '+201012345678', notes: 'Call first'),
       packageDetails: const JobPackageDetails(size: 'small', notes: 'Papers'),
@@ -48,11 +52,15 @@ void main() {
         'longitude': 31.23,
         'address_note': 'Floor 3',
         'address': '15 Kasr El Nil St',
+        'building': 'Building 12',
+        'floor': '3',
+        'apartment': '4B',
       },
       'destination': {
         'latitude': 30.15,
         'longitude': 31.33,
         'address': '4 Tahrir St, Dokki',
+        'building': 'Tower A',
       },
       'payment_method': 'cod',
       'recipient': {

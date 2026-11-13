@@ -80,6 +80,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
   final MapController _map = MapController();
   late final TextEditingController _note;
   late final TextEditingController _address;
+  late final TextEditingController _building;
+  late final TextEditingController _floor;
+  late final TextEditingController _apartment;
   late LatLng _center;
   bool _fromDevice = false;
   bool _locating = false;
@@ -99,6 +102,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     _fromDevice = initial?.isDeviceLocation ?? false;
     _note = TextEditingController(text: initial?.trimmedNote ?? '');
     _address = TextEditingController(text: initial?.trimmedAddress ?? '');
+    _building = TextEditingController(text: initial?.trimmedBuilding ?? '');
+    _floor = TextEditingController(text: initial?.trimmedFloor ?? '');
+    _apartment = TextEditingController(text: initial?.trimmedApartment ?? '');
     if (initial == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _locate());
     }
@@ -108,6 +114,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
   void dispose() {
     _note.dispose();
     _address.dispose();
+    _building.dispose();
+    _floor.dispose();
+    _apartment.dispose();
     _map.dispose();
     super.dispose();
   }
@@ -139,6 +148,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       _fromDevice = false;
       _needsPin = false;
       _address.text = a.address;
+      _building.text = a.building ?? '';
+      _floor.text = a.floor ?? '';
+      _apartment.text = a.apartment ?? '';
       _note.text = a.addressNote;
     });
     if (_mapReady) _map.move(_center, _map.camera.zoom);
@@ -157,6 +169,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       longitude: _center.longitude,
       note: widget.showNote ? _note.text.trim() : null,
       address: widget.showNote ? _address.text.trim() : null,
+      building: widget.showNote ? _building.text.trim() : null,
+      floor: widget.showNote ? _floor.text.trim() : null,
+      apartment: widget.showNote ? _apartment.text.trim() : null,
       isDeviceLocation: _fromDevice,
     ));
   }
@@ -282,6 +297,44 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                     controller: _address,
                     textInputAction: TextInputAction.next,
                     maxRunes: kAddressTextMaxRunes,
+                  ),
+                  const SizedBox(height: QdSpace.x3),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: QdTextField(
+                          key: const Key('cust_picker_building'),
+                          label: l10n.addrBuildingLabel,
+                          hint: l10n.addrBuildingHint,
+                          controller: _building,
+                          textInputAction: TextInputAction.next,
+                          maxRunes: 50,
+                        ),
+                      ),
+                      const SizedBox(width: QdSpace.x2),
+                      Expanded(
+                        child: QdTextField(
+                          key: const Key('cust_picker_floor'),
+                          label: l10n.addrFloorLabel,
+                          hint: l10n.addrFloorHint,
+                          controller: _floor,
+                          textInputAction: TextInputAction.next,
+                          maxRunes: 20,
+                        ),
+                      ),
+                      const SizedBox(width: QdSpace.x2),
+                      Expanded(
+                        child: QdTextField(
+                          key: const Key('cust_picker_apartment'),
+                          label: l10n.addrApartmentLabel,
+                          hint: l10n.addrApartmentHint,
+                          controller: _apartment,
+                          textInputAction: TextInputAction.next,
+                          maxRunes: 20,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: QdSpace.x3),
                   QdTextField(

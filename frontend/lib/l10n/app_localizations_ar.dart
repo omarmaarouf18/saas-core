@@ -3296,10 +3296,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get courCallRecipient => 'اتصل بالمستلم';
 
   @override
-  String get bookAddressLabel => 'العنوان · اختياري';
+  String get bookAddressLabel => 'العنوان';
 
   @override
-  String get bookAddressHint => 'الشارع، العمارة، المنطقة';
+  String get bookAddressHint => 'الشارع، المنطقة';
 
   @override
   String get bookRecipientTitle => 'مين هيستلم؟';
@@ -3807,4 +3807,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get acctPushOpenSettings => 'افتح الإعدادات';
+
+  @override
+  String bookErrAddressTooShort(int min) {
+    return 'في عنوان قصير. اكتب $min حروف على الأقل.';
+  }
+
+  @override
+  String get addrBuildingLabel => 'العمارة · اختياري';
+
+  @override
+  String get addrBuildingHint => 'مثلاً 12';
+
+  @override
+  String get addrFloorLabel => 'الدور · اختياري';
+
+  @override
+  String get addrFloorHint => 'مثلاً 3';
+
+  @override
+  String get addrApartmentLabel => 'الشقة · اختياري';
+
+  @override
+  String get addrApartmentHint => 'مثلاً 7';
+
+  @override
+  String addrDetailsBuilding(String building) {
+    return 'عمارة $building';
+  }
+
+  @override
+  String addrDetailsFloor(String floor) {
+    return 'الدور $floor';
+  }
+
+  @override
+  String addrDetailsApartment(String apartment) {
+    return 'شقة $apartment';
+  }
 }

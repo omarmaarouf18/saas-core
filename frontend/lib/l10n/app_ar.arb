@@ -1067,8 +1067,8 @@
   "lnchMapsCopied": "مقدرناش نفتح تطبيق خرايط. اتنسخ المكان: {coords}.",
   "lnchPhoneCopied": "مقدرناش نفتح تطبيق الاتصال. اتنسخ الرقم: {phone}.",
   "courCallRecipient": "اتصل بالمستلم",
-  "bookAddressLabel": "العنوان · اختياري",
-  "bookAddressHint": "الشارع، العمارة، المنطقة",
+  "bookAddressLabel": "العنوان",
+  "bookAddressHint": "الشارع، المنطقة",
   "bookRecipientTitle": "مين هيستلم؟",
   "bookPassengerTitle": "مين اللي هيركب؟",
   "bookRecipientMe": "أنا المستلم",
@@ -1216,5 +1216,15 @@
   "acctPushOn": "شغّالة",
   "acctPushOff": "مقفولة",
   "acctPushOffHint": "الإشعارات مقفولة، فمش هتعرف التحديثات غير لما تفتح التطبيق. تقدر تشغّلها من إعدادات الموبايل.",
-  "acctPushOpenSettings": "افتح الإعدادات"
+  "acctPushOpenSettings": "افتح الإعدادات",
+  "bookErrAddressTooShort": "في عنوان قصير. اكتب {min} حروف على الأقل.",
+  "addrBuildingLabel": "العمارة · اختياري",
+  "addrBuildingHint": "مثلاً 12",
+  "addrFloorLabel": "الدور · اختياري",
+  "addrFloorHint": "مثلاً 3",
+  "addrApartmentLabel": "الشقة · اختياري",
+  "addrApartmentHint": "مثلاً 7",
+  "addrDetailsBuilding": "عمارة {building}",
+  "addrDetailsFloor": "الدور {floor}",
+  "addrDetailsApartment": "شقة {apartment}"
 }
