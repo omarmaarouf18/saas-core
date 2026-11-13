@@ -54,6 +54,7 @@
 1. `notif: recipient-first scoping for live delivery and history`
 2. `notif: add filtered params to FCM data payload`
 3. `notif: reject dot segments in admin announcement deep-link ids`
+4. `tests: update e2e push assertions for params`
 
 ## Verification
 - `services/notification-service` unit & integration tests:
@@ -63,10 +64,18 @@
   - `go test -v -run TestBuildPushDataMap_AllowListAndSizeLimit ./services/notification-service/internal/hub` — PASS (worst-case payload: 288 bytes, well under 4096-byte limit)
   - `go test -v -run TestValidateDeepLink_RejectDotSegments ./services/notification-service/internal/handlers` — PASS (42/42 valid/invalid route test cases)
   - All unit & integration tests in `services/notification-service` pass cleanly against local Mongo & Redis.
+- Contract tests (`cd tests/contracts && go test -v -count=1 ./...`):
+  - PASS (all 10 tests passed in 0.044s)
+- E2E tests (`tests/e2e`):
+  - `STAGING_REDIS_URI="redis://:devpassword123@localhost:6380/0" STAGING_MONGO_URI="mongodb://root:devpassword123@localhost:27017/?authSource=admin" go test -v -run "TestPushBE_NotificationServiceDeliversViaFCMOAuth|TestPushL10N_DeviceLanguagePerToken" ./tests/e2e`
+    - `--- PASS: TestPushBE_NotificationServiceDeliversViaFCMOAuth (1.40s)`
+    - `--- PASS: TestPushL10N_DeviceLanguagePerToken (3.57s)`
+  - Full staging suite tests (`contract_notif_test.go`, `admin_api_test.go`): require the full staging compose stack (`api-gateway` on 8088, `auth-service`, `console` on 8091), which is not active locally; the standalone push e2e tests were executed directly against local Mongo & Redis.
 - `make check` — PASS (scope: full).
 
 ## Unverified
 - Releases / remote CI (agents do not push).
+- Full staging compose suite (local stack down; standalone push tests verified against local DBs).
 
 ## Follow-ups / out-of-lane findings
 - `govulncheck` in `scripts/govulncheck-module.sh` failed on third-party vulnerability `GO-2026-6865` (CVE-2026-116591, panic in `github.com/klauspost/compress` on two-block frames) against `github.com/klauspost/compress v1.18.7`, pulled indirectly by `go.mongodb.org/mongo-driver/v2 v2.8.0`.
