@@ -2,7 +2,7 @@
 
 ## Task and scope
 - Task ID: ADDR-REQUIRED
-- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done)
+- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done), 5 (done)
 - Allowed paths (lane from the task prompt):
   - `services/user-service/internal/models/**`
   - `services/user-service/internal/handlers/jobs_handlers.go`
@@ -32,12 +32,15 @@
 - Added shared formatter `formatAddressDetails` in `customer_format.dart` and exported it via `courier_format.dart`, `job_v2_sections.dart`, and `owner_format.dart`.
 - Formats non-empty parts with localized strings (`addrDetailsBuilding`, `addrDetailsFloor`, `addrDetailsApartment`) separated by comma (Arabic comma `'، '` in AR, `', '` in EN), omitting empty/null parts.
 - Updated `jobPlaceLabel` and `placeOf` to display structured details next to the address (`'$address · $details'`), rendering across Courier (`CourierStops`, `active_job_page.dart`), Owner (`OwnerOrderDetailPage`), and Customer (`OrderRouteCard`).
+- In `saved_address_rules.dart`, added `buildingTooLong` (cap 50), `floorTooLong` (cap 20), `apartmentTooLong` (cap 20) validation rules.
+- In `saved_addresses_page.dart`, added `_building`, `_floor`, `_apartment` input fields in `SavedAddressEditorPage`, updated `_SavedRow` to format structured details next to address via `formatAddressDetails`, and updated golden images for the editor.
 
 ## Changes per commit (message only — NO SHAs)
 1. `user-service: require typed address for app >= 2.1.0 with structured details`
 2. `auth-service: add building, floor, apartment to saved addresses`
 3. `frontend: require typed address and add structured details to booking form`
 4. `frontend: format and display structured address details across roles`
+5. `frontend: add building, floor, apartment to saved addresses management`
 
 ## Verification
 - `services/user-service` unit & integration tests:
@@ -59,14 +62,17 @@
   - `flutter test test/features/courier/courier_v2_places_test.dart` — PASS (6 tests)
   - `flutter test test/features/owner/order_detail_page_test.dart` — PASS (9 tests)
   - `flutter test test/features/customer/order/order_v2_test.dart` — PASS (11 tests)
+  - `flutter test test/features/account/saved_addresses_test.dart` — PASS (15 tests)
+  - `flutter test test/features/account/` — PASS (all 188 tests)
   - `flutter analyze` — PASS (0 issues found)
-- `make check` — PASS for previous commits, will run for Item 4 commit.
+- `make check` — PASS
 
 ## Unverified
-- None for items 1, 2, 3, and 4.
+- None for items 1-5.
 
 ## Follow-ups / out-of-lane findings
 - None
 
 ## Open questions
 - None
+

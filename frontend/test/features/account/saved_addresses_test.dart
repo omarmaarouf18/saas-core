@@ -77,6 +77,15 @@ Future<void> _save(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _revealEditor(WidgetTester tester, Finder f) async {
+  await tester.dragUntilVisible(
+    f,
+    find.byKey(const Key('address_editor_list')),
+    const Offset(0, -100),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('rules', () {
     test('labels: Home / Work in the app language, Arabic words count', () {
@@ -98,12 +107,18 @@ void main() {
       SavedAddressProblems v(
               {String label = 'Home',
               String address = 'x',
+              String? building,
+              String? floor,
+              String? apartment,
               String note = '',
               double? lat = 30,
               double? lng = 31}) =>
           validateSavedAddress(
               label: label,
               address: address,
+              building: building,
+              floor: floor,
+              apartment: apartment,
               note: note,
               latitude: lat,
               longitude: lng);
@@ -120,6 +135,12 @@ void main() {
       expect(v(note: 'ن' * 501).noteTooLong, isTrue);
       expect(v(label: 'ل' * 100).labelTooLong, isFalse);
       expect(v(label: 'ل' * 101).labelTooLong, isTrue);
+      expect(v(building: 'ع' * 50).buildingTooLong, isFalse);
+      expect(v(building: 'ع' * 51).buildingTooLong, isTrue);
+      expect(v(floor: 'د' * 20).floorTooLong, isFalse);
+      expect(v(floor: 'د' * 21).floorTooLong, isTrue);
+      expect(v(apartment: 'ش' * 20).apartmentTooLong, isFalse);
+      expect(v(apartment: 'ش' * 21).apartmentTooLong, isTrue);
     });
 
     test('legacy: frequent strings no saved address covers', () {
@@ -202,6 +223,7 @@ void main() {
       await _save(tester);
       expect(find.text('Choose or write a name'), findsOneWidget);
       await typeInto(tester, 'address_label_custom', 'Gym');
+      await _revealEditor(tester, find.byKey(const Key('address_pin')));
       await tester.tap(find.byKey(const Key('address_pin')));
       await tester.pumpAndSettle();
       expect(pin.initials, [null]);
@@ -367,6 +389,71 @@ void main() {
       await tester.tap(find.byKey(const Key('addresses_add')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('address_editor')), findsNothing);
+    });
+
+    testWidgets('create and list with building, floor, apartment',
+        (tester) async {
+      final deps = _deps(saved: const [], addresses: const []);
+      final pin = FakePin(const PickedPlace(latitude: 30.06, longitude: 31.33));
+      await _open(tester, deps, pin: pin);
+      await tester.tap(find.byKey(const Key('addresses_add')));
+      await tester.pumpAndSettle();
+
+      await typeInto(tester, 'address_input', '10 Tahrir Square');
+      await typeInto(tester, 'address_building_input', '12');
+      await typeInto(tester, 'address_floor_input', '3');
+      await typeInto(tester, 'address_apartment_input', '7');
+      await typeInto(tester, 'address_note_input', 'Beside the museum');
+      await _revealEditor(tester, find.byKey(const Key('address_pin')));
+      await tester.tap(find.byKey(const Key('address_pin')));
+      await tester.pumpAndSettle();
+      await _save(tester);
+
+      expect(_sent(deps), [
+        {
+          'label': 'Home',
+          'address': '10 Tahrir Square',
+          'building': '12',
+          'floor': '3',
+          'apartment': '7',
+          'address_note': 'Beside the museum',
+          'latitude': 30.06,
+          'longitude': 31.33,
+        },
+      ]);
+      expect(find.text('10 Tahrir Square · Building 12, Floor 3, Apt 7'),
+          findsOneWidget);
+    });
+
+    testWidgets('edit loads and updates building, floor, apartment',
+        (tester) async {
+      const initialSaved = SavedAddress(
+        id: 'addr-custom',
+        label: 'Home',
+        address: '10 Tahrir Square',
+        building: '12',
+        floor: '3',
+        apartment: '7',
+        latitude: 30.0444,
+        longitude: 31.2357,
+      );
+      final deps = _deps(saved: [initialSaved]);
+      await _open(tester, deps);
+      expect(find.text('10 Tahrir Square · Building 12, Floor 3, Apt 7'),
+          findsOneWidget);
+
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_building_input')), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+
+      await typeInto(tester, 'address_building_input', '15');
+      await _save(tester);
+
+      expect(_sent(deps)!.first['building'], '15');
     });
   });
 }
