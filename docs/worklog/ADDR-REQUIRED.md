@@ -2,7 +2,7 @@
 
 ## Task and scope
 - Task ID: ADDR-REQUIRED
-- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done), 5 (done)
+- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done), 5 (done), 6 (done)
 - Allowed paths (lane from the task prompt):
   - `services/user-service/internal/models/**`
   - `services/user-service/internal/handlers/jobs_handlers.go`
@@ -34,6 +34,8 @@
 - Updated `jobPlaceLabel` and `placeOf` to display structured details next to the address (`'$address · $details'`), rendering across Courier (`CourierStops`, `active_job_page.dart`), Owner (`OwnerOrderDetailPage`), and Customer (`OrderRouteCard`).
 - In `saved_address_rules.dart`, added `buildingTooLong` (cap 50), `floorTooLong` (cap 20), `apartmentTooLong` (cap 20) validation rules.
 - In `saved_addresses_page.dart`, added `_building`, `_floor`, `_apartment` input fields in `SavedAddressEditorPage`, updated `_SavedRow` to format structured details next to address via `formatAddressDetails`, and updated golden images for the editor.
+- In `frontend/pubspec.yaml`, bumped `version: 2.0.0+1` to `version: 2.1.0+1`. Bumped `kAppVersion` default in `frontend/lib/core/app_version.dart` to `'2.1.0'`, and updated `frontend/test/core/app_version_test.dart` to verify consistency.
+- Verified `frontend/.github/workflows/build-apk.yml`: the release build derives the semver version from `pubspec.yaml` using `VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)`, combines it with `${{ github.run_number }}`, and passes `--dart-define=APP_VERSION="${{ steps.vars.outputs.full_version }}"`.
 
 ## Changes per commit (message only — NO SHAs)
 1. `user-service: require typed address for app >= 2.1.0 with structured details`
@@ -41,6 +43,7 @@
 3. `frontend: require typed address and add structured details to booking form`
 4. `frontend: format and display structured address details across roles`
 5. `frontend: add building, floor, apartment to saved addresses management`
+6. `app: bump version to 2.1.0+1`
 
 ## Verification
 - `services/user-service` unit & integration tests:
@@ -64,15 +67,23 @@
   - `flutter test test/features/customer/order/order_v2_test.dart` — PASS (11 tests)
   - `flutter test test/features/account/saved_addresses_test.dart` — PASS (15 tests)
   - `flutter test test/features/account/` — PASS (all 188 tests)
+  - `flutter test test/core/app_version_test.dart` — PASS (2 tests)
+  - `flutter test` — PASS (all 1445 tests)
   - `flutter analyze` — PASS (0 issues found)
 - `make check` — PASS
 
+## Deploy notes
+- Backend: no VM change. The rule only applies to apps >= 2.1.0, so the backend can release before the app.
+- App 2.1.0: goes out through the normal mobile pipeline.
+- The owner raises minimum_version to 2.1.0 in the console only after the 2.1.0 APK is published.
+
 ## Unverified
-- None for items 1-5.
+- None for items 1-6.
 
 ## Follow-ups / out-of-lane findings
 - None
 
 ## Open questions
 - None
+
 
