@@ -361,6 +361,9 @@ func TestPushBE_NotificationServiceDeliversViaFCMOAuth(t *testing.T) {
 			m.Data["event_type"] != "job_picked_up" || m.Data["job_id"] != "job-e2e-1" {
 			t.Errorf("FCM message %+v", m)
 		}
+		if _, hasParams := m.Data["params"]; hasParams {
+			t.Errorf("FCM message unexpectedly contains data[params]: %q", m.Data["params"])
+		}
 		if m.Android.Priority != "HIGH" || m.Android.Notification["channel_id"] != "qd_default" {
 			t.Errorf("android block %+v", m.Android)
 		}

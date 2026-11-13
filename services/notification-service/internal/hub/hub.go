@@ -432,21 +432,7 @@ func (h *SSEHub) dispatchPush(n Notification) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	dataMap := map[string]string{
-		"id":        n.ID,
-		"type":      n.Type,
-		"tenant_id": n.TenantID,
-	}
-	if n.JobID != "" {
-		dataMap["job_id"] = n.JobID
-		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
-	}
-	if n.Type == "admin_announcement" {
-		dataMap["event_type"] = "admin_announcement"
-		if dl := n.Params["deep_link"]; dl != "" {
-			dataMap["deep_link"] = dl
-		}
-	}
+	dataMap := BuildPushDataMap(n)
 
 	for _, userID := range targetUserIDs {
 		targets, err := userPushTargets(ctx, fetcher, userID)
@@ -504,6 +490,92 @@ func userPushTargets(ctx context.Context, fetcher DeviceTokenFetcher, userID str
 	return targets, nil
 }
 
+// PushParamsAllowList defines the parameter keys forwarded to FCM data payloads (issue #9).
+// Only structured parameters needed for the mobile app's tap routing and rendering are included:
+//   - "variant": cancellation outcome ('accept', 'decline') and notification variant
+//   - "ticket_id": support ticket identifier
+//   - "deep_link": admin announcement routing path
+//
+// Free-text fields (title_*, body_*, note, reason, agent_name, etc.) are strictly excluded
+// to guarantee that the FCM data payload stays well under the 4096-byte limit.
+var PushParamsAllowList = map[string]bool{
+	"variant":   true,
+	"ticket_id": true,
+	"deep_link": true,
+}
+
+// BuildPushDataMap constructs the FCM data payload for notification n.
+func BuildPushDataMap(n Notification) map[string]string {
+	dataMap := map[string]string{
+		"id":        n.ID,
+		"type":      n.Type,
+		"tenant_id": n.TenantID,
+	}
+	if n.JobID != "" {
+		dataMap["job_id"] = n.JobID
+		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
+	}
+	if n.Type == "admin_announcement" {
+		dataMap["event_type"] = "admin_announcement"
+		if dl := n.Params["deep_link"]; dl != "" {
+			dataMap["deep_link"] = dl
+		}
+	}
+
+	if len(n.Params) > 0 {
+		filtered := make(map[string]string)
+		for k, v := range n.Params {
+			if PushParamsAllowList[k] && v != "" {
+				filtered[k] = v
+			}
+		}
+		if len(filtered) > 0 {
+			if b, err := json.Marshal(filtered); err == nil {
+				dataMap["params"] = string(b)
+			}
+		}
+	}
+
+	return dataMap
+}
+
+// MatchesClient reports whether notification n should be delivered to client
+// under recipient-first scoping rules (issue #8):
+//   - If roles are specified on n, client must match one of the roles.
+//   - A notification with an explicit recipient (user_id set, or user_ids non-empty)
+//     belongs to that user whatever its tenant_id.
+//   - Tenant scoping applies only to notifications with no explicit recipient
+//     (tenant/role broadcasts).
+//   - global is unchanged (platform-wide delivery).
+//   - Role filtering keeps its current semantics (do not widen role broadcasts).
+func MatchesClient(n Notification, client *SSEClient) bool {
+	if client == nil {
+		return false
+	}
+
+	// Role filtering: if roles specified, only send to matching roles.
+	if len(n.Roles) > 0 && !containsRole(n.Roles, client.Role) {
+		return false
+	}
+
+	// Explicit recipient scoping:
+	hasRecipient := n.UserID != "" || len(n.UserIDs) > 0
+	if hasRecipient {
+		if client.UserID == "" {
+			return false
+		}
+		return (n.UserID != "" && client.UserID == n.UserID) ||
+			(len(n.UserIDs) > 0 && slices.Contains(n.UserIDs, client.UserID))
+	}
+
+	// Broadcast scoping (no explicit recipient):
+	if !n.Global && client.TenantID != n.TenantID {
+		return false
+	}
+
+	return true
+}
+
 func (h *SSEHub) deliverLocal(n Notification) {
 	data, err := json.Marshal(n.ToClient())
 	if err != nil {
@@ -519,20 +591,7 @@ func (h *SSEHub) deliverLocal(n Notification) {
 
 	sent := 0
 	for client := range h.clients {
-		// Tenant scoping: unless explicitly marked global, only send to clients belonging to the target tenant.
-		if !n.Global && client.TenantID != n.TenantID {
-			continue
-		}
-		// Role filtering: if roles specified, only send to matching roles.
-		if len(n.Roles) > 0 && !containsRole(n.Roles, client.Role) {
-			continue
-		}
-		// User targeting (N-01): when a notification has a targeted recipient set (UserID or UserIDs),
-		// only deliver to that specific connected user.
-		if n.UserID != "" && client.UserID != n.UserID {
-			continue
-		}
-		if len(n.UserIDs) > 0 && !slices.Contains(n.UserIDs, client.UserID) {
+		if !MatchesClient(n, client) {
 			continue
 		}
 		select {

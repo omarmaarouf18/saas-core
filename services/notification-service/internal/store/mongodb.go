@@ -173,6 +173,26 @@ func (s *MongoDB) ensureIndexes(ctx context.Context) error {
 		return fmt.Errorf("notifications tenant_roles_timestamp index: %w", err)
 	}
 
+	// Recipient-first index on (user_id, timestamp desc) for queries without tenant prefix (issue #8)
+	if _, err := s.notifications.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "user_id", Value: 1},
+			{Key: "timestamp", Value: -1},
+		},
+	}); err != nil {
+		return fmt.Errorf("notifications user_timestamp index: %w", err)
+	}
+
+	// Recipient-first index on (user_ids, timestamp desc) for multi-recipient queries without tenant prefix (issue #8)
+	if _, err := s.notifications.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "user_ids", Value: 1},
+			{Key: "timestamp", Value: -1},
+		},
+	}); err != nil {
+		return fmt.Errorf("notifications user_ids_timestamp index: %w", err)
+	}
+
 	// TTL index on created_at: expire documents after 30 days (2,592,000 seconds)
 	expireAfterSeconds := int32(2592000)
 	if _, err := s.notifications.Indexes().CreateOne(ctx, mongo.IndexModel{
@@ -236,57 +256,8 @@ func (s *MongoDB) ListForUser(ctx context.Context, tenantID, userID string, role
 		limit = 100
 	}
 
-	tenantFilter := bson.M{
-		"$or": []bson.M{
-			{"tenant_id": tenantID},
-			{"global": true},
-		},
-	}
-
-	var orClauses []bson.M
-	if userID != "" {
-		orClauses = append(orClauses, bson.M{"user_id": userID})
-		orClauses = append(orClauses, bson.M{"user_ids": userID})
-	}
-
-	if len(roles) > 0 {
-		orClauses = append(orClauses, bson.M{
-			"roles": bson.M{"$in": roles},
-			"$or": []bson.M{
-				{"user_id": ""},
-				{"user_id": bson.M{"$exists": false}},
-			},
-			"$and": []bson.M{
-				{"$or": []bson.M{
-					{"user_ids": bson.M{"$size": 0}},
-					{"user_ids": bson.M{"$exists": false}},
-				}},
-			},
-		})
-	}
-
-	// Broadcast notification with no role restrictions and no specific user target
-	orClauses = append(orClauses, bson.M{
-		"$and": []bson.M{
-			{"$or": []bson.M{
-				{"user_id": ""},
-				{"user_id": bson.M{"$exists": false}},
-			}},
-			{"$or": []bson.M{
-				{"user_ids": bson.M{"$size": 0}},
-				{"user_ids": bson.M{"$exists": false}},
-			}},
-			{"$or": []bson.M{
-				{"roles": bson.M{"$size": 0}},
-				{"roles": bson.M{"$exists": false}},
-			}},
-		},
-	})
-
-	andClauses := []bson.M{
-		tenantFilter,
-		{"$or": orClauses},
-	}
+	baseFilter := UserNotificationFilter(tenantID, userID, roles)
+	andClauses := baseFilter["$and"].([]bson.M)
 
 	if userID != "" {
 		andClauses = append(andClauses, bson.M{
@@ -339,38 +310,38 @@ func (s *MongoDB) ListForUser(ctx context.Context, tenantID, userID string, role
 	return finalResults, nil
 }
 
-func userMutationFilter(tenantID, userID string, roles []string, notificationID string) bson.M {
-	tenantFilter := bson.M{
-		"$or": []bson.M{
-			{"tenant_id": tenantID},
-			{"global": true},
-		},
-	}
-
-	var recipientOr []bson.M
-	if userID != "" {
-		recipientOr = append(recipientOr, bson.M{"user_id": userID})
-		recipientOr = append(recipientOr, bson.M{"user_ids": userID})
-	}
-
+// UserNotificationFilter constructs the single canonical MongoDB filter for notifications
+// accessible to a given user (tenantID, userID, roles) under recipient-first scoping (issue #8):
+//   - A notification with an explicit recipient (user_id set, or user_ids non-empty) belongs
+//     to that user whatever its tenant_id.
+//   - Tenant scoping applies only to notifications with no explicit recipient (tenant/role broadcasts).
+//   - global is unchanged (platform-wide delivery).
+//   - Role filtering keeps its current semantics (if roles are specified on notification, caller
+//     must have a matching role; broadcasts without role restrictions match all roles).
+func UserNotificationFilter(tenantID, userID string, roles []string) bson.M {
+	// Role condition: if notification specifies roles, caller must have at least one matching role.
+	// If notification has no roles (empty or missing), it matches any caller role.
+	var roleCondition bson.M
 	if len(roles) > 0 {
-		recipientOr = append(recipientOr, bson.M{
-			"roles": bson.M{"$in": roles},
+		roleCondition = bson.M{
 			"$or": []bson.M{
-				{"user_id": ""},
-				{"user_id": bson.M{"$exists": false}},
+				{"roles": bson.M{"$size": 0}},
+				{"roles": bson.M{"$exists": false}},
+				{"roles": bson.M{"$in": roles}},
 			},
-			"$and": []bson.M{
-				{"$or": []bson.M{
-					{"user_ids": bson.M{"$size": 0}},
-					{"user_ids": bson.M{"$exists": false}},
-				}},
+		}
+	} else {
+		roleCondition = bson.M{
+			"$or": []bson.M{
+				{"roles": bson.M{"$size": 0}},
+				{"roles": bson.M{"$exists": false}},
 			},
-		})
+		}
 	}
 
-	// Broadcast notification with no role restrictions and no specific user target
-	recipientOr = append(recipientOr, bson.M{
+	// Broadcast condition (no explicit recipient):
+	// user_id is empty/absent AND user_ids is empty/absent AND (tenant_id == tenantID OR global == true)
+	broadcastCondition := bson.M{
 		"$and": []bson.M{
 			{"$or": []bson.M{
 				{"user_id": ""},
@@ -381,28 +352,43 @@ func userMutationFilter(tenantID, userID string, roles []string, notificationID 
 				{"user_ids": bson.M{"$exists": false}},
 			}},
 			{"$or": []bson.M{
-				{"roles": bson.M{"$size": 0}},
-				{"roles": bson.M{"$exists": false}},
+				{"tenant_id": tenantID},
+				{"global": true},
 			}},
 		},
-	})
+	}
 
-	baseFilter := bson.M{
+	var targetingOr []bson.M
+	if userID != "" {
+		targetingOr = append(targetingOr, bson.M{
+			"$or": []bson.M{
+				{"user_id": userID},
+				{"user_ids": userID},
+			},
+		})
+	}
+	targetingOr = append(targetingOr, broadcastCondition)
+
+	return bson.M{
 		"$and": []bson.M{
-			tenantFilter,
-			{"$or": recipientOr},
+			roleCondition,
+			{"$or": targetingOr},
 		},
 	}
+}
 
+func userMutationFilter(tenantID, userID string, roles []string, notificationID string) bson.M {
+	baseFilter := UserNotificationFilter(tenantID, userID, roles)
 	if notificationID != "" {
-		baseFilter["_id"] = notificationID
+		andClauses := baseFilter["$and"].([]bson.M)
+		andClauses = append(andClauses, bson.M{"_id": notificationID})
+		baseFilter["$and"] = andClauses
 	}
-
 	return baseFilter
 }
 
 func isExclusiveRecipient(notif *Notification, userID string) bool {
-	if notif.Global || len(notif.Roles) > 0 {
+	if notif.Global {
 		return false
 	}
 	if len(notif.UserIDs) > 1 {
@@ -489,31 +475,68 @@ func (s *MongoDB) Delete(ctx context.Context, tenantID, userID string, roles []s
 // Exclusively owned notifications are hard-deleted, while shared/broadcast
 // notifications are soft-dismissed by adding userID to dismissed_by.
 func (s *MongoDB) DeleteAll(ctx context.Context, tenantID, userID string, roles []string) error {
-	// 1. Hard-delete exclusively owned notifications
-	exclusiveFilter := bson.M{
-		"$and": []bson.M{
-			{"tenant_id": tenantID},
-			{"global": false},
-			{"$or": []bson.M{
-				{"roles": bson.M{"$size": 0}},
-				{"roles": bson.M{"$exists": false}},
-			}},
-			{"user_id": userID},
-			{"$or": []bson.M{
-				{"user_ids": bson.M{"$size": 0}},
-				{"user_ids": bson.M{"$exists": false}},
-				{"user_ids": []string{userID}},
-			}},
-		},
-	}
-	if _, err := s.notifications.DeleteMany(ctx, exclusiveFilter); err != nil {
-		return err
+	// 1. Hard-delete exclusively owned notifications matching the user's scope
+	if userID != "" {
+		exclusiveFilter := bson.M{
+			"$and": []bson.M{
+				UserNotificationFilter(tenantID, userID, roles),
+				{"global": false},
+				{"user_id": userID},
+				{"$or": []bson.M{
+					{"user_ids": bson.M{"$size": 0}},
+					{"user_ids": bson.M{"$exists": false}},
+					{"user_ids": []string{userID}},
+				}},
+			},
+		}
+		if _, err := s.notifications.DeleteMany(ctx, exclusiveFilter); err != nil {
+			return err
+		}
 	}
 
 	// 2. Soft-dismiss shared / broadcast notifications for this user
 	sharedFilter := userMutationFilter(tenantID, userID, roles, "")
 	_, err := s.notifications.UpdateMany(ctx, sharedFilter, bson.M{"$addToSet": bson.M{"dismissed_by": userID}})
 	return err
+}
+
+// MatchesUser evaluates whether notif matches the given tenantID, userID, and roles
+// under recipient-first scoping.
+func MatchesUser(n *Notification, tenantID, userID string, roles []string) bool {
+	if n == nil {
+		return false
+	}
+
+	// Role filtering: if roles specified, only match if caller has one of the roles.
+	if len(n.Roles) > 0 {
+		matchedRole := false
+		for _, r := range roles {
+			if slices.Contains(n.Roles, r) {
+				matchedRole = true
+				break
+			}
+		}
+		if !matchedRole {
+			return false
+		}
+	}
+
+	// Explicit recipient scoping:
+	hasRecipient := n.UserID != "" || len(n.UserIDs) > 0
+	if hasRecipient {
+		if userID == "" {
+			return false
+		}
+		return (n.UserID != "" && n.UserID == userID) ||
+			(len(n.UserIDs) > 0 && slices.Contains(n.UserIDs, userID))
+	}
+
+	// Broadcast scoping (no explicit recipient):
+	if !n.Global && n.TenantID != tenantID {
+		return false
+	}
+
+	return true
 }
 
 // ListByJobID returns notifications associated with a given job ID.

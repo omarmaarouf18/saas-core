@@ -121,23 +121,7 @@ func (m *memoryStore) ListForUser(ctx context.Context, tenantID, userID string, 
 }
 
 func matchesUser(n *store.Notification, tenantID, userID string, roles []string) bool {
-	if n.TenantID != tenantID && !n.Global {
-		return false
-	}
-	if userID != "" && (n.UserID == userID || slices.Contains(n.UserIDs, userID)) {
-		return true
-	}
-	if n.UserID == "" && len(n.UserIDs) == 0 {
-		for _, r := range roles {
-			if slices.Contains(n.Roles, r) {
-				return true
-			}
-		}
-	}
-	if n.UserID == "" && len(n.UserIDs) == 0 && len(n.Roles) == 0 {
-		return true
-	}
-	return false
+	return store.MatchesUser(n, tenantID, userID, roles)
 }
 
 func (m *memoryStore) MarkRead(ctx context.Context, tenantID, userID string, roles []string, notificationID string) error {
@@ -175,7 +159,7 @@ func (m *memoryStore) MarkAllRead(ctx context.Context, tenantID, userID string, 
 }
 
 func isExclusiveMem(n *store.Notification, userID string) bool {
-	if n.Global || len(n.Roles) > 0 {
+	if n.Global {
 		return false
 	}
 	if len(n.UserIDs) > 1 {

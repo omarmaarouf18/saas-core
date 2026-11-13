@@ -23,8 +23,8 @@ import (
 
 // Allowed in-app deep link patterns (orders, plans, verification, tickets)
 var (
-	validOrderDeepLinkRegex  = regexp.MustCompile(`^/(orders|jobs)/[a-zA-Z0-9_\-\.:]{1,64}$`)
-	validTicketDeepLinkRegex = regexp.MustCompile(`^/tickets(/[a-zA-Z0-9_\-\.:]{1,64})?$`)
+	validOrderDeepLinkRegex  = regexp.MustCompile(`^/(orders|jobs)/([a-zA-Z0-9_\-\.:]{1,64})$`)
+	validTicketDeepLinkRegex = regexp.MustCompile(`^/tickets(?:/([a-zA-Z0-9_\-\.:]{1,64}))?$`)
 	validPlanDeepLinkRegex   = regexp.MustCompile(`^/(plan|plans|subscriptions|subscription)$`)
 	validVerifyDeepLinkRegex = regexp.MustCompile(`^/(verification|kyc|kyb|kye)$`)
 )
@@ -41,9 +41,25 @@ func validateDeepLink(link string) bool {
 	if !strings.HasPrefix(link, "/") {
 		return false
 	}
-	return validOrderDeepLinkRegex.MatchString(link) ||
-		validTicketDeepLinkRegex.MatchString(link) ||
-		validPlanDeepLinkRegex.MatchString(link) ||
+
+	// Reject dot segments: an id that is "." or ".." or contains ".." is disallowed (issue #33)
+	if m := validOrderDeepLinkRegex.FindStringSubmatch(link); len(m) == 3 {
+		id := m[2]
+		if id == "." || id == ".." || strings.Contains(id, "..") {
+			return false
+		}
+		return true
+	}
+
+	if m := validTicketDeepLinkRegex.FindStringSubmatch(link); len(m) == 2 {
+		id := m[1]
+		if id != "" && (id == "." || id == ".." || strings.Contains(id, "..")) {
+			return false
+		}
+		return true
+	}
+
+	return validPlanDeepLinkRegex.MatchString(link) ||
 		validVerifyDeepLinkRegex.MatchString(link)
 }
 

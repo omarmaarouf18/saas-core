@@ -361,6 +361,15 @@ func TestPushL10N_DeviceLanguagePerToken(t *testing.T) {
 			if m.Data["type"] != "job_accepted" || m.Data["job_id"] != jobID {
 				t.Errorf("%s, %s: data %v", c.name, token, m.Data)
 			}
+			if c.name == "job_accepted, negotiable whole fare" {
+				if m.Data["params"] != `{"variant":"negotiable"}` {
+					t.Errorf("%s, %s: data[params] = %q, want %q", c.name, token, m.Data["params"], `{"variant":"negotiable"}`)
+				}
+			} else {
+				if _, hasParams := m.Data["params"]; hasParams {
+					t.Errorf("%s, %s: expected no data[params], got %q", c.name, token, m.Data["params"])
+				}
+			}
 		}
 	}
 

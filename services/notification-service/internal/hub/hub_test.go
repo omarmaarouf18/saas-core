@@ -432,3 +432,303 @@ func TestNotification_ToClientStripsRouting(t *testing.T) {
 		}
 	}
 }
+
+func TestSSEHub_RecipientFirstScoping(t *testing.T) {
+	h := NewSSEHub()
+
+	// Registered clients:
+	// - cCust1: customer in tenant-customer, role: client
+	// - cCust2: another customer in tenant-other-cust, role: client
+	// - cOwnerUser: owner in tenant-owner, role: owner
+	// - cOwnerWorker: another user in tenant-owner, role: client
+	// - cEmployeeOther: employee in tenant-other, role: employee
+	// - cEmployeeOwner: employee in tenant-owner, role: employee
+	cCust1 := &SSEClient{ID: "c-cust-1", UserID: "cust-1", TenantID: "tenant-customer", Role: RoleClient, Send: make(chan []byte, 10)}
+	cCust2 := &SSEClient{ID: "c-cust-2", UserID: "cust-2", TenantID: "tenant-other-cust", Role: RoleClient, Send: make(chan []byte, 10)}
+	cOwnerUser := &SSEClient{ID: "c-owner", UserID: "owner-1", TenantID: "tenant-owner", Role: RoleOwner, Send: make(chan []byte, 10)}
+	cOwnerWorker := &SSEClient{ID: "c-worker", UserID: "worker-1", TenantID: "tenant-owner", Role: RoleClient, Send: make(chan []byte, 10)}
+	cEmployeeOther := &SSEClient{ID: "c-emp-other", UserID: "emp-2", TenantID: "tenant-other", Role: RoleEmployee, Send: make(chan []byte, 10)}
+	cEmployeeOwner := &SSEClient{ID: "c-emp-owner", UserID: "emp-1", TenantID: "tenant-owner", Role: RoleEmployee, Send: make(chan []byte, 10)}
+
+	h.Register(cCust1)
+	h.Register(cCust2)
+	h.Register(cOwnerUser)
+	h.Register(cOwnerWorker)
+	h.Register(cEmployeeOther)
+	h.Register(cEmployeeOwner)
+
+	drain := func(c *SSEClient) {
+		for {
+			select {
+			case <-c.Send:
+			default:
+				return
+			}
+		}
+	}
+	drainAll := func() {
+		drain(cCust1)
+		drain(cCust2)
+		drain(cOwnerUser)
+		drain(cOwnerWorker)
+		drain(cEmployeeOther)
+		drain(cEmployeeOwner)
+	}
+
+	// 1. Owner-tenant notification with a customer user_id:
+	// The customer gets it on SSE; another user in the owner's tenant does not get it,
+	// and neither does another customer.
+	h.Broadcast(Notification{
+		ID:        "job-accepted-1",
+		Type:      "job_accepted",
+		TenantID:  "tenant-owner",
+		UserID:    "cust-1",
+		Title:     "Courier Assigned",
+		Body:      "Your courier has accepted",
+		Roles:     []Role{RoleClient},
+		Timestamp: time.Now().UTC(),
+	})
+
+	select {
+	case msg := <-cCust1.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected payload for customer cCust1")
+		}
+	default:
+		t.Errorf("cCust1 MUST receive the owner-tenant notification targeted to cust-1")
+	}
+
+	select {
+	case <-cOwnerWorker.Send:
+		t.Errorf("cOwnerWorker in owner tenant MUST NOT receive user-targeted notification for cust-1")
+	default:
+	}
+
+	select {
+	case <-cCust2.Send:
+		t.Errorf("cCust2 MUST NOT receive notification targeted to cust-1")
+	default:
+	}
+
+	select {
+	case <-cOwnerUser.Send:
+		t.Errorf("cOwnerUser MUST NOT receive notification targeted to cust-1 with client role")
+	default:
+	}
+
+	drainAll()
+
+	// 2. A tenant role broadcast is still invisible to other tenants.
+	h.Broadcast(Notification{
+		ID:        "role-broadcast-1",
+		Type:      "job_alert",
+		TenantID:  "tenant-owner",
+		Roles:     []Role{RoleEmployee},
+		Timestamp: time.Now().UTC(),
+	})
+
+	select {
+	case msg := <-cEmployeeOwner.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected payload for cEmployeeOwner")
+		}
+	default:
+		t.Errorf("cEmployeeOwner in tenant-owner MUST receive tenant role broadcast")
+	}
+
+	select {
+	case <-cEmployeeOther.Send:
+		t.Errorf("cEmployeeOther in tenant-other MUST NOT receive role broadcast for tenant-owner")
+	default:
+	}
+
+	select {
+	case <-cCust1.Send:
+		t.Errorf("cCust1 MUST NOT receive employee role broadcast")
+	default:
+	}
+
+	drainAll()
+
+	// 3. An admin announcement with no tenant_id reaches its user on SSE.
+	h.Broadcast(Notification{
+		ID:        "admin-announcement-1",
+		Type:      "admin_announcement",
+		TenantID:  "",
+		UserID:    "cust-1",
+		Title:     "Special Update",
+		Body:      "Update for cust-1",
+		Timestamp: time.Now().UTC(),
+	})
+
+	select {
+	case msg := <-cCust1.Send:
+		if len(msg) == 0 {
+			t.Errorf("Expected payload for cCust1")
+		}
+	default:
+		t.Errorf("cCust1 MUST receive admin announcement with no tenant_id")
+	}
+
+	select {
+	case <-cCust2.Send:
+		t.Errorf("cCust2 MUST NOT receive announcement targeted to cust-1")
+	default:
+	}
+
+	drainAll()
+
+	// 4. Global broadcast is unchanged (reaches all matching roles across tenants).
+	h.BroadcastGlobal(Notification{
+		ID:        "global-sys-1",
+		Type:      "system",
+		Title:     "System Update",
+		Body:      "Global alert",
+		Timestamp: time.Now().UTC(),
+	})
+
+	for _, c := range []*SSEClient{cCust1, cCust2, cOwnerUser, cOwnerWorker, cEmployeeOther, cEmployeeOwner} {
+		select {
+		case msg := <-c.Send:
+			if len(msg) == 0 {
+				t.Errorf("Expected payload for %s on global broadcast", c.ID)
+			}
+		default:
+			t.Errorf("%s MUST receive global broadcast", c.ID)
+		}
+	}
+}
+
+func TestBuildPushDataMap_AllowListAndSizeLimit(t *testing.T) {
+	// 1. Worst-case notification: contains huge free-text fields (title_*, body_*, note, reason, etc.)
+	// exceeding 100 KB total.
+	hugeString := strings.Repeat("a", 25000)
+	nWorstCase := Notification{
+		ID:        "notif-worst-case-99999",
+		Type:      "cancellation_resolved",
+		TenantID:  "tenant-enterprise-12345",
+		JobID:     "job-99999999-8888-7777",
+		UserID:    "user-target-11111",
+		Title:     "Cancellation Resolved: " + hugeString,
+		Body:      "Dispute note details: " + hugeString,
+		Timestamp: time.Now().UTC(),
+		Params: map[string]string{
+			// Allow-listed keys:
+			"variant":   "decline",
+			"ticket_id": "ticket-55555",
+			"deep_link": "/orders/job-99999999-8888-7777",
+			// Free text / non-allowed keys that must be strictly excluded:
+			"title_ar":   "طلبك تم إلغاؤه: " + hugeString,
+			"title_en":   "Your order was cancelled: " + hugeString,
+			"body_ar":    "تفاصيل السبب: " + hugeString,
+			"body_en":    "Reason details: " + hugeString,
+			"note":       hugeString,
+			"reason":     hugeString,
+			"agent_name": "Support Agent Smith",
+			"fare":       "1250.50",
+		},
+	}
+
+	dataMap := BuildPushDataMap(nWorstCase)
+
+	// Check top-level keys
+	if dataMap["id"] != nWorstCase.ID {
+		t.Errorf("expected id %q, got %q", nWorstCase.ID, dataMap["id"])
+	}
+	if dataMap["type"] != nWorstCase.Type {
+		t.Errorf("expected type %q, got %q", nWorstCase.Type, dataMap["type"])
+	}
+	if dataMap["tenant_id"] != nWorstCase.TenantID {
+		t.Errorf("expected tenant_id %q, got %q", nWorstCase.TenantID, dataMap["tenant_id"])
+	}
+	if dataMap["job_id"] != nWorstCase.JobID {
+		t.Errorf("expected job_id %q, got %q", nWorstCase.JobID, dataMap["job_id"])
+	}
+
+	// Verify params entry
+	paramsRaw, ok := dataMap["params"]
+	if !ok {
+		t.Fatalf("expected dataMap to contain 'params' key")
+	}
+
+	var parsedParams map[string]string
+	if err := json.Unmarshal([]byte(paramsRaw), &parsedParams); err != nil {
+		t.Fatalf("failed to unmarshal dataMap['params']: %v", err)
+	}
+
+	// Must contain allowed keys
+	if parsedParams["variant"] != "decline" {
+		t.Errorf("expected variant 'decline', got %q", parsedParams["variant"])
+	}
+	if parsedParams["ticket_id"] != "ticket-55555" {
+		t.Errorf("expected ticket_id 'ticket-55555', got %q", parsedParams["ticket_id"])
+	}
+	if parsedParams["deep_link"] != "/orders/job-99999999-8888-7777" {
+		t.Errorf("expected deep_link '/orders/job-99999999-8888-7777', got %q", parsedParams["deep_link"])
+	}
+
+	// Must NOT contain any excluded free-text or unallowed keys
+	for _, excluded := range []string{"title_ar", "title_en", "body_ar", "body_en", "note", "reason", "agent_name", "fare"} {
+		if _, exists := parsedParams[excluded]; exists {
+			t.Errorf("dataMap['params'] leaked excluded key %q", excluded)
+		}
+	}
+
+	// Prove the total serialized data map payload is strictly under FCM 4096-byte limit
+	serializedData, err := json.Marshal(dataMap)
+	if err != nil {
+		t.Fatalf("failed to marshal dataMap: %v", err)
+	}
+	if len(serializedData) >= 4096 {
+		t.Errorf("serialized data payload size %d exceeds FCM 4096-byte limit", len(serializedData))
+	}
+	t.Logf("Worst-case serialized data payload size: %d bytes (limit: 4096 bytes)", len(serializedData))
+
+	// 2. Notification with only non-allowed params: params key should not be populated
+	nOnlyNonAllowed := Notification{
+		ID:       "notif-2",
+		Type:     "job_accepted",
+		TenantID: "tenant-1",
+		Params: map[string]string{
+			"fare":   "1250.50",
+			"reason": "standard",
+			"note":   "quick note",
+		},
+	}
+	dataMap2 := BuildPushDataMap(nOnlyNonAllowed)
+	if _, hasParams := dataMap2["params"]; hasParams {
+		t.Errorf("dataMap should not contain 'params' when no allow-listed keys are present, got: %s", dataMap2["params"])
+	}
+
+	// 3. Notification with nil Params
+	nNilParams := Notification{
+		ID:       "notif-3",
+		Type:     "system",
+		TenantID: "tenant-1",
+	}
+	dataMap3 := BuildPushDataMap(nNilParams)
+	if _, hasParams := dataMap3["params"]; hasParams {
+		t.Errorf("dataMap should not contain 'params' when Params is nil")
+	}
+
+	// 4. Admin announcement: deep_link in top-level and params
+	nAnnouncement := Notification{
+		ID:       "notif-4",
+		Type:     "admin_announcement",
+		TenantID: "",
+		Params: map[string]string{
+			"deep_link": "/tickets/123",
+			"title_en":  "English Title",
+		},
+	}
+	dataMap4 := BuildPushDataMap(nAnnouncement)
+	if dataMap4["deep_link"] != "/tickets/123" {
+		t.Errorf("expected top-level deep_link '/tickets/123', got %q", dataMap4["deep_link"])
+	}
+	if dataMap4["event_type"] != "admin_announcement" {
+		t.Errorf("expected event_type 'admin_announcement', got %q", dataMap4["event_type"])
+	}
+	if dataMap4["params"] != `{"deep_link":"/tickets/123"}` {
+		t.Errorf("expected dataMap['params'] `{\"deep_link\":\"/tickets/123\"}`, got %q", dataMap4["params"])
+	}
+}

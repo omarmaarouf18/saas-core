@@ -454,3 +454,67 @@ func TestAdminNotifications_LifecycleAndSafety(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateDeepLink_RejectDotSegments(t *testing.T) {
+	tests := []struct {
+		name  string
+		link  string
+		valid bool
+	}{
+		// Valid cases:
+		{"empty link is optional", "", true},
+		{"whitespace link", "   ", true},
+		{"valid order hex ID", "/orders/64f8a12b3c4d5e6f7a8b9c0d", true},
+		{"valid job underscore ID", "/jobs/job_123", true},
+		{"valid order with colon", "/orders/a:b", true},
+		{"valid order with single dot inside ID", "/orders/a.b", true},
+		{"valid ticket with single dot", "/tickets/a.b", true},
+		{"valid ticket without ID", "/tickets", true},
+		{"valid ticket with ID", "/tickets/ticket-456", true},
+		{"valid ticket with hex ID", "/tickets/64f8a12b3c4d5e6f7a8b9c0d", true},
+		{"valid plan route", "/plan", true},
+		{"valid plans route", "/plans", true},
+		{"valid subscription route", "/subscription", true},
+		{"valid subscriptions route", "/subscriptions", true},
+		{"valid verification route", "/verification", true},
+		{"valid kyc route", "/kyc", true},
+		{"valid kyb route", "/kyb", true},
+		{"valid kye route", "/kye", true},
+
+		// Invalid cases - dot segments (issue #33):
+		{"order id is single dot", "/orders/.", false},
+		{"jobs id is single dot", "/jobs/.", false},
+		{"ticket id is single dot", "/tickets/.", false},
+		{"order id is double dot", "/orders/..", false},
+		{"jobs id is double dot", "/jobs/..", false},
+		{"ticket id is double dot", "/tickets/..", false},
+		{"order id contains double dot", "/orders/a..b", false},
+		{"jobs id contains double dot", "/jobs/a..b", false},
+		{"ticket id contains double dot", "/tickets/a..b", false},
+		{"order path traversal", "/orders/../x", false},
+		{"jobs path traversal", "/jobs/../x", false},
+		{"ticket path traversal", "/tickets/../x", false},
+		{"order encoded double dot", "/orders/%2e%2e", false},
+		{"order encoded single dot", "/orders/%2e", false},
+		{"order encoded traversal", "/orders/..%2f", false},
+		{"raw dot", ".", false},
+		{"raw double dot", "..", false},
+		{"scheme injection http", "http://example.com/orders/123", false},
+		{"scheme injection https", "https://example.com/orders/123", false},
+		{"scheme injection protocol relative", "//example.com/orders/123", false},
+		{"scheme injection javascript", "javascript:alert(1)", false},
+		{"no leading slash", "orders/job_123", false},
+		{"unknown route", "/unknown/123", false},
+		{"order id too long (>64 chars)", "/orders/" + strings.Repeat("a", 65), false},
+		{"ticket id too long (>64 chars)", "/tickets/" + strings.Repeat("a", 65), false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := validateDeepLink(tc.link)
+			if got != tc.valid {
+				t.Errorf("validateDeepLink(%q) = %v, want %v", tc.link, got, tc.valid)
+			}
+		})
+	}
+}
