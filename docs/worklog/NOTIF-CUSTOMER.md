@@ -10,7 +10,7 @@
   - `frontend/docs/PUSH.md` (the payload documentation only, no app code)
   - `docs/APPLICATION_MAP.md` (only via `make docs`) and `docs/api/**` if they document these payloads
   - `docs/worklog/NOTIF-CUSTOMER.md`
-- Agent branch: agent/NOTIF-CUSTOMER-user-targeted-notifications, created from logic-exploitation at a9e8e53b
+- Agent branch: agent/NOTIF-CUSTOMER-user-targeted-notifications, rebased onto logic-exploitation at ac8a79a3 (originally created from a9e8e53b)
 
 ## Sender Table (Item 1 Pre-coding Audit)
 
@@ -81,9 +81,7 @@
 - Full staging compose suite (local stack down; standalone push tests verified against local DBs).
 
 ## Follow-ups / out-of-lane findings
-- `govulncheck` in `scripts/govulncheck-module.sh` failed on third-party vulnerability `GO-2026-6865` (CVE-2026-116591, panic in `github.com/klauspost/compress` on two-block frames) against `github.com/klauspost/compress v1.18.7`, pulled indirectly by `go.mongodb.org/mongo-driver/v2 v2.8.0`.
-- The user granted lane permission to bump `github.com/klauspost/compress` to `v1.20.2` in `services/notification-service/go.mod` and `go.sum`, resolving the vulnerability cleanly.
-- The same failure exists on clean `logic-exploitation` (`a9e8e53b`) across other services using mongo-driver (`user-service`, `chat-service`, etc.), which should be updated on the base branch by the owner.
+- `govulncheck` in `scripts/govulncheck-module.sh` previously failed on third-party vulnerability `GO-2026-6865` against `github.com/klauspost/compress v1.18.7`. This vulnerability was fixed across the repository via `DEPS-COMPRESS` (merged at `ec32f249`), and the Go toolchain was upgraded to 1.26.11 via `GO-1-26-11` (merged at `ac8a79a3`). Following rebase onto `logic-exploitation` (`ac8a79a3`), all services and tool caches are on Go 1.26.11 with 0 vulnerabilities.
 - Frontend follow-up (Item 2): When tapping a push for an announcement that opens the `AnnouncementDetailSheet`, the app receives only the active device locale's text. To view the alternate language, the app should be updated to fetch the full bilingual notification model from `/notifications` history by ID when presenting the sheet.
 - Out-of-lane note (Item 3): `kyc-reviewer-console` maintains its own deep-link allow-list in a separate repository (out of lane). Client-side deep-link validation on the Flutter mobile app side is deferred to a future frontend task.
 
