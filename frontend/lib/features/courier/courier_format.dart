@@ -2,24 +2,36 @@ import 'dart:math' as math;
 
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
-import '../customer/customer_format.dart' show formatKm, formatMoney;
+import '../customer/customer_format.dart'
+    show formatAddressDetails, formatKm, formatMoney;
 
 export '../customer/customer_format.dart'
-    show formatKm, formatMoney, jobRef, jobRefIsolated;
+    show formatAddressDetails, formatKm, formatMoney, jobRef, jobRefIsolated;
 
 /// Display helpers of the redesigned courier pages (FE-COURIER).
 /// Coordinates are never shown.
 
-/// A place as two lines: the address text (v2) when there is one, else the
+/// A place as two lines: the address text (v2) with structured details
+/// (building, floor, apartment) when there is one, else the
 /// landmark note, else "Pinned location"; [note] is the landmark note when
 /// it is not already the title.
 ({String title, String? note}) placeOf(
     AppLocalizations l10n, JobLocation? location) {
-  final address = location?.address;
+  final address = location?.address?.trim();
   final note = location?.addressNote?.trim();
   final hasNote = note != null && note.isNotEmpty;
+  final details = formatAddressDetails(
+    l10n,
+    building: location?.building,
+    floor: location?.floor,
+    apartment: location?.apartment,
+  );
   if (address != null && address.isNotEmpty) {
-    return (title: address, note: hasNote ? note : null);
+    final title = details != null ? '$address · $details' : address;
+    return (title: title, note: hasNote ? note : null);
+  }
+  if (details != null) {
+    return (title: details, note: hasNote ? note : null);
   }
   if (hasNote) return (title: note, note: null);
   return (title: l10n.custPinnedLocation, note: null);

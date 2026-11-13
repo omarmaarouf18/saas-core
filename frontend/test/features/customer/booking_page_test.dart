@@ -12,14 +12,18 @@ import 'package:frontend/ui/qd_ui.dart';
 import 'customer_harness.dart';
 
 const _pickup = PickedPlace(
-    latitude: 30.05, longitude: 31.24, note: 'Floor 3', isDeviceLocation: true);
+    latitude: 30.05,
+    longitude: 31.24,
+    address: '10 Tahrir Square',
+    note: 'Floor 3',
+    isDeviceLocation: true);
 
 Future<void> _pumpBooking(WidgetTester tester, CustomerTestDeps deps,
-    {MarketplaceService? svc, Locale locale = en}) async {
+    {MarketplaceService? svc, PickedPlace? pickup, Locale locale = en}) async {
   usePhone(tester);
   await tester.pumpWidget(customerApp(
     deps,
-    CustomerBookingPage(service: svc ?? service(), pickup: _pickup),
+    CustomerBookingPage(service: svc ?? service(), pickup: pickup ?? _pickup),
     locale: locale,
   ));
   await tester.pumpAndSettle();
@@ -34,6 +38,8 @@ Future<void> _chooseDropoff(WidgetTester tester, {String? note}) async {
   await tester.pumpAndSettle();
   await tester.drag(find.byType(FlutterMap), const Offset(-150, 120));
   await tester.pumpAndSettle();
+  await tester.enterText(
+      find.byKey(const Key('cust_picker_address')), '15 Kasr El Nil St');
   if (note != null) {
     await tester.enterText(find.byKey(const Key('cust_picker_note')), note);
   }
@@ -44,7 +50,12 @@ Future<void> _chooseDropoff(WidgetTester tester, {String? note}) async {
 void main() {
   testWidgets('before a drop-off: disabled button, base price, COD only',
       (tester) async {
-    await _pumpBooking(tester, CustomerTestDeps());
+    await _pumpBooking(tester, CustomerTestDeps(),
+        pickup: const PickedPlace(
+            latitude: 30.05,
+            longitude: 31.24,
+            note: 'Floor 3',
+            isDeviceLocation: true));
     expect(find.text('Confirm order'), findsOneWidget);
     expect(find.text('Nile Express'), findsOneWidget);
     expect(find.text('Your current location'), findsOneWidget);

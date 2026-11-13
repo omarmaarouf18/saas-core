@@ -796,10 +796,11 @@ const legacyPhotoURLMajor = 2
 // 2.0.0. A missing or unparseable header is not legacy: every 2.0.0+ build
 // sends it, so those requests keep the strict 400.
 func isLegacyAppBuild(r *http.Request) bool {
-	v := strings.TrimPrefix(strings.TrimSpace(r.Header.Get("X-App-Version")), "v")
-	majorStr, _, _ := strings.Cut(v, ".")
-	major, err := strconv.Atoi(majorStr)
-	return err == nil && major >= 0 && major < legacyPhotoURLMajor
+	if r == nil {
+		return false
+	}
+	major, ok := parseAppMajor(r.Header.Get("X-App-Version"))
+	return ok && major < legacyPhotoURLMajor
 }
 
 // ignoreLegacyPhotoURL reports whether an invalid photo_url may be ignored

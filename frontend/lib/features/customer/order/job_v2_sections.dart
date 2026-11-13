@@ -7,6 +7,8 @@ import '../booking_rules.dart';
 import '../customer_format.dart';
 import 'job_timeline.dart';
 
+export '../customer_format.dart' show formatAddressDetails, jobPlaceLabel;
+
 /// Localized views of the job model v2 fields (FE-V2-CONSUME), shared by
 /// the customer order page and the owner order pages: the history
 /// timeline, the phase text, the ETA line and the recipient / package

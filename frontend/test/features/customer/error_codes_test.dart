@@ -193,12 +193,17 @@ void main() {
           CustomerBookingPage(
               service: service(),
               pickup: const PickedPlace(
-                  latitude: 30.05, longitude: 31.24, isDeviceLocation: true))));
+                  latitude: 30.05,
+                  longitude: 31.24,
+                  address: '10 Tahrir Square',
+                  isDeviceLocation: true))));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Choose the drop-off place'));
       await tester.pumpAndSettle();
       await tester.drag(find.byType(FlutterMap), const Offset(-150, 120));
       await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const Key('cust_picker_address')), '15 Kasr El Nil St');
       await tester.tap(find.byKey(const Key('cust_picker_confirm')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('cust_book_submit')));

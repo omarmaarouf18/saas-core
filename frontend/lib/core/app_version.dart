@@ -3,4 +3,4 @@
 /// (frontend/.github/workflows/build-apk.yml); other builds send the
 /// pubspec semver below (kept equal to pubspec.yaml by a test).
 const String kAppVersion =
-    String.fromEnvironment('APP_VERSION', defaultValue: '2.0.0');
+    String.fromEnvironment('APP_VERSION', defaultValue: '2.1.0');

@@ -20,6 +20,9 @@ class PickedPlace {
     required this.longitude,
     this.note,
     this.address,
+    this.building,
+    this.floor,
+    this.apartment,
     this.isDeviceLocation = false,
   });
 
@@ -29,6 +32,9 @@ class PickedPlace {
 
   /// Street / building / area text (ADR-0028 §2.2), typed in the picker.
   final String? address;
+  final String? building;
+  final String? floor;
+  final String? apartment;
   final bool isDeviceLocation;
 
   String? get trimmedNote {
@@ -41,19 +47,48 @@ class PickedPlace {
     return a.isEmpty ? null : a;
   }
 
-  PickedPlace copyWith({String? note, String? address}) => PickedPlace(
+  String? get trimmedBuilding {
+    final b = building?.trim() ?? '';
+    return b.isEmpty ? null : b;
+  }
+
+  String? get trimmedFloor {
+    final f = floor?.trim() ?? '';
+    return f.isEmpty ? null : f;
+  }
+
+  String? get trimmedApartment {
+    final a = apartment?.trim() ?? '';
+    return a.isEmpty ? null : a;
+  }
+
+  PickedPlace copyWith({
+    String? note,
+    String? address,
+    String? building,
+    String? floor,
+    String? apartment,
+  }) =>
+      PickedPlace(
         latitude: latitude,
         longitude: longitude,
         note: note ?? this.note,
         address: address ?? this.address,
+        building: building ?? this.building,
+        floor: floor ?? this.floor,
+        apartment: apartment ?? this.apartment,
         isDeviceLocation: isDeviceLocation,
       );
 
   JobLocation toJobLocation() => JobLocation(
-      latitude: latitude,
-      longitude: longitude,
-      addressNote: trimmedNote,
-      address: trimmedAddress);
+        latitude: latitude,
+        longitude: longitude,
+        addressNote: trimmedNote,
+        address: trimmedAddress,
+        building: trimmedBuilding,
+        floor: trimmedFloor,
+        apartment: trimmedApartment,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -62,11 +97,14 @@ class PickedPlace {
       other.longitude == longitude &&
       other.note == note &&
       other.address == address &&
+      other.building == building &&
+      other.floor == floor &&
+      other.apartment == apartment &&
       other.isDeviceLocation == isDeviceLocation;
 
   @override
-  int get hashCode =>
-      Object.hash(latitude, longitude, note, address, isDeviceLocation);
+  int get hashCode => Object.hash(latitude, longitude, note, address, building,
+      floor, apartment, isDeviceLocation);
 }
 
 enum LocateStatus { found, denied, unavailable }

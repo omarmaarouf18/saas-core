@@ -192,7 +192,10 @@ type Location struct {
 	// selected by the customer at booking time (ADR-0028 §2.2). Snapshotted
 	// into the job; later profile edits never cascade back into it. No paid
 	// geocoding: it is stored exactly as provided, trimmed and sanitized.
-	Address string `json:"address,omitempty" bson:"address,omitempty"`
+	Address   string `json:"address,omitempty"   bson:"address,omitempty"`
+	Building  string `json:"building,omitempty"  bson:"building,omitempty"`
+	Floor     string `json:"floor,omitempty"     bson:"floor,omitempty"`
+	Apartment string `json:"apartment,omitempty" bson:"apartment,omitempty"`
 	// AddressNote is an optional customer/owner-typed landmark description
 	// (e.g. "beside Ahmed's kiosk") helping the courier find the pin.
 	// Free text, never validated as an address; length-capped at creation.
@@ -202,10 +205,13 @@ type Location struct {
 // MaxAddressNoteLength caps the free-text landmark note (Option C).
 const MaxAddressNoteLength = 500
 
-// ADR-0028 field caps and enum tokens. All v2 booking fields are optional;
-// when a value IS provided it must satisfy these bounds.
+// ADR-0028 and ADDR-REQUIRED field caps and enum tokens.
 const (
+	MinAddressLength       = 5   // location.address / destination.address minimum runes when required (≥ 2.1.0)
 	MaxAddressLength       = 250 // location.address / destination.address runes
+	MaxBuildingLength      = 50  // location.building / destination.building runes
+	MaxFloorLength         = 20  // location.floor / destination.floor runes
+	MaxApartmentLength     = 20  // location.apartment / destination.apartment runes
 	MaxRecipientNameLength = 100 // recipient.name runes
 	MaxRecipientPhoneLen   = 20  // recipient.phone chars (E.164 headroom)
 	MaxRecipientNotesLen   = 200 // recipient.notes runes

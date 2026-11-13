@@ -102,7 +102,13 @@ class MarketplaceProvider extends ChangeNotifier {
     String? pickupAddressNote,
     String? destinationAddressNote,
     String? pickupAddress,
+    String? pickupBuilding,
+    String? pickupFloor,
+    String? pickupApartment,
     String? destinationAddress,
+    String? destinationBuilding,
+    String? destinationFloor,
+    String? destinationApartment,
     JobRecipient? recipient,
     JobPackageDetails? packageDetails,
   }) async {
@@ -122,6 +128,12 @@ class MarketplaceProvider extends ChangeNotifier {
             'address_note': pickupAddressNote.trim(),
           if (pickupAddress != null && pickupAddress.trim().isNotEmpty)
             'address': pickupAddress.trim(),
+          if (pickupBuilding != null && pickupBuilding.trim().isNotEmpty)
+            'building': pickupBuilding.trim(),
+          if (pickupFloor != null && pickupFloor.trim().isNotEmpty)
+            'floor': pickupFloor.trim(),
+          if (pickupApartment != null && pickupApartment.trim().isNotEmpty)
+            'apartment': pickupApartment.trim(),
         },
         'destination': {
           'latitude': destinationLatitude,
@@ -132,6 +144,14 @@ class MarketplaceProvider extends ChangeNotifier {
           if (destinationAddress != null &&
               destinationAddress.trim().isNotEmpty)
             'address': destinationAddress.trim(),
+          if (destinationBuilding != null &&
+              destinationBuilding.trim().isNotEmpty)
+            'building': destinationBuilding.trim(),
+          if (destinationFloor != null && destinationFloor.trim().isNotEmpty)
+            'floor': destinationFloor.trim(),
+          if (destinationApartment != null &&
+              destinationApartment.trim().isNotEmpty)
+            'apartment': destinationApartment.trim(),
         },
         'payment_method': paymentMethod,
         if (_recipientJson(recipient) case final r?) 'recipient': r,

@@ -7,6 +7,9 @@ class SavedAddress {
     this.id = '',
     required this.label,
     required this.address,
+    this.building,
+    this.floor,
+    this.apartment,
     this.addressNote = '',
     required this.latitude,
     required this.longitude,
@@ -20,6 +23,11 @@ class SavedAddress {
 
   /// Street / building / area (≤ 250 characters).
   final String address;
+
+  /// Structured address details (ADDR-REQUIRED). Optional.
+  final String? building;
+  final String? floor;
+  final String? apartment;
 
   /// Landmark note (≤ 500 characters).
   final String addressNote;
@@ -37,10 +45,19 @@ class SavedAddress {
       return 0;
     }
 
+    String? optText(Object? v) {
+      if (v is! String) return null;
+      final t = v.trim();
+      return t.isEmpty ? null : t;
+    }
+
     return SavedAddress(
       id: json['id']?.toString() ?? '',
       label: json['label']?.toString() ?? '',
       address: json['address']?.toString() ?? '',
+      building: optText(json['building']),
+      floor: optText(json['floor']),
+      apartment: optText(json['apartment']),
       addressNote: json['address_note']?.toString() ?? '',
       latitude: coord(const ['latitude', 'lat']),
       longitude: coord(const ['longitude', 'lng', 'lon']),
@@ -51,6 +68,9 @@ class SavedAddress {
         if (id.isNotEmpty) 'id': id,
         'label': label,
         'address': address,
+        if (building != null && building!.isNotEmpty) 'building': building,
+        if (floor != null && floor!.isNotEmpty) 'floor': floor,
+        if (apartment != null && apartment!.isNotEmpty) 'apartment': apartment,
         if (addressNote.isNotEmpty) 'address_note': addressNote,
         'latitude': latitude,
         'longitude': longitude,
@@ -60,6 +80,9 @@ class SavedAddress {
     String? id,
     String? label,
     String? address,
+    String? building,
+    String? floor,
+    String? apartment,
     String? addressNote,
     double? latitude,
     double? longitude,
@@ -68,6 +91,9 @@ class SavedAddress {
         id: id ?? this.id,
         label: label ?? this.label,
         address: address ?? this.address,
+        building: building ?? this.building,
+        floor: floor ?? this.floor,
+        apartment: apartment ?? this.apartment,
         addressNote: addressNote ?? this.addressNote,
         latitude: latitude ?? this.latitude,
         longitude: longitude ?? this.longitude,
@@ -79,13 +105,16 @@ class SavedAddress {
       other.id == id &&
       other.label == label &&
       other.address == address &&
+      other.building == building &&
+      other.floor == floor &&
+      other.apartment == apartment &&
       other.addressNote == addressNote &&
       other.latitude == latitude &&
       other.longitude == longitude;
 
   @override
-  int get hashCode =>
-      Object.hash(id, label, address, addressNote, latitude, longitude);
+  int get hashCode => Object.hash(id, label, address, building, floor,
+      apartment, addressNote, latitude, longitude);
 
   @override
   String toString() => 'SavedAddress($id, $label, $address)';

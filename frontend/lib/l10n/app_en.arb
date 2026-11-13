@@ -4318,11 +4318,11 @@
   "@courCallRecipient": {
     "description": "FE-V2-CONSUME courier: call button on the recipient card."
   },
-  "bookAddressLabel": "Address · optional",
+  "bookAddressLabel": "Address",
   "@bookAddressLabel": {
     "description": "FE-V2-CONSUME picker: street address text field label."
   },
-  "bookAddressHint": "Street, building, area",
+  "bookAddressHint": "Street, area",
   "@bookAddressHint": {
     "description": "FE-V2-CONSUME picker: street address hint."
   },
@@ -5010,5 +5010,65 @@
   "acctPushOpenSettings": "Open settings",
   "@acctPushOpenSettings": {
     "description": "PUSH-FCM item 3: hint action; opens the phone's notification settings for the app."
+  },
+  "bookErrAddressTooShort": "An address is too short. Use at least {min} characters.",
+  "@bookErrAddressTooShort": {
+    "description": "Error shown when a typed address is shorter than the minimum length",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "addrBuildingLabel": "Building · optional",
+  "@addrBuildingLabel": {
+    "description": "Optional building label for addresses"
+  },
+  "addrBuildingHint": "e.g. 12",
+  "@addrBuildingHint": {
+    "description": "Building input hint"
+  },
+  "addrFloorLabel": "Floor · optional",
+  "@addrFloorLabel": {
+    "description": "Optional floor label for addresses"
+  },
+  "addrFloorHint": "e.g. 3",
+  "@addrFloorHint": {
+    "description": "Floor input hint"
+  },
+  "addrApartmentLabel": "Apartment · optional",
+  "@addrApartmentLabel": {
+    "description": "Optional apartment label for addresses"
+  },
+  "addrApartmentHint": "e.g. 7",
+  "@addrApartmentHint": {
+    "description": "Apartment input hint"
+  },
+  "addrDetailsBuilding": "Building {building}",
+  "@addrDetailsBuilding": {
+    "description": "Formatted building component for address details",
+    "placeholders": {
+      "building": {
+        "type": "String"
+      }
+    }
+  },
+  "addrDetailsFloor": "Floor {floor}",
+  "@addrDetailsFloor": {
+    "description": "Formatted floor component for address details",
+    "placeholders": {
+      "floor": {
+        "type": "String"
+      }
+    }
+  },
+  "addrDetailsApartment": "Apt {apartment}",
+  "@addrDetailsApartment": {
+    "description": "Formatted apartment component for address details",
+    "placeholders": {
+      "apartment": {
+        "type": "String"
+      }
+    }
   }
 }

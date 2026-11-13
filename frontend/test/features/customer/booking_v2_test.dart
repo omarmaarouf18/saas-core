@@ -6,31 +6,53 @@ import 'package:frontend/features/customer/booking_page.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/models/marketplace_service.dart';
+import 'package:frontend/models/saved_address.dart';
 
 import 'customer_harness.dart';
 
-// FE-V2-CONSUME item 2: recipient, package and address text on A-Book.
+// FE-V2-CONSUME item 2 + ADDR-REQUIRED: recipient, package and typed
+// address with structured details (app 2.1.0) on A-Book.
 
 const _pickup = PickedPlace(
-    latitude: 30.05, longitude: 31.24, note: 'Floor 3', isDeviceLocation: true);
+    latitude: 30.05,
+    longitude: 31.24,
+    address: '15 Kasr El Nil St',
+    note: 'Floor 3',
+    isDeviceLocation: true);
 
 Future<void> _pump(WidgetTester tester, CustomerTestDeps deps,
-    {MarketplaceService? svc}) async {
+    {MarketplaceService? svc, PickedPlace? pickup}) async {
   usePhone(tester);
   deps.marketplace.nextBookedJob = job(id: 'new-job-1');
   await tester.pumpWidget(customerApp(
-      deps, CustomerBookingPage(service: svc ?? service(), pickup: _pickup)));
+      deps,
+      CustomerBookingPage(
+          service: svc ?? service(), pickup: pickup ?? _pickup)));
   await tester.pumpAndSettle();
 }
 
-Future<void> _dropoff(WidgetTester tester, {String? address}) async {
+Future<void> _dropoff(WidgetTester tester,
+    {String address = '4 Tahrir St, Dokki',
+    String? building,
+    String? floor,
+    String? apartment}) async {
   await tester.tap(find.text('Choose the drop-off place'));
   await tester.pumpAndSettle();
   await tester.drag(find.byType(FlutterMap), const Offset(-150, 120));
   await tester.pumpAndSettle();
-  if (address != null) {
+  await tester.enterText(
+      find.byKey(const Key('cust_picker_address')), address);
+  if (building != null) {
     await tester.enterText(
-        find.byKey(const Key('cust_picker_address')), address);
+        find.byKey(const Key('cust_picker_building')), building);
+  }
+  if (floor != null) {
+    await tester.enterText(
+        find.byKey(const Key('cust_picker_floor')), floor);
+  }
+  if (apartment != null) {
+    await tester.enterText(
+        find.byKey(const Key('cust_picker_apartment')), apartment);
   }
   await tester.tap(find.byKey(const Key('cust_picker_confirm')));
   await tester.pumpAndSettle();
@@ -63,7 +85,7 @@ Future<void> _submit(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('default: I am the recipient, no package, old request',
+  testWidgets('default: I am the recipient, no package, addresses sent',
       (tester) async {
     final deps = CustomerTestDeps();
     await _pump(tester, deps);
@@ -72,9 +94,15 @@ void main() {
     await _dropoff(tester);
     await _submit(tester);
     final a = deps.marketplace.bookCalls.single.args;
+    expect(a['pickupAddress'], '15 Kasr El Nil St');
+    expect(a['destinationAddress'], '4 Tahrir St, Dokki');
     for (final k in [
-      'pickupAddress',
-      'destinationAddress',
+      'pickupBuilding',
+      'pickupFloor',
+      'pickupApartment',
+      'destinationBuilding',
+      'destinationFloor',
+      'destinationApartment',
       'recipientName',
       'recipientPhone',
       'recipientNotes',
@@ -100,8 +128,8 @@ void main() {
     await _type(tester, 'cust_book_package_notes', 'Fragile');
     await _submit(tester);
     final a = deps.marketplace.bookCalls.single.args;
+    expect(a['pickupAddress'], '15 Kasr El Nil St');
     expect(a['destinationAddress'], '4 Tahrir St, Dokki');
-    expect(a['pickupAddress'], isNull);
     expect(a['recipientName'], 'Mahmoud');
     expect(a['recipientPhone'], '01012345678');
     expect(a['recipientNotes'], 'Call first');
@@ -173,11 +201,119 @@ void main() {
     await _submit(tester);
     expect(find.byKey(const Key('cust_book_route_error')), findsOneWidget);
     // Choosing the place again clears it.
-    await tester.tap(find.text('Your current location'));
+    await tester.tap(find.text('15 Kasr El Nil St'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('cust_picker_confirm')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('cust_book_route_error')), findsNothing);
+  });
+
+  testWidgets('the booking form blocks an empty or too-short address',
+      (tester) async {
+    final deps = CustomerTestDeps();
+    // Start with pickup missing an address
+    const noAddrPickup = PickedPlace(
+        latitude: 30.05, longitude: 31.24, note: 'Gate 2');
+    await _pump(tester, deps, pickup: noAddrPickup);
+    await _dropoff(tester, address: '4 Tahrir St, Dokki');
+
+    // Submit with empty pickup address: blocked
+    await _submit(tester);
+    expect(deps.marketplace.bookCalls, isEmpty);
+    expect(find.byKey(const Key('cust_book_route_error')), findsOneWidget);
+    expect(find.text('Write the address of this stop.'), findsOneWidget);
+    expect(find.text('Check the highlighted fields.'), findsOneWidget);
+
+    // Edit pickup to a too-short address (4 characters)
+    await tester.tap(find.text('Gate 2'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('cust_picker_address')), 'four');
+    await tester.tap(find.byKey(const Key('cust_picker_confirm')));
+    await tester.pumpAndSettle();
+
+    await _submit(tester);
+    expect(deps.marketplace.bookCalls, isEmpty);
+    expect(find.byKey(const Key('cust_book_route_error')), findsOneWidget);
+    expect(find.text('An address is too short. Use at least 5 characters.'),
+        findsOneWidget);
+
+    // Edit pickup to valid address (>= 5 chars): submit passes
+    await tester.tap(find.text('four'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('cust_picker_address')), '15 Kasr El Nil St');
+    await tester.tap(find.byKey(const Key('cust_picker_confirm')));
+    await tester.pumpAndSettle();
+
+    await _submit(tester);
+    expect(deps.marketplace.bookCalls, hasLength(1));
+  });
+
+  testWidgets('the optional fields are sent only when filled', (tester) async {
+    final deps = CustomerTestDeps();
+    await _pump(tester, deps);
+    await _dropoff(
+      tester,
+      address: '4 Tahrir St, Dokki',
+      building: 'Building 12',
+      floor: 'Floor 3',
+      apartment: 'Apt 7',
+    );
+    await _submit(tester);
+    final a = deps.marketplace.bookCalls.single.args;
+    expect(a['pickupAddress'], '15 Kasr El Nil St');
+    expect(a['pickupBuilding'], isNull);
+    expect(a['pickupFloor'], isNull);
+    expect(a['pickupApartment'], isNull);
+    expect(a['destinationAddress'], '4 Tahrir St, Dokki');
+    expect(a['destinationBuilding'], 'Building 12');
+    expect(a['destinationFloor'], 'Floor 3');
+    expect(a['destinationApartment'], 'Apt 7');
+  });
+
+  testWidgets('a saved address pre-fills all fields in picker', (tester) async {
+    final deps = CustomerTestDeps();
+    const saved = SavedAddress(
+      id: 'addr-work',
+      label: 'Work',
+      address: '20 Smart Village, Giza',
+      building: 'Building B1',
+      floor: 'Floor 2',
+      apartment: 'Suite 204',
+      addressNote: 'Near entrance A',
+      latitude: 30.08,
+      longitude: 31.02,
+    );
+    deps.auth.user = deps.auth.user!.copyWith(savedAddresses: [saved]);
+    await _pump(tester, deps);
+
+    // Open drop-off picker
+    await tester.tap(find.text('Choose the drop-off place'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved places'), findsOneWidget);
+
+    // Tap saved address chip
+    await tester.tap(find.byKey(const Key('cust_picker_saved_0')));
+    await tester.pumpAndSettle();
+
+    // Verify all fields are pre-filled
+    expect(find.text('20 Smart Village, Giza'), findsOneWidget);
+    expect(find.text('Building B1'), findsOneWidget);
+    expect(find.text('Floor 2'), findsOneWidget);
+    expect(find.text('Suite 204'), findsOneWidget);
+    expect(find.text('Near entrance A'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('cust_picker_confirm')));
+    await tester.pumpAndSettle();
+
+    await _submit(tester);
+    final a = deps.marketplace.bookCalls.single.args;
+    expect(a['destinationAddress'], '20 Smart Village, Giza');
+    expect(a['destinationBuilding'], 'Building B1');
+    expect(a['destinationFloor'], 'Floor 2');
+    expect(a['destinationApartment'], 'Suite 204');
+    expect(a['destinationAddressNote'], 'Near entrance A');
   });
 
   testWidgets('rides: passenger wording, no package section', (tester) async {
@@ -189,7 +325,7 @@ void main() {
     expect(find.byKey(const Key('cust_book_package_size')), findsNothing);
   });
 
-  testWidgets('Arabic labels', (tester) async {
+  testWidgets('Arabic labels and RTL test', (tester) async {
     usePhone(tester);
     await tester.pumpWidget(customerApp(CustomerTestDeps(),
         CustomerBookingPage(service: service(), pickup: _pickup),
@@ -197,6 +333,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('مين هيستلم؟'), findsOneWidget);
     expect(find.text('أنا المستلم'), findsOneWidget);
+
+    // Open picker in Arabic
+    await tester.tap(find.text('اختار مكان التسليم'));
+    await tester.pumpAndSettle();
+    expect(find.text('العنوان'), findsOneWidget);
+    expect(find.text('العمارة · اختياري'), findsOneWidget);
+    expect(find.text('الدور · اختياري'), findsOneWidget);
+    expect(find.text('الشقة · اختياري'), findsOneWidget);
+    expect(find.text('علامة تساعد المندوب · اختياري'), findsOneWidget);
   });
 
   testWidgets('picker: address prefilled on reopen, absent for the search area',

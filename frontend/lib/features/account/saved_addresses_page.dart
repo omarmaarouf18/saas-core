@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../models/saved_address.dart';
 import '../../providers/auth_provider.dart';
 import '../../ui/qd_ui.dart';
+import '../customer/customer_format.dart' show formatAddressDetails;
 import '../customer/customer_location.dart';
 import '../customer/picker_page.dart';
 import 'account_nav.dart';
@@ -290,6 +291,14 @@ class _SavedRow extends StatelessWidget {
     final c = QdColors.of(context);
     final label = savedLabelText(l10n, entry.label);
     final note = entry.addressNote.trim();
+    final details = formatAddressDetails(
+      l10n,
+      building: entry.building,
+      floor: entry.floor,
+      apartment: entry.apartment,
+    );
+    final addressLine =
+        details != null ? '${entry.address} · $details' : entry.address;
     return InkWell(
       onTap: enabled ? onEdit : null,
       child: ConstrainedBox(
@@ -312,7 +321,7 @@ class _SavedRow extends StatelessWidget {
                       Text(label,
                           style:
                               QdText.rowTitleSm.copyWith(color: c.textPrimary)),
-                      Text(entry.address,
+                      Text(addressLine,
                           style: QdText.secondary
                               .copyWith(color: c.textSecondary)),
                       if (note.isNotEmpty)
@@ -419,6 +428,11 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
       text: _kind == SavedLabelKind.other ? widget.initial?.label : '');
   late final _address = TextEditingController(
       text: widget.initial?.address ?? widget.initialAddress ?? '');
+  late final _building =
+      TextEditingController(text: widget.initial?.building ?? '');
+  late final _floor = TextEditingController(text: widget.initial?.floor ?? '');
+  late final _apartment =
+      TextEditingController(text: widget.initial?.apartment ?? '');
   late final _note =
       TextEditingController(text: widget.initial?.addressNote ?? '');
   late double? _lat = widget.initial?.latitude;
@@ -429,6 +443,9 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
   void dispose() {
     _custom.dispose();
     _address.dispose();
+    _building.dispose();
+    _floor.dispose();
+    _apartment.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -438,6 +455,9 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
   SavedAddressProblems get _problems => validateSavedAddress(
         label: _label,
         address: _address.text,
+        building: _building.text,
+        floor: _floor.text,
+        apartment: _apartment.text,
         note: _note.text,
         latitude: _lat,
         longitude: _lng,
@@ -462,6 +482,9 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
       id: widget.initial?.id ?? '',
       label: _label,
       address: _address.text.trim(),
+      building: _building.text.trim().isEmpty ? null : _building.text.trim(),
+      floor: _floor.text.trim().isEmpty ? null : _floor.text.trim(),
+      apartment: _apartment.text.trim().isEmpty ? null : _apartment.text.trim(),
       addressNote: _note.text.trim(),
       latitude: _lat!,
       longitude: _lng!,
@@ -479,6 +502,7 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
       backgroundColor: c.surface,
       appBar: accountAppBar(context, widget.title),
       body: ListView(
+        key: const Key('address_editor_list'),
         padding: const EdgeInsets.fromLTRB(
             QdSpace.gutter, QdSpace.x2, QdSpace.gutter, QdSpace.x6),
         children: [
@@ -529,6 +553,56 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
                     ? l10n.addrErrTooLong(kAddressTextMaxRunes)
                     : null,
             onChanged: (_) => setState(() {}),
+          ),
+          gap,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: QdTextField(
+                  key: const Key('address_building_input'),
+                  label: l10n.addrBuildingLabel,
+                  hint: l10n.addrBuildingHint,
+                  controller: _building,
+                  maxRunes: kBuildingMaxRunes,
+                  textInputAction: TextInputAction.next,
+                  errorText: p.buildingTooLong
+                      ? l10n.addrErrTooLong(kBuildingMaxRunes)
+                      : null,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: QdSpace.x2),
+              Expanded(
+                child: QdTextField(
+                  key: const Key('address_floor_input'),
+                  label: l10n.addrFloorLabel,
+                  hint: l10n.addrFloorHint,
+                  controller: _floor,
+                  maxRunes: kFloorMaxRunes,
+                  textInputAction: TextInputAction.next,
+                  errorText: p.floorTooLong
+                      ? l10n.addrErrTooLong(kFloorMaxRunes)
+                      : null,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: QdSpace.x2),
+              Expanded(
+                child: QdTextField(
+                  key: const Key('address_apartment_input'),
+                  label: l10n.addrApartmentLabel,
+                  hint: l10n.addrApartmentHint,
+                  controller: _apartment,
+                  maxRunes: kApartmentMaxRunes,
+                  textInputAction: TextInputAction.next,
+                  errorText: p.apartmentTooLong
+                      ? l10n.addrErrTooLong(kApartmentMaxRunes)
+                      : null,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+            ],
           ),
           gap,
           QdTextField(

@@ -8,6 +8,7 @@ import 'owner_rules.dart';
 
 export '../customer/customer_format.dart'
     show
+        formatAddressDetails,
         formatKm,
         formatMoney,
         formatWhen,

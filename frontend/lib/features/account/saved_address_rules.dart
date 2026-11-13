@@ -46,6 +46,9 @@ class SavedAddressProblems {
     this.labelTooLong = false,
     this.addressMissing = false,
     this.addressTooLong = false,
+    this.buildingTooLong = false,
+    this.floorTooLong = false,
+    this.apartmentTooLong = false,
     this.noteTooLong = false,
     this.pinMissing = false,
   });
@@ -54,6 +57,9 @@ class SavedAddressProblems {
   final bool labelTooLong;
   final bool addressMissing;
   final bool addressTooLong;
+  final bool buildingTooLong;
+  final bool floorTooLong;
+  final bool apartmentTooLong;
   final bool noteTooLong;
   final bool pinMissing;
 
@@ -62,6 +68,9 @@ class SavedAddressProblems {
       labelTooLong ||
       addressMissing ||
       addressTooLong ||
+      buildingTooLong ||
+      floorTooLong ||
+      apartmentTooLong ||
       noteTooLong ||
       pinMissing;
 }
@@ -74,18 +83,27 @@ bool validCoordinates(double lat, double lng) =>
 SavedAddressProblems validateSavedAddress({
   required String label,
   required String address,
+  String? building,
+  String? floor,
+  String? apartment,
   required String note,
   required double? latitude,
   required double? longitude,
 }) {
   final l = label.trim();
   final a = address.trim();
+  final b = building?.trim() ?? '';
+  final f = floor?.trim() ?? '';
+  final ap = apartment?.trim() ?? '';
   final n = note.trim();
   return SavedAddressProblems(
     labelMissing: l.isEmpty,
     labelTooLong: runeLength(l) > kNameMaxRunes,
     addressMissing: a.isEmpty,
     addressTooLong: runeLength(a) > kAddressTextMaxRunes,
+    buildingTooLong: runeLength(b) > kBuildingMaxRunes,
+    floorTooLong: runeLength(f) > kFloorMaxRunes,
+    apartmentTooLong: runeLength(ap) > kApartmentMaxRunes,
     noteTooLong: runeLength(n) > kAddressNoteMaxRunes,
     pinMissing: latitude == null ||
         longitude == null ||

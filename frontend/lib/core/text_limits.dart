@@ -8,6 +8,11 @@ import 'package:flutter/services.dart';
 /// Address text of a place (`location.address`, saved address `address`).
 const int kAddressTextMaxRunes = 250;
 
+/// Structured address details (building, floor, apartment).
+const int kBuildingMaxRunes = 50;
+const int kFloorMaxRunes = 20;
+const int kApartmentMaxRunes = 20;
+
 /// Landmark note of a place (`address_note`).
 const int kAddressNoteMaxRunes = 500;
 

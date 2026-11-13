@@ -1411,13 +1411,28 @@ func (a *Auth) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		derivedFrequent := make([]string, 0, len(parsed))
 		for i := range parsed {
 			addr := &parsed[i]
-			addr.Address = strings.TrimSpace(addr.Address)
+			addr.Address = models.SanitizeAddressText(addr.Address)
 			if addr.Address == "" {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "address is required for saved address"})
 				return
 			}
-			if len([]rune(addr.Address)) > 250 {
+			if len([]rune(addr.Address)) > models.MaxAddressLength {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "address cannot exceed 250 characters"})
+				return
+			}
+			addr.Building = models.SanitizeAddressText(addr.Building)
+			if len([]rune(addr.Building)) > models.MaxBuildingLength {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "building cannot exceed 50 characters"})
+				return
+			}
+			addr.Floor = models.SanitizeAddressText(addr.Floor)
+			if len([]rune(addr.Floor)) > models.MaxFloorLength {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "floor cannot exceed 20 characters"})
+				return
+			}
+			addr.Apartment = models.SanitizeAddressText(addr.Apartment)
+			if len([]rune(addr.Apartment)) > models.MaxApartmentLength {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "apartment cannot exceed 20 characters"})
 				return
 			}
 			addr.Label = strings.TrimSpace(addr.Label)
