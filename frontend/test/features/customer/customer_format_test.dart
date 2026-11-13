@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/customer/customer_format.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/market_page.dart';
+import 'package:frontend/l10n/app_localizations_ar.dart';
 import 'package:frontend/l10n/app_localizations_en.dart';
 import 'package:frontend/models/job.dart';
 
@@ -9,6 +10,57 @@ import 'customer_harness.dart';
 
 void main() {
   final l10n = AppLocalizationsEn();
+
+  group('formatAddressDetails', () {
+    test('en: formats all parts, hides empty parts', () {
+      expect(
+          formatAddressDetails(l10n,
+              building: '12', floor: '3', apartment: '7'),
+          'Building 12, Floor 3, Apt 7');
+      expect(
+          formatAddressDetails(l10n,
+              building: ' 12 ', floor: null, apartment: ' 7 '),
+          'Building 12, Apt 7');
+      expect(
+          formatAddressDetails(l10n, building: null, floor: '2', apartment: ''),
+          'Floor 2');
+      expect(
+          formatAddressDetails(l10n,
+              building: '   ', floor: '', apartment: null),
+          isNull);
+    });
+
+    test('ar: formats with Arabic comma and hides empty parts', () {
+      final l10nAr = AppLocalizationsAr();
+      expect(
+          formatAddressDetails(l10nAr,
+              building: '12', floor: '3', apartment: '7'),
+          'عمارة 12، الدور 3، شقة 7');
+      expect(
+          formatAddressDetails(l10nAr,
+              building: '12', floor: null, apartment: '7'),
+          'عمارة 12، شقة 7');
+      expect(
+          formatAddressDetails(l10nAr, building: null, floor: '', apartment: '4'),
+          'شقة 4');
+    });
+
+    test('jobPlaceLabel includes details next to address', () {
+      final locWithDetails = JobLocation(
+        latitude: 30,
+        longitude: 31,
+        address: '15 Qasr El Nil St',
+        building: '12',
+        floor: '3',
+        apartment: '7',
+        addressNote: 'Beside the kiosk',
+      );
+      expect(jobPlaceLabel(l10n, locWithDetails),
+          '15 Qasr El Nil St · Building 12, Floor 3, Apt 7');
+      expect(jobPlaceLabel(l10n, locWithDetails, withNote: true),
+          '15 Qasr El Nil St · Building 12, Floor 3, Apt 7 · Beside the kiosk');
+    });
+  });
 
   group('place labels never show coordinates', () {
     test('job location: note, else "Pinned location"', () {

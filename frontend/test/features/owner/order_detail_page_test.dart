@@ -247,4 +247,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(deps.owner.jobCalls, calls + 1);
   });
+
+  testWidgets('route lines render building, floor, apartment next to address',
+      (tester) async {
+    usePhone(tester);
+    final deps = depsWith([
+      ownerJob(
+        pickupAddress: '15 Qasr El Nil St',
+        pickupBuilding: '12',
+        pickupFloor: '3',
+        pickupApartment: '7',
+        pickupNote: 'Beside the kiosk',
+        dropAddress: '26th of July St',
+        dropBuilding: '5',
+        dropFloor: null,
+        dropApartment: '10',
+        dropNote: 'Zamalek',
+      ),
+    ]);
+    await pumpOwner(
+        tester, deps, const OwnerOrderDetailPage(jobId: 'a1b2c3d4e5f6'));
+    expect(
+        find.text(
+            '15 Qasr El Nil St · Building 12, Floor 3, Apt 7 · Beside the kiosk'),
+        findsOneWidget);
+    expect(find.text('26th of July St · Building 5, Apt 10 · Zamalek'),
+        findsOneWidget);
+  });
 }

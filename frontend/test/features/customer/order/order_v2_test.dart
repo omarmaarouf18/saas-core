@@ -203,4 +203,46 @@ void main() {
     expect(find.textContaining('هيوصل حوالي'), findsOneWidget);
     await unmountOrder(tester, deps);
   });
+
+  testWidgets('route card renders building, floor, apartment next to address',
+      (tester) async {
+    final deps = CustomerTestDeps();
+    final job = orderJobV2(
+      pickupAddress: '15 Kasr El Nil St',
+      pickupBuilding: '12',
+      pickupFloor: '3',
+      pickupApartment: '7',
+      pickupNote: 'Near gate',
+      dropAddress: '4 Tahrir St',
+      dropBuilding: '9',
+      dropApartment: '4',
+      dropNote: 'Beside the metro',
+    );
+    await pumpOrder(tester, deps, job);
+    await _reveal(tester, find.byKey(const Key('ord_route')));
+    expect(
+        find.text('15 Kasr El Nil St · Building 12, Floor 3, Apt 7 · Near gate'),
+        findsOneWidget);
+    expect(find.text('4 Tahrir St · Building 9, Apt 4 · Beside the metro'),
+        findsOneWidget);
+    await unmountOrder(tester, deps);
+  });
+
+  testWidgets('route card renders Arabic structured address details [RTL]',
+      (tester) async {
+    final deps = CustomerTestDeps();
+    final job = orderJobV2(
+      pickupAddress: '15 شارع قصر النيل',
+      pickupBuilding: '12',
+      pickupFloor: '3',
+      pickupApartment: '7',
+      pickupNote: 'علامة مميزة',
+    );
+    await pumpOrder(tester, deps, job, locale: ar);
+    await _reveal(tester, find.byKey(const Key('ord_route')));
+    expect(
+        find.text('15 شارع قصر النيل · عمارة 12، الدور 3، شقة 7 · علامة مميزة'),
+        findsOneWidget);
+    await unmountOrder(tester, deps);
+  });
 }

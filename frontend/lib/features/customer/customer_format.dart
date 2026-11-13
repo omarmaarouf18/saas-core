@@ -11,7 +11,29 @@ import 'customer_location.dart';
 /// never shown: a place without a typed note is "Pinned location" (or "Your
 /// current location" when it came from the device).
 
-/// Label for a job's pickup / drop-off: its address text (job model v2),
+/// Formats structured address details (building, floor, apartment).
+/// E.g. "Building 12, Floor 3, Apt 7" or "عمارة 12، الدور 3، شقة 7".
+/// Returns null if all parts are empty.
+String? formatAddressDetails(
+  AppLocalizations l10n, {
+  String? building,
+  String? floor,
+  String? apartment,
+}) {
+  final parts = <String>[];
+  final b = building?.trim();
+  if (b != null && b.isNotEmpty) parts.add(l10n.addrDetailsBuilding(b));
+  final f = floor?.trim();
+  if (f != null && f.isNotEmpty) parts.add(l10n.addrDetailsFloor(f));
+  final a = apartment?.trim();
+  if (a != null && a.isNotEmpty) parts.add(l10n.addrDetailsApartment(a));
+  if (parts.isEmpty) return null;
+  final sep = l10n.localeName == 'ar' ? '، ' : ', ';
+  return parts.join(sep);
+}
+
+/// Label for a job's pickup / drop-off: its address text (job model v2)
+/// with structured details (building, floor, apartment) when present,
 /// else the landmark note, else the localized "Pinned location" (never
 /// coordinates). With [withNote], a note is appended after an address
 /// ("4 Tahrir St · Beside the metro").
@@ -20,8 +42,19 @@ String jobPlaceLabel(AppLocalizations l10n, JobLocation? location,
   if (location == null) return l10n.custPinnedLocation;
   final address = location.address?.trim() ?? '';
   final note = location.addressNote?.trim() ?? '';
-  if (address.isNotEmpty) {
-    return withNote && note.isNotEmpty ? '$address · $note' : address;
+  final details = formatAddressDetails(
+    l10n,
+    building: location.building,
+    floor: location.floor,
+    apartment: location.apartment,
+  );
+  final fullAddress = address.isNotEmpty && details != null
+      ? '$address · $details'
+      : address.isNotEmpty
+          ? address
+          : (details ?? '');
+  if (fullAddress.isNotEmpty) {
+    return withNote && note.isNotEmpty ? '$fullAddress · $note' : fullAddress;
   }
   return note.isNotEmpty ? note : l10n.custPinnedLocation;
 }
