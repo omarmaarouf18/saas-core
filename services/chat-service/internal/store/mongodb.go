@@ -505,8 +505,9 @@ func (s *MongoDB) AdminResolveTicket(ctx context.Context, ticketID, resolutionNo
 				if existing.Status == "resolved" {
 					return nil, fmt.Errorf("%w: %s", ErrTicketAlreadyResolved, ticketID)
 				}
+				return nil, fmt.Errorf("ticket %s was concurrently modified", ticketID)
 			}
-			return nil, fmt.Errorf("ticket %s not found or was concurrently modified", ticketID)
+			return nil, fmt.Errorf("ticket %s not found", ticketID)
 		}
 		return nil, fmt.Errorf("failed to resolve ticket: %w", res.Err())
 	}

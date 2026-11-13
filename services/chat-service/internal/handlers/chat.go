@@ -1199,7 +1199,7 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 
 	callerID, callerUsername, err := c.resolveCaller(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized: " + err.Error()})
+		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 		return
 	}
 

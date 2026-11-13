@@ -95,15 +95,12 @@ func (c *Chat) authenticateReviewer(r *http.Request) (*ReviewerClaims, error) {
 	return c.verifyReviewerToken(r.Context(), reviewerToken)
 }
 
-func writeReviewerAuthError(w http.ResponseWriter, err error) {
+func writeReviewerAuthError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, ErrServiceUnavailable) {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
-			"error":   "service_unavailable",
-			"message": "Authentication service is temporarily unavailable. Please try again later.",
-		})
+		handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, handlerutil.ErrCodeUnavailable, "Authentication service is temporarily unavailable. Please try again later.", err)
 		return
 	}
-	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+	handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
 }
 
 // AdminListTicketsResponse is the JSON response for GET /admin/tickets.
@@ -130,7 +127,7 @@ func (c *Chat) AdminListTickets(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeReviewerAuthError(w, err)
+		writeReviewerAuthError(w, r, err)
 		return
 	}
 
@@ -254,7 +251,7 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeReviewerAuthError(w, err)
+		writeReviewerAuthError(w, r, err)
 		return
 	}
 
@@ -280,11 +277,11 @@ func (c *Chat) AdminResolveTicket(w http.ResponseWriter, r *http.Request) {
 	ticket, err := c.store.AdminResolveTicket(ctx, ticketID, note, reviewer.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already resolved") || strings.Contains(err.Error(), "concurrently modified") {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "ticket is already resolved or concurrently modified", err)
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusNotFound, "not_found", "ticket not found", err)
 			return
 		}
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
@@ -407,7 +404,7 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 
 	reviewer, err := c.authenticateReviewer(r)
 	if err != nil {
-		writeReviewerAuthError(w, err)
+		writeReviewerAuthError(w, r, err)
 		return
 	}
 
@@ -428,11 +425,11 @@ func (c *Chat) AdminAcceptTicket(w http.ResponseWriter, r *http.Request) {
 	ticket, err := c.store.AdminAcceptTicket(ctx, ticketID, reviewer.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already assigned") || strings.Contains(err.Error(), "already resolved") || strings.Contains(err.Error(), "not in pending") {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusConflict, handlerutil.ErrCodeConflict, "ticket is already assigned, resolved, or not in pending status", err)
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			handlerutil.WriteSafeError(w, r, http.StatusNotFound, "not_found", "ticket not found", err)
 			return
 		}
 		handlerutil.WriteSafeError(w, r, http.StatusInternalServerError, handlerutil.ErrCodeInternal, "internal server error", err)
