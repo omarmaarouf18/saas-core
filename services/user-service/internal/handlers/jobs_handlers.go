@@ -34,23 +34,84 @@ var (
 // ADR-0028 v2 booking inputs: recipient, package details, address text
 // ---------------------------------------------------------------------------
 
-// validateV2BookingFields normalizes and validates the optional v2 booking
-// inputs (ADR-0028 §2.1/§2.2/§2.7). It mutates the request in place —
-// trimming, sanitizing, and dropping empty objects — and returns("" "") on
-// success, or a stable error code + client-safe message for a 400.
-func validateV2BookingFields(req *models.CreateJobRequest) (string, string) {
+// validateV2BookingFields normalizes and validates the v2 and ADDR-REQUIRED
+// booking inputs (ADR-0028 §2.1/§2.2/§2.7, ADDR-REQUIRED). It mutates the
+// request in place — trimming, sanitizing, and dropping empty objects — and
+// returns ("" "") on success, or a stable error code + client-safe message for a 400.
+// When versionAtLeast210 is true (X-App-Version ≥ 2.1.0), address is required on
+// both location and destination (min 5 runes). Max caps for building, floor,
+// apartment, and address apply across all versions.
+func validateV2BookingFields(req *models.CreateJobRequest, versionAtLeast210 ...bool) (string, string) {
+	isV210 := len(versionAtLeast210) > 0 && versionAtLeast210[0]
+
 	// Structured address text on both locations: trimmed, control
 	// characters stripped, capped at 250 runes (ADR-0028 §2.2). The caller
 	// guarantees req.Destination is non-nil (destination is required).
 	req.Location.Address = models.SanitizeAddressText(req.Location.Address)
+	req.Location.Building = models.SanitizeAddressText(req.Location.Building)
+	req.Location.Floor = models.SanitizeAddressText(req.Location.Floor)
+	req.Location.Apartment = models.SanitizeAddressText(req.Location.Apartment)
+
+	req.Destination.Address = models.SanitizeAddressText(req.Destination.Address)
+	req.Destination.Building = models.SanitizeAddressText(req.Destination.Building)
+	req.Destination.Floor = models.SanitizeAddressText(req.Destination.Floor)
+	req.Destination.Apartment = models.SanitizeAddressText(req.Destination.Apartment)
+
+	// Always (any version): enforce max caps for building / floor / apartment.
+	if len([]rune(req.Location.Building)) > models.MaxBuildingLength {
+		return "building_too_long", "location.building must be at most " +
+			fmt.Sprintf("%d", models.MaxBuildingLength) + " characters"
+	}
+	if len([]rune(req.Destination.Building)) > models.MaxBuildingLength {
+		return "building_too_long", "destination.building must be at most " +
+			fmt.Sprintf("%d", models.MaxBuildingLength) + " characters"
+	}
+
+	if len([]rune(req.Location.Floor)) > models.MaxFloorLength {
+		return "floor_too_long", "location.floor must be at most " +
+			fmt.Sprintf("%d", models.MaxFloorLength) + " characters"
+	}
+	if len([]rune(req.Destination.Floor)) > models.MaxFloorLength {
+		return "floor_too_long", "destination.floor must be at most " +
+			fmt.Sprintf("%d", models.MaxFloorLength) + " characters"
+	}
+
+	if len([]rune(req.Location.Apartment)) > models.MaxApartmentLength {
+		return "apartment_too_long", "location.apartment must be at most " +
+			fmt.Sprintf("%d", models.MaxApartmentLength) + " characters"
+	}
+	if len([]rune(req.Destination.Apartment)) > models.MaxApartmentLength {
+		return "apartment_too_long", "destination.apartment must be at most " +
+			fmt.Sprintf("%d", models.MaxApartmentLength) + " characters"
+	}
+
+	// Always (any version): enforce max caps for address.
 	if len([]rune(req.Location.Address)) > models.MaxAddressLength {
 		return "address_too_long", "location.address must be at most " +
 			fmt.Sprintf("%d", models.MaxAddressLength) + " characters"
 	}
-	req.Destination.Address = models.SanitizeAddressText(req.Destination.Address)
 	if len([]rune(req.Destination.Address)) > models.MaxAddressLength {
 		return "address_too_long", "destination.address must be at most " +
 			fmt.Sprintf("%d", models.MaxAddressLength) + " characters"
+	}
+
+	// Only for ≥ 2.1.0: if location.address or destination.address is empty after sanitizing,
+	// return 400 address_required and name the field. If under 5 runes, return 400 address_too_short.
+	if isV210 {
+		if req.Location.Address == "" {
+			return "address_required", "location.address is required"
+		}
+		if len([]rune(req.Location.Address)) < models.MinAddressLength {
+			return "address_too_short", "location.address must be at least " +
+				fmt.Sprintf("%d", models.MinAddressLength) + " characters"
+		}
+		if req.Destination.Address == "" {
+			return "address_required", "destination.address is required"
+		}
+		if len([]rune(req.Destination.Address)) < models.MinAddressLength {
+			return "address_too_short", "destination.address must be at least " +
+				fmt.Sprintf("%d", models.MinAddressLength) + " characters"
+		}
 	}
 
 	if req.Recipient != nil {
@@ -181,11 +242,11 @@ func (u *UserService) TrackJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ADR-0028: structured address text, recipient, and package details.
-	// All optional; a present-but-invalid value fails fast with a stable
-	// field-specific error before any employee/KYC/escrow work, exactly
-	// like the address-note gate above.
-	if code, msg := validateV2BookingFields(&req); code != "" {
+	// ADR-0028 and ADDR-REQUIRED: structured address text, recipient, and package details.
+	// For app version ≥ 2.1.0, address is required on pickup and destination (min 5 runes).
+	// A present-but-invalid value fails fast with a stable field-specific error before any
+	// employee/KYC/escrow work, exactly like the address-note gate above.
+	if code, msg := validateV2BookingFields(&req, isAtLeastAppVersion210(r)); code != "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error":   msg,
 			"code":    code,
