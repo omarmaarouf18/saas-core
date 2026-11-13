@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/project/chat-service/internal/chat"
 	"github.com/project/chat-service/internal/config"
 	"github.com/project/chat-service/internal/store"
+	"github.com/project/shared/infra/handlerutil"
 	"github.com/project/shared/infra/jwtutil"
 	"github.com/redis/go-redis/v9"
 )
@@ -451,15 +453,7 @@ func TestComplaintRoutingConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			var ticket *store.ComplaintTicket
-			var err error
-			for attempt := 0; attempt < 3; attempt++ {
-				ticket, err = mongoStore.CreateTicketAndAssign(context.Background(), fmt.Sprintf("customer-%d", idx), "context-xyz")
-				if err == nil {
-					break
-				}
-				time.Sleep(10 * time.Millisecond)
-			}
+			ticket, err := mongoStore.CreateTicketAndAssign(context.Background(), fmt.Sprintf("customer-%d", idx), "context-xyz")
 			if err != nil {
 				t.Errorf("failed to create ticket: %v", err)
 				return
@@ -730,6 +724,115 @@ func TestBroadcastLocation(t *testing.T) {
 	c.BroadcastLocation(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("Expected 400 Bad Request, got %d", rec.Code)
+	}
+}
+
+func TestBroadcastLocation_ValidationTable(t *testing.T) {
+	c, _, cleanup := setupTestChat(t)
+	if c == nil {
+		return
+	}
+	defer cleanup()
+
+	tests := []struct {
+		name         string
+		channel      string
+		latitude     float64
+		longitude    float64
+		employeeID   string
+		expectStatus int
+		expectCode   string
+	}{
+		// Valid channels & coordinates
+		{name: "valid job channel numeric ID", channel: "job:1", latitude: 30.0444, longitude: 31.2357, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid job channel hyphenated ID", channel: "job:job-contract-999", latitude: 0.0, longitude: 0.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid job channel underscored ID", channel: "job:valid_job_123", latitude: -90.0, longitude: -180.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid fleet channel hyphenated ID", channel: "fleet:owner-fleet-123", latitude: 90.0, longitude: 180.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid fleet channel hex ID", channel: "fleet:1a2b3c4d5e6f7a8b", latitude: 45.0, longitude: -75.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid channel min length 1 char ID", channel: "job:a", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+		{name: "valid channel max length 128 chars ID", channel: "fleet:" + strings.Repeat("a", 128), latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusOK},
+
+		// Invalid channels
+		{name: "empty channel", channel: "", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidRequest},
+		{name: "empty employee ID", channel: "job:1", latitude: 10.0, longitude: 20.0, employeeID: "", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidRequest},
+		{name: "job prefix only with empty ID", channel: "job:", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "fleet prefix only with empty ID", channel: "fleet:", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "unsupported ticket channel prefix", channel: "ticket:123", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "unsupported user channel prefix", channel: "user:123", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "missing prefix colon", channel: "job123", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "channel with spaces", channel: "job:id with spaces", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "channel with path slash", channel: "job:path/traversal", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "channel with special characters", channel: "job:bad$id!", latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+		{name: "channel ID exceeding 128 chars", channel: "job:" + strings.Repeat("a", 129), latitude: 10.0, longitude: 20.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidChannel},
+
+		// Invalid coordinates (out of range)
+		{name: "latitude exceeds 90", channel: "job:1", latitude: 90.0001, longitude: 0.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidCoordinates},
+		{name: "latitude below -90", channel: "job:1", latitude: -90.0001, longitude: 0.0, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidCoordinates},
+		{name: "longitude exceeds 180", channel: "job:1", latitude: 0.0, longitude: 180.0001, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidCoordinates},
+		{name: "longitude below -180", channel: "job:1", latitude: 0.0, longitude: -180.0001, employeeID: "emp-1", expectStatus: http.StatusBadRequest, expectCode: ErrCodeInvalidCoordinates},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := map[string]any{
+				"channel":     tc.channel,
+				"latitude":    tc.latitude,
+				"longitude":   tc.longitude,
+				"employee_id": tc.employeeID,
+			}
+			body, err := json.Marshal(payload)
+			if err != nil {
+				t.Fatalf("failed to marshal payload: %v", err)
+			}
+			req := httptest.NewRequest("POST", "/chat/internal/broadcast-location", bytes.NewReader(body))
+			req.Header.Set("X-Internal-Token", "mock-internal-token")
+			rec := httptest.NewRecorder()
+			c.BroadcastLocation(rec, req)
+
+			if rec.Code != tc.expectStatus {
+				t.Fatalf("expected status %d, got %d. body: %s", tc.expectStatus, rec.Code, rec.Body.String())
+			}
+
+			if tc.expectCode != "" {
+				var errResp handlerutil.SafeError
+				if err := json.Unmarshal(rec.Body.Bytes(), &errResp); err != nil {
+					t.Fatalf("failed to decode safe error: %v", err)
+				}
+				if errResp.Code != tc.expectCode {
+					t.Errorf("expected error code %q, got %q", tc.expectCode, errResp.Code)
+				}
+			}
+		})
+	}
+}
+
+func TestIsValidCoordinate_NonFinite(t *testing.T) {
+	if isValidCoordinate(math.NaN(), 0.0) {
+		t.Errorf("expected isValidCoordinate to reject NaN latitude")
+	}
+	if isValidCoordinate(0.0, math.NaN()) {
+		t.Errorf("expected isValidCoordinate to reject NaN longitude")
+	}
+	if isValidCoordinate(math.Inf(1), 0.0) {
+		t.Errorf("expected isValidCoordinate to reject +Inf latitude")
+	}
+	if isValidCoordinate(0.0, math.Inf(1)) {
+		t.Errorf("expected isValidCoordinate to reject +Inf longitude")
+	}
+	if isValidCoordinate(math.Inf(-1), 0.0) {
+		t.Errorf("expected isValidCoordinate to reject -Inf latitude")
+	}
+	if isValidCoordinate(0.0, math.Inf(-1)) {
+		t.Errorf("expected isValidCoordinate to reject -Inf longitude")
+	}
+	if !isValidCoordinate(0.0, 0.0) {
+		t.Errorf("expected isValidCoordinate to accept (0, 0)")
+	}
+	if !isValidCoordinate(90.0, 180.0) {
+		t.Errorf("expected isValidCoordinate to accept (90, 180)")
+	}
+	if !isValidCoordinate(-90.0, -180.0) {
+		t.Errorf("expected isValidCoordinate to accept (-90, -180)")
 	}
 }
 
