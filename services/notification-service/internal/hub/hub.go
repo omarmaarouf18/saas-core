@@ -432,21 +432,7 @@ func (h *SSEHub) dispatchPush(n Notification) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	dataMap := map[string]string{
-		"id":        n.ID,
-		"type":      n.Type,
-		"tenant_id": n.TenantID,
-	}
-	if n.JobID != "" {
-		dataMap["job_id"] = n.JobID
-		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
-	}
-	if n.Type == "admin_announcement" {
-		dataMap["event_type"] = "admin_announcement"
-		if dl := n.Params["deep_link"]; dl != "" {
-			dataMap["deep_link"] = dl
-		}
-	}
+	dataMap := BuildPushDataMap(n)
 
 	for _, userID := range targetUserIDs {
 		targets, err := userPushTargets(ctx, fetcher, userID)
@@ -502,6 +488,55 @@ func userPushTargets(ctx context.Context, fetcher DeviceTokenFetcher, userID str
 		targets = append(targets, PushTarget{Token: t})
 	}
 	return targets, nil
+}
+
+// PushParamsAllowList defines the parameter keys forwarded to FCM data payloads (issue #9).
+// Only structured parameters needed for the mobile app's tap routing and rendering are included:
+//   - "variant": cancellation outcome ('accept', 'decline') and notification variant
+//   - "ticket_id": support ticket identifier
+//   - "deep_link": admin announcement routing path
+//
+// Free-text fields (title_*, body_*, note, reason, agent_name, etc.) are strictly excluded
+// to guarantee that the FCM data payload stays well under the 4096-byte limit.
+var PushParamsAllowList = map[string]bool{
+	"variant":   true,
+	"ticket_id": true,
+	"deep_link": true,
+}
+
+// BuildPushDataMap constructs the FCM data payload for notification n.
+func BuildPushDataMap(n Notification) map[string]string {
+	dataMap := map[string]string{
+		"id":        n.ID,
+		"type":      n.Type,
+		"tenant_id": n.TenantID,
+	}
+	if n.JobID != "" {
+		dataMap["job_id"] = n.JobID
+		dataMap["event_type"] = JobEventType(n.Type, n.JobID)
+	}
+	if n.Type == "admin_announcement" {
+		dataMap["event_type"] = "admin_announcement"
+		if dl := n.Params["deep_link"]; dl != "" {
+			dataMap["deep_link"] = dl
+		}
+	}
+
+	if len(n.Params) > 0 {
+		filtered := make(map[string]string)
+		for k, v := range n.Params {
+			if PushParamsAllowList[k] && v != "" {
+				filtered[k] = v
+			}
+		}
+		if len(filtered) > 0 {
+			if b, err := json.Marshal(filtered); err == nil {
+				dataMap["params"] = string(b)
+			}
+		}
+	}
+
+	return dataMap
 }
 
 // MatchesClient reports whether notification n should be delivered to client
