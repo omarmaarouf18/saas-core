@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // Role represents the authorization level of a user in the platform.
@@ -55,12 +56,39 @@ const (
 	AccountStatusSuspended AccountStatus = "suspended"
 )
 
+// Constants for address field constraints (ADDR-REQUIRED).
+const (
+	MaxAddressLength   = 250
+	MaxBuildingLength  = 50
+	MaxFloorLength     = 20
+	MaxApartmentLength = 20
+)
+
+// SanitizeAddressText trims surrounding whitespace and strips control
+// characters, leaving visible text intact (ADDR-REQUIRED).
+func SanitizeAddressText(s string) string {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return ""
+	}
+	clean := make([]rune, 0, len(trimmed))
+	for _, r := range trimmed {
+		if !unicode.IsControl(r) {
+			clean = append(clean, r)
+		}
+	}
+	return string(clean)
+}
+
 // SavedAddress represents a saved address with coordinates (ADR-0028 §2.8).
 type SavedAddress struct {
 	ID          string  `json:"id"                     bson:"id"`
 	Label       string  `json:"label"                  bson:"label"`                  // e.g. "البيت", "الشغل", "مخزن"
 	Address     string  `json:"address"                bson:"address"`                // Street / building
 	AddressNote string  `json:"address_note,omitempty" bson:"address_note,omitempty"` // Landmark note
+	Building    string  `json:"building,omitempty"     bson:"building,omitempty"`
+	Floor       string  `json:"floor,omitempty"        bson:"floor,omitempty"`
+	Apartment   string  `json:"apartment,omitempty"    bson:"apartment,omitempty"`
 	Latitude    float64 `json:"latitude"               bson:"latitude"`
 	Longitude   float64 `json:"longitude"              bson:"longitude"`
 }
@@ -71,6 +99,9 @@ func (s *SavedAddress) UnmarshalJSON(data []byte) error {
 		Label       string   `json:"label"`
 		Address     string   `json:"address"`
 		AddressNote string   `json:"address_note"`
+		Building    string   `json:"building"`
+		Floor       string   `json:"floor"`
+		Apartment   string   `json:"apartment"`
 		Latitude    *float64 `json:"latitude"`
 		Longitude   *float64 `json:"longitude"`
 		Lat         *float64 `json:"lat"`
@@ -85,6 +116,9 @@ func (s *SavedAddress) UnmarshalJSON(data []byte) error {
 	s.Label = raw.Label
 	s.Address = raw.Address
 	s.AddressNote = raw.AddressNote
+	s.Building = raw.Building
+	s.Floor = raw.Floor
+	s.Apartment = raw.Apartment
 
 	lat := raw.Latitude
 	if lat == nil {
@@ -114,6 +148,9 @@ func (s SavedAddress) MarshalJSON() ([]byte, error) {
 		Label       string  `json:"label"`
 		Address     string  `json:"address"`
 		AddressNote string  `json:"address_note,omitempty"`
+		Building    string  `json:"building,omitempty"`
+		Floor       string  `json:"floor,omitempty"`
+		Apartment   string  `json:"apartment,omitempty"`
 		Latitude    float64 `json:"latitude"`
 		Longitude   float64 `json:"longitude"`
 		Lat         float64 `json:"lat"`
@@ -124,6 +161,9 @@ func (s SavedAddress) MarshalJSON() ([]byte, error) {
 		Label:       s.Label,
 		Address:     s.Address,
 		AddressNote: s.AddressNote,
+		Building:    s.Building,
+		Floor:       s.Floor,
+		Apartment:   s.Apartment,
 		Latitude:    s.Latitude,
 		Longitude:   s.Longitude,
 		Lat:         s.Latitude,
