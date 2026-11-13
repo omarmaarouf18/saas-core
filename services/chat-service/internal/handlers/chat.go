@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,6 +41,10 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 	// Maximum message size allowed from peer (64 KB).
 	maxMessageSize = 64 * 1024
+	// defaultTokenCacheCap caps tokenCache in memory (#22).
+	// 10,000 entries require < 1 MB memory while easily serving peak concurrent
+	// WebSocket connections across reconnection bursts and guarding against unbounded growth.
+	defaultTokenCacheCap = 10000
 )
 
 // validTicketContextIDRegex enforces that ticket context_id is an identifier (alphanumeric, dashes, colons, underscores, max 64 chars)
@@ -61,6 +66,7 @@ type Chat struct {
 	userServiceURL         string
 	tokenCache             map[string]cachedToken
 	tokenCacheMu           sync.Mutex
+	tokenCacheCap          int
 	limiter                *handlerutil.RateLimiter
 	wsLimiter              *handlerutil.RateLimiter
 	wsMessageLimiter       *handlerutil.RateLimiter
@@ -136,6 +142,7 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 		userServiceURL:         cfg.UserServiceURL,
 		notificationServiceURL: cfg.NotificationServiceURL,
 		tokenCache:             make(map[string]cachedToken),
+		tokenCacheCap:          defaultTokenCacheCap,
 		limiter:                handlerutil.NewRateLimiter(rl),
 		wsLimiter:              handlerutil.NewRateLimiter(wsRl),
 		wsMessageLimiter:       handlerutil.NewRateLimiter(wsMsgRl),
@@ -182,10 +189,10 @@ type cachedToken struct {
 
 // verifyToken checks if the user is active/valid in auth-service and retrieves their username.
 // Cache Reconnection & Simultaneous Connection behavior:
-// - Querying auth-service's GetUser once per WebSocket connection caches the username in memory for 60 seconds.
+// - Querying auth-service's GetUser once per WebSocket connection caches the username in memory for 5 seconds.
 // - If the same user connects simultaneously from another tab/device or reconnects after a disconnect:
-//   - If within 60 seconds: verifyToken returns the cached username immediately, bypassing the auth-service HTTP request.
-//   - If after 60 seconds: verifyToken fetches the latest username from auth-service, updating the cache.
+//   - If within 5 seconds: verifyToken returns the cached username immediately, bypassing the auth-service HTTP request.
+//   - If after 5 seconds: verifyToken fetches the latest username from auth-service, updating the cache.
 //     This prevents hitting auth-service repeatedly during reconnection loops or simultaneous logins while allowing updates to propagate.
 func (c *Chat) verifyToken(id string) (bool, string, error) {
 	if id == "" {
@@ -194,16 +201,22 @@ func (c *Chat) verifyToken(id string) (bool, string, error) {
 
 	c.tokenCacheMu.Lock()
 	cached, found := c.tokenCache[id]
+	if found {
+		if !time.Now().Before(cached.expiry) {
+			delete(c.tokenCache, id)
+			found = false
+		}
+	}
 	c.tokenCacheMu.Unlock()
 
-	if found && time.Now().Before(cached.expiry) {
+	if found {
 		return true, cached.username, nil
 	}
 
 	// Verify against auth-service (internal service-to-service call)
-	url := fmt.Sprintf("%s/auth/user?id=%s", c.authServiceURL, id)
-	// #nosec G704 //nolint:gosec -- target is internal service URL, ID is extracted from validated JWT token
-	req, err := http.NewRequest("GET", url, nil)
+	authURL := fmt.Sprintf("%s/auth/user?id=%s", c.authServiceURL, url.QueryEscape(id))
+	// #nosec G704 //nolint:gosec -- target is internal service URL, ID is escaped
+	req, err := http.NewRequest("GET", authURL, nil)
 	if err != nil {
 		log.Printf("[CHAT] Error building auth-service request: %v", err)
 		return false, "", err
@@ -222,16 +235,54 @@ func (c *Chat) verifyToken(id string) (bool, string, error) {
 			Username string `json:"username"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&user); err == nil && user.ID != "" {
-			c.tokenCacheMu.Lock()
-			c.tokenCache[id] = cachedToken{
-				expiry:   time.Now().Add(5 * time.Second),
-				username: user.Username,
-			}
-			c.tokenCacheMu.Unlock()
+			c.setCachedToken(id, user.Username, time.Now().Add(5*time.Second))
 			return true, user.Username, nil
 		}
 	}
 	return false, "", nil
+}
+
+func (c *Chat) setCachedToken(id, username string, expiry time.Time) {
+	c.tokenCacheMu.Lock()
+	defer c.tokenCacheMu.Unlock()
+
+	capLimit := c.tokenCacheCap
+	if capLimit <= 0 {
+		capLimit = defaultTokenCacheCap
+	}
+
+	// Only sweep expired entries when the cache is at or over its capacity.
+	// This avoids an O(N) map scan under the mutex on every insert below capacity.
+	if len(c.tokenCache) >= capLimit {
+		now := time.Now()
+		for k, v := range c.tokenCache {
+			if !now.Before(v.expiry) {
+				delete(c.tokenCache, k)
+			}
+		}
+
+		// If still at or over cap after removing expired entries, evict the entry closest to expiry.
+		if len(c.tokenCache) >= capLimit {
+			var oldestKey string
+			var oldestExpiry time.Time
+			first := true
+			for k, v := range c.tokenCache {
+				if first || v.expiry.Before(oldestExpiry) {
+					oldestKey = k
+					oldestExpiry = v.expiry
+					first = false
+				}
+			}
+			if !first {
+				delete(c.tokenCache, oldestKey)
+			}
+		}
+	}
+
+	c.tokenCache[id] = cachedToken{
+		expiry:   expiry,
+		username: username,
+	}
 }
 
 func (c *Chat) canAccessChannel(userID, channel string) (bool, error) {
