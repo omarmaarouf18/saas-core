@@ -21,15 +21,18 @@
 
 ## Changes per commit (message only — NO SHAs)
 1. `fix(chat): bound tokenCache with cap and eviction, escape lookup URL`
+2. `fix(chat): validate channel format and coordinates in BroadcastLocation`
 
 ## Verification
-- `go test -v -race -run TestTokenCache ./services/chat-service/internal/handlers` — PASS (6/6 tests: cap holds, expired eviction, below cap does not sweep, cached hit avoids HTTP, URL escaping, race concurrency)
+- Item 1: `go test -v -race -run TestTokenCache ./services/chat-service/internal/handlers` — PASS (6/6 tests: cap holds, expired eviction, below cap does not sweep, cached hit avoids HTTP, URL escaping, race concurrency)
+- Item 2: `go test -v -run "TestBroadcastLocation|TestIsValidCoordinate" ./services/chat-service/internal/handlers` — PASS (21 table-driven cases covering valid job/fleet IDs, invalid channels, bounds, and non-finite NaN/Inf coordinates)
+- Item 2: `go test -v ./tests/contracts -run TestContract_UserToChat_BroadcastLocation` — PASS (AST inspection and behavioral round-trip)
 - `gofmt -l .` — empty
 - `go vet ./...` (chat-service) — PASS
 - `make check` — PASS (scope: `go=services/chat-service contracts docs infra-tests docgen`) after rebase onto logic-exploitation (ac8a79a3) with DEPS-COMPRESS and GO-1-26-11 toolchain bump.
 
 ## Unverified
-- None for Item 1.
+- None for Items 1 and 2.
 
 ## Follow-ups / out-of-lane findings
 - `AI_CONTEXT.md` line 144 mentions orphan `services/chat-service/cmd/onboard-agent`. Per task instructions, `AI_CONTEXT.md` was not edited; line 144 is recorded here for the owner to update during merge fold.

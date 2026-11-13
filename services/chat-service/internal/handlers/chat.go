@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,6 +50,27 @@ const (
 
 // validTicketContextIDRegex enforces that ticket context_id is an identifier (alphanumeric, dashes, colons, underscores, max 64 chars)
 var validTicketContextIDRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-\.:]{1,64}$`)
+
+// validBroadcastChannelRegex restricts location broadcast channels to job:<id> or fleet:<id> (#26).
+// Senders: user-service jobs_handlers.go lines ~1732, ~1746, ~2008.
+// ID format: alphanumeric, dashes, underscores, length 1-128 chars.
+var validBroadcastChannelRegex = regexp.MustCompile(`^(job|fleet):[a-zA-Z0-9_\-]{1,128}$`)
+
+const (
+	ErrCodeInvalidChannel     = "invalid_channel"
+	ErrCodeInvalidCoordinates = "invalid_coordinates"
+	ErrCodeInvalidRequest     = "invalid_request"
+)
+
+func isValidCoordinate(lat, lon float64) bool {
+	if math.IsNaN(lat) || math.IsInf(lat, 0) || lat < -90.0 || lat > 90.0 {
+		return false
+	}
+	if math.IsNaN(lon) || math.IsInf(lon, 0) || lon < -180.0 || lon > 180.0 {
+		return false
+	}
+	return true
+}
 
 // wsMessage is the expected JSON structure from WebSocket clients.
 type wsMessage struct {
@@ -873,7 +895,17 @@ func (c *Chat) BroadcastLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Channel == "" || req.EmployeeID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "channel and employee_id are required"})
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, ErrCodeInvalidRequest, "channel and employee_id are required", nil)
+		return
+	}
+
+	if !validBroadcastChannelRegex.MatchString(req.Channel) {
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, ErrCodeInvalidChannel, "channel must be job:<id> or fleet:<id>", nil)
+		return
+	}
+
+	if !isValidCoordinate(req.Latitude, req.Longitude) {
+		handlerutil.WriteSafeError(w, r, http.StatusBadRequest, ErrCodeInvalidCoordinates, "latitude must be between -90 and 90, longitude between -180 and 180", nil)
 		return
 	}
 
