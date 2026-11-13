@@ -2,7 +2,7 @@ module github.com/project/tests/contracts
 
 go 1.26
 
-toolchain go1.26.10
+toolchain go1.26.11
 
 require (
 	github.com/project/shared/infra v0.0.0
