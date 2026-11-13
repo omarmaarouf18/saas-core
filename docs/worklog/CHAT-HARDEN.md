@@ -41,23 +41,27 @@
      - Old: `{"error":"unauthorized: " + err.Error()}` (e.g. `{"error":"unauthorized: missing authentication token"}`)
      - New: `{"error":"unauthorized","code":"unauthorized","request_id":"<rid>"}`
   - In `store/mongodb.go:504-510`: Disambiguated `AdminResolveTicket` error returns so missing ticket returns `ticket %s not found` instead of `ticket %s not found or was concurrently modified` (which previously conflated 404 and 409).
+- Item 4 (#38) Concurrency Flake Root Cause:
+  The 3-attempt retry loop in `TestComplaintRoutingConcurrency` was a legacy workaround: previously, `CreateTicketAndAssign` used `time.Now().UnixNano()` for ticket IDs (causing duplicate key collisions on rapid concurrent goroutines) and attempted immediate atomic CAS agent assignment. With ADR-0023, tickets generate cryptographically secure UUIDs via `jwtutil.GenerateUUID()` and are created in "pending" status (unassigned until explicitly accepted by a reviewer), eliminating both ID collisions and assignment races. Removed the retry loop so `CreateTicketAndAssign` is invoked directly once per goroutine. Verified repeatedly passing with `-count=20 -race`.
 
 ## Changes per commit (message only — NO SHAs)
 1. `fix(chat): bound tokenCache with cap and eviction, escape lookup URL`
 2. `fix(chat): validate channel format and coordinates in BroadcastLocation`
 3. `fix(chat): sanitize client error responses with WriteSafeError`
+4. `test(chat): remove retry loop in TestComplaintRoutingConcurrency`
 
 ## Verification
 - Item 1: `go test -v -race -run TestTokenCache ./services/chat-service/internal/handlers` — PASS (6/6 tests: cap holds, expired eviction, below cap does not sweep, cached hit avoids HTTP, URL escaping, race concurrency)
 - Item 2: `go test -v -run "TestBroadcastLocation|TestIsValidCoordinate" ./services/chat-service/internal/handlers` — PASS (21 table-driven cases covering valid job/fleet IDs, invalid channels, bounds, and non-finite NaN/Inf coordinates)
 - Item 2: `go test -v ./tests/contracts -run TestContract_UserToChat_BroadcastLocation` — PASS (AST inspection and behavioral round-trip)
 - Item 3: `go test -v -run TestSafeError_NoInternalsLeak_Chat ./services/chat-service/internal/handlers` — PASS (7/7 subtests: malformed token, reviewer auth 401, resolve not found 404, resolve conflict 409, accept not found 404, accept conflict 409, attachment unauthorized 401)
+- Item 4: `bash ./scripts/ci-lock.sh go test -v -count=20 -race -run TestComplaintRoutingConcurrency ./services/chat-service/internal/handlers` — PASS (20/20 iterations under race detector, 6.33s)
 - `gofmt -l .` — empty
 - `go vet ./...` (chat-service) — PASS
 - `make check` — PASS (scope: `go=services/chat-service contracts docs infra-tests docgen`) after rebase onto logic-exploitation (ac8a79a3) with DEPS-COMPRESS and GO-1-26-11 toolchain bump.
 
 ## Unverified
-- None for Items 1, 2, and 3.
+- None for Items 1, 2, 3, and 4.
 
 ## Follow-ups / out-of-lane findings
 - `AI_CONTEXT.md` line 144 mentions orphan `services/chat-service/cmd/onboard-agent`. Per task instructions, `AI_CONTEXT.md` was not edited; line 144 is recorded here for the owner to update during merge fold.
