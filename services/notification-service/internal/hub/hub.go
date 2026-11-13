@@ -504,6 +504,43 @@ func userPushTargets(ctx context.Context, fetcher DeviceTokenFetcher, userID str
 	return targets, nil
 }
 
+// MatchesClient reports whether notification n should be delivered to client
+// under recipient-first scoping rules (issue #8):
+//   - If roles are specified on n, client must match one of the roles.
+//   - A notification with an explicit recipient (user_id set, or user_ids non-empty)
+//     belongs to that user whatever its tenant_id.
+//   - Tenant scoping applies only to notifications with no explicit recipient
+//     (tenant/role broadcasts).
+//   - global is unchanged (platform-wide delivery).
+//   - Role filtering keeps its current semantics (do not widen role broadcasts).
+func MatchesClient(n Notification, client *SSEClient) bool {
+	if client == nil {
+		return false
+	}
+
+	// Role filtering: if roles specified, only send to matching roles.
+	if len(n.Roles) > 0 && !containsRole(n.Roles, client.Role) {
+		return false
+	}
+
+	// Explicit recipient scoping:
+	hasRecipient := n.UserID != "" || len(n.UserIDs) > 0
+	if hasRecipient {
+		if client.UserID == "" {
+			return false
+		}
+		return (n.UserID != "" && client.UserID == n.UserID) ||
+			(len(n.UserIDs) > 0 && slices.Contains(n.UserIDs, client.UserID))
+	}
+
+	// Broadcast scoping (no explicit recipient):
+	if !n.Global && client.TenantID != n.TenantID {
+		return false
+	}
+
+	return true
+}
+
 func (h *SSEHub) deliverLocal(n Notification) {
 	data, err := json.Marshal(n.ToClient())
 	if err != nil {
@@ -519,20 +556,7 @@ func (h *SSEHub) deliverLocal(n Notification) {
 
 	sent := 0
 	for client := range h.clients {
-		// Tenant scoping: unless explicitly marked global, only send to clients belonging to the target tenant.
-		if !n.Global && client.TenantID != n.TenantID {
-			continue
-		}
-		// Role filtering: if roles specified, only send to matching roles.
-		if len(n.Roles) > 0 && !containsRole(n.Roles, client.Role) {
-			continue
-		}
-		// User targeting (N-01): when a notification has a targeted recipient set (UserID or UserIDs),
-		// only deliver to that specific connected user.
-		if n.UserID != "" && client.UserID != n.UserID {
-			continue
-		}
-		if len(n.UserIDs) > 0 && !slices.Contains(n.UserIDs, client.UserID) {
+		if !MatchesClient(n, client) {
 			continue
 		}
 		select {

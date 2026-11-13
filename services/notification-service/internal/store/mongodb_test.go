@@ -851,3 +851,203 @@ func TestRepro_N02_MongoDB_ListForUser_Scoping(t *testing.T) {
 		t.Fatalf("Expected Courier A to see 2 notifications (private + broadcast), got %d: %+v", len(itemsA), itemsA)
 	}
 }
+
+// TestMongoDB_RecipientFirstScoping_Issue8 tests all requirements of recipient-first scoping:
+// 1. Owner-tenant notification with customer user_id: customer gets it in history, marks it read and deletes it.
+// 2. Another user in owner's tenant does not get it, nor does another customer.
+// 3. Tenant role broadcast is invisible to other tenants.
+// 4. Admin announcement with no tenant_id reaches its user in history.
+// 5. Global notification is unchanged.
+func TestMongoDB_RecipientFirstScoping_Issue8(t *testing.T) {
+	s, cleanup := setupTestMongoDB(t)
+	if s == nil {
+		return
+	}
+	defer cleanup()
+
+	ctx := context.Background()
+
+	ownerTenant := "tenant-owner-scope"
+	custTenant := "tenant-cust-scope"
+	otherCustTenant := "tenant-cust2-scope"
+	otherEmpTenant := "tenant-emp2-scope"
+
+	cust1 := "cust-user-1"
+	cust2 := "cust-user-2"
+	ownerUser := "owner-user-1"
+	ownerWorker := "worker-user-1"
+	emp1 := "emp-user-1"
+	emp2 := "emp-user-2"
+
+	// 1. Insert owner-tenant notification with customer user_id (e.g. job_accepted)
+	jobNotif := &Notification{
+		ID:        "rf-job-accepted-1",
+		Type:      "job_accepted",
+		TenantID:  ownerTenant,
+		UserID:    cust1,
+		Roles:     []string{"client", "user"},
+		Title:     "Courier Assigned",
+		Body:      "Your courier has accepted",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, jobNotif); err != nil {
+		t.Fatalf("InsertNotification jobNotif failed: %v", err)
+	}
+
+	// Customer cust-1 (in custTenant) queries history -> MUST see the notification
+	cust1Items, err := s.ListForUser(ctx, custTenant, cust1, []string{"client"}, 10, nil)
+	if err != nil {
+		t.Fatalf("cust1 ListForUser failed: %v", err)
+	}
+	if len(cust1Items) != 1 || cust1Items[0].ID != jobNotif.ID {
+		t.Fatalf("cust1 expected 1 notification %s, got %+v", jobNotif.ID, cust1Items)
+	}
+	if cust1Items[0].IsRead {
+		t.Errorf("expected is_read: false initially")
+	}
+
+	// Another user in the owner's tenant (ownerWorker) MUST NOT see it
+	workerItems, err := s.ListForUser(ctx, ownerTenant, ownerWorker, []string{"client"}, 10, nil)
+	if err != nil {
+		t.Fatalf("ownerWorker ListForUser failed: %v", err)
+	}
+	if len(workerItems) != 0 {
+		t.Fatalf("ownerWorker MUST NOT see notification targeted to cust-1, got %+v", workerItems)
+	}
+	if err := s.MarkRead(ctx, ownerTenant, ownerWorker, []string{"client"}, jobNotif.ID); err != ErrNotFound {
+		t.Errorf("ownerWorker MarkRead expected ErrNotFound, got %v", err)
+	}
+	if err := s.Delete(ctx, ownerTenant, ownerWorker, []string{"client"}, jobNotif.ID); err != ErrNotFound {
+		t.Errorf("ownerWorker Delete expected ErrNotFound, got %v", err)
+	}
+
+	// Another customer (cust2) MUST NOT see it
+	cust2Items, err := s.ListForUser(ctx, otherCustTenant, cust2, []string{"client"}, 10, nil)
+	if err != nil {
+		t.Fatalf("cust2 ListForUser failed: %v", err)
+	}
+	if len(cust2Items) != 0 {
+		t.Fatalf("cust2 MUST NOT see notification targeted to cust-1, got %+v", cust2Items)
+	}
+	if err := s.MarkRead(ctx, otherCustTenant, cust2, []string{"client"}, jobNotif.ID); err != ErrNotFound {
+		t.Errorf("cust2 MarkRead expected ErrNotFound, got %v", err)
+	}
+	if err := s.Delete(ctx, otherCustTenant, cust2, []string{"client"}, jobNotif.ID); err != ErrNotFound {
+		t.Errorf("cust2 Delete expected ErrNotFound, got %v", err)
+	}
+
+	// Customer cust-1 marks it read -> MUST succeed
+	if err := s.MarkRead(ctx, custTenant, cust1, []string{"client"}, jobNotif.ID); err != nil {
+		t.Fatalf("cust1 MarkRead failed: %v", err)
+	}
+	cust1ItemsAfterRead, err := s.ListForUser(ctx, custTenant, cust1, []string{"client"}, 10, nil)
+	if err != nil || len(cust1ItemsAfterRead) != 1 || !cust1ItemsAfterRead[0].IsRead {
+		t.Fatalf("cust1 expected 1 notification with is_read: true, got %+v", cust1ItemsAfterRead)
+	}
+
+	// Customer cust-1 deletes it -> MUST succeed and disappear from history
+	if err := s.Delete(ctx, custTenant, cust1, []string{"client"}, jobNotif.ID); err != nil {
+		t.Fatalf("cust1 Delete failed: %v", err)
+	}
+	cust1ItemsAfterDel, err := s.ListForUser(ctx, custTenant, cust1, []string{"client"}, 10, nil)
+	if err != nil || len(cust1ItemsAfterDel) != 0 {
+		t.Fatalf("cust1 expected 0 notifications after Delete, got %+v", cust1ItemsAfterDel)
+	}
+
+	// 2. A tenant role broadcast is still invisible to other tenants
+	roleAlert := &Notification{
+		ID:        "rf-role-broadcast-1",
+		Type:      "job_alert",
+		TenantID:  ownerTenant,
+		Roles:     []string{"employee"},
+		Title:     "New Job Alert",
+		Body:      "New job for ownerTenant",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, roleAlert); err != nil {
+		t.Fatalf("InsertNotification roleAlert failed: %v", err)
+	}
+
+	// Employee in ownerTenant sees it
+	emp1Items, err := s.ListForUser(ctx, ownerTenant, emp1, []string{"employee"}, 10, nil)
+	if err != nil || len(emp1Items) != 1 || emp1Items[0].ID != roleAlert.ID {
+		t.Fatalf("emp1 in ownerTenant expected to see role broadcast, got %+v, err=%v", emp1Items, err)
+	}
+
+	// Employee in other tenant (emp2) MUST NOT see it
+	emp2Items, err := s.ListForUser(ctx, otherEmpTenant, emp2, []string{"employee"}, 10, nil)
+	if err != nil {
+		t.Fatalf("emp2 ListForUser failed: %v", err)
+	}
+	if len(emp2Items) != 0 {
+		t.Fatalf("emp2 in otherEmpTenant MUST NOT see role broadcast for ownerTenant, got %+v", emp2Items)
+	}
+	if err := s.MarkRead(ctx, otherEmpTenant, emp2, []string{"employee"}, roleAlert.ID); err != ErrNotFound {
+		t.Errorf("emp2 MarkRead expected ErrNotFound, got %v", err)
+	}
+	if err := s.Delete(ctx, otherEmpTenant, emp2, []string{"employee"}, roleAlert.ID); err != ErrNotFound {
+		t.Errorf("emp2 Delete expected ErrNotFound, got %v", err)
+	}
+
+	// 3. Admin announcement with no tenant_id reaches its user in history
+	adminAnnounce := &Notification{
+		ID:        "rf-admin-announce-1",
+		Type:      "admin_announcement",
+		TenantID:  "",
+		UserID:    cust1,
+		Title:     "Platform Announcement",
+		Body:      "Welcome to update",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, adminAnnounce); err != nil {
+		t.Fatalf("InsertNotification adminAnnounce failed: %v", err)
+	}
+
+	// cust1 (in custTenant) queries history -> MUST see the admin announcement
+	cust1AnnounceItems, err := s.ListForUser(ctx, custTenant, cust1, []string{"client"}, 10, nil)
+	if err != nil || len(cust1AnnounceItems) != 1 || cust1AnnounceItems[0].ID != adminAnnounce.ID {
+		t.Fatalf("cust1 expected to see admin announcement with no tenant_id, got %+v, err=%v", cust1AnnounceItems, err)
+	}
+	// cust2 MUST NOT see it
+	cust2AnnounceItems, err := s.ListForUser(ctx, otherCustTenant, cust2, []string{"client"}, 10, nil)
+	if err != nil || len(cust2AnnounceItems) != 0 {
+		t.Fatalf("cust2 MUST NOT see announcement targeted to cust1, got %+v", cust2AnnounceItems)
+	}
+
+	// cust1 marks it read and deletes it
+	if err := s.MarkRead(ctx, custTenant, cust1, []string{"client"}, adminAnnounce.ID); err != nil {
+		t.Fatalf("cust1 MarkRead on admin announcement failed: %v", err)
+	}
+	if err := s.Delete(ctx, custTenant, cust1, []string{"client"}, adminAnnounce.ID); err != nil {
+		t.Fatalf("cust1 Delete on admin announcement failed: %v", err)
+	}
+
+	// 4. Global is unchanged: reaches any user in any tenant
+	globalNotif := &Notification{
+		ID:        "rf-global-notif-1",
+		Type:      "system",
+		Global:    true,
+		Title:     "Global Notice",
+		Body:      "Maintenance tonight",
+		Timestamp: time.Now().UTC(),
+	}
+	if err := s.InsertNotification(ctx, globalNotif); err != nil {
+		t.Fatalf("InsertNotification globalNotif failed: %v", err)
+	}
+
+	for _, tc := range []struct {
+		tenant string
+		user   string
+		role   string
+	}{
+		{custTenant, cust1, "client"},
+		{otherCustTenant, cust2, "client"},
+		{ownerTenant, ownerUser, "owner"},
+		{otherEmpTenant, emp2, "employee"},
+	} {
+		items, err := s.ListForUser(ctx, tc.tenant, tc.user, []string{tc.role}, 10, nil)
+		if err != nil || len(items) != 1 || items[0].ID != globalNotif.ID {
+			t.Fatalf("user %s/%s expected to see global notification, got %+v, err=%v", tc.tenant, tc.user, items, err)
+		}
+	}
+}
