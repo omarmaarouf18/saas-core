@@ -408,10 +408,6 @@ Hand-written (the table above is generated). Details and the corrected USER-AUTH
 * **Saved addresses** (`PUT` / `PATCH /auth/user`): `label` is required (non-empty after trimming, 400 `label is required for saved address`) and at most 100 runes.
 
 ### Standalone Operations (CLI Tool)
-* **`onboard-agent` CLI** (`services/chat-service/cmd/onboard-agent/main.go`):
-  * **Caller Permissions**: Standard Linux CLI execution with MongoDB credentials. Not exposed as an HTTP endpoint.
-  * **Core Functionality**: Safe onboarding of support agents. Validates uniqueness, generates secure 32-byte hex credentials, and writes the record to the `support_agents` database.
-  * **Read/Write**: Writes `support_agents` collection.
 * **`onboard-reviewer` CLI** (`services/auth-service/cmd/onboard-reviewer/main.go`):
   * **Caller Permissions**: Standard Linux CLI execution with MongoDB credentials. Not exposed as an HTTP endpoint.
   * **Core Functionality**: Safe onboarding of super-admin KYB/KYE document reviewers. Validates uniqueness, generates secure 32-byte hex credentials, and writes the record to the `reviewers` database.
