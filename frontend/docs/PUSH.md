@@ -29,7 +29,7 @@ One FCM message per registered device token of the notification's user
 | Part | Value |
 |---|---|
 | `notification.title` / `.body` | The text in the language the token registered with (PUSH-L10N, §1.1), e.g. "طلبك اتستلم" / "Your order was picked up". Tokens from apps that send no language get the server's English text (e.g. "Courier Picked Up"). |
-| `data` | `id`, `type`, `tenant_id` always; `job_id` and `event_type` (= `type`) for job notifications; `event_type=admin_announcement` and `deep_link` (when set) for admin announcements. All strings. |
+| `data` | `id`, `type`, `tenant_id` always; `job_id` and `event_type` (= `type`) for job notifications; `event_type=admin_announcement` and `deep_link` (when set) for admin announcements; `params` (JSON string of allow-listed parameters: `variant`, `ticket_id`, `deep_link`, omitted when empty). All strings. |
 | `android.priority` | `HIGH` |
 | `android.notification.channel_id` | `qd_default` |
 
@@ -98,6 +98,16 @@ All regex body parsing (`jobIdFromBody`, `ticketIdFromBody`) and English keyword
 | `admin_announcement` | No deep link, invalid link, or target role mismatch | Any role | None (detail sheet) | Opens `AnnouncementDetailSheet` bottom sheet with full title & body |
 
 Push taps follow the exact same routing table (`PushTapHandler` via `NotificationTapRouter`). Foreground push notices with announcements without links provide a "View" button that opens `AnnouncementDetailSheet`.
+
+### 1.3 FCM data params and payload size rule (NOTIF-CUSTOMER / issue #9)
+
+To enable the app to route and render taps directly from push payloads, notification-service forwards structured parameters into the FCM `data` map as a JSON-encoded string under `data['params']`.
+
+To strictly respect Firebase Cloud Messaging's **4096-byte limit** for data payloads:
+- **Allow-list**: Only keys actively read by the app's tap router and rendering logic are included: `variant`, `ticket_id`, and `deep_link`.
+- **Free-text exclusion**: Unbounded free-text fields (such as `title_*`, `body_*`, `note`, `reason`, `agent_name`) are strictly stripped from the push `data.params` map.
+- If no allow-listed parameters are present on the notification, the `params` key is omitted from `data`.
+- Announcement deep links in `params['deep_link']` must adhere to strict internal route patterns and cannot contain `.` or `..` segments (issue #33).
 
 ### What the app does
 

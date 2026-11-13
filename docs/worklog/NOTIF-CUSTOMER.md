@@ -55,6 +55,7 @@
 2. `notif: add filtered params to FCM data payload`
 3. `notif: reject dot segments in admin announcement deep-link ids`
 4. `tests: update e2e push assertions for params`
+5. `docs: document FCM data params and complete NOTIF-CUSTOMER worklog`
 
 ## Verification
 - `services/notification-service` unit & integration tests:
@@ -71,6 +72,8 @@
     - `--- PASS: TestPushBE_NotificationServiceDeliversViaFCMOAuth (1.40s)`
     - `--- PASS: TestPushL10N_DeviceLanguagePerToken (3.57s)`
   - Full staging suite tests (`contract_notif_test.go`, `admin_api_test.go`): require the full staging compose stack (`api-gateway` on 8088, `auth-service`, `console` on 8091), which is not active locally; the standalone push e2e tests were executed directly against local Mongo & Redis.
+- `make docs`:
+  - `go run tools/docgen/main.go`: No changes to APPLICATION_MAP.md.
 - `make check` — PASS (scope: full).
 
 ## Unverified
@@ -84,8 +87,14 @@
 - Frontend follow-up (Item 2): When tapping a push for an announcement that opens the `AnnouncementDetailSheet`, the app receives only the active device locale's text. To view the alternate language, the app should be updated to fetch the full bilingual notification model from `/notifications` history by ID when presenting the sheet.
 - Out-of-lane note (Item 3): `kyc-reviewer-console` maintains its own deep-link allow-list in a separate repository (out of lane). Client-side deep-link validation on the Flutter mobile app side is deferred to a future frontend task.
 
+## Deploy note
+- **VM / Infrastructure**: No VM or infrastructure changes required.
+- **Database / Data Migration**: Zero data migration required. Old stored notifications in MongoDB become immediately accessible to their recipient upon deployment because the query filter now scopes on recipient rather than requiring matching tenant. Compound indexes `(user_id, timestamp desc)` and `(user_ids, timestamp desc)` are ensured automatically on service startup by `EnsureIndexes`.
+- **Backward Compatibility**: Fully backward compatible. Senders and clients do not require coordinated deployment.
+
 ## Open questions
 - none (resolved: lane permission granted to bump klauspost/compress in services/notification-service).
+
 
 
 
