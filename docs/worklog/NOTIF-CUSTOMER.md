@@ -39,6 +39,8 @@
 ## Decisions taken
 - Defined a single shared predicate `hub.MatchesClient(n Notification, client *SSEClient) bool` (or client fields) used for live SSE delivery.
 - Defined a single shared Mongo filter builder in `store.UserNotificationFilter(tenantID, userID string, roles []string) bson.M` used across `ListForUser`, `MarkRead`, `MarkAllRead`, `Delete`, and `DeleteAll`.
+- History role scoping: history now applies the notification's roles to user-targeted notifications too (before, ListForUser ignored roles when user_id matched). This aligns history with live SSE delivery, and the pre-coding sender table shows every user-targeted sender sets roles that match the recipient, so nothing becomes hidden.
+- Delete semantics: `isExclusiveRecipient` no longer excludes notifications that carry roles, so a user-targeted notification with roles is now hard-deleted on Delete instead of soft-dismissed.
 - Added compound indexes in `store.EnsureIndexes`: `(user_id: 1, timestamp: -1)` and `(user_ids: 1, timestamp: -1)` to cover queries without tenant prefix.
 - Stored notifications require no data migration: old stored notifications become visible immediately to their recipient upon deployment because the query filter now scopes on recipient rather than requiring matching tenant.
 - FCM data params allow-list: `variant`, `ticket_id`, `deep_link`. Derived by grepping `frontend/lib` (read-only):
@@ -56,6 +58,8 @@
 3. `notif: reject dot segments in admin announcement deep-link ids`
 4. `tests: update e2e push assertions for params`
 5. `docs: document FCM data params and complete NOTIF-CUSTOMER worklog`
+6. `docs: record rebase onto logic-exploitation at ac8a79a3`
+7. `docs: record role scoping and delete semantics, clarify DEPS-COMPRESS bump`
 
 ## Verification
 - `services/notification-service` unit & integration tests:
@@ -91,7 +95,7 @@
 - **Backward Compatibility**: Fully backward compatible. Senders and clients do not require coordinated deployment.
 
 ## Open questions
-- none (resolved: lane permission granted to bump klauspost/compress in services/notification-service).
+- none. (Clarification: no hot-path grant was given in this lane; the `github.com/klauspost/compress` bump was executed across the repo by separate task `DEPS-COMPRESS`, merged into `logic-exploitation` at `ec32f249`).
 
 
 
