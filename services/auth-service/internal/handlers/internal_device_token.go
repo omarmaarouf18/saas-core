@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,12 @@ import (
 // unregister endpoint. FCM/APNs registration tokens are far shorter, so an
 // oversized value is a malformed request, not a real token.
 const maxDeviceTokenLength = 512
+
+// maxDeviceTokenUnregisterBodyBytes bounds the internal unregister request
+// body before it is decoded. The body is {"token": "<at most 512 chars>"}, so
+// 4 KiB is ample; a larger body is malformed or abusive and is rejected with
+// 413 instead of being read into memory.
+const maxDeviceTokenUnregisterBodyBytes = 4 << 10
 
 // DeviceTokenUnregisterRequest is the body of the internal unregister call.
 type DeviceTokenUnregisterRequest struct {
@@ -58,8 +65,18 @@ func (a *Auth) UnregisterStaleDeviceToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Bound the body only after the method and internal-token checks so an
+	// unauthenticated caller still gets 401 without any body being read.
+	r.Body = http.MaxBytesReader(w, r.Body, maxDeviceTokenUnregisterBodyBytes)
 	var req DeviceTokenUnregisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{
+				"error": "request body too large",
+			})
+			return
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid request body",
 		})

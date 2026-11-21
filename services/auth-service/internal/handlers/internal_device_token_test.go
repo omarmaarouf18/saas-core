@@ -168,6 +168,55 @@ func TestUnregisterStaleDeviceToken_RejectsInvalidToken(t *testing.T) {
 	}
 }
 
+// TestUnregisterStaleDeviceToken_BodyCap covers issue #30: the body is
+// bounded before decoding. A body just over the cap answers 413, a valid body
+// still answers 204, and a too-long token inside a body under the cap still
+// answers 400.
+func TestUnregisterStaleDeviceToken_BodyCap(t *testing.T) {
+	cases := []struct {
+		name       string
+		body       string
+		wantStatus int
+	}{
+		{
+			name:       "body just over the cap",
+			body:       `{"token":"` + strings.Repeat("t", maxDeviceTokenUnregisterBodyBytes) + `"}`,
+			wantStatus: http.StatusRequestEntityTooLarge,
+		},
+		{
+			name:       "valid body under the cap",
+			body:       `{"token":"stale-fcm-token"}`,
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "too-long token under the cap",
+			body:       `{"token":"` + strings.Repeat("t", maxDeviceTokenLength+1) + `"}`,
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := &fakeDeviceTokenStore{}
+			a := newInternalDeviceTokenAuth(store)
+
+			req := httptest.NewRequest(http.MethodPost, "/auth/internal/device-token/unregister",
+				strings.NewReader(tc.body))
+			req.Header.Set("X-Internal-Token", "internal-token-test")
+			rec := httptest.NewRecorder()
+
+			a.UnregisterStaleDeviceToken(rec, req)
+
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("expected %d, got %d (body: %s)", tc.wantStatus, rec.Code, rec.Body.String())
+			}
+			if tc.wantStatus != http.StatusNoContent && len(store.removed) != 0 {
+				t.Errorf("expected no store call, got %v", store.removed)
+			}
+		})
+	}
+}
+
 // TestUnregisterStaleDeviceToken_StoreFailureIsSanitized covers BE-HARDEN
 // item 3: a store failure answers 500 with a safe body, not the raw error.
 func TestUnregisterStaleDeviceToken_StoreFailureIsSanitized(t *testing.T) {
