@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -135,6 +136,82 @@ func TestLocalStorage(t *testing.T) {
 	}
 	if valClaims.Key != "tickets/t-1/att.pdf" || valClaims.TicketID != "t-1" || valClaims.UserID != "user-123" {
 		t.Errorf("Unexpected claims: %+v", valClaims)
+	}
+}
+
+// TestLocalStorage_RejectsSiblingPrefixEscape covers issue #27: the traversal
+// guard must compare against the base directory plus a separator, so a key
+// that resolves to a sibling such as "<base>-evil/x" is rejected. It also pins
+// the key-equals-base decision: "" and "." resolve to the base directory
+// itself, which is not a file, so Upload and OpenFile reject them.
+func TestLocalStorage_RejectsSiblingPrefixEscape(t *testing.T) {
+	base := t.TempDir()
+	secret := "super-secret-jwt-key-32-bytes-long!!"
+	encKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	store, err := NewLocalStorage(base, "http://localhost:8080", secret, encKey, "test")
+	if err != nil {
+		t.Fatalf("failed to create LocalStorage: %v", err)
+	}
+
+	// A real sibling directory whose name starts with the base directory's
+	// name, so the old strings.HasPrefix(absDest, absBase) check passes.
+	siblingKey := "../" + filepath.Base(base) + "-evil/x"
+	if err := os.MkdirAll(filepath.Join(filepath.Dir(base), filepath.Base(base)+"-evil"), 0700); err != nil {
+		t.Fatalf("failed to create sibling dir: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		key     string
+		wantErr bool
+	}{
+		{name: "nested key inside base", key: "tenant/doc.jpg"},
+		{name: "sibling prefix escape", key: siblingKey, wantErr: true},
+		{name: "parent escape", key: "../../etc/passwd", wantErr: true},
+		{name: "empty key equals base", key: "", wantErr: true},
+		{name: "dot key equals base", key: ".", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			uploadErr := store.Upload(context.Background(), tc.key, strings.NewReader("payload"), "text/plain")
+			_, openErr := store.OpenFile(tc.key)
+
+			if tc.wantErr {
+				if uploadErr == nil {
+					t.Fatalf("Upload(%q) = nil, want a directory traversal error", tc.key)
+				}
+				if !strings.Contains(uploadErr.Error(), "directory traversal detected") {
+					t.Fatalf("Upload(%q) error = %v, want directory traversal detected", tc.key, uploadErr)
+				}
+				if openErr == nil {
+					t.Fatalf("OpenFile(%q) = nil error, want a directory traversal error", tc.key)
+				}
+				if !strings.Contains(openErr.Error(), "directory traversal detected") {
+					t.Fatalf("OpenFile(%q) error = %v, want directory traversal detected", tc.key, openErr)
+				}
+				return
+			}
+
+			if uploadErr != nil {
+				t.Fatalf("Upload(%q) failed: %v", tc.key, uploadErr)
+			}
+			if openErr != nil {
+				t.Fatalf("OpenFile(%q) failed: %v", tc.key, openErr)
+			}
+			rc, err := store.OpenFile(tc.key)
+			if err != nil {
+				t.Fatalf("OpenFile(%q) failed: %v", tc.key, err)
+			}
+			defer rc.Close()
+			got, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatalf("read %q: %v", tc.key, err)
+			}
+			if string(got) != "payload" {
+				t.Fatalf("OpenFile(%q) = %q, want %q", tc.key, got, "payload")
+			}
+		})
 	}
 }
 
