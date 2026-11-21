@@ -55,15 +55,28 @@ type DocClaims struct {
 	jwt.RegisteredClaims
 }
 
+// isLocalOrTestEnv reports whether appEnv names local development or the test
+// suite. An empty value is not local/test here: auth-service and chat-service
+// map "" to "production" before calling the storage layer, and user-service
+// defaults its storage environment to "test" itself, so no caller passes "".
+func isLocalOrTestEnv(appEnv string) bool {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "local", "test":
+		return true
+	default:
+		return false
+	}
+}
+
 func createDocAEAD(hexKey, appEnv string) (cipher.AEAD, error) {
 	var keyBytes []byte
 	var err error
 
-	isLocalOrTest := appEnv == "local" || appEnv == "test" || appEnv == ""
+	isLocalOrTest := isLocalOrTestEnv(appEnv)
 
 	if hexKey == "" {
-		if appEnv == "production" {
-			return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY is required in environment: %s", appEnv)
+		if !isLocalOrTest {
+			return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY is required outside local/test (environment: %s)", appEnv)
 		}
 		// Generate a random 32-byte key for local/test ephemeral storage if empty
 		keyBytes = make([]byte, 32)
@@ -73,14 +86,14 @@ func createDocAEAD(hexKey, appEnv string) (cipher.AEAD, error) {
 	} else {
 		keyBytes, err = hex.DecodeString(hexKey)
 		if err != nil {
-			if !isLocalOrTest && appEnv == "production" {
-				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be a valid hex string: %w", err)
+			if !isLocalOrTest {
+				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be a valid hex string")
 			}
 			// If not valid hex in local/test, use raw bytes padded/truncated to 32
 			keyBytes = make([]byte, 32)
 			copy(keyBytes, []byte(hexKey))
 		} else if len(keyBytes) != 32 {
-			if !isLocalOrTest && appEnv == "production" {
+			if !isLocalOrTest {
 				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters), got %d bytes", len(keyBytes))
 			}
 		}
@@ -140,19 +153,31 @@ func NewLocalStorageWithPath(baseDir, baseURL, defaultViewPath, secret, encKey, 
 	}, nil
 }
 
+// resolveInBase resolves key under baseDir and rejects any key that would
+// escape it. The prefix check includes the trailing separator so a sibling
+// directory such as "<base>-evil" is not mistaken for a path inside "<base>".
+// A key that resolves to baseDir itself ("" or ".") is rejected: the base
+// directory is not a file.
+func resolveInBase(baseDir, key string) (string, error) {
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("storage: invalid base directory: %w", err)
+	}
+	absDest, err := filepath.Abs(filepath.Join(baseDir, filepath.Clean(key)))
+	if err != nil {
+		return "", fmt.Errorf("storage: invalid destination path: %w", err)
+	}
+	if !strings.HasPrefix(absDest, absBase+string(filepath.Separator)) {
+		return "", fmt.Errorf("storage: directory traversal detected")
+	}
+	return absDest, nil
+}
+
 // Upload writes an encrypted document file to the local disk.
 func (l *LocalStorage) Upload(ctx context.Context, key string, reader io.Reader, contentType string) error {
-	destPath := filepath.Join(l.baseDir, filepath.Clean(key))
-	absBase, err := filepath.Abs(l.baseDir)
+	destPath, err := resolveInBase(l.baseDir, key)
 	if err != nil {
-		return fmt.Errorf("storage: invalid base directory: %w", err)
-	}
-	absDest, err := filepath.Abs(destPath)
-	if err != nil {
-		return fmt.Errorf("storage: invalid destination path: %w", err)
-	}
-	if !strings.HasPrefix(absDest, absBase) {
-		return fmt.Errorf("storage: directory traversal detected")
+		return err
 	}
 
 	plaintext, err := io.ReadAll(reader)
@@ -256,17 +281,9 @@ func (l *LocalStorage) ValidateSignedURLTokenWithClaims(tokenStr string) (*DocCl
 
 // OpenFile opens and decrypts the local file for reading.
 func (l *LocalStorage) OpenFile(key string) (io.ReadCloser, error) {
-	destPath := filepath.Join(l.baseDir, filepath.Clean(key))
-	absBase, err := filepath.Abs(l.baseDir)
+	destPath, err := resolveInBase(l.baseDir, key)
 	if err != nil {
-		return nil, fmt.Errorf("storage: invalid base directory: %w", err)
-	}
-	absDest, err := filepath.Abs(destPath)
-	if err != nil {
-		return nil, fmt.Errorf("storage: invalid destination path: %w", err)
-	}
-	if !strings.HasPrefix(absDest, absBase) {
-		return nil, fmt.Errorf("storage: directory traversal detected")
+		return nil, err
 	}
 
 	// #nosec G304 //nolint:gosec -- path prefix validation ensures file is scoped to storage directory, preventing directory traversal
@@ -293,16 +310,9 @@ func (l *LocalStorage) OpenFile(key string) (io.ReadCloser, error) {
 // to a file strictly inside the base directory; a missing file is not an
 // error.
 func (l *LocalStorage) Delete(ctx context.Context, key string) error {
-	absBase, err := filepath.Abs(l.baseDir)
+	absDest, err := resolveInBase(l.baseDir, key)
 	if err != nil {
-		return fmt.Errorf("storage: invalid base directory: %w", err)
-	}
-	absDest, err := filepath.Abs(filepath.Join(l.baseDir, filepath.Clean(key)))
-	if err != nil {
-		return fmt.Errorf("storage: invalid destination path: %w", err)
-	}
-	if !strings.HasPrefix(absDest, absBase+string(filepath.Separator)) {
-		return fmt.Errorf("storage: directory traversal detected")
+		return err
 	}
 	if err := os.Remove(absDest); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("storage: failed to delete file: %w", err)

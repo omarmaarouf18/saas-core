@@ -245,6 +245,59 @@ func TestLoad_AllowsLocalWithoutCloudWatch(t *testing.T) {
 	}
 }
 
+// TestLoad_RefusesEmptyDocumentEncryptionKeyOutsideLocalTest covers issue #29:
+// an empty key is refused outside local/test, not only for an exact
+// "production". Staging or a mistyped environment must not start with an
+// ephemeral key, because every document uploaded in that run would become
+// unreadable after a restart.
+func TestLoad_RefusesEmptyDocumentEncryptionKeyOutsideLocalTest(t *testing.T) {
+	setRequired := func(t *testing.T) {
+		t.Setenv("JWT_SECRET", "dummy-jwt-secret")
+		t.Setenv("DOCUMENT_SIGNING_SECRET", "dummy-doc-signing-secret")
+		t.Setenv("GATEWAY_SECRET", "dummy-gateway-secret")
+		t.Setenv("INTERNAL_SERVICE_TOKEN", "dummy-token")
+		t.Setenv("TLS_CERT_PATH", "dummy-cert")
+		t.Setenv("TLS_KEY_PATH", "dummy-key")
+		t.Setenv("TLS_CA_PATH", "dummy-ca")
+		t.Setenv("REDIS_URI", "redis://localhost:6379")
+		t.Setenv("DOCUMENT_ENCRYPTION_KEY", "")
+	}
+
+	// Every environment that is not local/test refuses to start. APP_ENV is
+	// compared trimmed and case-insensitively; an unset APP_ENV means
+	// production.
+	for _, env := range []string{"", "production", "PRODUCTION", " production ", "staging", "prod", "Production"} {
+		t.Run("refuses "+env, func(t *testing.T) {
+			setRequired(t)
+			if env == "" {
+				t.Setenv("APP_ENV", "")
+				os.Unsetenv("APP_ENV")
+			} else {
+				t.Setenv("APP_ENV", env)
+			}
+			_, err := config.Load()
+			if err == nil {
+				t.Fatalf("APP_ENV=%q: expected Load to refuse an empty DOCUMENT_ENCRYPTION_KEY, got nil", env)
+			}
+			if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+				t.Errorf("APP_ENV=%q: the error must name the variable, got: %v", env, err)
+			}
+		})
+	}
+
+	// local and test may start without a key: the storage layer generates an
+	// ephemeral one for development.
+	for _, env := range []string{"local", "LOCAL", " local ", "test", "TEST", " test "} {
+		t.Run("allows "+env, func(t *testing.T) {
+			setRequired(t)
+			t.Setenv("APP_ENV", env)
+			if _, err := config.Load(); err != nil {
+				t.Fatalf("APP_ENV=%q: expected Load to accept an empty key, got: %v", env, err)
+			}
+		})
+	}
+}
+
 // publishedDevDocKey is the DOCUMENT_ENCRYPTION_KEY published in
 // infrastructure/.env.example. The literal is repeated here on purpose: the
 // test has to pin the published value, not the constant of the package, so a
