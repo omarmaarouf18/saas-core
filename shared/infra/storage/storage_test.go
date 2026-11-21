@@ -215,6 +215,51 @@ func TestLocalStorage_RejectsSiblingPrefixEscape(t *testing.T) {
 	}
 }
 
+// TestCreateDocAEAD_EnvironmentRules covers issue #29: an empty, invalid-hex
+// or wrong-length DOCUMENT_ENCRYPTION_KEY is refused outside local/test, so
+// the storage layer never silently falls back to an ephemeral or padded key
+// in staging or a mistyped production environment. local/test keep the
+// fallback.
+func TestCreateDocAEAD_EnvironmentRules(t *testing.T) {
+	validKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	cases := []struct {
+		name    string
+		key     string
+		env     string
+		wantErr bool
+	}{
+		{name: "empty key staging", key: "", env: "staging", wantErr: true},
+		{name: "empty key prod", key: "", env: "prod", wantErr: true},
+		{name: "empty key Production", key: "", env: "Production", wantErr: true},
+		{name: "empty key empty environment", key: "", env: "", wantErr: true},
+		{name: "empty key local", key: "", env: "local"},
+		{name: "empty key test", key: "", env: "test"},
+		{name: "invalid hex staging", key: "not-a-hex-key", env: "staging", wantErr: true},
+		{name: "invalid hex local", key: "not-a-hex-key", env: "local"},
+		{name: "wrong length staging", key: "abcd", env: "staging", wantErr: true},
+		{name: "wrong length test", key: "abcd", env: "test"},
+		{name: "valid key staging", key: validKey, env: "staging"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := createDocAEAD(tc.key, tc.env)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("createDocAEAD(%q, %q) = nil error, want an error", tc.key, tc.env)
+				}
+				if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+					t.Fatalf("createDocAEAD(%q, %q) error = %v, want it to name DOCUMENT_ENCRYPTION_KEY", tc.key, tc.env, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("createDocAEAD(%q, %q) failed: %v", tc.key, tc.env, err)
+			}
+		})
+	}
+}
+
 func TestLocalStorage_EncryptionAtRest(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "storage-test-enc-*")
 	if err != nil {

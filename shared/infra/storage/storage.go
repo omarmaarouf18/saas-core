@@ -55,15 +55,28 @@ type DocClaims struct {
 	jwt.RegisteredClaims
 }
 
+// isLocalOrTestEnv reports whether appEnv names local development or the test
+// suite. An empty value is not local/test here: auth-service and chat-service
+// map "" to "production" before calling the storage layer, and user-service
+// defaults its storage environment to "test" itself, so no caller passes "".
+func isLocalOrTestEnv(appEnv string) bool {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "local", "test":
+		return true
+	default:
+		return false
+	}
+}
+
 func createDocAEAD(hexKey, appEnv string) (cipher.AEAD, error) {
 	var keyBytes []byte
 	var err error
 
-	isLocalOrTest := appEnv == "local" || appEnv == "test" || appEnv == ""
+	isLocalOrTest := isLocalOrTestEnv(appEnv)
 
 	if hexKey == "" {
-		if appEnv == "production" {
-			return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY is required in environment: %s", appEnv)
+		if !isLocalOrTest {
+			return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY is required outside local/test (environment: %s)", appEnv)
 		}
 		// Generate a random 32-byte key for local/test ephemeral storage if empty
 		keyBytes = make([]byte, 32)
@@ -73,14 +86,14 @@ func createDocAEAD(hexKey, appEnv string) (cipher.AEAD, error) {
 	} else {
 		keyBytes, err = hex.DecodeString(hexKey)
 		if err != nil {
-			if !isLocalOrTest && appEnv == "production" {
-				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be a valid hex string: %w", err)
+			if !isLocalOrTest {
+				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be a valid hex string")
 			}
 			// If not valid hex in local/test, use raw bytes padded/truncated to 32
 			keyBytes = make([]byte, 32)
 			copy(keyBytes, []byte(hexKey))
 		} else if len(keyBytes) != 32 {
-			if !isLocalOrTest && appEnv == "production" {
+			if !isLocalOrTest {
 				return nil, fmt.Errorf("storage: DOCUMENT_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters), got %d bytes", len(keyBytes))
 			}
 		}

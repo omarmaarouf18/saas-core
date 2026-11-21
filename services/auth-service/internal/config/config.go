@@ -118,8 +118,13 @@ func Load() (*Config, error) {
 	}
 
 	docEncryptionKey := os.Getenv("DOCUMENT_ENCRYPTION_KEY")
-	if docEncryptionKey == "" && appEnv == "production" {
-		return nil, errors.New("config: required env var DOCUMENT_ENCRYPTION_KEY is empty in production")
+	// An empty key makes the storage layer generate an ephemeral one, so every
+	// document uploaded in that run becomes unreadable after a restart. Refuse
+	// it outside local/test, not only for an exact "production" (staging or a
+	// mistyped value such as "prod" would otherwise start with no key). The
+	// error names the variable and never prints any key value.
+	if docEncryptionKey == "" && !isDevOnlyAppEnv(appEnv) {
+		return nil, errors.New("config: required env var DOCUMENT_ENCRYPTION_KEY is empty outside local/test")
 	}
 	// BE-HARDEN item 7: the key published in infrastructure/.env.example is a
 	// valid key, so it passes the checks above — but it is public, so every
