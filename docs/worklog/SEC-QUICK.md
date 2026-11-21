@@ -262,11 +262,20 @@
   reads `ATTACHMENT_ENCRYPTION_KEY` (falling back to
   `DOCUMENT_ENCRYPTION_KEY`) and passes it to
   `storage.NewLocalStorageWithPath`. With this item the storage call now
-  returns an error outside local/test for an empty/invalid/wrong-length key;
+  returns an error outside local/test for an empty/invalid/wrong-length key.
   `services/chat-service/internal/handlers/chat.go` logs a warning, retries
-  with a temp dir (same error), ignores that error, and leaves `chatStorage`
-  nil. The service starts, but attachments are unavailable. Follow-up issue
-  suggested below.
+  with a temp dir (same error), and ignores that error. `chatStorage` is
+  declared as `storage.Storage`, so `chatStorage, _ = ...` stores a typed-nil
+  `*LocalStorage` in the interface: the interface is non-nil, and every
+  attachment upload/view (`c.storage.Upload`, `OpenFile`,
+  `GetSignedURLWithClaims`, `ValidateSignedURLTokenWithClaims`) dereferences
+  a nil `*LocalStorage` and panics per request. It is not a clean
+  "attachments unavailable". This panic path already existed before SEC-QUICK
+  for `APP_ENV=production` with an empty/invalid key; item 3 widens it to
+  every non-local/test `APP_ENV`. Production impact today: none expected —
+  `docker-compose.prod.yml` passes
+  `ATTACHMENT_ENCRYPTION_KEY=${DOCUMENT_ENCRYPTION_KEY}`, and auth-service
+  refuses an empty key first. Follow-up issue suggested below.
 - user-service: **does not refuse outside an exact `APP_ENV=production`**.
   `ValidateDocumentEncryptionKey` rejects the key, but `config.Load` only
   returns that error when `appEnv == "production"` (exact, case-sensitive);
@@ -306,11 +315,15 @@
   ATTACHMENT_ENCRYPTION_KEY/DOCUMENT_ENCRYPTION_KEY outside local/test`.
   Suggested body: `services/chat-service/internal/config/config.go` has no
   key validation and `internal/handlers/chat.go` swallows the storage init
-  error and continues with nil storage. With SEC-QUICK item 3 the storage
-  layer refuses an empty/invalid/wrong-length key outside local/test, so chat
-  now starts with attachments unavailable instead of failing fast. Validate
-  the key in config (reuse the isDevOnlyAppEnv rule) and stop on storage init
-  failure outside local/test.
+  error. `chatStorage` is a `storage.Storage` interface, so
+  `chatStorage, _ = storage.NewLocalStorageWithPath(...)` stores a typed-nil
+  `*LocalStorage`; the interface is non-nil and every attachment upload/view
+  panics per request (nil pointer dereference) instead of failing fast. This
+  already happened before SEC-QUICK for `APP_ENV=production` with an
+  empty/invalid key, and item 3 widens it to every non-local/test `APP_ENV`.
+  Chat must fail fast on a storage init error outside local/test and must
+  never store a typed-nil in the interface. Add a test asserting no panic and
+  a clear startup error.
 - Suggested issue title: `user-service: refuse to start with an invalid
   DOCUMENT_ENCRYPTION_KEY outside local/test`.
   Suggested body: `services/user-service/internal/config/config.go` returns
