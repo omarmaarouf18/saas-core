@@ -1,6 +1,9 @@
 # QuickDelivery Brand Identity & Visual Language Guidelines
 
 > [!NOTE]
+> Superseded by [ADR-0029](../adr/0029-rebrand-to-waddify.md) and [docs/design/WADDIFY_BRAND.md](../design/WADDIFY_BRAND.md); it describes the Quick Delivery brand that the app shows until the REBRAND-NAME / REBRAND-THEME / REBRAND-ICON release.
+
+> [!NOTE]
 > **Specification Context**: This document formalizes the brand identity, visual rationale, voice, and competitor benchmarks for QuickDelivery (QD). It reconciles the existing design system implementation in [`frontend/lib/core/theme.dart`](../../frontend/lib/core/theme.dart) with enterprise product design best practices.
 
 ---

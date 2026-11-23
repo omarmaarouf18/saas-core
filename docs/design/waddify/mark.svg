@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Waddify mark">
+  <!-- Waddify mark v1 (ADR-0029). Pigeon diving at a fixed 55 degrees toward the bottom left.
+       W = wings, head in the W's inner notch, tail from the W's outer point. Never rotate or mirror. -->
+  <g transform="translate(58 62) scale(0.92) rotate(55) translate(-60 -52)">
+    <path d="M54 50 L 50 15 Q 60 9 70 15 L 66 50 Z" fill="#0E7C7B"/>
+    <path d="M6 28 Q 22 88 48 68 Q 60 60 72 68 Q 98 88 114 28 Q 94 62 72 50 Q 60 44 48 50 Q 26 62 6 28 Z" fill="#10233F"/>
+    <circle cx="60" cy="74" r="9" fill="#10233F"/>
+    <path d="M55 81 L 60 92 L 65 81 Z" fill="#F2A541"/>
+  </g>
+</svg>
