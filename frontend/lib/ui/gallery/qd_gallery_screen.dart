@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
+import '../components/qd_brand_mark.dart';
 import '../qd_ui.dart';
 
 /// Debug-only catalog of every redesign A component in every state
@@ -735,6 +736,62 @@ List<QdGallerySection> qdGallerySections({
               'بندور على مندوب قريب منك'),
           textAlign: TextAlign.center,
           style: QdText.sheetTitle.copyWith(color: c.textPrimary),
+        ),
+      ]);
+    }),
+    QdGallerySection('brand', 'QdBrandMark', (context) {
+      final c = QdColors.of(context);
+      return _col([
+        Text(
+          _t(context, 'Full size (56px) — full · onDark · mono',
+              'الحجم الكامل (56 بكسل) — كامل · على داكن · أحادي'),
+          style: QdText.caption.copyWith(color: c.textSecondary),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const QdBrandMark(size: 56, variant: QdBrandMarkVariant.full),
+            Container(
+              padding: const EdgeInsets.all(QdSpace.x2),
+              decoration: BoxDecoration(
+                color: QdColors.light.navy,
+                borderRadius: BorderRadius.circular(QdRadius.card),
+              ),
+              child: const QdBrandMark(
+                  size: 56, variant: QdBrandMarkVariant.onDark),
+            ),
+            QdBrandMark(
+              size: 56,
+              variant: QdBrandMarkVariant.mono,
+              color: c.gold,
+            ),
+          ],
+        ),
+        const SizedBox(height: QdSpace.x2),
+        Text(
+          _t(context, 'Compact size (32px) — full · onDark · mono (no beak)',
+              'الحجم المصغر (32 بكسل) — كامل · على داكن · أحادي (بدون منقار)'),
+          style: QdText.caption.copyWith(color: c.textSecondary),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const QdBrandMark(size: 32, variant: QdBrandMarkVariant.full),
+            Container(
+              padding: const EdgeInsets.all(QdSpace.x1),
+              decoration: BoxDecoration(
+                color: QdColors.light.navy,
+                borderRadius: BorderRadius.circular(QdRadius.sm),
+              ),
+              child: const QdBrandMark(
+                  size: 32, variant: QdBrandMarkVariant.onDark),
+            ),
+            QdBrandMark(
+              size: 32,
+              variant: QdBrandMarkVariant.mono,
+              color: c.sun,
+            ),
+          ],
         ),
       ]);
     }),

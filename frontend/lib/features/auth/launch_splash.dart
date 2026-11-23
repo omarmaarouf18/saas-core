@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
+import '../../ui/components/qd_brand_mark.dart';
 import '../../ui/qd_ui.dart';
 
 /// UX-17 launch splash in the redesign: shown while AuthProvider restores
@@ -30,8 +31,12 @@ class LaunchSplash extends StatelessWidget {
                   borderRadius: BorderRadius.circular(QdRadius.card),
                   border: dark ? Border.all(color: c.border) : null,
                 ),
-                child: Icon(Icons.inventory_2_outlined,
-                    size: 36, color: QdColors.light.gold),
+                child: const Center(
+                  child: QdBrandMark(
+                    size: 48,
+                    variant: QdBrandMarkVariant.onDark,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: QdSpace.x4),

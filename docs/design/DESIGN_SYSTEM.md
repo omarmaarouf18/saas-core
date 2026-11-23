@@ -17,10 +17,12 @@ the light set only when a bare test app has no Qd theme.
 - Approved mockups: [redesign-a/](redesign-a/) (Arabic RTL, 390 px phone). Start
   with [00-SCREEN-MAP.html](redesign-a/00-SCREEN-MAP.html): old screen → new
   screen, known bugs, data gaps.
-- Brand source: [docs/frontend/BRAND_IDENTITY.md](../frontend/BRAND_IDENTITY.md)
-  (navy `#0D1321`, gold `#FFC107`, success / warning / danger); the Waddify
-  rebrand ([ADR-0029](../adr/0029-rebrand-to-waddify.md)) replaces navy/gold;
-  the tokens change in REBRAND-THEME.
+- Brand source: [docs/design/WADDIFY_BRAND.md](WADDIFY_BRAND.md) and
+  [ADR-0029](../adr/0029-rebrand-to-waddify.md) (Waddify palette: Ink `#10233F`,
+  Nile `#0E7C7B`, Nile Light `#2FB5B3`, Sun `#F2A541`, Sand `#F7F6F2`). The
+  tokens and Readex Pro font were implemented in REBRAND-THEME (#57).
+  The historical Quick Delivery identity ([docs/frontend/BRAND_IDENTITY.md](../frontend/BRAND_IDENTITY.md))
+  is superseded.
 - Code: `frontend/lib/ui/tokens.dart` (tokens), `frontend/lib/ui/qd_theme.dart`
   (`ThemeData`), `frontend/lib/ui/components/` (widgets, all prefixed `Qd`).
 - Debug gallery: route `/qd-gallery` (debug builds only) renders every component
@@ -31,23 +33,26 @@ the light set only when a bare test app has no Qd theme.
 
 ## Rules
 
-1. **Surfaces are white.** Subtle fills `#F9FAFB` / `#F3F4F6`. Borders are 1 px
-   `#E5E7EB`; input borders `#D1D5DB`. Cards use borders, never shadows.
-2. **Text is navy** `#0D1321`. Secondary text `#4B5563`, never lighter for body
-   text. `#6B7280` / `#9CA3AF` are allowed only for strike-through prices and
-   decorative marks (upcoming timeline dot), never for readable copy.
-3. **Gold `#FFC107` is only:** the primary button fill (navy text on it), the
-   active bottom-nav indicator, the selected-option tint `#FFF8E1`, the primary
-   service icon tile, and the count-down ring. Gold is never text on white.
+1. **Surfaces are white.** Subtle fills Sand `#F7F6F2` (`fillSubtle`) / `#F3F4F6` (`fillMuted`).
+   Borders are 1 px `#E5E7EB`; input borders `#D1D5DB`. Cards use borders, never shadows.
+2. **Text is Ink** `#10233F`. Secondary text `#4B5563`, never lighter for body
+   text. `#5C6470` is allowed for strike-through prices (`textMuted`); `#9CA3AF`
+   for decorative marks (upcoming timeline dot), never for readable copy.
+3. **Primary action is Nile `#0E7C7B` (dark Nile Light `#2FB5B3`):** the primary
+   button fill (white text on it, 4.56:1 AA), active bottom-nav indicator, selected-option
+   tint `#E3F4F3` (`goldTint`), primary service icon tile, and count-down ring.
+   Nile is never text on white. Rating stars use the fixed-meaning `rating` token
+   (`#FFC107`). Warm accents use Sun `#F2A541` (`sun` / `onSun`).
 4. **Status colors:** success `#15803D` on `#DCFCE7`; warning `#B45309` on
    `#FEF3C7`; danger `#BA1A1A` text (on `#FEE2E2` for chips) for cancelled and
    destructive; neutral `#374151` on `#F3F4F6`.
 5. **Radii:** 12 inputs / small buttons / icon tiles; 14 primary button and
    banners; 16 cards and list groups; 24 top corners of a sheet; 999 chips.
 6. **Spacing:** 4 / 8 / 12 / 16 / 20 / 24. Screen side padding 20.
-7. **Type:** IBM Plex Sans Arabic, bundled (`frontend/assets/fonts/`, OFL
-   license next to it), never fetched at runtime. Latin uses the same family.
-8. **One primary (gold) button per screen.** Sentence case everywhere, no ALL
+7. **Type:** Readex Pro, bundled static TTFs (`frontend/assets/fonts/`, weights
+   400, 500, 600, 700; SIL OFL 1.1 license next to it), never fetched at runtime.
+   Arabic and Latin use the same family.
+8. **One primary (Nile) button per screen.** Sentence case everywhere, no ALL
    CAPS, no Title Case in new strings.
 9. **Touch targets ≥ 48 dp** (list rows 52–64, primary button 54).
 10. **RTL first**, every component also renders LTR. Phone and email fields are
@@ -64,50 +69,58 @@ the light set only when a bare test app has no Qd theme.
 | Token | Hex | Use |
 |---|---|---|
 | `surface` | `#FFFFFF` | screens, cards, sheets |
-| `fillSubtle` | `#F9FAFB` | highlighted card (current order, price summary) |
+| `fillSubtle` | `#F7F6F2` | highlighted card (Sand; current order, price summary) |
 | `fillMuted` | `#F3F4F6` | icon tile, segmented track, neutral chip, divider in groups |
 | `border` | `#E5E7EB` | card / group / nav borders, track of progress bars |
 | `borderInput` | `#D1D5DB` | text field, secondary button, sheet handle |
-| `textPrimary` | `#0D1321` | all primary text, icons |
+| `textPrimary` | `#10233F` | all primary text, icons (Ink) |
 | `textSecondary` | `#4B5563` | secondary text, inactive nav label |
-| `textMuted` | `#6B7280` | strike-through old price only |
+| `textMuted` | `#5C6470` | strike-through old price only |
 | `decorative` | `#9CA3AF` | upcoming timeline dot only |
-| `gold` | `#FFC107` | primary button, nav indicator, primary icon tile, countdown |
-| `onGold` | `#0D1321` | text and icons on gold |
-| `goldTint` | `#FFF8E1` | selected option background |
-| `navy` | `#0D1321` | avatar fill, done timeline dot, route marks, progress fill |
-| `onNavy` | `#FFC107` | initial on navy avatar |
+| `gold` | `#0E7C7B` | primary action fill (Nile); historical field name |
+| `onGold` | `#FFFFFF` | text and icons on primary action fill |
+| `goldTint` | `#E3F4F3` | selected option background tint |
+| `navy` | `#10233F` | avatar fill, trust surfaces (Ink); historical field name |
+| `onNavy` | `#F2A541` | warm accent on dark surfaces (Sun); historical field name |
+| `rating` | `#FFC107` | fixed-meaning rating star color |
+| `onRating` | `#0D1321` | text on rating fill |
+| `sun` | `#F2A541` | warm brand accent (Sun) |
+| `onSun` | `#10233F` | text on warm accent (Ink) |
 | `success` / `successBg` | `#15803D` / `#DCFCE7` | success chip |
 | `warning` / `warningBg` | `#B45309` / `#FEF3C7` | warning chip, warning banner |
 | `danger` / `dangerBg` | `#BA1A1A` / `#FEE2E2` | danger text, danger chip / banner |
 | `neutral` / `neutralBg` | `#374151` / `#F3F4F6` | neutral chip, disabled button text |
 | `disabledFill` | `#E5E7EB` | disabled primary button |
+| `scrim` | `0x6610233F` | modal scrim overlay |
 
 ### Color — dark (`QdColors.dark`)
 
 Wired app-wide since FE-CLEANUP (`qdDarkTheme`, picked by the app's theme
-mode). Same gold rules. The FE-CLEANUP dark review found no text/background
-pair used by the pages below 4.5:1; `textSecondary` on the tone fills
-(`warningBg` 3.57, `dangerBg` 3.95, `successBg` 3.59) does fail, so text on a
-tone fill uses `textPrimary` (banners, the cancellation-request card). The
-pairs in use are asserted in `frontend/test/ui/tokens_test.dart`.
+mode). Derived from Ink `#10233F`. The pairs in use are asserted in
+`frontend/test/ui/tokens_test.dart` and pass WCAG AA (≥ 4.5:1).
 
 | Token | Hex |
 |---|---|
-| `surface` | `#0D1321` |
-| `fillSubtle` | `#161D2E` |
-| `fillMuted` | `#1F2738` |
-| `border` | `#273047` |
-| `borderInput` | `#3A4560` |
+| `surface` | `#10233F` |
+| `fillSubtle` | `#172C4C` |
+| `fillMuted` | `#20385E` |
+| `border` | `#27426D` |
+| `borderInput` | `#385685` |
 | `textPrimary` | `#F9FAFB` |
 | `textSecondary` | `#9CA3AF` |
-| `gold` / `onGold` | `#FFC107` / `#0D1321` |
-| `goldTint` | `#3A2E0A` |
-| `navy` / `onNavy` | `#F9FAFB` / `#0D1321` |
+| `textMuted` | `#9CA3AF` |
+| `decorative` | `#6B7280` |
+| `gold` / `onGold` | `#2FB5B3` (Nile Light) / `#10233F` (Ink) |
+| `goldTint` | `#0E3B43` |
+| `navy` / `onNavy` | `#F9FAFB` / `#10233F` |
+| `rating` / `onRating` | `#FFC107` / `#0D1321` |
+| `sun` / `onSun` | `#F2A541` / `#10233F` |
 | `success` / `successBg` | `#86EFAC` / `#14532D` |
 | `warning` / `warningBg` | `#FCD34D` / `#78350F` |
 | `danger` / `dangerBg` | `#FCA5A5` / `#7F1D1D` |
-| `neutral` / `neutralBg` | `#D1D5DB` / `#273047` |
+| `neutral` / `neutralBg` | `#D1D5DB` / `#27426D` |
+| `disabledFill` | `#27426D` |
+| `scrim` | `0x99000000` |
 
 ### Spacing (`QdSpace`)
 
@@ -161,6 +174,7 @@ All under `frontend/lib/ui/components/`. Each has a widget test in
 | `QdCountdown` | mm:ss + shrinking bar or ring from an expiry, fires on expiry | C-Offer (ring), A-Negotiate (bar) |
 | `QdBottomSheet` | handle, title, content, one primary action | A-Track, O-Fleet; add-courier sheet (O-Team) |
 | `QdMoney` | EGP formatter, AR / EN | every price |
+| `QdBrandMark` | Waddify 55° diving pigeon mark; full / onDark / mono variants | Splash, Login, debug gallery |
 
 ## Job status chips
 
@@ -190,30 +204,35 @@ text under 24 px is ≥ 4.5:1.
 
 | Text | Background | Ratio | Where |
 |---|---|---|---|
-| `#0D1321` | `#FFFFFF` | 18.55 | body text |
-| `#0D1321` | `#F9FAFB` | 17.75 | text on subtle card |
-| `#0D1321` | `#F3F4F6` | 16.85 | segmented selected / tile |
+| `#10233F` (Ink) | `#FFFFFF` | 15.06 | body text |
+| `#10233F` | `#F7F6F2` (Sand) | 13.92 | text on subtle card |
+| `#10233F` | `#F3F4F6` | 13.68 | segmented selected / tile |
 | `#4B5563` | `#FFFFFF` | 7.56 | secondary text |
-| `#4B5563` | `#F9FAFB` | 7.23 | secondary on subtle card |
+| `#4B5563` | `#F7F6F2` | 6.99 | secondary on subtle card |
 | `#4B5563` | `#F3F4F6` | 6.87 | segmented unselected |
-| `#0D1321` | `#FFC107` | 11.38 | primary button |
-| `#0D1321` | `#FFF8E1` | 17.46 | selected option |
-| `#15803D` | `#DCFCE7` | 4.57 | success chip |
-| `#B45309` | `#FEF3C7` | 4.51 | warning chip |
+| `#5C6470` | `#FFFFFF` | 5.98 | struck old price |
+| `#FFFFFF` | `#0E7C7B` (Nile) | 4.56 | primary action button |
+| `#10233F` | `#E3F4F3` | 12.87 | selected option tint |
+| `#10233F` | `#F2A541` (Sun) | 7.67 | warm accent text / icon |
+| `#0D1321` | `#FFC107` (rating) | 11.38 | rating star fill |
+| `#15803D` | `#DCFCE7` | 5.02 | success chip |
+| `#B45309` | `#FEF3C7` | 5.02 | warning chip |
 | `#BA1A1A` | `#FEE2E2` | 5.29 | danger chip |
 | `#374151` | `#F3F4F6` | 9.37 | neutral chip |
 | `#BA1A1A` | `#FFFFFF` | 6.46 | destructive text button, field error |
 | `#374151` | `#E5E7EB` | 8.33 | disabled primary button |
-| `#FFC107` | `#0D1321` | 11.38 | avatar initial |
-| `#0D1321` | `#FEF3C7` | 16.66 | warning banner text |
-| `#0D1321` | `#FEE2E2` | 15.18 | danger banner text |
-| `#F9FAFB` | `#0D1321` | 17.75 | dark: text |
-| `#9CA3AF` | `#0D1321` | 7.31 | dark: secondary |
-| `#9CA3AF` | `#161D2E` | 6.62 | dark: secondary on card |
+| `#F2A541` | `#10233F` | 7.67 | avatar initial / sun on ink |
+| `#10233F` | `#FEF3C7` | 13.53 | warning banner text |
+| `#10233F` | `#FEE2E2` | 12.33 | danger banner text |
+| `#F9FAFB` | `#10233F` | 15.06 | dark: text on surface |
+| `#F9FAFB` | `#172C4C` | 13.39 | dark: text on subtle |
+| `#9CA3AF` | `#10233F` | 6.20 | dark: secondary |
+| `#9CA3AF` | `#172C4C` | 5.51 | dark: secondary on card |
+| `#10233F` | `#2FB5B3` (Nile Light) | 6.28 | dark: text on gold |
 | `#86EFAC` | `#14532D` | 6.49 | dark: success chip |
 | `#FCD34D` | `#78350F` | 6.29 | dark: warning chip |
 | `#FCA5A5` | `#7F1D1D` | 5.28 | dark: danger chip |
-| `#D1D5DB` | `#273047` | 8.91 | dark: neutral chip |
+| `#D1D5DB` | `#27426D` | 6.83 | dark: neutral chip |
 
 The success (4.57) and warning (4.51) chips are the tightest pairs. Do not
 lighten their text or darken their fills.

@@ -82,12 +82,76 @@
 | `frontend/lib/services/local_notifications.dart:130` | `Color(0xFFFFC107)` | Notification accent color | `Color(0xFF0E7C7B)` (Waddify Nile) |
 | `frontend/lib/features/courier/active_job_page.dart:413` | `Color(0x260D1321)` | Active job status pill shadow | `Color(0x2610233F)` (Ink 15% shadow) |
 
+## WCAG AA Contrast Verification
+
+### Light Palette (all >= 4.5:1 body text)
+| Pair Label | Foreground | Background | Ratio | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| primary on surface | `#10233F` (Ink) | `#FFFFFF` | 15.74:1 | PASS (AAA) |
+| primary on subtle | `#10233F` (Ink) | `#F7F6F2` (Sand) | 14.55:1 | PASS (AAA) |
+| primary on muted | `#10233F` (Ink) | `#F3F4F6` | 14.30:1 | PASS (AAA) |
+| secondary on surface | `#4B5563` | `#FFFFFF` | 7.56:1 | PASS (AAA) |
+| secondary on subtle | `#4B5563` | `#F7F6F2` (Sand) | 6.99:1 | PASS (AA) |
+| secondary on muted | `#4B5563` | `#F3F4F6` | 6.87:1 | PASS (AA) |
+| on gold (CTA text) | `#FFFFFF` | `#0E7C7B` (Nile) | 5.01:1 | PASS (AA) |
+| primary on gold tint | `#10233F` (Ink) | `#E3F4F3` | 13.87:1 | PASS (AAA) |
+| secondary on gold tint | `#4B5563` | `#E3F4F3` | 6.66:1 | PASS (AA) |
+| neutral on gold tint | `#374151` | `#E3F4F3` | 9.08:1 | PASS (AAA) |
+| success chip | `#15803D` | `#DCFCE7` | 4.57:1 | PASS (AA) |
+| warning chip | `#B45309` | `#FEF3C7` | 4.51:1 | PASS (AA) |
+| danger chip | `#BA1A1A` | `#FEE2E2` | 5.29:1 | PASS (AA) |
+| neutral chip | `#374151` | `#F3F4F6` | 9.37:1 | PASS (AAA) |
+| danger on surface | `#BA1A1A` | `#FFFFFF` | 6.46:1 | PASS (AA) |
+| disabled button | `#374151` | `#E5E7EB` | 8.33:1 | PASS (AAA) |
+| avatar initial (Sun on Ink) | `#F2A541` (Sun) | `#10233F` (Ink) | 7.67:1 | PASS (AAA) |
+| on sun (Ink on Sun) | `#10233F` (Ink) | `#F2A541` (Sun) | 7.67:1 | PASS (AAA) |
+| on rating | `#0D1321` | `#FFC107` | 11.38:1 | PASS (AAA) |
+| warning banner | `#10233F` (Ink) | `#FEF3C7` | 14.13:1 | PASS (AAA) |
+| danger banner | `#10233F` (Ink) | `#FEE2E2` | 12.88:1 | PASS (AAA) |
+| success on tone card | `#10233F` (Ink) | `#DCFCE7` | 14.33:1 | PASS (AAA) |
+| success text on surface | `#15803D` | `#FFFFFF` | 5.02:1 | PASS (AA) |
+| warning text on surface | `#B45309` | `#FFFFFF` | 5.02:1 | PASS (AA) |
+| struck old price | `#5C6470` | `#FFFFFF` | 5.98:1 | PASS (AA) |
+
+### Dark Palette (all >= 4.5:1 body text)
+| Pair Label | Foreground | Background | Ratio | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| primary on surface | `#F9FAFB` | `#10233F` (Ink) | 15.06:1 | PASS (AAA) |
+| primary on subtle | `#F9FAFB` | `#172C4C` | 13.39:1 | PASS (AAA) |
+| primary on muted | `#F9FAFB` | `#20385E` | 11.23:1 | PASS (AAA) |
+| secondary on surface | `#9CA3AF` | `#10233F` (Ink) | 6.20:1 | PASS (AA) |
+| secondary on subtle | `#9CA3AF` | `#172C4C` | 5.51:1 | PASS (AA) |
+| secondary on muted | `#9CA3AF` | `#20385E` | 4.62:1 | PASS (AA) |
+| on gold (Ink on Nile Light) | `#10233F` (Ink) | `#2FB5B3` (Nile Light) | 6.28:1 | PASS (AA) |
+| primary on gold tint | `#F9FAFB` | `#0E3B43` | 11.65:1 | PASS (AAA) |
+| secondary on gold tint | `#9CA3AF` | `#0E3B43` | 4.79:1 | PASS (AA) |
+| neutral on gold tint | `#D1D5DB` | `#0E3B43` | 8.26:1 | PASS (AAA) |
+| success chip | `#86EFAC` | `#14532D` | 6.49:1 | PASS (AA) |
+| warning chip | `#FCD34D` | `#78350F` | 6.29:1 | PASS (AA) |
+| danger chip | `#FCA5A5` | `#7F1D1D` | 5.28:1 | PASS (AA) |
+| neutral chip | `#D1D5DB` | `#27426D` | 6.83:1 | PASS (AA) |
+| danger on surface | `#FCA5A5` | `#10233F` (Ink) | 8.29:1 | PASS (AAA) |
+| disabled button | `#D1D5DB` | `#27426D` | 6.83:1 | PASS (AA) |
+| avatar initial | `#10233F` | `#F9FAFB` | 15.06:1 | PASS (AAA) |
+| warning banner | `#F9FAFB` | `#78350F` | 8.68:1 | PASS (AAA) |
+| danger banner | `#F9FAFB` | `#7F1D1D` | 9.59:1 | PASS (AAA) |
+| success on tone card | `#F9FAFB` | `#14532D` | 8.72:1 | PASS (AAA) |
+| success text on surface | `#86EFAC` | `#10233F` (Ink) | 11.21:1 | PASS (AAA) |
+| warning text on surface | `#FCD34D` | `#10233F` (Ink) | 10.92:1 | PASS (AAA) |
+| struck old price | `#9CA3AF` | `#10233F` (Ink) | 6.20:1 | PASS (AA) |
+| on sun (Ink on Sun) | `#10233F` | `#F2A541` (Sun) | 7.67:1 | PASS (AAA) |
+| on rating | `#0D1321` | `#FFC107` | 11.38:1 | PASS (AAA) |
+
 ## Changes per commit (message only — NO SHAs)
 1. REBRAND-THEME: audit gold use, add rating and sun tokens, repoint rating stars
+2. REBRAND-THEME: Waddify palette, Readex Pro font, QdBrandMark, 2.2.0+1, and updated goldens
 
 ## Verification
-- `flutter test test/ui/tokens_test.dart test/features/customer/order/rating_page_test.dart` — PASS
-- `make check` — PASS
+- `flutter analyze` — PASS (No issues found)
+- `flutter test` — PASS (1451 tests passed, zero failures)
+- `make check` — PASS (scope: docs infra-tests docgen frontend)
+- WCAG AA contrast verification: all light and dark text/background pairs pass >= 4.5:1
+- Arabic glyph coverage: verified across all 4 weights of Readex Pro against all unique characters in `app_ar.arb` (including shadda, Arabic-Indic digits, ٪, punctuation) — 0 missing characters
 
 ## Unverified
 - none
