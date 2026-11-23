@@ -4,6 +4,13 @@ This file tracks historical entries for the primary category: **Documentation Ch
 
 ---
 
+## Waddify Rebrand Decision Record, Brand Spec and Mark Assets (REBRAND-DOCS, ADR-0029)
+
+- **Implementation Detail**: Authored [ADR-0029](../adr/0029-rebrand-to-waddify.md) recording the rebrand from Quick Delivery to Waddify / ودّيفاي (neutral-platform positioning, brand architecture, taglines, 55° pigeon mark, palette, Readex Pro, in/out of scope), the brand spec [docs/design/WADDIFY_BRAND.md](../design/WADDIFY_BRAND.md) and the mark assets in `docs/design/waddify/`. Marked `docs/frontend/BRAND_IDENTITY.md` superseded. Priority P0 (tracker #54).
+- **Commit SHA**: ``531873a4079d87113a2875ce8b4011baab6ce5d6``
+- **Verification**: per worklog (`make check` PASS, docs infra-tests; all relative links resolve; SVGs parse; contrast claims checked).
+- **Worklog**: [docs/worklog/REBRAND-DOCS.md](../worklog/REBRAND-DOCS.md)
+
 ## Job Model V2 Architecture Decision Record (JOB-MODEL-V2-ADR, ADR-0028)
 
 - **Implementation Detail**: Authored [ADR-0028](../adr/0028-job-model-v2.md) defining Job Model V2. Standardized sub-status state transitions, status change history audit trails, recipient details (name, unmasked phone window), package metadata (size, weight, description), and structured addresses with street lines and landmark notes.

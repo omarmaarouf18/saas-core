@@ -33,14 +33,15 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [api/ADMIN_API.md](api/ADMIN_API.md) | Admin API specification for ops console (overview, jobs, services, subscriptions, audit, app versions, admin notifications) | Current | 2026-10-29 | 4 | |
 | [architecture/tier-matrix.md](architecture/tier-matrix.md) | Paid-tier gating matrix per endpoint | Current | 2026-09-10 | 2 | |
 | [audit/REBASELINE-2026-10.md](audit/REBASELINE-2026-10.md) | Full codebase rebaseline audit and finding inventory | Current | 2026-10-16 | 1 | |
-| [design/DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Redesign A design system specification (tokens, components, theme) | Reference | 2026-10-26 | 11 | |
+| [design/DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Redesign A design system specification (tokens, components, theme) | Reference | 2026-11-23 | 11 | |
+| [design/WADDIFY_BRAND.md](design/WADDIFY_BRAND.md) | Waddify brand spec: assets, wordmark and lockups, tokens, copy, don'ts | Reference | 2026-11-23 | 5 | |
 | [qa/QA-COVERAGE.md](qa/QA-COVERAGE.md) | QA strategy and regression coverage matrix (82 KB). Living source of truth for QA | Current | 2026-09-17 | 1 | |
 | [runbooks/BACKUP-RESTORE.md](runbooks/BACKUP-RESTORE.md) | Production backup, off-host push, verification, and disaster-recovery restore runbook | Current | 2026-10-27 | 7 | |
 | [runbooks/MONITORING.md](runbooks/MONITORING.md) | Production monitoring, host health snitch, disk space alert, and notification runbook | Current | 2026-10-19 | 4 | |
 | [runbooks/OPS-HARDEN-cutover.md](runbooks/OPS-HARDEN-cutover.md) | Production cutover runbook for OPS-HARDEN compose changes | Current | 2026-10-16 | 1 | |
 | [security/VULN-TRIAGE-2026-10.md](security/VULN-TRIAGE-2026-10.md) | Vulnerability triage report for dependencies and static analysis | Historical | 2026-10-21 | 1 | |
 | [worklog/](worklog/README.md) | Agent task worklogs recording execution and verification | Historical | 2026-10-15 | n/a | |
-| [adr/README.md](adr/README.md) | ADR index and status | Reference | 2026-09-24 | 3 | |
+| [adr/README.md](adr/README.md) | ADR index and status | Reference | 2026-11-23 | 3 | |
 | [adr/0001-owner-authenticated-employee-provisioning.md](adr/0001-owner-authenticated-employee-provisioning.md) | Owner-authenticated employee provisioning | Reference | 2026-07-13 | 3 | |
 | [adr/0002-per-job-escrow-integrity.md](adr/0002-per-job-escrow-integrity.md) | Per-job escrow integrity and location validation | Reference | 2026-07-13 | 6 | |
 | [adr/0003-employee-assignment-tenant-binding-check.md](adr/0003-employee-assignment-tenant-binding-check.md) | Employee assignment tenant binding | Reference | 2026-07-14 | 3 | |
@@ -69,6 +70,7 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [adr/0026-two-phase-password-reset.md](adr/0026-two-phase-password-reset.md) | Two-phase password reset | Reference | 2026-09-24 | 1 | |
 | [adr/0027-employee-cancellation-request-workflow.md](adr/0027-employee-cancellation-request-workflow.md) | Employee cancellation request workflow | Reference | 2026-09-24 | 1 | |
 | [adr/0028-job-model-v2.md](adr/0028-job-model-v2.md) | Job model v2: recipient, address text, status history, pickup phase, ETA, and saved addresses | Reference | 2026-10-27 | 4 | |
+| [adr/0029-rebrand-to-waddify.md](adr/0029-rebrand-to-waddify.md) | Rebrand from Quick Delivery to Waddify: name, positioning, mark, palette, font, scope | Reference | 2026-11-23 | 7 | |
 | [changelog/README.md](changelog/README.md) | Changelog index | Current | 2026-09-28 | 2 | |
 | [changelog/bug-fixes.md](changelog/bug-fixes.md) | Bug fixes (253 KB) | Current | 2026-09-28 | 5 | |
 | [changelog/documentation.md](changelog/documentation.md) | Documentation changes | Current | 2026-09-26 | 2 | |
@@ -85,7 +87,7 @@ Worklogs are indexed as a single row for `docs/worklog/`.
 | [frontend/DESTINATION_ADDRESS_PROPOSAL.md](frontend/DESTINATION_ADDRESS_PROPOSAL.md) | Destination address options. A is done, B waits for a decision | Current | 2026-09-26 | 2 | |
 | [frontend/UI_UX_BEHAVIOR_AUDIT.md](frontend/UI_UX_BEHAVIOR_AUDIT.md) | Behaviour and interaction audit. Header says "Batches 3–5 Pending" (unverified whether still open) | Current | 2026-09-19 | 3 | |
 | [frontend/DESIGN_SYSTEM.md](frontend/DESIGN_SYSTEM.md) | Design system spec (tokens, components) | Reference | 2026-09-26 | 8 | |
-| [frontend/BRAND_IDENTITY.md](frontend/BRAND_IDENTITY.md) | Brand identity and visual language | Reference | 2026-08-17 | 5 | |
+| [frontend/BRAND_IDENTITY.md](frontend/BRAND_IDENTITY.md) | Brand identity and visual language (Quick Delivery) | Reference | 2026-11-23 | 5 | [adr/0029-rebrand-to-waddify.md](adr/0029-rebrand-to-waddify.md), [design/WADDIFY_BRAND.md](design/WADDIFY_BRAND.md) |
 | [frontend/LOCALIZATION_AUDIT.md](frontend/LOCALIZATION_AUDIT.md) | i18n setup and string extraction record | Reference | 2026-08-30 | 3 | |
 | [frontend/UI_UX_AUDIT_2026-09.md](frontend/UI_UX_AUDIT_2026-09.md) | UX audit 2026-09: 62/62 findings fixed. §5 questions Q1–Q11 still open, so it stays Current (owner decision 2026-10-15) | Current | 2026-09-25 | 6 | |
 | [history/ai-context-archive-2026-09.md](history/ai-context-archive-2026-09.md) | Verbatim archive of the history sections of `AI_CONTEXT.md` (CLN-01) | Historical | 2026-10-15 | 0 | |
