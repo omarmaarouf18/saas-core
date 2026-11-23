@@ -13,6 +13,17 @@ This file tracks historical entries for the primary category: **Security Fixes C
 - **Verification**: per worklog (before/after runs: `TestLoad_RefusesInvalidAttachmentKeyOutsideLocalTest`, `TestNewChat_StorageInitFailureLeavesNilInterface`, `TestAttachmentHandlers_StorageUnavailable_503`, user `TestLoad_DocumentEncryptionKey`; `make check`, gofmt, go vet, unfiltered gosec and `make docs-check` clean). Released to `main`; production VM verified before release (`DOCUMENT_ENCRYPTION_KEY` 64 hex, `APP_ENV=production`) and chat/user healthy after deploy with no config or storage errors in the chat log.
 - **Worklog**: [docs/worklog/KEY-FAILFAST.md](../worklog/KEY-FAILFAST.md)
 
+## Storage Traversal Guard, Device-Token Body Cap & Empty Document Key Refusal (SEC-QUICK)
+
+- **Implementation Detail**: three small security fixes (issues #27, #30, #29).
+  - **#27 storage traversal guard** (`shared/infra/storage/storage.go`): the prefix check now requires a trailing separator, so a sibling directory sharing the base's prefix (e.g. `../001-evil/x` against base `001`) is rejected. One unexported `resolveInBase` helper does the Abs/Join/Clean and separator-aware check for `Upload`, `OpenFile` and `Delete`; an empty or `.` key (the base directory itself) is rejected everywhere.
+  - **#30 internal device-token unregister body cap** (`services/auth-service/internal/handlers/internal_device_token.go`): the body is wrapped in `http.MaxBytesReader` at 4 KiB, applied after the method and internal-token checks (an unauthenticated caller still gets 401 without the body being read). An oversized body answers 413 `request body too large`; a malformed body stays 400.
+  - **#29 empty document key**: `storage.createDocAEAD` returns an error for an empty, non-hex or wrong-length key whenever `APP_ENV` is not `local`/`test` (an empty `APP_ENV` counts as non-local), and auth-service `config.Load` refuses an empty or published-dev `DOCUMENT_ENCRYPTION_KEY` for every non-local/test `APP_ENV` (trimmed, case-insensitive), not only an exact `production`.
+  - Out-of-lane findings (chat typed-nil storage panic, user-service exact-`production` check) were fixed by KEY-FAILFAST.
+- **Commit SHA**: ``c3cbd7f0d17efbcb083b1a4136c2e24df35711dc``
+- **Verification**: per worklog (before/after runs: `TestLocalStorage_RejectsSiblingPrefixEscape`, `TestUnregisterStaleDeviceToken_BodyCap`, `TestCreateDocAEAD_EnvironmentRules`, `TestLoad_RefusesEmptyDocumentEncryptionKeyOutsideLocalTest`; gosec 0 issues on auth-service; `make docs-check` fresh; `make check` PASS). Production `.env` verified on the VM on 2026-11-23 during the KEY-FAILFAST release (`DOCUMENT_ENCRYPTION_KEY` 64 hex, `APP_ENV=production`).
+- **Worklog**: [docs/worklog/SEC-QUICK.md](../worklog/SEC-QUICK.md)
+
 ## Reviewer Console Operations API, Edge Security & Fail-Closed Version Store (ADMIN-API, ADMIN-API-FIX)
 
 - **Implementation Detail**: Secured reviewer operations console (`kyc.logiclinkeg.tech`): enforced HTTP basic_auth with bcrypt in Caddy edge proxy, blocked external `/admin/*` gateway access via client certificates (`ADMIN-API-FIX`), stripped incoming client `X-Internal-Token` headers, forwarded client IP via `X-Console-Client-IP` to prevent rate-limit bypasses, and made `api-gateway` platform version store MongoDB-backed and fail-closed.

@@ -138,8 +138,6 @@ Backend:
 - Notification service panics without Redis/Mongo on startup if handlers invoke nil store/client methods (in progress, BE-HARDEN).
 - `encrypt-documents` finds already-encrypted files by trial decryption with the current key only.
   After key rotation it would double-encrypt. It has no format marker.
-- Storage traversal guard uses `strings.HasPrefix(absDest, absBase)` with no trailing separator
-  (`shared/infra/storage/storage.go`). Traversal is blocked elsewhere too, so impact is low.
 - Inter-service URLs build query strings without `url.Values` in most places. All values come from the server (unverified sweep).
 - Orphan scaffolding: `services/chat-service/cmd/onboard-agent` is still present, although the ops console replaced it (ADR-0023).
 - Dev-grade mTLS CA (`infrastructure/certs/generate-certs.sh`). Production needs a real internal CA.
