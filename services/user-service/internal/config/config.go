@@ -32,7 +32,7 @@ type Config struct {
 	StorageBaseURL         string
 	DocumentEncryptionKey  string
 	// Warnings are non-fatal config problems for --check-env to report
-	// (e.g. an unusable DOCUMENT_ENCRYPTION_KEY outside production).
+	// (e.g. an unusable DOCUMENT_ENCRYPTION_KEY in local/test).
 	Warnings []string
 }
 
@@ -154,8 +154,10 @@ func Load() (*Config, error) {
 	if err := ValidateDocumentEncryptionKey(docEncKey); err != nil {
 		// Service photos are never stored unencrypted or under a throwaway
 		// key: without a valid key photo upload/read answer 503
-		// photo_storage_unavailable. Production refuses to start.
-		if appEnv == "production" {
+		// photo_storage_unavailable. Every environment that is not local/test
+		// refuses to start (KEY-FAILFAST); only local/test keep the warning
+		// and the 503 behaviour.
+		if !isDevOnlyAppEnv(appEnv) {
 			return nil, fmt.Errorf("config: %v; service photos cannot be stored encrypted", err)
 		}
 		warnings = append(warnings, fmt.Sprintf("%v; service photo upload and read will answer 503 photo_storage_unavailable", err))

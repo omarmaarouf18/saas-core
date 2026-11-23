@@ -60,6 +60,7 @@
 
 ## Changes per commit (message only — NO SHAs)
 1. `KEY-FAILFAST: item 1 - chat fail fast on invalid attachment key`
+2. `KEY-FAILFAST: item 2 - user fail fast on invalid document key`
 
 ## Verification
 
@@ -203,10 +204,88 @@ PASS
 ok  	github.com/project/chat-service/internal/handlers	0.004s
 ```
 
+### Item 2 — user-service config, before the change (failing)
+Command: `go test ./internal/config -run TestLoad_DocumentEncryptionKey -count=1`
+```text
+--- FAIL: TestLoad_DocumentEncryptionKey (0.00s)
+    --- FAIL: TestLoad_DocumentEncryptionKey/empty (0.00s)
+        config_test.go:160: APP_ENV="Production": expected an error, got cfg with warnings [DOCUMENT_ENCRYPTION_KEY is empty; service photo upload and read will answer 503 photo_storage_unavailable]
+    --- FAIL: TestLoad_DocumentEncryptionKey/not_hex (0.00s)
+        config_test.go:160: APP_ENV="Production": expected an error, got cfg with warnings [DOCUMENT_ENCRYPTION_KEY is not a valid hex string; service photo upload and read will answer 503 photo_storage_unavailable]
+    --- FAIL: TestLoad_DocumentEncryptionKey/too_short (0.00s)
+        config_test.go:160: APP_ENV="Production": expected an error, got cfg with warnings [DOCUMENT_ENCRYPTION_KEY must be 32 bytes (64 hex characters), got 16 bytes; service photo upload and read will answer 503 photo_storage_unavailable]
+    --- FAIL: TestLoad_DocumentEncryptionKey/too_long (0.00s)
+        config_test.go:160: APP_ENV="Production": expected an error, got cfg with warnings [DOCUMENT_ENCRYPTION_KEY must be 32 bytes (64 hex characters), got 33 bytes; service photo upload and read will answer 503 photo_storage_unavailable]
+    --- FAIL: TestLoad_DocumentEncryptionKey/odd_hex_length (0.00s)
+        config_test.go:160: APP_ENV="Production": expected an error, got cfg with warnings [DOCUMENT_ENCRYPTION_KEY is not a valid hex string; service photo upload and read will answer 503 photo_storage_unavailable]
+FAIL
+FAIL	github.com/project/user-service/internal/config	0.003s
+FAIL
+```
+
+### Item 2 — user-service config, after the change (passing)
+Command: `go test ./internal/config -run TestLoad_DocumentEncryptionKey -count=1 -v`
+```text
+=== RUN   TestLoad_DocumentEncryptionKey
+=== RUN   TestLoad_DocumentEncryptionKey/empty
+=== RUN   TestLoad_DocumentEncryptionKey/not_hex
+=== RUN   TestLoad_DocumentEncryptionKey/too_short
+=== RUN   TestLoad_DocumentEncryptionKey/too_long
+=== RUN   TestLoad_DocumentEncryptionKey/odd_hex_length
+=== RUN   TestLoad_DocumentEncryptionKey/valid_key
+--- PASS: TestLoad_DocumentEncryptionKey (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/empty (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/not_hex (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/too_short (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/too_long (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/odd_hex_length (0.00s)
+    --- PASS: TestLoad_DocumentEncryptionKey/valid_key (0.00s)
+PASS
+ok  	github.com/project/user-service/internal/config	0.002s
+```
+
+## Deploy notes
+- Chat now refuses to start outside local/test without a valid
+  `ATTACHMENT_ENCRYPTION_KEY` or `DOCUMENT_ENCRYPTION_KEY` (the same rule
+  auth-service already applied). User now refuses to start without a valid
+  `DOCUMENT_ENCRYPTION_KEY` outside local/test, not only on an exact
+  `APP_ENV=production`.
+- Checked read-only compose stacks:
+  - `infrastructure/deploy/docker-compose.prod.yml`: chat gets
+    `APP_ENV: ${APP_ENV}` and
+    `ATTACHMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY}`; user gets
+    `APP_ENV: ${APP_ENV}` and `DOCUMENT_ENCRYPTION_KEY:
+    ${DOCUMENT_ENCRYPTION_KEY}`. `docs/DEPLOYMENT.md` requires
+    `APP_ENV=production` and a 64-hex `DOCUMENT_ENCRYPTION_KEY`. If the VM
+    `.env` matches that (auth-service already refused anything else), **no
+    production stack stops starting**.
+  - `infrastructure/staging/docker-compose.staging.yml`: same key wiring for
+    chat and user. `infrastructure/staging/.env.staging.example` sets
+    `APP_ENV=local` and `DOCUMENT_ENCRYPTION_KEY=CHANGE_ME_64_HEX`. Because
+    `APP_ENV=local`, both services accept the placeholder and start. If the
+    real staging `.env` sets a non-local/test `APP_ENV` (e.g. `staging`), the
+    placeholder is not a valid key and **both services would now refuse to
+    start**; a real 64-hex key is required there.
+  - `infrastructure/docker-compose.yml` (local): `APP_ENV` comes from
+    `.env.example`, which sets `APP_ENV=local`; chat is not given an
+    attachment/document key, which local/test accept (the storage layer
+    generates one). If a local run sets a non-local/test `APP_ENV`, chat now
+    refuses to start instead of panicking on attachment requests.
+- Exact check the owner should run on the production VM before release:
+  ```bash
+  sudo awk 'index($0,"DOCUMENT_ENCRYPTION_KEY=")==1 { v=substr($0,25); gsub(/^["\x27]|["\x27]$/,"",v); print "DOCUMENT_ENCRYPTION_KEY length=" length(v) (v ~ /^[0-9A-Fa-f]+$/ ? " hex" : " NOT hex") }' /home/deploybot/.env
+  sudo grep '^APP_ENV=' /home/deploybot/.env
+  ```
+  Expect `DOCUMENT_ENCRYPTION_KEY length=64 hex` and `APP_ENV=production`.
+  Run the same `DOCUMENT_ENCRYPTION_KEY` check against the staging `.env`
+  (and confirm its `APP_ENV`). If a non-local/test environment has an empty,
+  invalid or placeholder key, restore the **existing** key from the password
+  manager; do not generate a new one while encrypted data exists.
+
 ## Unverified
 - Real staging and production `.env` values are not in this repository; the
-  deploy notes below are based on the checked-in compose files and examples.
-- Everything else claimed for item 1 was verified locally.
+  deploy notes above are based on the checked-in compose files and examples.
+- Everything else claimed for items 1 and 2 was verified locally.
 
 ## Follow-ups / out-of-lane findings
 - Item 2 follow-up: `ALLOW_TEST_PAYMENT_BYPASS` still uses the exact
