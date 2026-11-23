@@ -82,12 +82,12 @@ def classify(literal: str, preceding_text: str) -> bool:
 
 def is_accepted_exception(rel_path: str, literal: str) -> bool:
     """Documented accepted exceptions:
-    1. Brand names ('Quick Delivery', 'QD')
+    1. Brand names ('Waddify', 'ودّيفاي', 'QD'; ADR-0029)
     2. Tracking badge IDs ('#QD-$displayId')
     3. Component library debug catalog ('component_library_screen.dart')"""
     if "component_library_screen.dart" in rel_path:
         return True
-    if literal in ("Quick Delivery", "QD"):
+    if literal in ("Waddify", "ودّيفاي", "QD"):
         return True
     if literal.startswith("#QD-"):
         return True
