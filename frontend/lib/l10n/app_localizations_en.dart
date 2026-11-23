@@ -45,7 +45,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDaySun => 'Sunday';
 
   @override
-  String get otpFooterBrand => 'Quick Delivery';
+  String get otpFooterBrand => 'Waddify';
 
   @override
   String get reconciliationNote => 'Note';
@@ -1583,7 +1583,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updBody =>
-      'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.';
+      'This version doesn\'t work anymore. Install the new one to keep using Waddify.';
 
   @override
   String get updInstalled => 'Installed version';
@@ -2537,7 +2537,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courBlockedPaused =>
-      'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.';
+      'Your account is paused, so no orders will reach you. Your company or Waddify can turn it back on.';
 
   @override
   String get courBlockedReason => 'Reason';
@@ -3266,7 +3266,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownPlanPendingNote =>
-      'We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.';
+      'We got your upgrade request. Waddify will contact you to turn on the paid plan.';
 
   @override
   String get ownPlanIncludes => 'What the paid plan includes';
@@ -3289,7 +3289,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownPlanChangeBody =>
-      'Ask for the paid plan here. Quick Delivery reviews each request and contacts you.';
+      'Ask for the paid plan here. Waddify reviews each request and contacts you.';
 
   @override
   String get ownPlanContactSupport => 'Contact support';
@@ -3305,7 +3305,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ownPlanUpgradeBody =>
-      'Quick Delivery will review your request and contact you.';
+      'Waddify will review your request and contact you.';
 
   @override
   String get ownPlanUpgradeSend => 'Send request';

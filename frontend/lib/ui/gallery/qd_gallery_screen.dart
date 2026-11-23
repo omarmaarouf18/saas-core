@@ -195,8 +195,8 @@ List<QdGallerySection> qdGallerySections({
         QdTextField(
           label: _t(context, 'Company name', 'اسم الشركة'),
           enabled: false,
-          controller: TextEditingController(
-              text: _t(context, 'Quick Delivery', 'كويك دليفري')),
+          controller:
+              TextEditingController(text: _t(context, 'Waddify', 'ودّيفاي')),
           helperText: _t(context, 'Only the owner can change this',
               'صاحب الشغل بس يقدر يغيّره'),
         ),

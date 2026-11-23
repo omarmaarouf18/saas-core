@@ -173,7 +173,7 @@ abstract class AppLocalizations {
   /// No description provided for @otpFooterBrand.
   ///
   /// In en, this message translates to:
-  /// **'Quick Delivery'**
+  /// **'Waddify'**
   String get otpFooterBrand;
 
   /// No description provided for @reconciliationNote.
@@ -2927,7 +2927,7 @@ abstract class AppLocalizations {
   /// FE-AUTH-ACCOUNT redesigned update-required screen.
   ///
   /// In en, this message translates to:
-  /// **'This version doesn\'t work anymore. Install the new one to keep using Quick Delivery.'**
+  /// **'This version doesn\'t work anymore. Install the new one to keep using Waddify.'**
   String get updBody;
 
   /// FE-AUTH-ACCOUNT redesigned update-required screen.
@@ -4559,7 +4559,7 @@ abstract class AppLocalizations {
   /// FE-COURIER redesigned courier screens.
   ///
   /// In en, this message translates to:
-  /// **'Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.'**
+  /// **'Your account is paused, so no orders will reach you. Your company or Waddify can turn it back on.'**
   String get courBlockedPaused;
 
   /// FE-COURIER redesigned courier screens.
@@ -5825,7 +5825,7 @@ abstract class AppLocalizations {
   /// FE-OWNER-2b read-only wallet and plan pages.
   ///
   /// In en, this message translates to:
-  /// **'We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.'**
+  /// **'We got your upgrade request. Waddify will contact you to turn on the paid plan.'**
   String get ownPlanPendingNote;
 
   /// FE-OWNER-2b read-only wallet and plan pages.
@@ -5867,7 +5867,7 @@ abstract class AppLocalizations {
   /// FE-OWNER-2b read-only wallet and plan pages.
   ///
   /// In en, this message translates to:
-  /// **'Ask for the paid plan here. Quick Delivery reviews each request and contacts you.'**
+  /// **'Ask for the paid plan here. Waddify reviews each request and contacts you.'**
   String get ownPlanChangeBody;
 
   /// FE-OWNER-2b read-only wallet and plan pages.
@@ -5897,7 +5897,7 @@ abstract class AppLocalizations {
   /// FE-OWNER-2b plan page: request upgrade / switch to free.
   ///
   /// In en, this message translates to:
-  /// **'Quick Delivery will review your request and contact you.'**
+  /// **'Waddify will review your request and contact you.'**
   String get ownPlanUpgradeBody;
 
   /// FE-OWNER-2b plan page: request upgrade / switch to free.

@@ -136,7 +136,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       navigatorKey: appNavigatorKey,
-      title: 'Quick Delivery',
+      title: 'Waddify',
       // Redesign A, app-wide (FE-CLEANUP): every page, dialog and sheet
       // gets the QdColors extension from here.
       theme: qdLightTheme,
