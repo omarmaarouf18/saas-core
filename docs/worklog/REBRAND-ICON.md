@@ -23,6 +23,7 @@
 ## Changes per commit (message only — NO SHAs)
 1. `REBRAND-ICON: android adaptive and legacy launcher icons, notification icon`
 2. `REBRAND-ICON: iOS app icons from 1024px master`
+3. `REBRAND-ICON: Android and iOS splash with Ink background and white mark`
 
 ## Verification
 - `file` on every generated PNG (verified sizes match the specification table).
