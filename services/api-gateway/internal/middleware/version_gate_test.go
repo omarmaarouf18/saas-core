@@ -60,6 +60,9 @@ func TestVersionGate(t *testing.T) {
 	if !strings.Contains(rr3.Body.String(), "app_update_required") {
 		t.Errorf("Expected body to contain app_update_required error, got %s", rr3.Body.String())
 	}
+	if !strings.Contains(rr3.Body.String(), "Please update to continue using Waddify.") {
+		t.Errorf("Expected body to contain update message naming Waddify, got %s", rr3.Body.String())
+	}
 
 	// 4. Client version 1.1.0 (equals min 1.1.0) -> 200 OK
 	req4 := httptest.NewRequest("GET", "/api/v1/users/profile", nil)

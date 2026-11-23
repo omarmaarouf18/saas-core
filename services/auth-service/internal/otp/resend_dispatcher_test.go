@@ -46,6 +46,9 @@ func TestResendDispatcher_Dispatch_Success(t *testing.T) {
 		if req.From != fromEmail {
 			t.Errorf("expected From %q, got %q", fromEmail, req.From)
 		}
+		if req.Subject != "Your Waddify verification code" {
+			t.Errorf("expected Subject %q, got %q", "Your Waddify verification code", req.Subject)
+		}
 		if len(req.To) != 1 || req.To[0] != targetEmail {
 			t.Errorf("expected To [%q], got %v", targetEmail, req.To)
 		}

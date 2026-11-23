@@ -45,7 +45,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get scheduleDaySun => 'الحد';
 
   @override
-  String get otpFooterBrand => 'Quick Delivery';
+  String get otpFooterBrand => 'ودّيفاي';
 
   @override
   String get reconciliationNote => 'ملاحظات';
@@ -1558,7 +1558,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updBody =>
-      'النسخة دي مبقتش شغالة. نزّل النسخة الجديدة عشان تكمل على كويك ديليفري.';
+      'النسخة دي مبقتش شغالة. نزّل النسخة الجديدة عشان تكمل على ودّيفاي.';
 
   @override
   String get updInstalled => 'النسخة اللي عندك';
@@ -2503,7 +2503,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get courBlockedPaused =>
-      'حسابك متوقف مؤقتاً، فمش هتوصلك مهام. الشركة أو Quick Delivery يقدروا يرجّعوه.';
+      'حسابك متوقف مؤقتاً، فمش هتوصلك مهام. الشركة أو ودّيفاي يقدروا يرجّعوه.';
 
   @override
   String get courBlockedReason => 'السبب';
@@ -3221,7 +3221,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownPlanPendingNote =>
-      'طلب الترقية وصلنا. Quick Delivery هتكلمك عشان تفعّل الباقة المدفوعة.';
+      'طلب الترقية وصلنا. ودّيفاي هتكلمك عشان تفعّل الباقة المدفوعة.';
 
   @override
   String get ownPlanIncludes => 'الباقة المدفوعة فيها إيه';
@@ -3243,7 +3243,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ownPlanChangeBody =>
-      'اطلب الباقة المدفوعة من هنا. Quick Delivery بتراجع كل طلب وبتكلمك.';
+      'اطلب الباقة المدفوعة من هنا. ودّيفاي بتراجع كل طلب وبتكلمك.';
 
   @override
   String get ownPlanContactSupport => 'كلّم الدعم';
@@ -3258,7 +3258,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ownPlanUpgradeTitle => 'تطلب الباقة المدفوعة؟';
 
   @override
-  String get ownPlanUpgradeBody => 'Quick Delivery هتراجع طلبك وتكلمك.';
+  String get ownPlanUpgradeBody => 'ودّيفاي هتراجع طلبك وتكلمك.';
 
   @override
   String get ownPlanUpgradeSend => 'ابعت الطلب';

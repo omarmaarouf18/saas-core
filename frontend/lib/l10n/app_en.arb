@@ -12,7 +12,7 @@
   "scheduleDayFri": "Friday",
   "scheduleDaySat": "Saturday",
   "scheduleDaySun": "Sunday",
-  "otpFooterBrand": "Quick Delivery",
+  "otpFooterBrand": "Waddify",
   "reconciliationNote": "Note",
   "employeeProposalRacedError": "The customer already sent a price — respond to it instead.",
   "enumPaymentWallet": "Wallet",
@@ -1885,7 +1885,7 @@
   "@updTitle": {
     "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
   },
-  "updBody": "This version doesn't work anymore. Install the new one to keep using Quick Delivery.",
+  "updBody": "This version doesn't work anymore. Install the new one to keep using Waddify.",
   "@updBody": {
     "description": "FE-AUTH-ACCOUNT redesigned update-required screen."
   },
@@ -3203,7 +3203,7 @@
   "@courBlockedSuspended": {
     "description": "FE-COURIER redesigned courier screens."
   },
-  "courBlockedPaused": "Your account is paused, so no orders will reach you. Your company or Quick Delivery can turn it back on.",
+  "courBlockedPaused": "Your account is paused, so no orders will reach you. Your company or Waddify can turn it back on.",
   "@courBlockedPaused": {
     "description": "FE-COURIER redesigned courier screens."
   },
@@ -4216,7 +4216,7 @@
   "@ownPlanClosed": {
     "description": "FE-OWNER-2b read-only wallet and plan pages."
   },
-  "ownPlanPendingNote": "We got your upgrade request. Quick Delivery will contact you to turn on the paid plan.",
+  "ownPlanPendingNote": "We got your upgrade request. Waddify will contact you to turn on the paid plan.",
   "@ownPlanPendingNote": {
     "description": "FE-OWNER-2b read-only wallet and plan pages."
   },
@@ -4244,7 +4244,7 @@
   "@ownPlanChangeTitle": {
     "description": "FE-OWNER-2b read-only wallet and plan pages."
   },
-  "ownPlanChangeBody": "Ask for the paid plan here. Quick Delivery reviews each request and contacts you.",
+  "ownPlanChangeBody": "Ask for the paid plan here. Waddify reviews each request and contacts you.",
   "@ownPlanChangeBody": {
     "description": "FE-OWNER-2b read-only wallet and plan pages."
   },
@@ -4264,7 +4264,7 @@
   "@ownPlanUpgradeTitle": {
     "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
   },
-  "ownPlanUpgradeBody": "Quick Delivery will review your request and contact you.",
+  "ownPlanUpgradeBody": "Waddify will review your request and contact you.",
   "@ownPlanUpgradeBody": {
     "description": "FE-OWNER-2b plan page: request upgrade / switch to free."
   },

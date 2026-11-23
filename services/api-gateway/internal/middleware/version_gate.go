@@ -75,7 +75,7 @@ func VersionGate(vStore *version.Store) func(http.Handler) http.Handler {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUpgradeRequired) // HTTP 426
 				// #nosec G705 //nolint:gosec -- raw JSON response does not contain user-provided HTML
-				fmt.Fprintf(w, `{"error":"app_update_required","message":"A required app update is available. Please update to continue using Quick Delivery.","minimum_version":%q,"latest_version":%q,"current_version":%q,"download_url":%q}`,
+				fmt.Fprintf(w, `{"error":"app_update_required","message":"A required app update is available. Please update to continue using Waddify.","minimum_version":%q,"latest_version":%q,"current_version":%q,"download_url":%q}`,
 					vConfig.MinimumSupportedVersion, vConfig.LatestVersion, clientVerStr, vConfig.DownloadURL)
 				return
 			}

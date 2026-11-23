@@ -12,7 +12,7 @@ void main() {
     final deps = AuthTestDeps();
     await tester.pumpWidget(authApp(deps, const LaunchSplash()));
     expect(find.byKey(const Key('auth_splash_screen')), findsOneWidget);
-    expect(find.text('Quick Delivery'), findsOneWidget);
+    expect(find.text('Waddify'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     await deps.theme.setThemeMode(ThemeMode.dark);
