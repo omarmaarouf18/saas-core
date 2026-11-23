@@ -2,6 +2,17 @@
 
 This file tracks historical entries for the primary category: **Security Fixes Changelog**.
 
+## Chat and User Services Refuse a Bad Document Key Outside Local/Test (KEY-FAILFAST)
+
+- **Implementation Detail**: Follow-up to SEC-QUICK so auth, chat and user apply one rule: an unusable encryption key is a startup failure whenever `APP_ENV` is not `local`/`test` (trimmed, case-insensitive; unset defaults to `production`).
+  - **chat-service config**: `config.Load` now refuses an empty, non-hex, wrong-length (not 32 bytes) or published-dev attachment key (`ATTACHMENT_ENCRYPTION_KEY`, falling back to `DOCUMENT_ENCRYPTION_KEY`). The error names the variable used and never contains the key; `cmd/main.go` already treats a `config.Load` error as fatal.
+  - **chat-service handler**: `NewChat` no longer stores a typed-nil `*LocalStorage` in the `storage.Storage` interface (which made every attachment upload/view panic). On storage init failure it logs once and leaves a true nil interface; `UploadTicketAttachment` and `ViewAttachment` answer 503 `attachment_storage_unavailable` via `handlerutil.WriteSafeError`. The temp-dir fallback is kept for local/test only.
+  - **user-service config**: a `ValidateDocumentEncryptionKey` failure is fatal for every non-local/test `APP_ENV`, not only an exact `production`; local/test keep the warning and 503 `photo_storage_unavailable`.
+  - Follow-up (not changed): `ALLOW_TEST_PAYMENT_BYPASS` in user-service still uses the exact `== "production"` comparison — see `AI_CONTEXT.md` → Known open items.
+- **Commit SHA**: ``c0720c03acfa1268725d2072f7d422a71a3ab8d1``
+- **Verification**: per worklog (before/after runs: `TestLoad_RefusesInvalidAttachmentKeyOutsideLocalTest`, `TestNewChat_StorageInitFailureLeavesNilInterface`, `TestAttachmentHandlers_StorageUnavailable_503`, user `TestLoad_DocumentEncryptionKey`; `make check`, gofmt, go vet, unfiltered gosec and `make docs-check` clean). Released to `main`; production VM verified before release (`DOCUMENT_ENCRYPTION_KEY` 64 hex, `APP_ENV=production`) and chat/user healthy after deploy with no config or storage errors in the chat log.
+- **Worklog**: [docs/worklog/KEY-FAILFAST.md](../worklog/KEY-FAILFAST.md)
+
 ## Reviewer Console Operations API, Edge Security & Fail-Closed Version Store (ADMIN-API, ADMIN-API-FIX)
 
 - **Implementation Detail**: Secured reviewer operations console (`kyc.logiclinkeg.tech`): enforced HTTP basic_auth with bcrypt in Caddy edge proxy, blocked external `/admin/*` gateway access via client certificates (`ADMIN-API-FIX`), stripped incoming client `X-Internal-Token` headers, forwarded client IP via `X-Console-Client-IP` to prevent rate-limit bypasses, and made `api-gateway` platform version store MongoDB-backed and fail-closed.

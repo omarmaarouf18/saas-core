@@ -150,6 +150,9 @@ Backend:
   caller (JWT email == body email, active employee, approved owner) and appends a free-text `action`
   (≤255 chars) to the audit log — an employee can write arbitrary audit entries. Owner decision needed:
   remove it together with the frontend button, or replace the free text with a fixed action enum.
+- `ALLOW_TEST_PAYMENT_BYPASS` (`services/user-service/internal/config/config.go`) is refused only for an exact
+  `APP_ENV=production`; `staging`, `prod` or `Production` accept it. Fix: use the existing `isDevOnlyAppEnv`
+  helper (KEY-FAILFAST follow-up, see `docs/worklog/KEY-FAILFAST.md`).
 - Auth `setupTestStore` skips without Mongo credentials while `setupTestAuth` falls back to the local dev URI;
   aligning them would stop the store tests silently skipping under a plain local `go test`.
 
