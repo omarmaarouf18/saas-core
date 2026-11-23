@@ -18,7 +18,9 @@ the light set only when a bare test app has no Qd theme.
   with [00-SCREEN-MAP.html](redesign-a/00-SCREEN-MAP.html): old screen → new
   screen, known bugs, data gaps.
 - Brand source: [docs/frontend/BRAND_IDENTITY.md](../frontend/BRAND_IDENTITY.md)
-  (navy `#0D1321`, gold `#FFC107`, success / warning / danger).
+  (navy `#0D1321`, gold `#FFC107`, success / warning / danger); the Waddify
+  rebrand ([ADR-0029](../adr/0029-rebrand-to-waddify.md)) replaces navy/gold;
+  the tokens change in REBRAND-THEME.
 - Code: `frontend/lib/ui/tokens.dart` (tokens), `frontend/lib/ui/qd_theme.dart`
   (`ThemeData`), `frontend/lib/ui/components/` (widgets, all prefixed `Qd`).
 - Debug gallery: route `/qd-gallery` (debug builds only) renders every component

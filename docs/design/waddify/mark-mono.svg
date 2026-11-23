@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Waddify mark, one colour">
+  <!-- One-colour mark for 24-47 px (no beak). Below 24 px drop the tail too. Fill follows currentColor. -->
+  <g fill="currentColor" transform="translate(58 62) scale(0.92) rotate(55) translate(-60 -52)">
+    <path d="M54 50 L 50 15 Q 60 9 70 15 L 66 50 Z"/>
+    <path d="M6 28 Q 22 88 48 68 Q 60 60 72 68 Q 98 88 114 28 Q 94 62 72 50 Q 60 44 48 50 Q 26 62 6 28 Z"/>
+    <circle cx="60" cy="74" r="10"/>
+  </g>
+</svg>
