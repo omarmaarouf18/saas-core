@@ -14,10 +14,10 @@ void main() {
     return line.split(':').last.trim().split('+').first;
   }
 
-  test('default X-App-Version is the pubspec semver, 2.1.0', () {
-    expect(pubspecSemver(), '2.1.0');
+  test('default X-App-Version is the pubspec semver, 2.2.0', () {
+    expect(pubspecSemver(), '2.2.0');
     expect(kAppVersion, pubspecSemver());
-    expect(ApiClient(appVersion: kAppVersion).appVersion, '2.1.0');
+    expect(ApiClient(appVersion: kAppVersion).appVersion, '2.2.0');
   });
 
   test('build-apk.yml: pinned Flutter, build number, per-ABI + universal', () {

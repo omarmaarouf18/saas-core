@@ -127,7 +127,8 @@ class PluginLocalNotifier implements LocalNotifier {
             importance: Importance.high,
             priority: Priority.high,
             icon: kPushSmallIcon,
-            color: const Color(0xFFFFC107), // QdColors.gold
+            color:
+                const Color(0xFF0E7C7B), // QdColors.light.gold (Waddify Nile)
           ),
         ),
       );

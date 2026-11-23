@@ -277,7 +277,7 @@ class _Stars extends StatelessWidget {
                     child: Icon(
                       i <= value ? Icons.star : Icons.star_border,
                       size: 34,
-                      color: i <= value ? c.gold : c.decorative,
+                      color: i <= value ? c.rating : c.decorative,
                     ),
                   ),
                 ),

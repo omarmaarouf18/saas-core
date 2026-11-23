@@ -410,7 +410,7 @@ class _MapPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(QdRadius.pill),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x260D1321), blurRadius: 8, offset: Offset(0, 2)),
+              color: Color(0x2610233F), blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Row(

@@ -56,7 +56,7 @@ Future<void> main() async {
     HttpOverrides.global = DevHttpOverrides();
   }
 
-  // IBM Plex Sans Arabic (redesign A) ships under the SIL OFL, which asks
+  // Readex Pro (ADR-0029, REBRAND-THEME) ships under the SIL OFL, which asks
   // for its license to be shown with the app.
   registerQdFontLicenses();
 

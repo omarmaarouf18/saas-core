@@ -5,6 +5,7 @@ import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../ui/components/qd_brand_mark.dart';
 import '../../ui/qd_ui.dart';
 import 'auth_forms.dart';
 import 'auth_nav.dart';
@@ -230,8 +231,12 @@ class _BrandTile extends StatelessWidget {
                 ? Border.all(color: c.border)
                 : null,
           ),
-          child: Icon(Icons.inventory_2_outlined,
-              size: 28, color: QdColors.light.gold),
+          child: const Center(
+            child: QdBrandMark(
+              size: 32,
+              variant: QdBrandMarkVariant.onDark,
+            ),
+          ),
         ),
       ),
     );

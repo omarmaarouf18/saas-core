@@ -44,20 +44,30 @@ List<(String, Color, Color)> textPairs(QdColors c) => [
       ('success text on surface', c.success, c.surface),
       ('warning text on surface', c.warning, c.surface),
       ('struck old price', c.textMuted, c.surface),
+      ('on rating', c.onRating, c.rating),
+      ('on sun', c.onSun, c.sun),
     ];
 
 void main() {
   test('light tokens match docs/design/DESIGN_SYSTEM.md', () {
     const c = QdColors.light;
     expect(c.surface, const Color(0xFFFFFFFF));
-    expect(c.fillSubtle, const Color(0xFFF9FAFB));
+    expect(c.fillSubtle, const Color(0xFFF7F6F2));
     expect(c.fillMuted, const Color(0xFFF3F4F6));
     expect(c.border, const Color(0xFFE5E7EB));
     expect(c.borderInput, const Color(0xFFD1D5DB));
-    expect(c.textPrimary, const Color(0xFF0D1321));
+    expect(c.textPrimary, const Color(0xFF10233F));
     expect(c.textSecondary, const Color(0xFF4B5563));
-    expect(c.gold, const Color(0xFFFFC107));
-    expect(c.goldTint, const Color(0xFFFFF8E1));
+    expect(c.textMuted, const Color(0xFF5C6470));
+    expect(c.gold, const Color(0xFF0E7C7B));
+    expect(c.onGold, const Color(0xFFFFFFFF));
+    expect(c.goldTint, const Color(0xFFE3F4F3));
+    expect(c.navy, const Color(0xFF10233F));
+    expect(c.onNavy, const Color(0xFFF2A541));
+    expect(c.rating, const Color(0xFFFFC107));
+    expect(c.onRating, const Color(0xFF0D1321));
+    expect(c.sun, const Color(0xFFF2A541));
+    expect(c.onSun, const Color(0xFF10233F));
     expect(c.success, const Color(0xFF15803D));
     expect(c.successBg, const Color(0xFFDCFCE7));
     expect(c.warning, const Color(0xFFB45309));
@@ -118,10 +128,10 @@ void main() {
 
   test('font files and OFL license are bundled, no runtime fetch', () {
     for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-      expect(File('assets/fonts/IBMPlexSansArabic-$w.ttf').existsSync(), isTrue,
+      expect(File('assets/fonts/ReadexPro-$w.ttf').existsSync(), isTrue,
           reason: 'must run from frontend/');
     }
-    final ofl = File('assets/fonts/IBMPlexSansArabic-OFL.txt');
+    final ofl = File('assets/fonts/ReadexPro-OFL.txt');
     expect(ofl.readAsStringSync(), contains('SIL Open Font License'));
     final pubspec = File('pubspec.yaml').readAsStringSync();
     expect(pubspec, contains('family: $kQdFontFamily'));

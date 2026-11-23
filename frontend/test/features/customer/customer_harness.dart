@@ -759,12 +759,11 @@ void usePhone(WidgetTester tester) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
-/// Loads the bundled Plex font so goldens show real Arabic shaping.
+/// Loads the bundled Readex Pro font so goldens show real Arabic shaping.
 Future<void> loadPlexFont() async {
   final loader = FontLoader(kQdFontFamily);
   for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-    final bytes =
-        File('assets/fonts/IBMPlexSansArabic-$w.ttf').readAsBytesSync();
+    final bytes = File('assets/fonts/ReadexPro-$w.ttf').readAsBytesSync();
     loader.addFont(Future.value(ByteData.sublistView(bytes)));
   }
   await loader.load();

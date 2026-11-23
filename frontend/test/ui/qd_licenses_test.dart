@@ -5,14 +5,13 @@ import 'package:frontend/ui/qd_licenses.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('Plex OFL license is registered with LicenseRegistry', () async {
+  test('Readex Pro OFL license is registered with LicenseRegistry', () async {
     registerQdFontLicenses();
     final entries = await LicenseRegistry.licenses.toList();
-    final plex = entries
-        .where((e) => e.packages.contains('IBM Plex Sans Arabic'))
-        .toList();
-    expect(plex, isNotEmpty);
-    final text = plex.first.paragraphs.map((p) => p.text).join('\n');
+    final fontLicense =
+        entries.where((e) => e.packages.contains('Readex Pro')).toList();
+    expect(fontLicense, isNotEmpty);
+    final text = fontLicense.first.paragraphs.map((p) => p.text).join('\n');
     expect(text, contains('SIL OPEN FONT LICENSE'));
   });
 }

@@ -1,7 +1,7 @@
 name: frontend
 description: "Quick Delivery Platform Flutter Client"
 publish_to: 'none'
-version: 2.1.0+1
+version: 2.2.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -52,16 +52,16 @@ flutter:
   assets:
     - assets/fonts/
 
-  # Redesign A type family (FE-DS). Bundled, never fetched at runtime;
-  # SIL OFL 1.1, license in assets/fonts/IBMPlexSansArabic-OFL.txt.
+  # Waddify type family (ADR-0029, REBRAND-THEME). Bundled, never fetched at runtime;
+  # SIL OFL 1.1, license in assets/fonts/ReadexPro-OFL.txt.
   fonts:
-    - family: IBMPlexSansArabic
+    - family: ReadexPro
       fonts:
-        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/ReadexPro-Regular.ttf
           weight: 400
-        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+        - asset: assets/fonts/ReadexPro-Medium.ttf
           weight: 500
-        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+        - asset: assets/fonts/ReadexPro-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+        - asset: assets/fonts/ReadexPro-Bold.ttf
           weight: 700

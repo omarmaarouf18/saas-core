@@ -22,11 +22,10 @@ import 'qd_harness.dart';
 
 final DateTime _fixedNow = DateTime(2026, 10, 19, 12);
 
-Future<void> _loadPlex() async {
+Future<void> _loadFont() async {
   final loader = FontLoader(kQdFontFamily);
   for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-    final bytes =
-        File('assets/fonts/IBMPlexSansArabic-$w.ttf').readAsBytesSync();
+    final bytes = File('assets/fonts/ReadexPro-$w.ttf').readAsBytesSync();
     loader.addFont(Future.value(ByteData.sublistView(bytes)));
   }
   await loader.load();
@@ -48,7 +47,7 @@ Widget _sectionApp(QdGallerySection section, Locale locale) => MaterialApp(
     );
 
 void main() {
-  setUpAll(_loadPlex);
+  setUpAll(_loadFont);
 
   final sections = qdGallerySections(now: () => _fixedNow);
 
