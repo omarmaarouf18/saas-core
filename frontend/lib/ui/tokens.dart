@@ -71,6 +71,10 @@ class QdColors extends ThemeExtension<QdColors> {
     required this.goldTint,
     required this.navy,
     required this.onNavy,
+    required this.rating,
+    required this.onRating,
+    required this.sun,
+    required this.onSun,
     required this.success,
     required this.successBg,
     required this.warning,
@@ -101,6 +105,14 @@ class QdColors extends ThemeExtension<QdColors> {
   final Color goldTint;
   final Color navy;
   final Color onNavy;
+
+  /// Fixed-meaning rating star color (REBRAND-THEME).
+  final Color rating;
+  final Color onRating;
+
+  /// Warm brand accent (REBRAND-THEME / ADR-0029 Sun #F2A541).
+  final Color sun;
+  final Color onSun;
   final Color success;
   final Color successBg;
   final Color warning;
@@ -127,6 +139,10 @@ class QdColors extends ThemeExtension<QdColors> {
     goldTint: Color(0xFFFFF8E1),
     navy: Color(0xFF0D1321),
     onNavy: Color(0xFFFFC107),
+    rating: Color(0xFFFFC107),
+    onRating: Color(0xFF0D1321),
+    sun: Color(0xFFF2A541),
+    onSun: Color(0xFF10233F),
     success: Color(0xFF15803D),
     successBg: Color(0xFFDCFCE7),
     warning: Color(0xFFB45309),
@@ -154,6 +170,10 @@ class QdColors extends ThemeExtension<QdColors> {
     goldTint: Color(0xFF3A2E0A),
     navy: Color(0xFFF9FAFB),
     onNavy: Color(0xFF0D1321),
+    rating: Color(0xFFFFC107),
+    onRating: Color(0xFF0D1321),
+    sun: Color(0xFFF2A541),
+    onSun: Color(0xFF10233F),
     success: Color(0xFF86EFAC),
     successBg: Color(0xFF14532D),
     warning: Color(0xFFFCD34D),
@@ -187,6 +207,10 @@ class QdColors extends ThemeExtension<QdColors> {
     Color? goldTint,
     Color? navy,
     Color? onNavy,
+    Color? rating,
+    Color? onRating,
+    Color? sun,
+    Color? onSun,
     Color? success,
     Color? successBg,
     Color? warning,
@@ -213,6 +237,10 @@ class QdColors extends ThemeExtension<QdColors> {
       goldTint: goldTint ?? this.goldTint,
       navy: navy ?? this.navy,
       onNavy: onNavy ?? this.onNavy,
+      rating: rating ?? this.rating,
+      onRating: onRating ?? this.onRating,
+      sun: sun ?? this.sun,
+      onSun: onSun ?? this.onSun,
       success: success ?? this.success,
       successBg: successBg ?? this.successBg,
       warning: warning ?? this.warning,
@@ -245,6 +273,10 @@ class QdColors extends ThemeExtension<QdColors> {
       goldTint: l(goldTint, other.goldTint),
       navy: l(navy, other.navy),
       onNavy: l(onNavy, other.onNavy),
+      rating: l(rating, other.rating),
+      onRating: l(onRating, other.onRating),
+      sun: l(sun, other.sun),
+      onSun: l(onSun, other.onSun),
       success: l(success, other.success),
       successBg: l(successBg, other.successBg),
       warning: l(warning, other.warning),

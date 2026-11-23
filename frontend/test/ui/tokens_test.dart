@@ -44,6 +44,8 @@ List<(String, Color, Color)> textPairs(QdColors c) => [
       ('success text on surface', c.success, c.surface),
       ('warning text on surface', c.warning, c.surface),
       ('struck old price', c.textMuted, c.surface),
+      ('on rating', c.onRating, c.rating),
+      ('on sun', c.onSun, c.sun),
     ];
 
 void main() {
@@ -58,6 +60,10 @@ void main() {
     expect(c.textSecondary, const Color(0xFF4B5563));
     expect(c.gold, const Color(0xFFFFC107));
     expect(c.goldTint, const Color(0xFFFFF8E1));
+    expect(c.rating, const Color(0xFFFFC107));
+    expect(c.onRating, const Color(0xFF0D1321));
+    expect(c.sun, const Color(0xFFF2A541));
+    expect(c.onSun, const Color(0xFF10233F));
     expect(c.success, const Color(0xFF15803D));
     expect(c.successBg, const Color(0xFFDCFCE7));
     expect(c.warning, const Color(0xFFB45309));
