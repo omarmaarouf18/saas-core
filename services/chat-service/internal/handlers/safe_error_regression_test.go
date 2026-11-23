@@ -14,6 +14,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/project/chat-service/internal/config"
+	"github.com/project/shared/infra/storage"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -69,7 +70,25 @@ func TestSafeError_NoInternalsLeak_Chat(t *testing.T) {
 		InternalServiceToken:   "mock-internal-token",
 		AllowedOrigin:          "http://localhost:3000",
 	}
-	h := NewChat(nil, mongoStore, cfg, rdb)
+	// Attachment upload must reach the auth check, not stop at the
+	// storage-unavailable guard, so give the handler a working storage.
+	tempDir, err := os.MkdirTemp("", "chat_safeerr_storage_*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+	stor, err := storage.NewLocalStorageWithPath(
+		tempDir,
+		"/api/v1",
+		"/chat/attachments/view",
+		"safeerr-signing-secret",
+		"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+		"test",
+	)
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+	h := NewChat(nil, mongoStore, cfg, rdb, stor)
 
 	internals := []string{
 		"token has invalid", "invalid claims", "token is malformed",
