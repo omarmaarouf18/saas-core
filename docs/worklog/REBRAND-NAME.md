@@ -59,7 +59,7 @@
   - `services/auth-service/internal/config/config_test.go:119,124: "Quick Delivery <onboarding@resend.dev>"` -> Resend config test fixture, preserved per ADR-0029 §7 (production sender is VM env configuration, owner action #59).
 - `flutter analyze` — No issues found! (ran in 3.1s)
 - `flutter test` — All 1445 tests passed!
-- `python3 scripts/frontend_l10n_audit.py` — executed clean, flagged expected strings.
+- `python3 scripts/frontend_l10n_audit.py` — not clean: "Flagged as likely-unlocalized human copy: 19", "Documented accepted exceptions: 1", "Non-exempt unlocalized violations: 18", including the new `frontend/lib/main.dart:139: 'Waddify'` because the script's brand exceptions listed only "Quick Delivery" and "QD" (corrected by the owner at merge; see Follow-ups).
 - `make check` — PASS (scope: go=services/api-gateway,services/auth-service contracts docgen frontend)
 - `gofmt -l .` — empty
 - `go vet ./...` — PASS for services/api-gateway and services/auth-service

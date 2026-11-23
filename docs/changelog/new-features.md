@@ -2,6 +2,20 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Waddify Launcher Icons, Notification Icon and Splash (REBRAND-ICON, ADR-0029)
+
+- **Implementation Detail**: Rendered the Waddify mark (`docs/design/waddify/`) with `rsvg-convert` into the Android adaptive icon (Ink background colour, vector foreground, monochrome layer for themed icons) plus legacy `ic_launcher.png` per density, a white-silhouette notification icon (`ic_stat_notification.xml`), all iOS `AppIcon.appiconset` sizes (1024 px without alpha), and the splash (Ink background, centred white mark) for Android and iOS `LaunchImage`. Resource names unchanged, no new packages.
+- **Commit SHA**: ``d4c2609121bd75fdfbadda3cf749ea19396bc606`` (Android icons), ``d306ba120db71dd94873b84f4b2129d613d39a76`` (iOS icons), ``a2232ef60cabb84a39bc12b45076975512e4bb6a`` (splash)
+- **Verification**: per worklog (`file` sizes for every PNG, `flutter build apk --debug` PASS, `make check` PASS); on-device check unverified.
+- **Worklog**: [docs/worklog/REBRAND-ICON.md](../worklog/REBRAND-ICON.md)
+
+## Waddify Brand Name in App and Server Text (REBRAND-NAME, ADR-0029)
+
+- **Implementation Detail**: Replaced "Quick Delivery" / "كويك ديليفري" with Waddify / ودّيفاي in the six ARB keys that name the brand (`otpFooterBrand`, `updBody`, `courBlockedPaused`, `ownPlanPendingNote`, `ownPlanChangeBody`, `ownPlanUpgradeBody`), `MaterialApp.title`, the app-name constant value, the gallery brand text, Android `android:label`, iOS `CFBundleDisplayName` / `CFBundleName`, the api-gateway version-gate message and the OTP email subject (with tests). Re-baselined the 10 goldens that show the name. Internal identifiers (`quickDeliveryAppName`, User-Agent `QuickDeliveryApp/1.0`, `Qd` prefix, bundle IDs) unchanged.
+- **Commit SHA**: ``7c396601bd9c9ba9df6d4ff8d366008d72d734f8`` (app strings, platform labels, goldens), ``2c1054b607dd985c9cf22ba4f4be59c3665c58ac`` (server strings)
+- **Verification**: per worklog (`flutter analyze` clean, `flutter test` 1445 passed, `make check` PASS for both services, contracts, docgen and frontend).
+- **Worklog**: [docs/worklog/REBRAND-NAME.md](../worklog/REBRAND-NAME.md)
+
 ## Structured Notification Data Rendering & In-App Admin Announcements (FE-NOTIF-RENDER)
 
 - **Implementation Detail**: Migrated in-app notification rendering from fragile regex body parsing to structured payload resolution (`texts[lang]`, `params['deep_link']`, `params['ticket_id']`, `params['variant']`). Added megaphone badge and localized `AnnouncementDetailSheet` for admin announcements without usable links, and updated push routing rules in `frontend/docs/PUSH.md`.
