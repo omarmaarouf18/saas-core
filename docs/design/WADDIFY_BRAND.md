@@ -8,8 +8,8 @@ canvas): https://claude.ai/artifact/9TkAegce2oLaQWSnhJjSSC
 
 | File | Use |
 | :--- | :--- |
-| [waddify/mark.svg](waddify/mark.svg) | Full-colour mark, 48 px and up |
-| [waddify/mark-mono.svg](waddify/mark-mono.svg) | One colour (`currentColor`), 24-47 px; under 24 px drop the tail |
+| [waddify/mark.svg](waddify/mark.svg) | Full-colour mark, 32 px and up (threshold lowered from 48 px on 2026-11-23 to match the login tile) |
+| [waddify/mark-mono.svg](waddify/mark-mono.svg) | One colour (`currentColor`), 24-31 px; under 24 px drop the tail |
 | [waddify/app-icon.svg](waddify/app-icon.svg) | 1024 px app icon master (Ink tile, full bleed) |
 
 These are concept-quality vectors drawn in code. Before release a designer redraws them as the final master

@@ -57,7 +57,7 @@ Rules:
 
 - Never rotate, mirror, re-tilt, outline or recolour outside the palette.
 - Clear space around the mark: at least twice the head's diameter.
-- 48 px and up: full mark (Ink body, Nile tail, Sun beak). 24-47 px: one colour, no beak ([mark-mono.svg](../design/waddify/mark-mono.svg)). Under 24 px: wings and head only.
+- 32 px and up: full mark (Ink body, Nile tail, Sun beak; white body and Nile Light tail on Ink). 24-31 px: one colour, no beak ([mark-mono.svg](../design/waddify/mark-mono.svg)). Under 24 px: wings and head only.
 - App icon master: [app-icon.svg](../design/waddify/app-icon.svg) (1024 px, full bleed, the OS applies the mask). The alternative tile colour is Nile (`#0E7C7B`) with an Ink tail.
 
 ### 6. Colours and type

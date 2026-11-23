@@ -154,7 +154,9 @@
 - Arabic glyph coverage: verified across all 4 weights of Readex Pro against all unique characters in `app_ar.arb` (including shadda, Arabic-Indic digits, ٪, punctuation) — 0 missing characters
 
 ## Unverified
-- none
+- Not run on a physical device at merge time: launcher and themed icons, native and in-app splash, login tile, dark mode, Readex Pro text fit on real screens. Owner device check follows before release (tracker #54).
+- Goldens were spot-checked by eye in the owner review (login, home light/dark, rating, courier offer, active order dark, brand gallery), not all 230.
+- Owner notes added at merge: app version 2.2.0+1 confirmed by the owner; ADR-0029 §5 small-size threshold lowered to 32 px so the 32 px login tile matches the rule; the task report's "white on Nile 4.56:1" was a typo, the table above (5.01:1) is correct.
 
 ## Follow-ups / out-of-lane findings
 - Tech debt issue: rename historical token fields across the codebase (`gold` -> `primaryAction` / `nile`, `onGold` -> `onPrimaryAction`, `goldTint` -> `actionTint` / `nileTint`, `navy` -> `ink`, `onNavy` -> `onInk`).

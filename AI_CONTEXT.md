@@ -97,7 +97,7 @@ Status words: **Done** (in code, tested), **Partial**, **Deferred** (by decision
 | Security hygiene A1–A6, frontend B1–B3 | Done | changelog security-fixes and bug-fixes |
 | Server-side hardening P0 (SEC-01a/02/03/07, SEC-07b, OBS-01, BE-20) | Done | changelog security-fixes and bug-fixes |
 | Workflow tooling WF-02 (push gate lock/delete-skip, commit/worktree helpers) | Done | changelog infrastructure, `docs/WORKFLOW.md` |
-| Waddify rebrand (name, theme, icons) | Partial | ADR-0029 (REBRAND-DOCS); app and server name (REBRAND-NAME) and launcher icons, notification icon, splash (REBRAND-ICON) done; colour tokens and font (REBRAND-THEME) open, **priority P0** (tracker #54) |
+| Waddify rebrand (name, theme, icons) | Done in code (app 2.2.0+1) | ADR-0029; REBRAND-DOCS, REBRAND-NAME, REBRAND-ICON, REBRAND-THEME (Nile/Ink/Sand palette, rating stars kept gold, Readex Pro, `QdBrandMark`). Open: on-device check, release, owner items #59 (tracker #54) |
 | Independent ("solo") driver accounts | Proposed | ADR-0019 |
 | Female-only ride preference | Proposed | ADR-0020 |
 

@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Waddify Palette, Readex Pro Font and In-App Brand Mark (REBRAND-THEME, ADR-0029)
+
+- **Implementation Detail**: Audited all 47 `gold` / `onGold` / `goldTint` reads and classified them: rating stars moved to a new fixed-meaning `rating` token (unchanged `#FFC107`); actions and old-brand accents follow `gold`, now Waddify Nile (`#0E7C7B`, dark Nile Light `#2FB5B3`); added a `sun` / `onSun` pair. Navy surfaces and text became Ink `#10233F`, the light subtle fill Sand `#F7F6F2`, the dark set was re-derived from Ink; status colours unchanged. Replaced IBM Plex Sans Arabic with bundled Readex Pro (OFL, 4 weights, full Arabic glyph coverage). Added `QdBrandMark` (CustomPainter from `docs/design/waddify/mark.svg`) and put it on the splash and login brand tiles. App version 2.2.0+1. Re-baselined every golden. Two commits: the gold audit and new tokens (`7363bead...`), then the palette, font, mark, version and goldens (cited below).
+- **Commit SHA**: ``841a7235f156737a921fe6aa4d1cc4b90140e06d``
+- **Verification**: per worklog (`flutter analyze` clean, `flutter test` 1451 passed, `make check` PASS, contrast table, glyph coverage); goldens spot-checked by eye in review; on-device check pending.
+- **Worklog**: [docs/worklog/REBRAND-THEME.md](../worklog/REBRAND-THEME.md)
+
 ## Waddify Launcher Icons, Notification Icon and Splash (REBRAND-ICON, ADR-0029)
 
 - **Implementation Detail**: Rendered the Waddify mark (`docs/design/waddify/`) with `rsvg-convert` into the Android adaptive icon (Ink background colour, vector foreground, monochrome layer for themed icons) plus legacy `ic_launcher.png` per density, a white-silhouette notification icon (`ic_stat_notification.xml`), all iOS `AppIcon.appiconset` sizes (1024 px without alpha), and the splash (Ink background, centred white mark) for Android and iOS `LaunchImage`. Resource names unchanged, no new packages. Three commits: Android icons (cited below), iOS icons (`d306ba12...`), splash (`a2232ef6...`).
