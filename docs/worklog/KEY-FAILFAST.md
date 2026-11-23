@@ -244,6 +244,51 @@ PASS
 ok  	github.com/project/user-service/internal/config	0.002s
 ```
 
+### Final gate (after both item commits)
+Command: `make check` — exit 0. Literal scope block and result lines:
+```text
+scope: changed paths = committed since merge-base with logic-exploitation (c3cbd7f0) + staged + unstaged + untracked
+scope: SCOPED gate (8 changed path(s)): go=services/chat-service,services/user-service contracts docs infra-tests docgen
+scope:   docs/worklog/KEY-FAILFAST.md
+scope:   services/chat-service/internal/config/config.go
+scope:   services/chat-service/internal/config/config_test.go
+scope:   services/chat-service/internal/handlers/chat.go
+scope:   services/chat-service/internal/handlers/safe_error_regression_test.go
+scope:   services/chat-service/internal/handlers/storage_unavailable_test.go
+scope:   services/user-service/internal/config/config.go
+scope:   services/user-service/internal/config/config_test.go
+TEST_DB_SUFFIX=KEY-FAILFAST-77961
+== pre-push gate: running checks (scope: go=services/chat-service,services/user-service contracts docs infra-tests docgen) ==
+-- checking services/chat-service --
+ok  	github.com/project/chat-service/internal/config	(cached)
+ok  	github.com/project/chat-service/internal/chat	0.450s
+ok  	github.com/project/chat-service/internal/handlers	31.793s
+ok  	github.com/project/chat-service/internal/store	6.142s
+  Issues : 0
+-- checking services/user-service --
+ok  	github.com/project/user-service/internal/config	(cached)
+ok  	github.com/project/user-service/internal/models	(cached)
+ok  	github.com/project/user-service/internal/handlers	251.725s
+ok  	github.com/project/user-service/internal/store	31.502s
+  Issues : 0
+ok  	github.com/project/tests/contracts	0.039s
+[timing] total 311.1s
+== pre-push gate: all checks passed (scope: go=services/chat-service,services/user-service contracts docs infra-tests docgen) ==
+gate stamp written: /home/omarmaarouf/CS tools/Antigravity/SaaS prototype/.git/gate-stamps/5e8040cb... (scope: go=services/chat-service,services/user-service contracts docs infra-tests docgen)
+```
+- `gofmt -l .` — empty (no output).
+- `go vet ./...` in `services/chat-service` — exit 0, no output.
+- `go vet ./...` in `services/user-service` — exit 0, no output.
+- `gosec -fmt=text ./...` unfiltered (dev build, default rules):
+  `services/chat-service` `Files: 8`, `Lines: 3572`, `Nosec: 15`, `Issues: 0`;
+  `services/user-service` `Files: 24`, `Lines: 15516`, `Nosec: 61`, `Issues: 0`.
+- `make docs-check` — PASS, no `docs/APPLICATION_MAP.md` change. Literal first lines:
+  ```text
+  go run tools/docgen/main.go -check
+  APPLICATION_MAP.md is fresh.
+  go test -v -count=1 ./shared/infra/docgen ./shared/infra/handlerutil ./shared/infra/jwtutil ./shared/infra/ratelimit ./shared/infra/resilience ./shared/infra/tlsutil
+  ```
+
 ## Deploy notes
 - Chat now refuses to start outside local/test without a valid
   `ATTACHMENT_ENCRYPTION_KEY` or `DOCUMENT_ENCRYPTION_KEY` (the same rule
