@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -60,7 +61,28 @@ const (
 	ErrCodeInvalidChannel     = "invalid_channel"
 	ErrCodeInvalidCoordinates = "invalid_coordinates"
 	ErrCodeInvalidRequest     = "invalid_request"
+	// ErrCodeAttachmentStorageUnavailable is the one stable code for
+	// "attachment storage cannot be used right now". Always 503.
+	ErrCodeAttachmentStorageUnavailable = "attachment_storage_unavailable"
 )
+
+// isDevOnlyEnv reports whether appEnv names local development or the test
+// suite. It mirrors config.isDevOnlyAppEnv: trimmed, case-insensitive, and
+// only "local" or "test".
+func isDevOnlyEnv(appEnv string) bool {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "local", "test":
+		return true
+	default:
+		return false
+	}
+}
+
+// writeAttachmentStorageUnavailable answers 503 attachment_storage_unavailable.
+// The underlying error is logged by WriteSafeError, never returned.
+func writeAttachmentStorageUnavailable(w http.ResponseWriter, r *http.Request) {
+	handlerutil.WriteSafeError(w, r, http.StatusServiceUnavailable, ErrCodeAttachmentStorageUnavailable, "attachment storage unavailable", errors.New("storage not initialized"))
+}
 
 func isValidCoordinate(lat, lon float64) bool {
 	if math.IsNaN(lat) || math.IsInf(lat, 0) || lat < -90.0 || lat > 90.0 {
@@ -133,8 +155,10 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 	if len(stor) > 0 && stor[0] != nil {
 		chatStorage = stor[0]
 	} else {
-		var err error
-		chatStorage, err = storage.NewLocalStorageWithPath(
+		// Assign to a concrete *LocalStorage first: assigning the result
+		// straight into the storage.Storage interface would store a typed
+		// nil on error and make the interface non-nil (KEY-FAILFAST).
+		st, err := storage.NewLocalStorageWithPath(
 			cfg.StorageBaseDir,
 			cfg.StorageBaseURL,
 			"/chat/attachments/view",
@@ -142,17 +166,29 @@ func NewChat(hub *chat.Hub, s *store.MongoDB, cfg *config.Config, rdb *redis.Cli
 			cfg.AttachmentEncryptionKey,
 			cfg.AppEnv,
 		)
+		if err != nil && isDevOnlyEnv(cfg.AppEnv) {
+			// Local/test only: a missing or unwritable configured directory
+			// should not block development. Outside local/test an ephemeral
+			// temp directory would silently lose attachments, so it is not
+			// used there (config.Load already refuses an unusable key).
+			if tmpDir, tmpErr := os.MkdirTemp("", "chat_attachments_*"); tmpErr == nil {
+				st, err = storage.NewLocalStorageWithPath(
+					tmpDir,
+					cfg.StorageBaseURL,
+					"/chat/attachments/view",
+					cfg.AttachmentSigningSecret,
+					cfg.AttachmentEncryptionKey,
+					cfg.AppEnv,
+				)
+			} else {
+				err = tmpErr
+			}
+		}
 		if err != nil {
-			log.Printf("[CHAT] Warning: failed to initialize storage with base dir %s (%v) - falling back to temp dir", cfg.StorageBaseDir, err)
-			tmpDir, _ := os.MkdirTemp("", "chat_attachments_*")
-			chatStorage, _ = storage.NewLocalStorageWithPath(
-				tmpDir,
-				cfg.StorageBaseURL,
-				"/chat/attachments/view",
-				cfg.AttachmentSigningSecret,
-				cfg.AttachmentEncryptionKey,
-				cfg.AppEnv,
-			)
+			log.Printf("[CHAT] Attachment storage unavailable; upload and view will answer 503 %s: %v", ErrCodeAttachmentStorageUnavailable, err)
+			chatStorage = nil
+		} else {
+			chatStorage = st
 		}
 	}
 
@@ -1197,6 +1233,11 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.storage == nil {
+		writeAttachmentStorageUnavailable(w, r)
+		return
+	}
+
 	callerID, callerUsername, err := c.resolveCaller(r)
 	if err != nil {
 		handlerutil.WriteSafeError(w, r, http.StatusUnauthorized, handlerutil.ErrCodeUnauthorized, "unauthorized", err)
@@ -1341,6 +1382,11 @@ func (c *Chat) UploadTicketAttachment(w http.ResponseWriter, r *http.Request) {
 func (c *Chat) ViewAttachment(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use GET"})
+		return
+	}
+
+	if c.storage == nil {
+		writeAttachmentStorageUnavailable(w, r)
 		return
 	}
 

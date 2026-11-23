@@ -145,20 +145,26 @@ func TestLoad_DocumentEncryptionKey(t *testing.T) {
 		"too long":       testDocKey + "00",
 		"odd hex length": testDocKey[:63],
 	}
+	// KEY-FAILFAST item 2: every environment that is not local/test refuses
+	// to start with an unusable key, not only an exact APP_ENV=production.
+	// APP_ENV is compared trimmed and case-insensitively; unset means
+	// production.
 	for name, key := range badKeys {
 		t.Run(name, func(t *testing.T) {
 			t.Setenv("DOCUMENT_ENCRYPTION_KEY", key)
 
-			t.Setenv("APP_ENV", "production")
-			cfg, err := Load()
-			if err == nil {
-				t.Fatalf("production: expected an error, got cfg with warnings %v", cfg.Warnings)
-			}
-			if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
-				t.Errorf("production: error does not name the variable: %v", err)
-			}
-			if key != "" && strings.Contains(err.Error(), key) {
-				t.Errorf("production: error leaks the key: %v", err)
+			for _, env := range []string{"production", "Production", "staging", "prod", ""} {
+				t.Setenv("APP_ENV", env)
+				cfg, err := Load()
+				if err == nil {
+					t.Fatalf("APP_ENV=%q: expected an error, got cfg with warnings %v", env, cfg.Warnings)
+				}
+				if !strings.Contains(err.Error(), "DOCUMENT_ENCRYPTION_KEY") {
+					t.Errorf("APP_ENV=%q: error does not name the variable: %v", env, err)
+				}
+				if key != "" && strings.Contains(err.Error(), key) {
+					t.Errorf("APP_ENV=%q: error leaks the key: %v", env, err)
+				}
 			}
 
 			for _, env := range []string{"local", "test"} {
