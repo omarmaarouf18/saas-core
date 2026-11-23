@@ -66,7 +66,7 @@ func (r *ResendDispatcher) Dispatch(destination, code string) error {
 	params := &resend.SendEmailRequest{
 		From:    fromClean,
 		To:      []string{destClean},
-		Subject: "Your Quick Delivery Verification Code",
+		Subject: "Your Waddify verification code",
 		Html:    fmt.Sprintf("<p>Your verification code is: <strong>%s</strong>. It expires in 5 minutes.</p><p>If you did not request this code, you can safely ignore this email — no account changes will be made.</p>", escapedCode),
 		Text:    fmt.Sprintf("Your verification code is: %s. It expires in 5 minutes. If you did not request this code, you can safely ignore this email — no account changes will be made.", codeClean),
 	}
