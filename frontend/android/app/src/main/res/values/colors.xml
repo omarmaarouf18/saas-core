@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Launcher background color (REBRAND-ICON): Ink #10233F. -->
+    <color name="ic_launcher_background">#10233F</color>
     <!-- Notification accent (PUSH-FCM): the brand gold, QdColors.gold. -->
     <color name="notification_accent">#FFFFC107</color>
 </resources>
