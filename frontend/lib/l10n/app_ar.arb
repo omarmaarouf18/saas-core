@@ -1226,5 +1226,10 @@
   "addrApartmentHint": "مثلاً 7",
   "addrDetailsBuilding": "عمارة {building}",
   "addrDetailsFloor": "الدور {floor}",
-  "addrDetailsApartment": "شقة {apartment}"
+  "addrDetailsApartment": "شقة {apartment}",
+  "wrongAppTitle": "الحساب ده لتطبيق تاني",
+  "wrongAppBody": "حسابك بيشتغل على {appName}. نزّل {appName} وادخل منه.",
+  "authSignupHintCustomer": "عندك شركة توصيل أو مشاوير أو شحن؟ اعمل حسابك على {appName}.",
+  "authSignupHintConsole": "ده حساب صاحب شغل. المندوبين والسواقين بيدخلوا من {appName} بعد ما تضيفهم.",
+  "authStaffAccountsNote": "حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول."
 }

@@ -6919,6 +6919,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apt {apartment}'**
   String addrDetailsApartment(String apartment);
+
+  /// SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is for another app'**
+  String get wrongAppTitle;
+
+  /// SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account works in {appName}. Install {appName} and sign in there.'**
+  String wrongAppBody(String appName);
+
+  /// SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a delivery, ride or shipping business? Sign up in {appName}.'**
+  String authSignupHintCustomer(String appName);
+
+  /// SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup.
+  ///
+  /// In en, this message translates to:
+  /// **'This creates a business owner account. Your couriers and drivers sign in with {appName} once you add them.'**
+  String authSignupHintConsole(String appName);
+
+  /// SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff accounts are created by your company. Ask your manager for your sign-in details.'**
+  String get authStaffAccountsNote;
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_client.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
@@ -19,7 +20,9 @@ import 'widgets/auth_scaffold.dart';
 /// provider error as a persistent banner with retry, accounts without 2FA
 /// (and employees) go straight home, others get the code screen with the
 /// development code when the server sent one, language and theme switches,
-/// links to password reset and sign-up (with a double-tap guard).
+/// links to password reset and sign-up (with a double-tap guard). The
+/// employees app has no sign-up (ADR-0030): its footer says staff accounts
+/// come from their company.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.initialEmail});
 
@@ -133,13 +136,23 @@ class _LoginPageState extends State<LoginPage> {
           onTap: _toggleLanguage,
         ),
       ],
-      footer: AuthFooterLink(
-        key: const Key('login_to_signup'),
-        question: l10n.authNoAccount,
-        link: l10n.authCreateAccountLink,
-        onTap: () => _open(() => Navigator.of(context).push<String>(
-            MaterialPageRoute(builder: (_) => const SignupPage()))),
-      ),
+      footer: AppClient.current.canSignUp
+          ? AuthFooterLink(
+              key: const Key('login_to_signup'),
+              question: l10n.authNoAccount,
+              link: l10n.authCreateAccountLink,
+              onTap: () => _open(() => Navigator.of(context).push<String>(
+                  MaterialPageRoute(builder: (_) => const SignupPage()))),
+            )
+          : Builder(
+              builder: (context) => Text(
+                l10n.authStaffAccountsNote,
+                key: const Key('login_staff_note'),
+                textAlign: TextAlign.center,
+                style: QdText.caption
+                    .copyWith(color: QdColors.of(context).textSecondary),
+              ),
+            ),
       children: [
         const SizedBox(height: 48),
         const _BrandTile(),

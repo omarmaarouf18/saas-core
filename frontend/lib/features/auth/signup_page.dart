@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_client.dart';
 import '../../l10n/l10n.dart';
 import '../../providers/auth_provider.dart';
 import '../../ui/qd_ui.dart';
@@ -8,8 +9,10 @@ import 'auth_forms.dart';
 import 'otp_page.dart';
 import 'widgets/auth_scaffold.dart';
 
-/// Sign up (A-Signup): customer or business owner only. Couriers get their
-/// accounts from their business owner, so they are not offered.
+/// Sign up (A-Signup). The app decides the role (ADR-0030): the customer
+/// app creates a customer (`user`), the console app a business owner. No
+/// role picker. The employees app has no signup: owners add their staff
+/// (ADR-0001), so its sign-in page never opens this page.
 ///
 /// Behaviour kept from SignupScreen: name rules (3–30 letters, Latin or
 /// Arabic, digits, spaces, `_`) with the field following the name's
@@ -28,8 +31,6 @@ class _SignupPageState extends State<SignupPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
 
-  // The mockup preselects "customer" (the old screen preselected owner).
-  String _role = 'user';
   String? _nameError;
   String? _emailError;
   String? _passwordError;
@@ -53,13 +54,21 @@ class _SignupPageState extends State<SignupPage> {
     return _nameError == null && _emailError == null && _passwordError == null;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    assert(AppClient.current.canSignUp,
+        '${AppClient.current.name} has no signup (ADR-0030)');
+  }
+
   Future<void> _submit() async {
-    if (_submitting || !_validate()) return;
+    final role = AppClient.current.signupRole;
+    if (role == null || _submitting || !_validate()) return;
     final auth = context.read<AuthProvider>();
     final email = _email.text.trim();
     setState(() => _submitting = true);
     final devOtp =
-        await auth.signup(email, _name.text.trim(), _password.text, _role);
+        await auth.signup(email, _name.text.trim(), _password.text, role);
     if (!mounted) return;
     setState(() => _submitting = false);
     if (auth.error != null) return; // shown in the banner
@@ -105,51 +114,13 @@ class _SignupPageState extends State<SignupPage> {
         ],
         Builder(builder: (context) {
           final c = QdColors.of(context);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  l10n.authRoleQuestion,
-                  style: QdText.body.copyWith(
-                      color: c.textPrimary, fontWeight: FontWeight.w500),
-                ),
-              ),
-              const SizedBox(height: QdSpace.x2),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: QdOptionCard(
-                        key: const Key('signup_role_customer'),
-                        title: l10n.authRoleCustomer,
-                        subtitle: l10n.authRoleCustomerHint,
-                        selected: _role == 'user',
-                        onTap: () => setState(() => _role = 'user'),
-                      ),
-                    ),
-                    const SizedBox(width: QdSpace.x2),
-                    Expanded(
-                      child: QdOptionCard(
-                        key: const Key('signup_role_owner'),
-                        title: l10n.authRoleOwner,
-                        subtitle: l10n.authRoleOwnerHint,
-                        selected: _role == 'owner',
-                        onTap: () => setState(() => _role = 'owner'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: QdSpace.x2),
-              Text(
-                l10n.authCourierNote,
-                key: const Key('signup_courier_note'),
-                style: QdText.caption.copyWith(color: c.textSecondary),
-              ),
-            ],
+          final client = AppClient.current;
+          return Text(
+            client == AppClient.console
+                ? l10n.authSignupHintConsole(AppClient.employees.displayName)
+                : l10n.authSignupHintCustomer(AppClient.console.displayName),
+            key: const Key('signup_app_hint'),
+            style: QdText.caption.copyWith(color: c.textSecondary),
           );
         }),
         const SizedBox(height: QdSpace.x4),

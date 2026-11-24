@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/app_client.dart';
 import 'package:frontend/features/account/account_page.dart';
 import 'package:frontend/features/auth/login_page.dart';
 import 'package:frontend/features/auth/role_home.dart';
@@ -14,8 +15,11 @@ import '../owner/owner_harness.dart' as owner;
 import 'auth_harness.dart';
 
 /// FE-CLEANUP item 3: with the QD_REDESIGN_* flags gone, every role goes
-/// straight to its redesigned shell.
+/// straight to its redesigned shell. SPLIT-APPS: each role in its own app
+/// (ADR-0030); the cross-app cases are in split_apps_test.dart.
 void main() {
+  tearDown(() => AppClient.debugOverride = null);
+
   testWidgets('customer (role user): CustomerShell, Account is AccountPage',
       (tester) async {
     customer.usePhone(tester);
@@ -30,7 +34,8 @@ void main() {
     expect(find.byType(AccountPage), findsOneWidget);
   });
 
-  testWidgets('owner: OwnerShell', (tester) async {
+  testWidgets('owner in Waddify Console: OwnerShell', (tester) async {
+    AppClient.debugOverride = AppClient.console;
     owner.usePhone(tester);
     await tester.pumpWidget(owner
         .ownerApp(owner.OwnerTestDeps(), const RoleHome(), withData: false));
@@ -38,8 +43,10 @@ void main() {
     expect(find.byType(OwnerShell), findsOneWidget);
   });
 
-  testWidgets('courier (role employee): CourierShell; profile refreshed once',
-      (tester) async {
+  testWidgets(
+      'courier (role employee) in Waddify Employees: CourierShell; '
+      'profile refreshed once', (tester) async {
+    AppClient.debugOverride = AppClient.employees;
     courier.usePhone(tester);
     final deps = courier.CourierTestDeps();
     await tester.pumpWidget(

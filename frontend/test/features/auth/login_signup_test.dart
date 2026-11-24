@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/app_client.dart';
 import 'package:frontend/features/auth/login_page.dart';
 import 'package:frontend/features/auth/otp_page.dart';
 import 'package:frontend/features/auth/signup_page.dart';
@@ -152,12 +153,15 @@ void main() {
   });
 
   group('sign up', () {
-    testWidgets('customer is preselected; couriers are pointed to owners',
+    testWidgets('customer app: no role picker, businesses go to the Console',
         (tester) async {
       final deps = AuthTestDeps();
       await _pump(tester, deps, const SignupPage());
+      expect(find.byKey(const Key('signup_role_customer')), findsNothing);
+      expect(find.byKey(const Key('signup_role_owner')), findsNothing);
       expect(
-          find.text('Couriers get their accounts from their business owner.'),
+          find.text('Run a delivery, ride or shipping business? '
+              'Sign up in Waddify Console.'),
           findsOneWidget);
       await typeInto(tester, 'signup_name', 'Mona Ali');
       await typeInto(tester, 'signup_email', 'mona@example.com');
@@ -168,10 +172,13 @@ void main() {
       expect(find.byType(OtpPage), findsOneWidget);
     });
 
-    testWidgets('business owner role is sent as owner', (tester) async {
+    testWidgets('console app: signs up a business owner', (tester) async {
+      AppClient.debugOverride = AppClient.console;
+      addTearDown(() => AppClient.debugOverride = null);
       final deps = AuthTestDeps();
       await _pump(tester, deps, const SignupPage());
-      await tester.tap(find.byKey(const Key('signup_role_owner')));
+      expect(find.byKey(const Key('signup_role_owner')), findsNothing);
+      expect(find.textContaining('Waddify Employees'), findsOneWidget);
       await typeInto(tester, 'signup_name', 'منى علي');
       await typeInto(tester, 'signup_email', 'mona@example.com');
       await typeInto(tester, 'signup_password', 'long-enough-1');

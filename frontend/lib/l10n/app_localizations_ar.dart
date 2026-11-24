@@ -3845,4 +3845,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String addrDetailsApartment(String apartment) {
     return 'شقة $apartment';
   }
+
+  @override
+  String get wrongAppTitle => 'الحساب ده لتطبيق تاني';
+
+  @override
+  String wrongAppBody(String appName) {
+    return 'حسابك بيشتغل على $appName. نزّل $appName وادخل منه.';
+  }
+
+  @override
+  String authSignupHintCustomer(String appName) {
+    return 'عندك شركة توصيل أو مشاوير أو شحن؟ اعمل حسابك على $appName.';
+  }
+
+  @override
+  String authSignupHintConsole(String appName) {
+    return 'ده حساب صاحب شغل. المندوبين والسواقين بيدخلوا من $appName بعد ما تضيفهم.';
+  }
+
+  @override
+  String get authStaffAccountsNote =>
+      'حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول.';
 }
