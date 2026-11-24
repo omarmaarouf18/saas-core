@@ -58,6 +58,7 @@ When adding a new ADR, use the following template:
 *   [ADR-0027: Employee Cancellation-Request Workflow (Owner-Approved)](0027-employee-cancellation-request-workflow.md) — Accepted
 *   [ADR-0028: Job Model v2 (Recipient, Address Text, Status History, Pickup Phase, ETA, Saved Addresses)](0028-job-model-v2.md) — Accepted
 *   [ADR-0029: Rebrand from Quick Delivery to Waddify](0029-rebrand-to-waddify.md) — Accepted
+*   [ADR-0030: Three client apps from one Flutter codebase](0030-three-client-apps-from-one-codebase.md) — Accepted
 
 
 
