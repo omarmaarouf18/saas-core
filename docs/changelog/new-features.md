@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **New Features Changelog**.
 
+## Three Client Apps from One Flutter Codebase (SPLIT-APPS, ADR-0030)
+
+- **Implementation Detail**: Authored [ADR-0030](../adr/0030-three-client-apps-from-one-codebase.md). Added Android product flavors `customer`, `console` and `employees` (application IDs `app.waddify`, `app.waddify.console`, `app.waddify.employees`; names Waddify, Waddify Console, Waddify Employees; per-flavor launcher tiles Ink / Nile / Sun). `AppClient` resolves the app from the `APP_CLIENT` define or the build flavor and stops a mismatched build at start-up; every request sends `X-App-Client`. Sign-in is gated per app with a wrong-app page naming the right app; signup creates a customer in Waddify and an owner in Waddify Console, and Waddify Employees has no signup. Version 3.0.0+1. Nine commits from the ADR (`1d30b70a...`) to the worklog; the flavors commit is cited below. Owner follow-up `a9de01ba...`: app title and notification stream follow `AppClient`.
+- **Commit SHA**: ``e5ca93fcf0010c855ccad6942a13997424dc7e1d``
+- **Verification**: per worklog (`make check` PASS, `flutter test` 1474 passed, `aapt dump badging` shows the three IDs and labels, a build without `--flavor` fails); owner release build of the console flavor produced `app-<abi>-console-release.apk`; on-device check pending.
+- **Worklog**: [docs/worklog/SPLIT-APPS.md](../worklog/SPLIT-APPS.md)
+
 ## Waddify Palette, Readex Pro Font and In-App Brand Mark (REBRAND-THEME, ADR-0029)
 
 - **Implementation Detail**: Audited all 47 `gold` / `onGold` / `goldTint` reads and classified them: rating stars moved to a new fixed-meaning `rating` token (unchanged `#FFC107`); actions and old-brand accents follow `gold`, now Waddify Nile (`#0E7C7B`, dark Nile Light `#2FB5B3`); added a `sun` / `onSun` pair. Navy surfaces and text became Ink `#10233F`, the light subtle fill Sand `#F7F6F2`, the dark set was re-derived from Ink; status colours unchanged. Replaced IBM Plex Sans Arabic with bundled Readex Pro (OFL, 4 weights, full Arabic glyph coverage). Added `QdBrandMark` (CustomPainter from `docs/design/waddify/mark.svg`) and put it on the splash and login brand tiles. App version 2.2.0+1. Re-baselined every golden. Two commits: the gold audit and new tokens (`7363bead...`), then the palette, font, mark, version and goldens (cited below).
