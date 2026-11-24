@@ -20,15 +20,23 @@ void main() {
     expect(ApiClient(appVersion: kAppVersion).appVersion, '3.0.0');
   });
 
-  test('build-apk.yml: pinned Flutter, build number, per-ABI + universal', () {
+  test('build-apk.yml: three apps, pinned Flutter, per-ABI + universal', () {
     final wf = File('.github/workflows/build-apk.yml').readAsStringSync();
     expect(wf, contains("flutter-version: '3.44.6'"));
     expect(wf, contains('--split-per-abi'));
     expect(wf, contains(r'--build-number=${{ github.run_number }}'));
     expect(wf, contains('--dart-define=APP_VERSION='));
+    // SPLIT-APPS (ADR-0030): one build per flavor, each with its APP_CLIENT.
+    expect(wf, contains('for CLIENT in customer console employees'));
+    expect(wf, contains(r'--flavor "$CLIENT"'));
+    expect(wf, contains(r'--dart-define=APP_CLIENT="$CLIENT"'));
+    expect(wf, contains(r'app-$CLIENT-release.apk'));
+    expect(wf, contains(r'app-$ABI-$CLIENT-release.apk'));
     for (final abi in ['armeabi-v7a', 'arm64-v8a', 'x86_64']) {
-      expect(wf, contains('app-$abi-release.apk'), reason: abi);
       expect(wf, contains('"$abi":'), reason: 'apk_urls.$abi');
+      for (final name in ['waddify', 'waddify-console', 'waddify-employees']) {
+        expect(wf, contains('$name-$abi.apk'), reason: '$name $abi');
+      }
     }
     // apk_url (the website's default download) is the universal
     // app-release.apk (a plain, non-split build), the same file the
@@ -37,7 +45,8 @@ void main() {
     expect(wf, contains(r'apk_url=${BASE}/app-release.apk'));
     expect(wf, isNot(contains(r'apk_url=${BASE}/app-arm64-v8a-release.apk')));
     expect(wf, contains(r'flutter build apk --release "${DEFINES[@]}"'));
-    expect(wf, contains('build/universal/app-release.apk'));
+    // app-release.apk stays the legacy channel: a copy of the customer app.
+    expect(wf, contains('cp dist/waddify.apk dist/app-release.apk'));
     expect(wf, contains('"universal":'));
     expect(wf,
         isNot(contains('app-arm64-v8a-release.apk" "\$OUT/app-release.apk"')));
