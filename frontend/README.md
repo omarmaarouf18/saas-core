@@ -34,17 +34,38 @@ The application communicates with the backend via the API Gateway REST and WebSo
    ```
 
 2. **Run the application**:
-   Ensure a connected device or active emulator is running (`flutter devices`), then run:
+   Ensure a connected device or active emulator is running (`flutter devices`), then run one of the three apps (see "Three apps" below):
    ```bash
-   flutter run
+   flutter run --flavor customer --dart-define=APP_CLIENT=customer
    ```
+
+### Three apps from one codebase (ADR-0030)
+
+The build produces three Android apps from this one project. Every Android build needs `--flavor`; without it Gradle builds no single APK and `flutter` stops with "Gradle build failed to produce an .apk file".
+
+| Flavor / `APP_CLIENT` | Launcher name | Application ID | Roles it signs in | Sign-up |
+| :--- | :--- | :--- | :--- | :--- |
+| `customer` | Waddify | `app.waddify` | `user` | creates a customer |
+| `console` | Waddify Console | `app.waddify.console` | `owner` | creates a business owner |
+| `employees` | Waddify Employees | `app.waddify.employees` | `employee` | none (owners add their staff) |
+
+- Always pass the same value twice: `--flavor X --dart-define=APP_CLIENT=X`. The flavor picks the application ID, launcher name and icon (`android/app/src/<flavor>/`); `APP_CLIENT` tells the Dart code which app it is (`lib/core/app_client.dart`). Release builds must pass both.
+- Without `APP_CLIENT` the app uses the build flavor, else `customer` (tests, and `flutter run` on a non-Android target). An `APP_CLIENT` that names no app, or one that disagrees with `--flavor`, stops the app at start-up.
+- A user whose role belongs to another app sees a page naming the right app, with a sign-out button. Every request sends `X-App-Client: <client>` next to `X-App-Version`.
+- All three apps share one version number (`pubspec.yaml`).
+- The three apps install side by side. Push needs all three package names in `google-services.json` (see [docs/PUSH.md](docs/PUSH.md)).
+
+```bash
+flutter run --flavor console --dart-define=APP_CLIENT=console
+flutter run --flavor employees --dart-define=APP_CLIENT=employees
+```
 
 ### Pointing at Custom Backend Environments
 The mobile client uses compile-time environment configuration (`String.fromEnvironment('API_BASE_URL', ...)`) defined in `lib/core/api_client.dart`. Customize the target API endpoint using `--dart-define`:
 
 ```bash
-# Android Emulator (Default Android AVD loopback)
-flutter run --dart-define=API_BASE_URL=https://10.0.2.2:8080/api/v1
+# Android Emulator (Default Android AVD loopback); add the flavor + APP_CLIENT of the app you run
+flutter run --flavor customer --dart-define=APP_CLIENT=customer --dart-define=API_BASE_URL=https://10.0.2.2:8080/api/v1
 
 # Genymotion Emulator loopback
 flutter run --dart-define=API_BASE_URL=https://10.0.3.2:8080/api/v1
@@ -91,6 +112,8 @@ This repository includes a continuous integration workflow (`.github/workflows/b
 
 1. **Trigger**: Executes automatically whenever new commits land on `main` (via automated sync from `saas-core`).
 2. **Build Configuration**: Flutter pinned to 3.44.6. Builds a universal release APK (`flutter build apk --release`, published as `app-release.apk`) and one APK per ABI (`--split-per-abi`: armeabi-v7a, arm64-v8a, x86_64), both with `--build-number=<run number>`, `API_BASE_URL` from the repository variable `vars.API_BASE_URL` (default `https://api.logiclinkeg.tech/api/v1`) and `APP_VERSION=<pubspec version>+<run number>` (sent as `X-App-Version`).
+   > [!WARNING]
+   > Since ADR-0030 every Android build needs `--flavor`. Until `build-apk.yml` builds the three apps (`--flavor X --dart-define=APP_CLIENT=X` for `customer`, `console`, `employees`), this workflow fails.
 3. **Downloading Built APKs**:
    - Navigate to the **Actions** tab in this GitHub repository.
    - Click on the latest **Build Android APK** workflow run.
@@ -105,15 +128,22 @@ Push notifications (Firebase): how they work, the `google-services.json` setup (
 
 ## 4. Building Production Bundles Manually
 
-* **Android Release APKs** (one per ABI, like CI; drop `--split-per-abi` for one universal APK):
+Every Android build names one of the three apps (ADR-0030); repeat with `console` and `employees`.
+
+* **Android Release APKs** (one per ABI; drop `--split-per-abi` for one universal APK):
   ```bash
-  flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
+  flutter build apk --release --split-per-abi --flavor customer --dart-define=APP_CLIENT=customer --dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
   ```
-* **Android App Bundle (AAB for Google Play)**:
+  The APK name carries the flavor, e.g. `build/app/outputs/flutter-apk/app-customer-release.apk` for a universal build.
+* **Android Debug APK**:
   ```bash
-  flutter build appbundle --release
+  flutter build apk --debug --flavor customer --dart-define=APP_CLIENT=customer
   ```
-* **iOS IPA (macOS only)**:
+* **Android App Bundle (AAB for Google Play)**, one per app:
+  ```bash
+  flutter build appbundle --release --flavor customer --dart-define=APP_CLIENT=customer
+  ```
+* **iOS IPA (macOS only)**: not split yet; iOS schemes for the three apps come later (ADR-0030).
   ```bash
   flutter build ipa --release
   ```

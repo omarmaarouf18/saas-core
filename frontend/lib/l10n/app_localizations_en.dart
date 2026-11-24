@@ -3901,4 +3901,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String addrDetailsApartment(String apartment) {
     return 'Apt $apartment';
   }
+
+  @override
+  String get wrongAppTitle => 'This account is for another app';
+
+  @override
+  String wrongAppBody(String appName) {
+    return 'Your account works in $appName. Install $appName and sign in there.';
+  }
+
+  @override
+  String authSignupHintCustomer(String appName) {
+    return 'Run a delivery, ride or shipping business? Sign up in $appName.';
+  }
+
+  @override
+  String authSignupHintConsole(String appName) {
+    return 'This creates a business owner account. Your couriers and drivers sign in with $appName once you add them.';
+  }
+
+  @override
+  String get authStaffAccountsNote =>
+      'Staff accounts are created by your company. Ask your manager for your sign-in details.';
 }

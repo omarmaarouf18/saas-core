@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' as io_client;
 
+import 'app_client.dart';
+
 class ApiClientException implements Exception {
   final int? statusCode;
   final String message;
@@ -90,7 +92,8 @@ class ApiClient {
     String? appVersion,
     this.requestTimeout = const Duration(seconds: 30),
     http.Client? client,
-  }) {
+    AppClient? appClient,
+  }) : appClient = appClient ?? AppClient.current {
     if (appVersion != null && appVersion.isNotEmpty) {
       _appVersion = appVersion;
     }
@@ -118,6 +121,11 @@ class ApiClient {
 
   String get appVersion => _appVersion;
 
+  /// The app sending the requests, as `X-App-Client` (ADR-0030). The
+  /// backend ignores it today; it lets logs and a later per-client version
+  /// gate tell the three apps apart.
+  final AppClient appClient;
+
   String? get currentToken => _jwtToken;
 
   Map<String, String> _getHeaders(
@@ -126,6 +134,7 @@ class ApiClient {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'X-App-Version': _appVersion,
+      'X-App-Client': appClient.name,
     };
     final tokenToUse = overrideToken ?? _jwtToken;
     if (tokenToUse != null && tokenToUse.isNotEmpty) {

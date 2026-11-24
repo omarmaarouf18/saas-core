@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher tile of the console app (SPLIT-APPS, ADR-0030): Nile #0E7C7B.
+         Overrides main/res/values/colors.xml; the adaptive icon XML and the
+         monochrome layer are shared from main. -->
+    <color name="ic_launcher_background">#0E7C7B</color>
+</resources>

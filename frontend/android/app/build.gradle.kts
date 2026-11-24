@@ -27,14 +27,33 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.saascore.frontend"
+        // Each product flavor below sets its own applicationId (ADR-0030).
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // SPLIT-APPS (ADR-0030): one codebase, three apps. Every Android build
+    // names its flavor (--flavor customer|console|employees) and passes the
+    // same value as --dart-define=APP_CLIENT. The launcher name comes from
+    // src/<flavor>/res/values/strings.xml (app_name).
+    flavorDimensions += "client"
+    productFlavors {
+        create("customer") {
+            dimension = "client"
+            applicationId = "app.waddify"
+        }
+        create("console") {
+            dimension = "client"
+            applicationId = "app.waddify.console"
+        }
+        create("employees") {
+            dimension = "client"
+            applicationId = "app.waddify.employees"
+        }
     }
 
     buildTypes {
