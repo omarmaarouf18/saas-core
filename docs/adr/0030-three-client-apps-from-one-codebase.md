@@ -61,7 +61,7 @@ All three apps always share one version number, `3.0.0+1` for this release (it c
 
 ## Consequences
 
-- Every Android build needs `--flavor <customer|console|employees>` (`flutter run`, `flutter build apk`, `flutter build appbundle`); a build without it fails with an ambiguous-variant error.
+- Every Android build needs `--flavor <customer|console|employees>` (`flutter run`, `flutter build apk`, `flutter build appbundle`); without it Gradle builds every variant and `flutter` stops with "Gradle build failed to produce an .apk file".
 - The mobile release workflow (`frontend/.github/workflows/build-apk.yml`, run in the mobile repo) must build and publish three APKs with `--flavor X --dart-define=APP_CLIENT=X`. Until it does, the release workflow fails.
 - Firebase: FCM needs the three package names registered. The owner adds `app.waddify`, `app.waddify.console` and `app.waddify.employees` as Android apps in the same Firebase project and replaces `google-services.json` (and the CI secret) with the downloaded file, which lists all three. Push does not work in the new apps until then.
 - The ops console (`kyc-reviewer-console`) needs one download link per app.
