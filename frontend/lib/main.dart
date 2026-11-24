@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/l10n/l10n.dart';
 
 import 'core/api_client.dart';
+import 'core/app_client.dart';
 import 'core/app_version.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/auth/update_gate.dart';
@@ -127,7 +128,8 @@ class MyApp extends StatelessWidget {
         Provider.of<NotificationsProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (auth.isAuthenticated) {
+      // SPLIT-APPS: no notification stream for a user on the wrong-app page.
+      if (auth.isAuthenticated && AppClient.current.allows(auth.user?.role)) {
         notifications.initSse(auth.token!);
       } else {
         notifications.unsubscribe();
@@ -136,7 +138,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       navigatorKey: appNavigatorKey,
-      title: 'Waddify',
+      title: AppClient.current.displayName,
       // Redesign A, app-wide (FE-CLEANUP): every page, dialog and sheet
       // gets the QdColors extension from here.
       theme: qdLightTheme,
