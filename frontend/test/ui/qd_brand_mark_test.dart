@@ -52,7 +52,7 @@ void main() {
     expect(find.byType(QdBrandMark), findsOneWidget);
   });
 
-  testWidgets('QdBrandMark renders small sizes below 24px and below 48px',
+  testWidgets('QdBrandMark renders small sizes below 24px and below 32px',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -60,7 +60,7 @@ void main() {
           body: Column(
             children: [
               QdBrandMark(size: 20, variant: QdBrandMarkVariant.full),
-              QdBrandMark(size: 36, variant: QdBrandMarkVariant.onDark),
+              QdBrandMark(size: 28, variant: QdBrandMarkVariant.onDark),
             ],
           ),
         ),

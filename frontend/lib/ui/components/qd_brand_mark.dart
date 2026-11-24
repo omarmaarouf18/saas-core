@@ -74,9 +74,11 @@ class _QdBrandMarkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double s = size.shortestSide;
-    final bool isSmall = s < 48;
+    // ADR-0029 §5: full colours from 32 px; 24-31 px one colour, no beak;
+    // under 24 px wings and head only.
+    final bool isSmall = s < 32;
     final bool showTail = s >= 24;
-    final bool showBeak = s >= 48 && variant != QdBrandMarkVariant.mono;
+    final bool showBeak = s >= 32 && variant != QdBrandMarkVariant.mono;
 
     // Determine colors per variant and size
     Color bodyColor;
