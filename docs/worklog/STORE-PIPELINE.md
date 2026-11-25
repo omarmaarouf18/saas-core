@@ -53,3 +53,8 @@ Where: the agent's shells (desktop VM and cloud container). No Flutter, Go, Xcod
 
 ## Open questions
 - none
+
+## Follow-up: first CI runs (2026-11-25)
+- `store-ios-signing.yml` succeeded (match created the distribution certificate and three App Store profiles).
+- `store-testing.yml` iOS run failed at `flutter build ios --release --config-only` with "No development certificates available to code sign app for device deployment" (match itself succeeded). Fix: pass `--no-codesign` to the config-only step; `build_app` signs with the match profile.
+- Verified on the macOS runner up to that point: Xcode 26 check, Flutter 3.44.6, Ruby 3.3 / fastlane 2.242.0, `flutter pub get`, GitHub App token for the certificates repo, App Store Connect API key, match readonly fetch.
