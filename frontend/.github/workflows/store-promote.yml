@@ -1,0 +1,103 @@
+# STORE-PIPELINE: manual step that moves an internal test build to CLOSED
+# testing. Play: internal -> closed track (default "alpha", the Console's
+# default closed track). TestFlight: hands a build to the external tester
+# groups (Apple beta-reviews the first build of each version). No build
+# happens here and nothing goes to production. Runbook: docs/STORE_TESTING.md.
+name: Store testing (promote to closed)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which store
+        type: choice
+        options: [both, android, ios]
+        default: both
+      apps:
+        description: "Apps: all, or a comma list of customer,console,employees"
+        type: string
+        default: all
+      play_track:
+        description: "Play closed track name (empty = vars.PLAY_CLOSED_TRACK or alpha)"
+        type: string
+        default: ''
+      play_version_code:
+        description: "Play version code to promote (empty = newest on internal)"
+        type: string
+        default: ''
+      testflight_groups:
+        description: "TestFlight external groups, comma list (empty = vars.TESTFLIGHT_EXTERNAL_GROUPS)"
+        type: string
+        default: ''
+      testflight_build_number:
+        description: "TestFlight build number (empty = newest of the pubspec version)"
+        type: string
+        default: ''
+      changelog:
+        description: "What to Test (TestFlight)"
+        type: string
+        default: ''
+
+concurrency:
+  group: store-testing
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WADDIFY_APPS: ${{ inputs.apps }}
+
+jobs:
+  android:
+    name: Play internal -> closed
+    if: ${{ inputs.platform != 'ios' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Promote
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_CLOSED_TRACK: ${{ inputs.play_track || vars.PLAY_CLOSED_TRACK || 'alpha' }}
+          VERSION_CODE: ${{ inputs.play_version_code }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "$VERSION_CODE" ]; then
+            [[ "$VERSION_CODE" =~ ^[0-9]+$ ]] || { echo "play_version_code must be a number"; exit 1; }
+            ARGS+=("version_code:$VERSION_CODE")
+          fi
+          bundle exec fastlane android promote "${ARGS[@]}"
+          echo "### Play: promoted \`$WADDIFY_APPS\` to \`$PLAY_CLOSED_TRACK\`" >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: TestFlight internal -> external groups
+    if: ${{ inputs.platform != 'android' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Promote
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          TESTFLIGHT_EXTERNAL_GROUPS: ${{ inputs.testflight_groups || vars.TESTFLIGHT_EXTERNAL_GROUPS }}
+          TESTFLIGHT_CHANGELOG: ${{ inputs.changelog }}
+          BUILD_NUMBER: ${{ inputs.testflight_build_number }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "$BUILD_NUMBER" ]; then
+            [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo "testflight_build_number must be a number"; exit 1; }
+            ARGS+=("build_number:$BUILD_NUMBER")
+          fi
+          bundle exec fastlane ios promote "${ARGS[@]}"
+          echo "### TestFlight: sent \`$WADDIFY_APPS\` to \`$TESTFLIGHT_EXTERNAL_GROUPS\`" >> "$GITHUB_STEP_SUMMARY"

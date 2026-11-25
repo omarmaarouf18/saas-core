@@ -53,3 +53,11 @@ test/**/failures/
 # see docs/PUSH.md.
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
+
+# STORE-PIPELINE: Fastlane outputs (Gemfile.lock IS committed once resolved)
+/fastlane/report.xml
+/fastlane/README.md
+/fastlane/test_output/
+/vendor/bundle/
+*.ipa
+*.dSYM.zip

@@ -1,0 +1,277 @@
+# STORE-PIPELINE: every push to main (the frontend subtree synced from
+# saas-core) uploads the three ADR-0030 apps to the stores' INTERNAL testing:
+# Google Play internal testing track and TestFlight (internal testers).
+# Moving a build to closed testing is a manual step: store-promote.yml.
+# Nothing here touches production. Runbook: docs/STORE_TESTING.md.
+#
+# A platform whose secrets are not configured yet is skipped with a warning
+# (the run stays green), so this workflow can land before the store setup.
+name: Store testing (internal)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which store
+        type: choice
+        options: [both, android, ios]
+        default: both
+      apps:
+        description: "Apps: all, or a comma list of customer,console,employees"
+        type: string
+        default: all
+
+concurrency:
+  group: store-testing
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # PINNED with build-apk.yml and saas-core CI; bump together.
+  FLUTTER_VERSION: '3.44.6'
+  WADDIFY_APPS: ${{ inputs.apps || 'all' }}
+  API_BASE_URL: ${{ vars.API_BASE_URL || 'https://api.logiclinkeg.tech/api/v1' }}
+
+jobs:
+  build-number:
+    name: Build number
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.n.outputs.value }}
+    steps:
+      # Play versionCode and iOS CFBundleVersion must only go up. One number
+      # per run (all apps, both stores); run_attempt keeps a re-run unique.
+      # Raise STORE_BUILD_NUMBER_OFFSET if this workflow is ever recreated
+      # (run_number restarts at 1).
+      - id: n
+        env:
+          OFFSET: ${{ vars.STORE_BUILD_NUMBER_OFFSET || '0' }}
+        run: |
+          set -euo pipefail
+          [[ "$OFFSET" =~ ^[0-9]+$ ]] || { echo "STORE_BUILD_NUMBER_OFFSET must be a number"; exit 1; }
+          [ "$GITHUB_RUN_ATTEMPT" -le 9 ] || { echo "More than 9 attempts: start a new run"; exit 1; }
+          VALUE=$(( OFFSET + GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT ))
+          echo "value=$VALUE" >> "$GITHUB_OUTPUT"
+          echo "Build number: $VALUE" >> "$GITHUB_STEP_SUMMARY"
+
+  android:
+    name: Google Play internal testing
+    needs: build-number
+    if: ${{ github.event_name == 'push' || inputs.platform != 'ios' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Play secrets
+        id: cfg
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          MISSING=""
+          for NAME in PLAY_SERVICE_ACCOUNT_JSON ANDROID_UPLOAD_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!NAME}" ] || MISSING="$MISSING $NAME"
+          done
+          if [ -n "$MISSING" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Play upload skipped, secrets not set:$MISSING (docs/STORE_TESTING.md)"
+            echo "> ⚠️ **Google Play skipped**: secrets not set:$MISSING" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ready == 'true'
+
+      - uses: actions/setup-java@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: flutter pub get
+        if: steps.cfg.outputs.ready == 'true'
+        run: flutter pub get
+
+      # Same rule as build-apk.yml: push only when the Firebase config lists
+      # all three application IDs (ADR-0030), otherwise build without it.
+      - name: Firebase config for push
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          rm -f android/app/google-services.json
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+            if ! jq -e '[.client[].client_info.android_client_info.package_name] as $p | ["app.waddify","app.waddify.console","app.waddify.employees"] | all(. as $id | $p | index($id))' android/app/google-services.json >/dev/null; then
+              rm -f android/app/google-services.json
+              echo "::warning::GOOGLE_SERVICES_JSON_B64 does not list all three Waddify application IDs: push disabled in this build"
+            fi
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON_B64 is not set: push disabled in this build"
+          fi
+
+      - name: Upload keystore
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          printf '%s' "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build AABs and upload to the internal track
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          WADDIFY_BUILD_NUMBER: ${{ needs.build-number.outputs.value }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bundle exec fastlane android internal
+
+      - name: Remove keystore
+        if: always() && steps.cfg.outputs.ready == 'true'
+        run: rm -f "$RUNNER_TEMP/upload.jks"
+
+      # Gemfile.lock is not committed yet; keep the resolved one so it can be.
+      - uses: actions/upload-artifact@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          name: Gemfile.lock-android
+          path: Gemfile.lock
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          {
+            echo "### Google Play internal testing"
+            echo "- Apps: \`$WADDIFY_APPS\`, build \`${{ needs.build-number.outputs.value }}\`"
+            echo "- Move to closed testing: run **Store testing (promote to closed)**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: TestFlight internal testing
+    needs: build-number
+    if: ${{ github.event_name == 'push' || inputs.platform != 'android' }}
+    # macos-15 images carry Xcode 26; App Store Connect only accepts builds
+    # from Xcode 26 or later (checked below).
+    runs-on: macos-15
+    steps:
+      - name: Check App Store secrets
+        id: cfg
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          MATCH_REPOSITORY: ${{ vars.MATCH_REPOSITORY }}
+        run: |
+          MISSING=""
+          for NAME in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8_B64 MATCH_PASSWORD APPLE_TEAM_ID MATCH_REPOSITORY; do
+            [ -n "${!NAME}" ] || MISSING="$MISSING $NAME"
+          done
+          if [ -n "$MISSING" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TestFlight upload skipped, secrets/variables not set:$MISSING (docs/STORE_TESTING.md)"
+            echo "> ⚠️ **TestFlight skipped**: secrets/variables not set:$MISSING" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ready == 'true'
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          xcode-version: latest-stable
+
+      - name: Require Xcode 26 or later
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          xcodebuild -version
+          MAJOR=$(xcodebuild -version | awk 'NR==1{split($2,v,"."); print v[1]}')
+          [ "$MAJOR" -ge 26 ] || { echo "::error::Xcode $MAJOR: App Store Connect needs Xcode 26 or later"; exit 1; }
+
+      - uses: subosito/flutter-action@v2
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: flutter pub get
+        if: steps.cfg.outputs.ready == 'true'
+        run: flutter pub get
+
+      # match clones the private certificates repo with a GitHub App token
+      # (same app as the other cross-repo workflows, ADR-0010).
+      - name: Token for the match certificates repo
+        if: steps.cfg.outputs.ready == 'true'
+        id: certs-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ vars.MATCH_REPOSITORY }}
+
+      - name: Build IPAs and upload to TestFlight
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          WADDIFY_BUILD_NUMBER: ${{ needs.build-number.outputs.value }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: https://github.com/${{ github.repository_owner }}/${{ vars.MATCH_REPOSITORY }}.git
+          CERTS_TOKEN: ${{ steps.certs-token.outputs.token }}
+        run: |
+          MATCH_GIT_BASIC_AUTHORIZATION=$(printf 'x-access-token:%s' "$CERTS_TOKEN" | base64 | tr -d '\n')
+          export MATCH_GIT_BASIC_AUTHORIZATION
+          echo "::add-mask::$MATCH_GIT_BASIC_AUTHORIZATION"
+          bundle exec fastlane ios internal
+
+      - uses: actions/upload-artifact@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          name: Gemfile.lock-ios
+          path: Gemfile.lock
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          {
+            echo "### TestFlight internal testing"
+            echo "- Apps: \`$WADDIFY_APPS\`, build \`${{ needs.build-number.outputs.value }}\`"
+            echo "- Builds appear for internal testers after Apple finishes processing (usually 5–30 min)."
+            echo "- External (closed) testers: run **Store testing (promote to closed)**."
+          } >> "$GITHUB_STEP_SUMMARY"

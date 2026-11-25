@@ -1,0 +1,51 @@
+# STORE-PIPELINE: one-time (and yearly, when the certificate expires) setup
+# of iOS App Store signing in the match repo, so no Mac is needed: creates
+# the Apple Distribution certificate and an App Store profile for each of
+# app.waddify, app.waddify.console and app.waddify.employees, encrypted with
+# MATCH_PASSWORD. Runbook: docs/STORE_TESTING.md.
+name: Store testing (iOS signing setup)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "create" to create or refresh certificates and profiles'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  match:
+    name: match appstore (create/refresh)
+    if: ${{ inputs.confirm == 'create' }}
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Token for the match certificates repo (read/write)
+        id: certs-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ vars.MATCH_REPOSITORY }}
+      - name: fastlane ios setup_signing
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: https://github.com/${{ github.repository_owner }}/${{ vars.MATCH_REPOSITORY }}.git
+          CERTS_TOKEN: ${{ steps.certs-token.outputs.token }}
+        run: |
+          MATCH_GIT_BASIC_AUTHORIZATION=$(printf 'x-access-token:%s' "$CERTS_TOKEN" | base64 | tr -d '\n')
+          export MATCH_GIT_BASIC_AUTHORIZATION
+          echo "::add-mask::$MATCH_GIT_BASIC_AUTHORIZATION"
+          bundle exec fastlane ios setup_signing

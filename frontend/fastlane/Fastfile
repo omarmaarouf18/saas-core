@@ -1,0 +1,230 @@
+# STORE-PIPELINE: store testing lanes for the three ADR-0030 apps.
+#
+#   android internal   build AABs, upload to the Play internal testing track
+#   android promote    move the latest internal build to the closed track
+#   ios setup_signing  create/refresh App Store certs + profiles in match (once)
+#   ios internal       build IPAs, upload to TestFlight (internal testers)
+#   ios promote        hand a TestFlight build to the external (closed) groups
+#
+# Every lane takes app:<all|customer|console|employees|a,b> (default all).
+# Runbook, secrets and first-time setup: frontend/docs/STORE_TESTING.md.
+# Nothing here ships to production: no lane touches the production track or
+# submits for App Store review.
+
+ROOT = File.expand_path("..", __dir__)
+
+APPS = {
+  "customer" => { id: "app.waddify", name: "Waddify" },
+  "console" => { id: "app.waddify.console", name: "Waddify Console" },
+  "employees" => { id: "app.waddify.employees", name: "Waddify Employees" },
+}.freeze
+
+def selected_apps(options)
+  value = (options[:app] || ENV["WADDIFY_APPS"] || "all").to_s.strip
+  names = value == "all" ? APPS.keys : value.split(",").map(&:strip)
+  unknown = names - APPS.keys
+  UI.user_error!("Unknown app(s) #{unknown.join(', ')}: use all or #{APPS.keys.join(',')}") unless unknown.empty?
+  names
+end
+
+# Semver part of pubspec `version:` (ADR-0018). The build number comes from CI.
+def build_name
+  version = File.read(File.join(ROOT, "pubspec.yaml"))[/^version:\s*(\d+\.\d+\.\d+)/, 1]
+  UI.user_error!("pubspec.yaml has no MAJOR.MINOR.PATCH version") unless version
+  version
+end
+
+# One number for all three apps and both stores in a run: Play versionCode and
+# iOS CFBundleVersion must only ever go up, so CI passes run_number + offset.
+def build_number
+  value = ENV["WADDIFY_BUILD_NUMBER"].to_s
+  UI.user_error!("WADDIFY_BUILD_NUMBER must be a positive integer, got #{value.inspect}") unless value.match?(/\A[1-9]\d*\z/)
+  value
+end
+
+def flutter_args(app)
+  api = ENV["API_BASE_URL"].to_s.empty? ? "https://api.logiclinkeg.tech/api/v1" : ENV["API_BASE_URL"]
+  [
+    "--flavor", app,
+    "--build-name=#{build_name}",
+    "--build-number=#{build_number}",
+    "--dart-define=APP_CLIENT=#{app}",
+    "--dart-define=API_BASE_URL=#{api}",
+    "--dart-define=APP_VERSION=#{build_name}+#{build_number}",
+  ]
+end
+
+def flutter(*args)
+  Dir.chdir(ROOT) { sh("flutter", *args) }
+end
+
+platform :android do
+  def play_key
+    key = ENV["PLAY_SERVICE_ACCOUNT_JSON"].to_s
+    UI.user_error!("PLAY_SERVICE_ACCOUNT_JSON is not set") if key.empty?
+    key
+  end
+
+  def no_listing_changes
+    {
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    }
+  end
+
+  desc "Build release AABs (upload key) and upload them to the Play internal testing track"
+  lane :internal do |options|
+    selected_apps(options).each do |app|
+      # build.gradle.kts fails the build instead of falling back to the debug key.
+      ENV["WADDIFY_REQUIRE_UPLOAD_KEY"] = "true"
+      flutter("build", "appbundle", "--release", *flutter_args(app))
+      upload_to_play_store(
+        package_name: APPS[app][:id],
+        track: "internal",
+        aab: File.join(ROOT, "build/app/outputs/bundle/#{app}Release/app-#{app}-release.aab"),
+        # A Play app that has never had a release reviewed only accepts
+        # drafts; set PLAY_RELEASE_STATUS=draft until then (runbook).
+        release_status: ENV["PLAY_RELEASE_STATUS"].to_s.empty? ? "completed" : ENV["PLAY_RELEASE_STATUS"],
+        json_key_data: play_key,
+        **no_listing_changes,
+      )
+    end
+  end
+
+  desc "Promote a build from internal to the closed testing track (default: the newest internal build)"
+  lane :promote do |options|
+    from = (options[:from] || "internal").to_s
+    to = (options[:to] || ENV["PLAY_CLOSED_TRACK"]).to_s
+    to = "alpha" if to.empty?
+    UI.user_error!("Refusing to promote to production: this pipeline is for testing tracks only") if to == "production"
+    selected_apps(options).each do |app|
+      package = APPS[app][:id]
+      codes = google_play_track_version_codes(package_name: package, track: from, json_key_data: play_key)
+      UI.user_error!("#{package}: no build on the #{from} track") if codes.empty?
+      code = (options[:version_code] || codes.max).to_i
+      UI.user_error!("#{package}: version code #{code} is not on the #{from} track (#{codes.join(', ')})") unless codes.include?(code)
+      UI.message("#{package}: promoting version code #{code} from #{from} to #{to}")
+      upload_to_play_store(
+        package_name: package,
+        track: from,
+        track_promote_to: to,
+        version_code: code,
+        track_promote_release_status: "completed",
+        skip_upload_apk: true,
+        skip_upload_aab: true,
+        json_key_data: play_key,
+        **no_listing_changes,
+      )
+    end
+  end
+end
+
+platform :ios do
+  def asc_key
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8_B64].each do |name|
+      UI.user_error!("#{name} is not set") if ENV[name].to_s.empty?
+    end
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_P8_B64"],
+      is_key_content_base64: true,
+    )
+  end
+
+  def team_id
+    value = ENV["APPLE_TEAM_ID"].to_s
+    UI.user_error!("APPLE_TEAM_ID is not set") if value.empty?
+    value
+  end
+
+  # match reads MATCH_GIT_URL, MATCH_PASSWORD and MATCH_GIT_BASIC_AUTHORIZATION
+  # from the environment (the workflows set them).
+  def signing(apps, key, readonly:)
+    setup_ci if ENV["CI"]
+    match(
+      type: "appstore",
+      storage_mode: "git",
+      app_identifier: apps.map { |app| APPS[app][:id] },
+      team_id: team_id,
+      api_key: key,
+      readonly: readonly,
+    )
+  end
+
+  desc "Create or refresh the App Store distribution cert and the three profiles in the match repo (run once)"
+  lane :setup_signing do
+    signing(APPS.keys, asc_key, readonly: false)
+  end
+
+  desc "Build release IPAs and upload them to TestFlight (internal testers get them automatically)"
+  lane :internal do |options|
+    key = asc_key
+    apps = selected_apps(options)
+    signing(apps, key, readonly: true)
+    apps.each do |app|
+      bundle_id = APPS[app][:id]
+      profile = ENV["sigh_#{bundle_id}_appstore_profile-name"]
+      UI.user_error!("match returned no App Store profile for #{bundle_id}") if profile.to_s.empty?
+      # Writes Generated.xcconfig (flavor + dart defines); Xcode's Flutter
+      # build phase then compiles Dart during the archive below.
+      flutter("build", "ios", "--release", "--config-only", *flutter_args(app))
+      update_code_signing_settings(
+        path: File.join(ROOT, "ios/Runner.xcodeproj"),
+        use_automatic_signing: false,
+        targets: ["Runner"],
+        build_configurations: ["Release-#{app}"],
+        team_id: team_id,
+        code_sign_identity: "Apple Distribution",
+        profile_name: profile,
+        bundle_identifier: bundle_id,
+      )
+      ipa = build_app(
+        workspace: File.join(ROOT, "ios/Runner.xcworkspace"),
+        scheme: app,
+        configuration: "Release-#{app}",
+        export_method: "app-store",
+        export_options: { provisioningProfiles: { bundle_id => profile } },
+        output_directory: File.join(ROOT, "build/ios/fastlane"),
+        output_name: "#{app}.ipa",
+        clean: true,
+      )
+      upload_to_testflight(
+        api_key: key,
+        app_identifier: bundle_id,
+        ipa: ipa,
+        skip_waiting_for_build_processing: true,
+      )
+    end
+  end
+
+  desc "Give a TestFlight build to the external (closed) tester groups; the first build of a version goes through beta review"
+  lane :promote do |options|
+    key = asc_key
+    groups = (options[:groups] || ENV["TESTFLIGHT_EXTERNAL_GROUPS"]).to_s.split(",").map(&:strip).reject(&:empty?)
+    UI.user_error!("No external groups: pass groups:\"A,B\" or set TESTFLIGHT_EXTERNAL_GROUPS") if groups.empty?
+    changelog = (options[:changelog] || ENV["TESTFLIGHT_CHANGELOG"]).to_s
+    changelog = "Test build #{build_name}" if changelog.empty?
+    selected_apps(options).each do |app|
+      bundle_id = APPS[app][:id]
+      number = options[:build_number].to_s
+      if number.empty?
+        number = latest_testflight_build_number(api_key: key, app_identifier: bundle_id, version: build_name).to_s
+      end
+      UI.message("#{bundle_id}: sending #{build_name} (#{number}) to #{groups.join(', ')}")
+      upload_to_testflight(
+        api_key: key,
+        app_identifier: bundle_id,
+        distribute_only: true,
+        app_version: build_name,
+        build_number: number,
+        distribute_external: true,
+        groups: groups,
+        changelog: changelog,
+        notify_external_testers: true,
+      )
+    end
+  end
+end
