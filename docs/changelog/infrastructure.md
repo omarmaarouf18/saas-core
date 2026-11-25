@@ -2,6 +2,13 @@
 
 This file tracks historical entries for the primary category: **Infrastructure & Tooling Changelog**.
 
+## Store Testing Pipeline: Google Play Internal/Closed + TestFlight (STORE-PIPELINE)
+
+- **Implementation Detail**: Android release builds sign with the Play upload key when configured (`key.properties` or `ANDROID_*` env) and keep the debug key otherwise, so the APK channel is unchanged; store builds fail without the key (`WADDIFY_REQUIRE_UPLOAD_KEY`). iOS gets the ADR-0030 flavors (configurations `Debug-/Release-/Profile-<flavor>`, schemes `customer`/`console`/`employees`, bundle IDs `app.waddify`/`.console`/`.employees`, display name per flavor, iOS 15 minimum, purpose strings, export compliance). Fastlane lanes (`frontend/fastlane/Fastfile`) and mobile-repo workflows `store-testing.yml` (push to `main` → Play internal + TestFlight internal), `store-promote.yml` (manual → Play closed track / TestFlight external groups) and `store-ios-signing.yml` (fastlane match setup without a Mac). Runbook `frontend/docs/STORE_TESTING.md`.
+- **Commit SHA**: ``b505a1b396ab7f63a17163f81235585c57dc48eb`` (Android signing), ``0bf4b4ba710e665076e73826d2aa624894bd3c5f`` (iOS flavors), ``0e3120f9d1bf4c17ecd9d61b427036b4e2e30e99`` (Fastlane, workflows, docs)
+- **Verification**: per worklog (`make check` PASS on each commit, local; actionlint + shellcheck clean; `ruby -c` OK). No store build has run yet.
+- **Worklog**: [docs/worklog/STORE-PIPELINE.md](../worklog/STORE-PIPELINE.md)
+
 ## Guarded Single-Command Production Release Automation (WF-RELEASE)
 
 - **Implementation Detail**: Created guarded release tooling: `make release-status` to inspect release readiness ahead of `origin/main`, `make release` to fast-forward `main` after verifying clean CI and Release Gate runs, and `make hotfix NAME=<slug>` for isolated production hotfixes. Published authoritative release documentation at `docs/RELEASE.md`. Added automated test suite `scripts/test_release.sh`.
