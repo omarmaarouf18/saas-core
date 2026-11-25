@@ -169,8 +169,10 @@ platform :ios do
       profile = ENV["sigh_#{bundle_id}_appstore_profile-name"]
       UI.user_error!("match returned no App Store profile for #{bundle_id}") if profile.to_s.empty?
       # Writes Generated.xcconfig (flavor + dart defines); Xcode's Flutter
-      # build phase then compiles Dart during the archive below.
-      flutter("build", "ios", "--release", "--config-only", *flutter_args(app))
+      # build phase then compiles Dart during the archive below. --no-codesign:
+      # without it flutter looks for a development certificate, which CI does
+      # not have; build_app signs with the match distribution profile instead.
+      flutter("build", "ios", "--release", "--config-only", "--no-codesign", *flutter_args(app))
       update_code_signing_settings(
         path: File.join(ROOT, "ios/Runner.xcodeproj"),
         use_automatic_signing: false,
