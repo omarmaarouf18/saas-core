@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -12,6 +14,34 @@ if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 } else {
     logger.warn("PUSH-FCM: android/app/google-services.json not found; push disabled in this build")
+}
+
+// STORE-PIPELINE: the Play upload key. Read from android/key.properties
+// (local, never committed) or from the environment (CI writes the keystore
+// from a secret). Keys: storeFile, storePassword, keyAlias, keyPassword /
+// ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+// ANDROID_KEY_PASSWORD. Without them, release builds keep the debug key, so
+// the GitHub-release APK channel (build-apk.yml) is unchanged. Store builds
+// set WADDIFY_REQUIRE_UPLOAD_KEY=true and fail instead of shipping a
+// debug-signed bundle (frontend/docs/STORE_TESTING.md).
+val uploadKey: Map<String, String?> = run {
+    val props = Properties()
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { props.load(it) }
+    mapOf(
+        "storeFile" to (props.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_PATH")),
+        "storePassword" to (props.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")),
+        "keyAlias" to (props.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")),
+        "keyPassword" to (props.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")),
+    )
+}
+val hasUploadKey = uploadKey.values.all { !it.isNullOrBlank() } &&
+    file(uploadKey.getValue("storeFile")!!).exists()
+if (!hasUploadKey && System.getenv("WADDIFY_REQUIRE_UPLOAD_KEY") == "true") {
+    throw GradleException(
+        "STORE-PIPELINE: WADDIFY_REQUIRE_UPLOAD_KEY=true but the upload keystore is missing " +
+            "or incomplete (ANDROID_KEYSTORE_PATH / _PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD)",
+    )
 }
 
 android {
@@ -56,11 +86,26 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = file(uploadKey.getValue("storeFile")!!)
+                storePassword = uploadKey.getValue("storePassword")
+                keyAlias = uploadKey.getValue("keyAlias")
+                keyPassword = uploadKey.getValue("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // STORE-PIPELINE: upload key when configured (see above), else the
+            // debug key so `flutter run --release` and the APK channel work.
+            signingConfig = if (hasUploadKey) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
