@@ -4,12 +4,20 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to take photos of your documents for account verification and of your service for its listing.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to choose photos of your documents for account verification, of your service for its listing, and to attach files in chat.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Waddify does not use your music library. The file picker it uses to attach documents requires this description.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Used to share your live location with the customer while an active delivery job is in progress.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Waddify</string>
+	<string>$(APP_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
