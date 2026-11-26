@@ -6,3 +6,7 @@
 source "https://rubygems.org"
 
 gem "fastlane", "~> 2.228"
+# flutter_secure_storage has no Swift Package Manager support, so Flutter
+# runs `pod install` during the iOS build. Under `bundle exec` the runner's
+# system CocoaPods (another Ruby) is "installed but broken"; this one works.
+gem "cocoapods", "~> 1.16"
