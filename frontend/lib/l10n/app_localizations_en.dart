@@ -3923,4 +3923,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authStaffAccountsNote =>
       'Staff accounts are created by your company. Ask your manager for your sign-in details.';
+
+  @override
+  String get mapUnavailableTitle => 'Map unavailable';
+
+  @override
+  String get mapUnavailableBody => 'You can still use the rest of this screen.';
 }

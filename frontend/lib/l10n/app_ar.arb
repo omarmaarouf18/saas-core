@@ -1231,5 +1231,7 @@
   "wrongAppBody": "حسابك بيشتغل على {appName}. نزّل {appName} وادخل منه.",
   "authSignupHintCustomer": "عندك شركة توصيل أو مشاوير أو شحن؟ اعمل حسابك على {appName}.",
   "authSignupHintConsole": "ده حساب صاحب شغل. المندوبين والسواقين بيدخلوا من {appName} بعد ما تضيفهم.",
-  "authStaffAccountsNote": "حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول."
+  "authStaffAccountsNote": "حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول.",
+  "mapUnavailableTitle": "الخريطة مش متاحة دلوقتي",
+  "mapUnavailableBody": "تقدر تكمّل استخدام باقي الشاشة عادي."
 }
