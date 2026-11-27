@@ -5116,5 +5116,17 @@
   "mapUnavailableBody": "You can still use the rest of this screen.",
   "@mapUnavailableBody": {
     "description": "MAPS-SDK: short body under mapUnavailableTitle when space allows."
+  },
+  "geoSearching": "Searching addresses...",
+  "@geoSearching": {
+    "description": "ADDR-GEO: small inline indicator while fetching address suggestions or place details."
+  },
+  "geoFindingAddress": "Finding address...",
+  "@geoFindingAddress": {
+    "description": "ADDR-GEO: small non-blocking loading hint while reverse-geocoding the map pin."
+  },
+  "geoFallbackManual": "Address suggestions unavailable — you can type it manually.",
+  "@geoFallbackManual": {
+    "description": "ADDR-GEO: non-blocking fallback note when geo autocomplete/details is unavailable or rate-limited."
   }
 }

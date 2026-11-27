@@ -6961,6 +6961,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can still use the rest of this screen.'**
   String get mapUnavailableBody;
+
+  /// ADDR-GEO: small inline indicator while fetching address suggestions or place details.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching addresses...'**
+  String get geoSearching;
+
+  /// ADDR-GEO: small non-blocking loading hint while reverse-geocoding the map pin.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding address...'**
+  String get geoFindingAddress;
+
+  /// ADDR-GEO: non-blocking fallback note when geo autocomplete/details is unavailable or rate-limited.
+  ///
+  /// In en, this message translates to:
+  /// **'Address suggestions unavailable — you can type it manually.'**
+  String get geoFallbackManual;
 }
 
 class _AppLocalizationsDelegate

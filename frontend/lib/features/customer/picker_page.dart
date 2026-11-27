@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/geo/address_search_field.dart';
+import '../../core/geo/geo_models.dart';
+import '../../core/geo/geo_service.dart';
 import '../../core/maps/app_map.dart';
 import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
@@ -9,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/saved_address_rules.dart';
 import 'customer_location.dart';
+import 'price_estimate.dart';
 
 /// Max landmark note length, as the old picker dialog and the backend.
 const int kAddressNoteMaxLength = kAddressNoteMaxRunes;
@@ -32,6 +36,7 @@ class CustomerPickerPage extends StatefulWidget {
     required this.title,
     this.initial,
     this.showNote = true,
+    this.reverseAddress = false,
   });
 
   final String title;
@@ -40,6 +45,10 @@ class CustomerPickerPage extends StatefulWidget {
   /// The marketplace search-area picker needs no address or landmark note.
   final bool showNote;
 
+  /// Whether moving the pin reverse-geocodes into [PickedPlace.address] even
+  /// when [showNote] is false (used by the saved-address pin picker).
+  final bool reverseAddress;
+
   /// Pushes the picker and returns the confirmed place, or null when the
   /// customer backs out.
   static Future<PickedPlace?> open(
@@ -47,10 +56,15 @@ class CustomerPickerPage extends StatefulWidget {
     required String title,
     PickedPlace? initial,
     bool showNote = true,
+    bool reverseAddress = false,
   }) =>
       Navigator.of(context).push<PickedPlace>(MaterialPageRoute(
         builder: (_) => CustomerPickerPage(
-            title: title, initial: initial, showNote: showNote),
+          title: title,
+          initial: initial,
+          showNote: showNote,
+          reverseAddress: reverseAddress,
+        ),
       ));
 
   @override
@@ -72,6 +86,14 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
 
   /// An old string-only address was chosen: it has no pin yet.
   bool _needsPin = false;
+
+  static const double _reverseSkipMeters = 15.0;
+
+  int _pinMoveSeq = 0;
+  bool _userTypedSincePin = false;
+  bool _reversing = false;
+  AppLatLng? _lastReversedPos;
+  String? _lastReversedAddress;
 
   @override
   void initState() {
@@ -120,6 +142,59 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     _fromDevice = false;
     // The customer moved the pin: it is placed now.
     if (_needsPin) setState(() => _needsPin = false);
+
+    if (isIdle) {
+      final last = _lastReversedPos;
+      final withinSkipRadius = last != null &&
+          haversineKm(last.latitude, last.longitude, pos.latitude,
+                      pos.longitude) *
+                  1000.0 <=
+              _reverseSkipMeters;
+      if (!withinSkipRadius) {
+        final seq = ++_pinMoveSeq;
+        _userTypedSincePin = false;
+        _reverseAt(pos, seq: seq);
+      }
+    }
+  }
+
+  Future<void> _reverseAt(AppLatLng pos, {required int seq}) async {
+    if (!widget.showNote && !widget.reverseAddress) return;
+    final geo = GeoScope.maybeOf(context);
+    if (geo == null) return;
+
+    final lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
+    if (mounted) {
+      setState(() => _reversing = true);
+    }
+
+    try {
+      final result = await geo.reverseGeocode(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        languageCode: lang,
+      );
+      if (!mounted) return;
+      if (seq != _pinMoveSeq) return;
+      final addr = result.address.trim();
+      final capped = addr.isEmpty
+          ? ''
+          : (runeLength(addr) > kAddressTextMaxRunes
+              ? String.fromCharCodes(addr.runes.take(kAddressTextMaxRunes))
+              : addr);
+      _lastReversedPos = pos;
+      _lastReversedAddress = capped;
+      setState(() => _reversing = false);
+      if (_userTypedSincePin) return;
+      if (capped.isEmpty) return;
+      _address.value = TextEditingValue(
+        text: capped,
+        selection: TextSelection.collapsed(offset: capped.length),
+      );
+    } catch (_) {
+      if (!mounted || seq != _pinMoveSeq) return;
+      setState(() => _reversing = false);
+    }
   }
 
   Future<void> _locate() async {
@@ -138,8 +213,32 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       _fromDevice = true;
       _center = AppLatLng(place.latitude, place.longitude);
     });
-    if (_map.isReady && result.place != null) {
-      _moveProgrammatically(_center);
+    if (result.place != null) {
+      if (_map.isReady) {
+        _moveProgrammatically(_center);
+      }
+      if ((widget.showNote || widget.reverseAddress) &&
+          _address.text.trim().isEmpty &&
+          !_userTypedSincePin) {
+        final last = _lastReversedPos;
+        final withinSkipRadius = last != null &&
+            haversineKm(last.latitude, last.longitude, _center.latitude,
+                        _center.longitude) *
+                    1000.0 <=
+                _reverseSkipMeters;
+        if (withinSkipRadius &&
+            _lastReversedAddress != null &&
+            _lastReversedAddress!.isNotEmpty) {
+          _address.value = TextEditingValue(
+            text: _lastReversedAddress!,
+            selection:
+                TextSelection.collapsed(offset: _lastReversedAddress!.length),
+          );
+          return;
+        }
+        final seq = ++_pinMoveSeq;
+        await _reverseAt(_center, seq: seq);
+      }
     }
   }
 
@@ -164,12 +263,29 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     });
   }
 
+  void _applySelectedPlace(GeoPlace place) {
+    final target = AppLatLng(place.lat, place.lng);
+    _pinMoveSeq++;
+    _userTypedSincePin = false;
+    setState(() {
+      _center = target;
+      _fromDevice = false;
+      _needsPin = false;
+      _reversing = false;
+    });
+    if (_map.isReady) {
+      _moveProgrammatically(target);
+    }
+  }
+
   void _confirm() {
     Navigator.of(context).pop(PickedPlace(
       latitude: _center.latitude,
       longitude: _center.longitude,
       note: widget.showNote ? _note.text.trim() : null,
-      address: widget.showNote ? _address.text.trim() : null,
+      address: (widget.showNote || widget.reverseAddress)
+          ? _address.text.trim()
+          : null,
       building: widget.showNote ? _building.text.trim() : null,
       floor: widget.showNote ? _floor.text.trim() : null,
       apartment: widget.showNote ? _apartment.text.trim() : null,
@@ -283,13 +399,18 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                 ),
                 if (widget.showNote) ...[
                   const SizedBox(height: 14),
-                  QdTextField(
-                    key: const Key('cust_picker_address'),
+                  AddressSearchField(
+                    fieldKey: const Key('cust_picker_address'),
                     label: l10n.bookAddressLabel,
                     hint: l10n.bookAddressHint,
                     controller: _address,
                     textInputAction: TextInputAction.next,
                     maxRunes: kAddressTextMaxRunes,
+                    onChanged: (_) => _userTypedSincePin = true,
+                    onPlaceSelected: _applySelectedPlace,
+                    statusHint: _reversing
+                        ? _PinReversingHint(label: l10n.geoFindingAddress)
+                        : null,
                   ),
                   const SizedBox(height: QdSpace.x3),
                   Row(
@@ -338,6 +459,9 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                     textInputAction: TextInputAction.done,
                     maxRunes: kAddressNoteMaxRunes,
                   ),
+                ] else if (widget.reverseAddress && _reversing) ...[
+                  const SizedBox(height: QdSpace.x2),
+                  _PinReversingHint(label: l10n.geoFindingAddress),
                 ],
                 const SizedBox(height: 14),
                 QdButton(
@@ -432,5 +556,36 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       ],
       const SizedBox(height: 14),
     ];
+  }
+}
+
+class _PinReversingHint extends StatelessWidget {
+  const _PinReversingHint({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = QdColors.of(context);
+    return Row(
+      key: const Key('cust_picker_reversing'),
+      children: [
+        SizedBox(
+          width: 12,
+          height: 12,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: c.gold,
+          ),
+        ),
+        const SizedBox(width: QdSpace.x2),
+        Flexible(
+          child: Text(
+            label,
+            style: QdText.caption.copyWith(color: c.textSecondary),
+          ),
+        ),
+      ],
+    );
   }
 }

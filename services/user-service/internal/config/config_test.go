@@ -254,3 +254,40 @@ func TestLoad_RefusesPublishedDevDocumentEncryptionKey(t *testing.T) {
 		})
 	}
 }
+
+func TestLoad_GoogleMapsServerKeyOptional(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-12345678901234567890")
+	t.Setenv("INTERNAL_SERVICE_TOKEN", "test-internal-token")
+	t.Setenv("TLS_CERT_PATH", "/tmp/cert.pem")
+	t.Setenv("TLS_KEY_PATH", "/tmp/key.pem")
+	t.Setenv("TLS_CA_PATH", "/tmp/ca.pem")
+	t.Setenv("REDIS_URI", "redis://localhost:6379")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("ALLOW_TEST_PAYMENT_BYPASS", "")
+	t.Setenv("DOCUMENT_ENCRYPTION_KEY", testDocKey)
+
+	t.Run("empty allowed in production without warnings", func(t *testing.T) {
+		t.Setenv("GOOGLE_MAPS_SERVER_KEY", "")
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.GoogleMapsServerKey != "" {
+			t.Errorf("expected empty GoogleMapsServerKey, got %q", cfg.GoogleMapsServerKey)
+		}
+		if len(cfg.Warnings) != 0 {
+			t.Errorf("expected no warnings, got %v", cfg.Warnings)
+		}
+	})
+
+	t.Run("trimmed when set", func(t *testing.T) {
+		t.Setenv("GOOGLE_MAPS_SERVER_KEY", "  AIzaTestKey123  ")
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.GoogleMapsServerKey != "AIzaTestKey123" {
+			t.Errorf("expected trimmed GoogleMapsServerKey, got %q", cfg.GoogleMapsServerKey)
+		}
+	})
+}

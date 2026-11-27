@@ -1233,5 +1233,8 @@
   "authSignupHintConsole": "ده حساب صاحب شغل. المندوبين والسواقين بيدخلوا من {appName} بعد ما تضيفهم.",
   "authStaffAccountsNote": "حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول.",
   "mapUnavailableTitle": "الخريطة مش متاحة دلوقتي",
-  "mapUnavailableBody": "تقدر تكمّل استخدام باقي الشاشة عادي."
+  "mapUnavailableBody": "تقدر تكمّل استخدام باقي الشاشة عادي.",
+  "geoSearching": "بندوّر على العنوان...",
+  "geoFindingAddress": "بنحدد العنوان...",
+  "geoFallbackManual": "اقتراحات العناوين مش متاحة دلوقتي — تقدر تكتب العنوان يدوي."
 }

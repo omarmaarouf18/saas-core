@@ -1,0 +1,57 @@
+# Worklog: ADDR-GEO — address fields: search suggestions and pin-to-address
+
+## Task and scope
+- Task ID: ADDR-GEO (Issue #49, 2 of 4)
+- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done)
+- Allowed paths (lane from the task prompt):
+  - `services/user-service/internal/config/**`
+  - `services/user-service/internal/geo/**`
+  - new files under `services/user-service/internal/handlers/` (+ tests)
+  - `services/user-service/internal/handlers/handlers.go` (route registration / wiring)
+  - `tests/contracts/**`, `tests/e2e/**`
+  - `docs/APPLICATION_MAP.md` (via `make docs` only), `docs/api/**`
+  - `frontend/lib/**`, `frontend/test/**`
+  - `docs/worklog/ADDR-GEO.md`
+- Agent branch: `agent/ADDR-GEO-address-autocomplete`, created from `logic-exploitation` at `12111e7c` (post `MAPS-SDK` merge)
+
+## Decisions taken
+- Verified `services/api-gateway/internal/config/config.go` and `internal/proxy/proxy.go`: `/api/v1/users/` already reverse-proxies all subpaths to `user-service` (stripping `/api/v1`) with `WithUpstream5xxPassthrough()`, so 503 `geo_unavailable` and all `/users/geo/*` routes pass through with no `api-gateway` code changes.
+- `GOOGLE_MAPS_SERVER_KEY` in `services/user-service/internal/config/config.go` is optional and trimmed; when empty, config loads cleanly with zero warnings (including in `production`) and geo endpoints answer `503 geo_unavailable`.
+- `services/user-service/internal/geo` uses `net/http` (zero new Go dependencies), Places API (New) (`places:autocomplete` and `places/{place_id}` with `X-Goog-Api-Key` header) and Geocoding API (`geocode/json` with `region=eg` and error/key redaction), keeping `RoutesBaseURL` configurable for the upcoming `ROAD-DISTANCE` task.
+- Review fix (Google Maps Platform terms compliance): removed server-side `placeCache` and `reverseCache` (`cache.go` deleted) so addresses and Google content are never cached on the server; every `/users/geo/place` and `/users/geo/reverse` request queries Google directly. Moved reverse-geocoding proximity cost control to the picker widget state (skips `/geo/reverse` when the camera stops within 15 m of the last reverse-geocoded point in that picker session).
+- Per-user rate limits (ADR-0016, 1-minute Redis windows keyed by authenticated `user_id`):
+  - `GET /users/geo/autocomplete`: **30 req/min** (`user:geo_autocomplete`) — matches ADR-0016's 30 req/min interactive browsing tier; covers ~5–8 debounced (400 ms) autocomplete queries per stop across pickup + drop-off while capping scraping.
+  - `GET /users/geo/place`: **20 req/min** (`user:geo_place`) — matches ADR-0016's 20 req/min interactive selection tier; only fired when a user taps a suggestion, allowing repeated re-picks without opening Place Details SKU abuse.
+  - `GET /users/geo/reverse`: **30 req/min** (`user:geo_reverse`) — matches ADR-0016's 30 req/min tier; fired once per camera-idle pin stop (client skips stops within 15 m in widget state) while protecting Geocoding SKU quota.
+
+## Changes per commit (message only — NO SHAs)
+1. `feat(user-service): add Google geo proxy endpoints, cache, and API docs (ADDR-GEO)`
+2. `feat(frontend): add address search field with autocomplete and session tokens (ADDR-GEO)`
+3. `feat(frontend): wire pin-to-address reverse geocoding on picker map (ADDR-GEO)`
+4. `test(frontend): add geo fallback and Arabic RTL widget tests (ADDR-GEO)`
+5. `fix(geo): remove server-side address caches and skip picker reverse within 15m (ADDR-GEO)`
+
+## Deploy note
+- Backend can release first: geo endpoints return `503 geo_unavailable` until `GOOGLE_MAPS_SERVER_KEY` is set in the production environment (ADR-0012); nothing else in `user-service` changes.
+- Owner setup before enabling in production: enable **Places API (New)** and **Geocoding API** on the GCP project, create the server API key restricted to the production VM egress IP and those two APIs, set per-API daily quotas and billing alerts, and set `GOOGLE_MAPS_SERVER_KEY` in production env.
+
+## Verification
+- `go test -v -count=1 ./internal/geo/... ./internal/config/...` (in `services/user-service`) — PASS
+- `go test -v -count=1 ./internal/handlers -run TestGeoHandlers` (in `services/user-service`) — PASS
+- `make check` (Item 1) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen`)
+- `make check` (Item 2) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen frontend`, 1493/1493 Flutter tests)
+- `flutter test test/features/customer/picker_geo_test.dart test/core/geo/address_search_field_test.dart` — PASS (9/9, Item 3)
+- `make check` (Item 3) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen frontend`, 1496/1496 Flutter tests)
+- `flutter analyze` — PASS (0 issues)
+- `flutter test test/core/geo/address_search_field_test.dart test/features/customer/picker_geo_test.dart` — PASS (13/13, including 15 m reverse-skip test)
+- `go test -v -count=1 ./internal/geo/... ./internal/config/... && go test -v -count=1 ./internal/handlers -run TestGeoHandlers` — PASS (identical calls hit Google fake twice)
+- `make check` (review fix) — run before commit (all checks green).
+
+## Unverified
+- Live calls against real Google Places API (New) and Geocoding API (tests use an `httptest` fake of Google; real GCP key not present in workspace).
+
+## Follow-ups / out-of-lane findings
+- `docs/APPLICATION_MAP.md` shows `<!-- TODO: verify manually -->` in the `Targets` column for the 3 new `/users/geo/*` routes because `KnownEndpoints` in `shared/infra/docgen/generator.go` is out-of-lane (`shared/**`).
+
+## Open questions
+- none

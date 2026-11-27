@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/error_messages.dart';
+import '../../core/geo/address_search_field.dart';
 import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
 import '../../models/saved_address.dart';
@@ -23,8 +24,13 @@ typedef SavedAddressPinPicker = Future<PickedPlace?> Function(
 
 Future<PickedPlace?> _defaultPinPicker(
         BuildContext context, PickedPlace? initial) =>
-    CustomerPickerPage.open(context,
-        title: context.l10n.addrPinTitle, initial: initial, showNote: false);
+    CustomerPickerPage.open(
+      context,
+      title: context.l10n.addrPinTitle,
+      initial: initial,
+      showNote: false,
+      reverseAddress: true,
+    );
 
 /// Saved addresses (ADR-0028 §2.8): the profile's `saved_addresses`, each
 /// with a label (Home / Work / the customer's word), the address text, a
@@ -466,12 +472,19 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
   Future<void> _pin() async {
     final initial = _lat == null || _lng == null
         ? null
-        : PickedPlace(latitude: _lat!, longitude: _lng!);
+        : PickedPlace(
+            latitude: _lat!,
+            longitude: _lng!,
+            address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+          );
     final place = await widget.pickPin(context, initial);
     if (place == null || !mounted) return;
     setState(() {
       _lat = place.latitude;
       _lng = place.longitude;
+      if (place.trimmedAddress != null) {
+        _address.text = place.trimmedAddress!;
+      }
     });
   }
 
@@ -539,8 +552,8 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
             ),
           ],
           gap,
-          QdTextField(
-            key: const Key('address_input'),
+          AddressSearchField(
+            fieldKey: const Key('address_input'),
             label: l10n.acctAddressLabel,
             hint: l10n.acctAddressHint,
             controller: _address,
@@ -553,6 +566,10 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
                     ? l10n.addrErrTooLong(kAddressTextMaxRunes)
                     : null,
             onChanged: (_) => setState(() {}),
+            onPlaceSelected: (place) => setState(() {
+              _lat = place.lat;
+              _lng = place.lng;
+            }),
           ),
           gap,
           Row(

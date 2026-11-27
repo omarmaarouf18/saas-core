@@ -9,6 +9,7 @@ import 'package:frontend/l10n/l10n.dart';
 import 'core/api_client.dart';
 import 'core/app_client.dart';
 import 'core/app_version.dart';
+import 'core/geo/geo_service.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/auth/update_gate.dart';
 import 'providers/auth_provider.dart';
@@ -97,16 +98,19 @@ Future<void> main() async {
             create: (_) => EmployeeLocationProvider(apiClient)),
       ],
       // Service photos load with the JWT and are cached for every page.
-      child: ServicePhotoScope(
-        store: ServicePhotoStore(apiClient),
-        // Push taps (cold start, background, foreground) for the shells;
-        // a foreground push shows on qd_default and joins the list.
-        child: NotificationTapScope(
-          router: NotificationTapRouter(
-            display: localNotifier,
-            onForeground: notifications.addFromPush,
-          )..start(),
-          child: MyApp(localNotifier: localNotifier),
+      child: GeoScope(
+        service: ApiGeoService(apiClient),
+        child: ServicePhotoScope(
+          store: ServicePhotoStore(apiClient),
+          // Push taps (cold start, background, foreground) for the shells;
+          // a foreground push shows on qd_default and joins the list.
+          child: NotificationTapScope(
+            router: NotificationTapRouter(
+              display: localNotifier,
+              onForeground: notifications.addFromPush,
+            )..start(),
+            child: MyApp(localNotifier: localNotifier),
+          ),
         ),
       ),
     ),

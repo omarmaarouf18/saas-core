@@ -3873,4 +3873,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mapUnavailableBody => 'تقدر تكمّل استخدام باقي الشاشة عادي.';
+
+  @override
+  String get geoSearching => 'بندوّر على العنوان...';
+
+  @override
+  String get geoFindingAddress => 'بنحدد العنوان...';
+
+  @override
+  String get geoFallbackManual =>
+      'اقتراحات العناوين مش متاحة دلوقتي — تقدر تكتب العنوان يدوي.';
 }
