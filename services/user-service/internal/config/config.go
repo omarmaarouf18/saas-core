@@ -31,6 +31,10 @@ type Config struct {
 	StorageBaseDir         string
 	StorageBaseURL         string
 	DocumentEncryptionKey  string
+	// GoogleMapsServerKey authenticates user-service calls to Google Maps
+	// Platform (Places API New, Geocoding API, and future Routes API). Optional:
+	// when empty, geo endpoints answer 503 geo_unavailable and nothing else changes.
+	GoogleMapsServerKey string
 	// Warnings are non-fatal config problems for --check-env to report
 	// (e.g. an unusable DOCUMENT_ENCRYPTION_KEY in local/test).
 	Warnings []string
@@ -183,6 +187,7 @@ func Load() (*Config, error) {
 		StorageBaseDir:         storageBaseDir,
 		StorageBaseURL:         storageBaseURL,
 		DocumentEncryptionKey:  docEncKey,
+		GoogleMapsServerKey:    strings.TrimSpace(os.Getenv("GOOGLE_MAPS_SERVER_KEY")),
 		Warnings:               warnings,
 	}, nil
 }

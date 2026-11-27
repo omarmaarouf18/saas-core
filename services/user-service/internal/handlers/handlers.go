@@ -114,6 +114,7 @@ type UserService struct {
 	digitalPaymentsEnabled     bool
 	rdb                        *redis.Client
 	storage                    storage.Storage
+	geo                        *geoState
 	// Test hook to block UpdateJobLocation database write for deterministic testing
 	updateJobLocationBeforeWriteHook func(ctx context.Context)
 	// Test hook to force RollbackEscrow to fail for deterministic testing
@@ -258,6 +259,7 @@ func NewUserService(s *store.MongoDB, cfg *config.Config, rdb *redis.Client, sto
 		appEnv:                     cfg.AppEnv,
 		allowTestPaymentBypass:     cfg.AllowTestPaymentBypass,
 		digitalPaymentsEnabled:     cfg.DigitalPaymentsEnabled,
+		geo:                        newGeoState(cfg, rdb),
 	}
 
 	encKeyErr := config.ValidateDocumentEncryptionKey(cfg.DocumentEncryptionKey)
@@ -481,6 +483,9 @@ func (u *UserService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/services/photo/remove", u.AdminRemoveServicePhoto)
 	mux.HandleFunc("/users/admin/services/{id}/photo/remove", u.AdminRemoveServicePhoto)
 	mux.HandleFunc("/admin/services/{id}/photo/remove", u.AdminRemoveServicePhoto)
+	mux.HandleFunc("/users/geo/autocomplete", u.GeoAutocomplete)
+	mux.HandleFunc("/users/geo/place", u.GeoPlace)
+	mux.HandleFunc("/users/geo/reverse", u.GeoReverse)
 }
 
 // ---------------------------------------------------------------------------
