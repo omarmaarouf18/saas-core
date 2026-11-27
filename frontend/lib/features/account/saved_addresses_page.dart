@@ -24,8 +24,13 @@ typedef SavedAddressPinPicker = Future<PickedPlace?> Function(
 
 Future<PickedPlace?> _defaultPinPicker(
         BuildContext context, PickedPlace? initial) =>
-    CustomerPickerPage.open(context,
-        title: context.l10n.addrPinTitle, initial: initial, showNote: false);
+    CustomerPickerPage.open(
+      context,
+      title: context.l10n.addrPinTitle,
+      initial: initial,
+      showNote: false,
+      reverseAddress: true,
+    );
 
 /// Saved addresses (ADR-0028 §2.8): the profile's `saved_addresses`, each
 /// with a label (Home / Work / the customer's word), the address text, a
@@ -467,12 +472,19 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
   Future<void> _pin() async {
     final initial = _lat == null || _lng == null
         ? null
-        : PickedPlace(latitude: _lat!, longitude: _lng!);
+        : PickedPlace(
+            latitude: _lat!,
+            longitude: _lng!,
+            address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+          );
     final place = await widget.pickPin(context, initial);
     if (place == null || !mounted) return;
     setState(() {
       _lat = place.latitude;
       _lng = place.longitude;
+      if (place.trimmedAddress != null) {
+        _address.text = place.trimmedAddress!;
+      }
     });
   }
 

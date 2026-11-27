@@ -2,7 +2,7 @@
 
 ## Task and scope
 - Task ID: ADDR-GEO (Issue #49, 2 of 4)
-- Item IDs covered: 1 (done), 2 (done), 3 (pending), 4 (pending)
+- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (pending)
 - Allowed paths (lane from the task prompt):
   - `services/user-service/internal/config/**`
   - `services/user-service/internal/geo/**`
@@ -27,6 +27,7 @@
 ## Changes per commit (message only — NO SHAs)
 1. `feat(user-service): add Google geo proxy endpoints, cache, and API docs (ADDR-GEO)`
 2. `feat(frontend): add address search field with autocomplete and session tokens (ADDR-GEO)`
+3. `feat(frontend): wire pin-to-address reverse geocoding on picker map (ADDR-GEO)`
 
 ## Deploy note
 - Backend can release first: geo endpoints return `503 geo_unavailable` until `GOOGLE_MAPS_SERVER_KEY` is set in the production environment (ADR-0012); nothing else in `user-service` changes.
@@ -36,8 +37,9 @@
 - `go test -v -count=1 ./internal/geo/... ./internal/config/...` (in `services/user-service`) — PASS
 - `go test -v -count=1 ./internal/handlers -run TestGeoHandlers` (in `services/user-service`) — PASS
 - `make check` (Item 1) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen`)
-- `flutter test test/core/geo/address_search_field_test.dart` — PASS (6/6)
-- Pending `make check` for Item 2.
+- `make check` (Item 2) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen frontend`, 1493/1493 Flutter tests)
+- `flutter test test/features/customer/picker_geo_test.dart test/core/geo/address_search_field_test.dart` — PASS (9/9)
+- Pending `make check` for Item 3.
 
 ## Unverified
 - Live calls against real Google Places API (New) and Geocoding API (tests use an `httptest` fake of Google; real GCP key not present in workspace).
