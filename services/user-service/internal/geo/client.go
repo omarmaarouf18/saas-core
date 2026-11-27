@@ -1,5 +1,5 @@
-// Package geo provides a reusable, cost-controlled Google Maps Platform HTTP
-// client (Places API New, Geocoding API, and future Routes API) for user-service.
+// Package geo provides a reusable Google Maps Platform HTTP client
+// (Places API New, Geocoding API, and future Routes API) for user-service.
 package geo
 
 import (
@@ -22,9 +22,7 @@ const (
 	DefaultGeocodeBaseURL = "https://maps.googleapis.com"
 	DefaultRoutesBaseURL  = "https://routes.googleapis.com"
 
-	DefaultCacheTTL        = 24 * time.Hour
-	DefaultMaxCacheEntries = 5000
-	DefaultHTTPTimeout     = 5 * time.Second
+	DefaultHTTPTimeout = 5 * time.Second
 
 	maxAutocompleteResults = 5
 	maxAddressRunes        = 250
@@ -46,14 +44,11 @@ var (
 
 // Config configures the Google Maps Platform client.
 type Config struct {
-	APIKey          string
-	PlacesBaseURL   string
-	GeocodeBaseURL  string
-	RoutesBaseURL   string
-	HTTPClient      *http.Client
-	CacheTTL        time.Duration
-	MaxCacheEntries int
-	Now             func() time.Time
+	APIKey         string
+	PlacesBaseURL  string
+	GeocodeBaseURL string
+	RoutesBaseURL  string
+	HTTPClient     *http.Client
 }
 
 // Suggestion represents a single address autocomplete suggestion.
@@ -78,15 +73,14 @@ type ReverseResult struct {
 }
 
 // Client wraps Google Maps Platform HTTP endpoints with Egypt biasing,
-// key redaction, stable error mapping, and bounded in-memory caching.
+// key redaction, and stable error mapping. Address/content responses are never
+// cached server-side per Google Maps Platform Terms of Service.
 type Client struct {
 	apiKey         string
 	placesBaseURL  string
 	geocodeBaseURL string
 	routesBaseURL  string
 	httpClient     *http.Client
-	placeCache     *ttlCache[PlaceDetails]
-	reverseCache   *ttlCache[ReverseResult]
 }
 
 // NewClient creates a new Google Maps Platform client. If APIKey is empty,
@@ -108,14 +102,6 @@ func NewClient(cfg Config) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DefaultHTTPTimeout}
 	}
-	ttl := cfg.CacheTTL
-	if ttl <= 0 {
-		ttl = DefaultCacheTTL
-	}
-	maxEntries := cfg.MaxCacheEntries
-	if maxEntries <= 0 {
-		maxEntries = DefaultMaxCacheEntries
-	}
 
 	return &Client{
 		apiKey:         strings.TrimSpace(cfg.APIKey),
@@ -123,8 +109,6 @@ func NewClient(cfg Config) *Client {
 		geocodeBaseURL: geocodeURL,
 		routesBaseURL:  routesURL,
 		httpClient:     httpClient,
-		placeCache:     newTTLCache[PlaceDetails](maxEntries, ttl, cfg.Now),
-		reverseCache:   newTTLCache[ReverseResult](maxEntries, ttl, cfg.Now),
 	}
 }
 
@@ -149,16 +133,6 @@ func NormalizeLang(acceptLanguage string) string {
 		}
 	}
 	return "en"
-}
-
-// RoundCoord4 rounds a coordinate to 4 decimal places (~11 m precision) and
-// normalizes -0.0 to 0.0 for deterministic cache keys.
-func RoundCoord4(v float64) float64 {
-	r := math.Round(v*10000) / 10000
-	if r == 0 {
-		return 0
-	}
-	return r
 }
 
 // RoutesBaseURL returns the configured Routes API base URL for future route calls.
@@ -255,17 +229,13 @@ func (c *Client) Autocomplete(ctx context.Context, query, session, lang string) 
 }
 
 // PlaceDetails resolves coordinates and address details for placeID via Places API (New),
-// completing any active autocomplete session token. Results are cached in memory for 24h.
+// completing any active autocomplete session token.
 func (c *Client) PlaceDetails(ctx context.Context, placeID, session, lang string) (PlaceDetails, error) {
 	if !c.Available() {
 		return PlaceDetails{}, ErrUnavailable
 	}
 
 	normLang := NormalizeLang(lang)
-	cacheKey := placeID + "|" + normLang
-	if cached, ok := c.placeCache.Get(cacheKey); ok {
-		return cached, nil
-	}
 
 	params := url.Values{}
 	params.Set("regionCode", "eg")
@@ -316,30 +286,22 @@ func (c *Client) PlaceDetails(ctx context.Context, placeID, session, lang string
 		})
 	}
 
-	details := PlaceDetails{
+	return PlaceDetails{
 		Lat:     resp.Location.Latitude,
 		Lng:     resp.Location.Longitude,
 		Address: sanitizeAndCap(addr, maxAddressRunes),
 		Area:    sanitizeAndCap(extractArea(comps), maxAreaRunes),
-	}
-	c.placeCache.Set(cacheKey, details)
-	return details, nil
+	}, nil
 }
 
 // ReverseGeocode resolves human-readable address text for (lat, lng) via Google Geocoding API
-// with Egypt region bias. Results are cached in memory by coordinates rounded to 4 decimal places.
+// with Egypt region bias.
 func (c *Client) ReverseGeocode(ctx context.Context, lat, lng float64, lang string) (ReverseResult, error) {
 	if !c.Available() {
 		return ReverseResult{}, ErrUnavailable
 	}
 
 	normLang := NormalizeLang(lang)
-	rLat := RoundCoord4(lat)
-	rLng := RoundCoord4(lng)
-	cacheKey := fmt.Sprintf("%.4f,%.4f|%s", rLat, rLng, normLang)
-	if cached, ok := c.reverseCache.Get(cacheKey); ok {
-		return cached, nil
-	}
 
 	params := url.Values{}
 	params.Set("latlng", fmt.Sprintf("%.6f,%.6f", lat, lng))
@@ -367,9 +329,7 @@ func (c *Client) ReverseGeocode(ctx context.Context, lat, lng float64, lang stri
 	switch resp.Status {
 	case "OK":
 		if len(resp.Results) == 0 {
-			res := ReverseResult{}
-			c.reverseCache.Set(cacheKey, res)
-			return res, nil
+			return ReverseResult{}, nil
 		}
 		first := resp.Results[0]
 		comps := make([]addressComponent, 0, len(first.AddressComponents))
@@ -379,16 +339,12 @@ func (c *Client) ReverseGeocode(ctx context.Context, lat, lng float64, lang stri
 				types: ac.Types,
 			})
 		}
-		res := ReverseResult{
+		return ReverseResult{
 			Address: sanitizeAndCap(first.FormattedAddress, maxAddressRunes),
 			Area:    sanitizeAndCap(extractArea(comps), maxAreaRunes),
-		}
-		c.reverseCache.Set(cacheKey, res)
-		return res, nil
+		}, nil
 	case "ZERO_RESULTS":
-		res := ReverseResult{}
-		c.reverseCache.Set(cacheKey, res)
-		return res, nil
+		return ReverseResult{}, nil
 	case "OVER_QUERY_LIMIT":
 		return ReverseResult{}, ErrRateLimited
 	default:

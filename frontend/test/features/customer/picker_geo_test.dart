@@ -161,6 +161,39 @@ void main() {
     expect(results.single!.address, '10 Gezira St, Zamalek');
   });
 
+  testWidgets(
+      'skips /geo/reverse when camera stops within 15 m of last reverse-geocoded point',
+      (tester) async {
+    final geo = FakeGeoService(
+      nextReverse: const GeoReverseResult(
+        address: '12 Brazil St, Zamalek',
+        area: 'Zamalek',
+      ),
+    );
+    await _openPickerWithGeo(tester, geo);
+
+    // 1. Initial move (> 15 m) calls /geo/reverse once.
+    await tester.drag(find.byType(AppMap), const Offset(-100, 60));
+    await tester.pumpAndSettle();
+    expect(geo.reverseCalls, hasLength(1));
+    expect(find.text('12 Brazil St, Zamalek'), findsOneWidget);
+
+    // 2. Small nudge (~8 m at zoom 15, <= 15 m) skips /geo/reverse.
+    await tester.drag(find.byType(AppMap), const Offset(-2, 0));
+    await tester.pumpAndSettle();
+    expect(geo.reverseCalls, hasLength(1));
+
+    // 3. Larger move (~60 m, > 15 m) calls /geo/reverse again.
+    geo.nextReverse = const GeoReverseResult(
+      address: '20 Hassan Sabry St, Zamalek',
+      area: 'Zamalek',
+    );
+    await tester.drag(find.byType(AppMap), const Offset(-15, 0));
+    await tester.pumpAndSettle();
+    expect(geo.reverseCalls, hasLength(2));
+    expect(find.text('20 Hassan Sabry St, Zamalek'), findsOneWidget);
+  });
+
   group('Item 4 fallbacks and RTL', () {
     testWidgets(
         'geo_unavailable on reverse and autocomplete falls back to manual typing in picker',

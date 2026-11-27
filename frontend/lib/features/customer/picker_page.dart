@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../account/saved_address_rules.dart';
 import 'customer_location.dart';
+import 'price_estimate.dart';
 
 /// Max landmark note length, as the old picker dialog and the backend.
 const int kAddressNoteMaxLength = kAddressNoteMaxRunes;
@@ -86,10 +87,13 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
   /// An old string-only address was chosen: it has no pin yet.
   bool _needsPin = false;
 
+  static const double _reverseSkipMeters = 15.0;
+
   int _pinMoveSeq = 0;
   bool _userTypedSincePin = false;
   bool _reversing = false;
   AppLatLng? _lastReversedPos;
+  String? _lastReversedAddress;
 
   @override
   void initState() {
@@ -141,11 +145,12 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
 
     if (isIdle) {
       final last = _lastReversedPos;
-      final sameStop = last != null &&
-          (pos.latitude - last.latitude).abs() < 1e-5 &&
-          (pos.longitude - last.longitude).abs() < 1e-5;
-      if (!sameStop) {
-        _lastReversedPos = pos;
+      final withinSkipRadius = last != null &&
+          haversineKm(last.latitude, last.longitude, pos.latitude,
+                      pos.longitude) *
+                  1000.0 <=
+              _reverseSkipMeters;
+      if (!withinSkipRadius) {
         final seq = ++_pinMoveSeq;
         _userTypedSincePin = false;
         _reverseAt(pos, seq: seq);
@@ -171,13 +176,17 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       );
       if (!mounted) return;
       if (seq != _pinMoveSeq) return;
+      final addr = result.address.trim();
+      final capped = addr.isEmpty
+          ? ''
+          : (runeLength(addr) > kAddressTextMaxRunes
+              ? String.fromCharCodes(addr.runes.take(kAddressTextMaxRunes))
+              : addr);
+      _lastReversedPos = pos;
+      _lastReversedAddress = capped;
       setState(() => _reversing = false);
       if (_userTypedSincePin) return;
-      final addr = result.address.trim();
-      if (addr.isEmpty) return;
-      final capped = runeLength(addr) > kAddressTextMaxRunes
-          ? String.fromCharCodes(addr.runes.take(kAddressTextMaxRunes))
-          : addr;
+      if (capped.isEmpty) return;
       _address.value = TextEditingValue(
         text: capped,
         selection: TextSelection.collapsed(offset: capped.length),
@@ -211,7 +220,22 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       if ((widget.showNote || widget.reverseAddress) &&
           _address.text.trim().isEmpty &&
           !_userTypedSincePin) {
-        _lastReversedPos = _center;
+        final last = _lastReversedPos;
+        final withinSkipRadius = last != null &&
+            haversineKm(last.latitude, last.longitude, _center.latitude,
+                        _center.longitude) *
+                    1000.0 <=
+                _reverseSkipMeters;
+        if (withinSkipRadius &&
+            _lastReversedAddress != null &&
+            _lastReversedAddress!.isNotEmpty) {
+          _address.value = TextEditingValue(
+            text: _lastReversedAddress!,
+            selection:
+                TextSelection.collapsed(offset: _lastReversedAddress!.length),
+          );
+          return;
+        }
         final seq = ++_pinMoveSeq;
         await _reverseAt(_center, seq: seq);
       }
@@ -243,7 +267,6 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     final target = AppLatLng(place.lat, place.lng);
     _pinMoveSeq++;
     _userTypedSincePin = false;
-    _lastReversedPos = target;
     setState(() {
       _center = target;
       _fromDevice = false;

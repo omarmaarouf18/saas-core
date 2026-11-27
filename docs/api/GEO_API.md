@@ -7,6 +7,7 @@ This document specifies the server-proxied Google Maps Platform endpoints expose
 - Environment variable: `GOOGLE_MAPS_SERVER_KEY` (optional).
 - When `GOOGLE_MAPS_SERVER_KEY` is empty or unset, all three geo endpoints return HTTP `503 Service Unavailable` with stable error code `geo_unavailable`; all other `user-service` endpoints continue operating normally.
 - The server key is never logged and never returned to clients. Upstream Google error text is never returned verbatim; failures map to stable machine error codes (`SafeError` body: `{"error": "...", "code": "...", "request_id": "..."}`).
+- Google terms: no caching except `place_id` / `lat-lng` (addresses and other Google content are never cached server-side; every `/users/geo/place` and `/users/geo/reverse` request queries Google directly).
 
 ## Authentication & Localization
 
@@ -51,7 +52,7 @@ Queries Google Places API (New) `places:autocomplete` and returns up to 5 sugges
 
 ### 2. `GET /users/geo/place`
 
-Resolves coordinates, formatted address, and area for a `place_id` via Places API (New), ending the autocomplete session token for session-based billing. Cached in memory by `(place_id, lang)` for 24 hours (bounded LRU, max 5000 entries).
+Resolves coordinates, formatted address, and area for a `place_id` via Places API (New), ending the autocomplete session token for session-based billing. Google terms: no caching except `place_id` / `lat-lng`.
 
 **Query Parameters**
 - `place_id` (required): 1–300 runes, no whitespace, control characters, `/`, `?`, or `#`.
@@ -69,7 +70,7 @@ Resolves coordinates, formatted address, and area for a `place_id` via Places AP
 
 ### 3. `GET /users/geo/reverse`
 
-Reverse-geocodes coordinates via Google Geocoding API. Cached in memory by coordinates rounded to 4 decimal places (~11 m precision) and language for 24 hours (bounded LRU, max 5000 entries).
+Reverse-geocodes coordinates via Google Geocoding API. Google terms: no caching except `place_id` / `lat-lng`. Client pickers skip `/geo/reverse` in widget state when the camera stops within 15 m of the last reverse-geocoded point in the current picker session.
 
 **Query Parameters**
 - `lat` (required): finite float in `[-90, 90]`.

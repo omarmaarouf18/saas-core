@@ -284,7 +284,7 @@ func TestGeoHandlers_UpstreamErrorsReturnStableCodes(t *testing.T) {
 	}
 }
 
-func TestGeoHandlers_CacheHitSkipsSecondUpstreamCall(t *testing.T) {
+func TestGeoHandlers_IdenticalCallsReachUpstreamTwice(t *testing.T) {
 	var placeCalls atomic.Int32
 	var reverseCalls atomic.Int32
 
@@ -308,11 +308,11 @@ func TestGeoHandlers_CacheHitSkipsSecondUpstreamCall(t *testing.T) {
 	}, "test-key")
 	defer cleanup()
 
-	token := makeGeoJWT(t, "cust-cache", "user")
+	token := makeGeoJWT(t, "cust-nocache", "user")
 
-	// Two place requests with same place_id -> 1 upstream call
+	// Two identical place requests both reach Google (no server-side address cache).
 	for i := 0; i < 2; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/users/geo/place?place_id=ChIJ_cached&session=s1", nil)
+		req := httptest.NewRequest(http.MethodGet, "/users/geo/place?place_id=ChIJ_same&session=s1", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
@@ -320,22 +320,22 @@ func TestGeoHandlers_CacheHitSkipsSecondUpstreamCall(t *testing.T) {
 			t.Fatalf("place %d status = %d", i, rec.Code)
 		}
 	}
-	if placeCalls.Load() != 1 {
-		t.Errorf("placeCalls = %d, want 1", placeCalls.Load())
+	if placeCalls.Load() != 2 {
+		t.Errorf("placeCalls = %d, want 2", placeCalls.Load())
 	}
 
-	// Two reverse requests within 4 decimals -> 1 upstream call
-	for _, coords := range []string{"lat=30.04441&lng=31.23571", "lat=30.04444&lng=31.23574"} {
-		req := httptest.NewRequest(http.MethodGet, "/users/geo/reverse?"+coords, nil)
+	// Two identical reverse requests both reach Google (no server-side address cache).
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/users/geo/reverse?lat=30.0444&lng=31.2357", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
-			t.Fatalf("reverse %s status = %d", coords, rec.Code)
+			t.Fatalf("reverse %d status = %d", i, rec.Code)
 		}
 	}
-	if reverseCalls.Load() != 1 {
-		t.Errorf("reverseCalls = %d, want 1", reverseCalls.Load())
+	if reverseCalls.Load() != 2 {
+		t.Errorf("reverseCalls = %d, want 2", reverseCalls.Load())
 	}
 }
 

@@ -107,7 +107,7 @@ func TestClient_Autocomplete_EgyptBiasAndCap5(t *testing.T) {
 	}
 }
 
-func TestClient_PlaceDetails_CacheAndSession(t *testing.T) {
+func TestClient_PlaceDetails_NoServerCachingAndSession(t *testing.T) {
 	var upstreamCalls atomic.Int32
 	var lastSession, lastRegion, lastLang string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -130,12 +130,9 @@ func TestClient_PlaceDetails_CacheAndSession(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	now := time.Date(2026, 11, 27, 10, 0, 0, 0, time.UTC)
 	c := NewClient(Config{
 		APIKey:        "secret-key",
 		PlacesBaseURL: srv.URL,
-		CacheTTL:      24 * time.Hour,
-		Now:           func() time.Time { return now },
 	})
 
 	got1, err := c.PlaceDetails(context.Background(), "ChIJ_tahrir", "sess-xyz", "en")
@@ -149,32 +146,22 @@ func TestClient_PlaceDetails_CacheAndSession(t *testing.T) {
 		t.Errorf("unexpected details: %+v", got1)
 	}
 
-	// Cache hit: same place_id and lang should not call upstream.
-	got2, err := c.PlaceDetails(context.Background(), "ChIJ_tahrir", "sess-other", "en")
+	// Identical call reaches Google again (no address/content caching).
+	got2, err := c.PlaceDetails(context.Background(), "ChIJ_tahrir", "sess-xyz", "en")
 	if err != nil {
 		t.Fatalf("PlaceDetails 2 failed: %v", err)
 	}
 	if got2 != got1 {
-		t.Errorf("cached result mismatch: %+v != %+v", got2, got1)
-	}
-	if upstreamCalls.Load() != 1 {
-		t.Errorf("upstream calls = %d, want 1", upstreamCalls.Load())
-	}
-
-	// After 24h TTL expires, calls upstream again.
-	now = now.Add(25 * time.Hour)
-	_, err = c.PlaceDetails(context.Background(), "ChIJ_tahrir", "sess-new", "en")
-	if err != nil {
-		t.Fatalf("PlaceDetails 3 failed: %v", err)
+		t.Errorf("second result mismatch: %+v != %+v", got2, got1)
 	}
 	if upstreamCalls.Load() != 2 {
-		t.Errorf("upstream calls after TTL = %d, want 2", upstreamCalls.Load())
+		t.Errorf("upstream calls = %d, want 2", upstreamCalls.Load())
 	}
 }
 
-func TestClient_ReverseGeocode_RoundedCacheAndErrors(t *testing.T) {
+func TestClient_ReverseGeocode_NoServerCachingAndErrors(t *testing.T) {
 	var upstreamCalls atomic.Int32
-	var nextStatus = "OK"
+	nextStatus := "OK"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalls.Add(1)
 		if r.URL.Query().Get("region") != "eg" {
@@ -222,28 +209,19 @@ func TestClient_ReverseGeocode_RoundedCacheAndErrors(t *testing.T) {
 		t.Errorf("unexpected reverse result: %+v", r1)
 	}
 
-	// 2. Within 4 decimal places -> cache hit (no second upstream call)
-	r2, err := c.ReverseGeocode(context.Background(), 30.04444, 31.23574, "en")
+	// 2. Identical coordinates reach Google again (no server-side address caching).
+	r2, err := c.ReverseGeocode(context.Background(), 30.04441, 31.23571, "en")
 	if err != nil {
 		t.Fatalf("ReverseGeocode 2 failed: %v", err)
 	}
 	if r2 != r1 {
-		t.Errorf("expected cached result %+v, got %+v", r1, r2)
-	}
-	if upstreamCalls.Load() != 1 {
-		t.Errorf("upstreamCalls = %d, want 1", upstreamCalls.Load())
-	}
-
-	// 3. Different language hits upstream
-	_, err = c.ReverseGeocode(context.Background(), 30.04441, 31.23571, "ar")
-	if err != nil {
-		t.Fatalf("ReverseGeocode ar failed: %v", err)
+		t.Errorf("expected identical result %+v, got %+v", r1, r2)
 	}
 	if upstreamCalls.Load() != 2 {
-		t.Errorf("upstreamCalls after ar = %d, want 2", upstreamCalls.Load())
+		t.Errorf("upstreamCalls = %d, want 2", upstreamCalls.Load())
 	}
 
-	// 4. OVER_QUERY_LIMIT -> ErrRateLimited, never exposes raw Google error_message
+	// 3. OVER_QUERY_LIMIT -> ErrRateLimited, never exposes raw Google error_message
 	nextStatus = "OVER_QUERY_LIMIT"
 	_, err = c.ReverseGeocode(context.Background(), 30.1111, 31.1111, "en")
 	if !errors.Is(err, ErrRateLimited) {
@@ -253,7 +231,7 @@ func TestClient_ReverseGeocode_RoundedCacheAndErrors(t *testing.T) {
 		t.Errorf("error leaked raw Google message: %v", err)
 	}
 
-	// 5. REQUEST_DENIED -> ErrUpstreamError, never leaks key or raw Google text
+	// 4. REQUEST_DENIED -> ErrUpstreamError, never leaks key or raw Google text
 	nextStatus = "REQUEST_DENIED"
 	_, err = c.ReverseGeocode(context.Background(), 30.2222, 31.2222, "en")
 	if !errors.Is(err, ErrUpstreamError) {
@@ -276,28 +254,5 @@ func TestClient_RedactsKeyOnTransportError(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "AIzaSySecretKeyNeverLeak") {
 		t.Fatalf("transport error leaked API key: %v", err)
-	}
-}
-
-func TestCache_BoundedEviction(t *testing.T) {
-	cache := newTTLCache[int](2, time.Hour, nil)
-	cache.Set("a", 1)
-	cache.Set("b", 2)
-	// Touch "a" so "b" becomes LRU
-	if v, ok := cache.Get("a"); !ok || v != 1 {
-		t.Fatalf("expected cache hit for a")
-	}
-	cache.Set("c", 3)
-	if cache.Len() != 2 {
-		t.Fatalf("expected bounded Len=2, got %d", cache.Len())
-	}
-	if _, ok := cache.Get("b"); ok {
-		t.Errorf("expected LRU key b to be evicted")
-	}
-	if _, ok := cache.Get("a"); !ok {
-		t.Errorf("expected MRU key a to remain")
-	}
-	if _, ok := cache.Get("c"); !ok {
-		t.Errorf("expected c to remain")
 	}
 }
