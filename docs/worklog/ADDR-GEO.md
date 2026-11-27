@@ -2,7 +2,7 @@
 
 ## Task and scope
 - Task ID: ADDR-GEO (Issue #49, 2 of 4)
-- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (pending)
+- Item IDs covered: 1 (done), 2 (done), 3 (done), 4 (done)
 - Allowed paths (lane from the task prompt):
   - `services/user-service/internal/config/**`
   - `services/user-service/internal/geo/**`
@@ -28,6 +28,7 @@
 1. `feat(user-service): add Google geo proxy endpoints, cache, and API docs (ADDR-GEO)`
 2. `feat(frontend): add address search field with autocomplete and session tokens (ADDR-GEO)`
 3. `feat(frontend): wire pin-to-address reverse geocoding on picker map (ADDR-GEO)`
+4. `test(frontend): add geo fallback and Arabic RTL widget tests (ADDR-GEO)`
 
 ## Deploy note
 - Backend can release first: geo endpoints return `503 geo_unavailable` until `GOOGLE_MAPS_SERVER_KEY` is set in the production environment (ADR-0012); nothing else in `user-service` changes.
@@ -38,8 +39,11 @@
 - `go test -v -count=1 ./internal/handlers -run TestGeoHandlers` (in `services/user-service`) — PASS
 - `make check` (Item 1) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen`)
 - `make check` (Item 2) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen frontend`, 1493/1493 Flutter tests)
-- `flutter test test/features/customer/picker_geo_test.dart test/core/geo/address_search_field_test.dart` — PASS (9/9)
-- Pending `make check` for Item 3.
+- `flutter test test/features/customer/picker_geo_test.dart test/core/geo/address_search_field_test.dart` — PASS (9/9, Item 3)
+- `make check` (Item 3) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen frontend`, 1496/1496 Flutter tests)
+- `flutter analyze` — PASS (0 issues)
+- `flutter test test/core/geo/address_search_field_test.dart test/features/customer/picker_geo_test.dart` — PASS (12/12, Item 4)
+- `make check` (Item 4, final) — run before commit (all checks green).
 
 ## Unverified
 - Live calls against real Google Places API (New) and Geocoding API (tests use an `httptest` fake of Google; real GCP key not present in workspace).
