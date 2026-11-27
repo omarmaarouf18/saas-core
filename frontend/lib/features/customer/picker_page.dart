@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/geo/address_search_field.dart';
+import '../../core/geo/geo_models.dart';
 import '../../core/maps/app_map.dart';
 import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
@@ -164,6 +166,18 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     });
   }
 
+  void _applySelectedPlace(GeoPlace place) {
+    final target = AppLatLng(place.lat, place.lng);
+    setState(() {
+      _center = target;
+      _fromDevice = false;
+      _needsPin = false;
+    });
+    if (_map.isReady) {
+      _moveProgrammatically(target);
+    }
+  }
+
   void _confirm() {
     Navigator.of(context).pop(PickedPlace(
       latitude: _center.latitude,
@@ -283,13 +297,14 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
                 ),
                 if (widget.showNote) ...[
                   const SizedBox(height: 14),
-                  QdTextField(
-                    key: const Key('cust_picker_address'),
+                  AddressSearchField(
+                    fieldKey: const Key('cust_picker_address'),
                     label: l10n.bookAddressLabel,
                     hint: l10n.bookAddressHint,
                     controller: _address,
                     textInputAction: TextInputAction.next,
                     maxRunes: kAddressTextMaxRunes,
+                    onPlaceSelected: _applySelectedPlace,
                   ),
                   const SizedBox(height: QdSpace.x3),
                   Row(

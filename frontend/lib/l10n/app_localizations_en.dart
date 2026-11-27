@@ -3929,4 +3929,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapUnavailableBody => 'You can still use the rest of this screen.';
+
+  @override
+  String get geoSearching => 'Searching addresses...';
+
+  @override
+  String get geoFindingAddress => 'Finding address...';
+
+  @override
+  String get geoFallbackManual =>
+      'Address suggestions unavailable — you can type it manually.';
 }

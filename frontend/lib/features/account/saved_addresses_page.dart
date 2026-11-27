@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/error_messages.dart';
+import '../../core/geo/address_search_field.dart';
 import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
 import '../../models/saved_address.dart';
@@ -539,8 +540,8 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
             ),
           ],
           gap,
-          QdTextField(
-            key: const Key('address_input'),
+          AddressSearchField(
+            fieldKey: const Key('address_input'),
             label: l10n.acctAddressLabel,
             hint: l10n.acctAddressHint,
             controller: _address,
@@ -553,6 +554,10 @@ class _SavedAddressEditorState extends State<SavedAddressEditorPage> {
                     ? l10n.addrErrTooLong(kAddressTextMaxRunes)
                     : null,
             onChanged: (_) => setState(() {}),
+            onPlaceSelected: (place) => setState(() {
+              _lat = place.lat;
+              _lng = place.lng;
+            }),
           ),
           gap,
           Row(

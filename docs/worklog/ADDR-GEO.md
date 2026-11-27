@@ -2,7 +2,7 @@
 
 ## Task and scope
 - Task ID: ADDR-GEO (Issue #49, 2 of 4)
-- Item IDs covered: 1 (in progress), 2 (pending), 3 (pending), 4 (pending)
+- Item IDs covered: 1 (done), 2 (done), 3 (pending), 4 (pending)
 - Allowed paths (lane from the task prompt):
   - `services/user-service/internal/config/**`
   - `services/user-service/internal/geo/**`
@@ -26,6 +26,7 @@
 
 ## Changes per commit (message only — NO SHAs)
 1. `feat(user-service): add Google geo proxy endpoints, cache, and API docs (ADDR-GEO)`
+2. `feat(frontend): add address search field with autocomplete and session tokens (ADDR-GEO)`
 
 ## Deploy note
 - Backend can release first: geo endpoints return `503 geo_unavailable` until `GOOGLE_MAPS_SERVER_KEY` is set in the production environment (ADR-0012); nothing else in `user-service` changes.
@@ -34,7 +35,9 @@
 ## Verification
 - `go test -v -count=1 ./internal/geo/... ./internal/config/...` (in `services/user-service`) — PASS
 - `go test -v -count=1 ./internal/handlers -run TestGeoHandlers` (in `services/user-service`) — PASS
-- Pending full `make check` run before commit.
+- `make check` (Item 1) — PASS (`scope: go=services/user-service contracts docs infra-tests docgen`)
+- `flutter test test/core/geo/address_search_field_test.dart` — PASS (6/6)
+- Pending `make check` for Item 2.
 
 ## Unverified
 - Live calls against real Google Places API (New) and Geocoding API (tests use an `httptest` fake of Google; real GCP key not present in workspace).
