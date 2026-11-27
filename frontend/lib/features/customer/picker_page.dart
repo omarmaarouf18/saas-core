@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants.dart';
+import '../../core/maps/app_map.dart';
 import '../../core/text_limits.dart';
 import '../../l10n/l10n.dart';
 import '../../models/saved_address.dart';
@@ -14,23 +12,6 @@ import 'customer_location.dart';
 
 /// Max landmark note length, as the old picker dialog and the backend.
 const int kAddressNoteMaxLength = kAddressNoteMaxRunes;
-
-/// Supplies the map tile provider to [CustomerPickerPage] (default: network
-/// tiles from `mapTileUrlTemplate`). Tests use it to avoid network tiles.
-class CustomerMapTilesScope extends InheritedWidget {
-  const CustomerMapTilesScope(
-      {super.key, required this.tileProvider, required super.child});
-
-  final TileProvider tileProvider;
-
-  static TileProvider? of(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<CustomerMapTilesScope>()
-      ?.tileProvider;
-
-  @override
-  bool updateShouldNotify(CustomerMapTilesScope oldWidget) =>
-      tileProvider != oldWidget.tileProvider;
-}
 
 /// Full-screen location picker (A-Picker): the map moves under a fixed
 /// centre pin, "my location" recentres it, optional address text (job
@@ -77,17 +58,17 @@ class CustomerPickerPage extends StatefulWidget {
 }
 
 class _CustomerPickerPageState extends State<CustomerPickerPage> {
-  final MapController _map = MapController();
+  final AppMapController _map = AppMapController();
   late final TextEditingController _note;
   late final TextEditingController _address;
   late final TextEditingController _building;
   late final TextEditingController _floor;
   late final TextEditingController _apartment;
-  late LatLng _center;
+  late AppLatLng _center;
+  AppLatLng? _programmaticTarget;
   bool _fromDevice = false;
   bool _locating = false;
   bool _denied = false;
-  bool _mapReady = false;
 
   /// An old string-only address was chosen: it has no pin yet.
   bool _needsPin = false;
@@ -97,8 +78,8 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     super.initState();
     final initial = widget.initial;
     _center = initial == null
-        ? const LatLng(kDefaultLatitude, kDefaultLongitude)
-        : LatLng(initial.latitude, initial.longitude);
+        ? const AppLatLng(kDefaultLatitude, kDefaultLongitude)
+        : AppLatLng(initial.latitude, initial.longitude);
     _fromDevice = initial?.isDeviceLocation ?? false;
     _note = TextEditingController(text: initial?.trimmedNote ?? '');
     _address = TextEditingController(text: initial?.trimmedAddress ?? '');
@@ -121,6 +102,26 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
     super.dispose();
   }
 
+  void _moveProgrammatically(AppLatLng target) {
+    _programmaticTarget = target;
+    _map.move(target);
+  }
+
+  void _handleCameraPosition(AppLatLng pos, {required bool isIdle}) {
+    final target = _programmaticTarget;
+    if (target != null &&
+        (pos.latitude - target.latitude).abs() < 1e-5 &&
+        (pos.longitude - target.longitude).abs() < 1e-5) {
+      if (isIdle) _programmaticTarget = null;
+      return;
+    }
+    if (isIdle) _programmaticTarget = null;
+    _center = pos;
+    _fromDevice = false;
+    // The customer moved the pin: it is placed now.
+    if (_needsPin) setState(() => _needsPin = false);
+  }
+
   Future<void> _locate() async {
     if (_locating) return;
     setState(() => _locating = true);
@@ -135,16 +136,16 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       }
       _denied = false;
       _fromDevice = true;
-      _center = LatLng(place.latitude, place.longitude);
+      _center = AppLatLng(place.latitude, place.longitude);
     });
-    if (_mapReady && result.place != null) {
-      _map.move(_center, _map.camera.zoom);
+    if (_map.isReady && result.place != null) {
+      _moveProgrammatically(_center);
     }
   }
 
   void _useSaved(SavedAddress a) {
     setState(() {
-      _center = LatLng(a.latitude, a.longitude);
+      _center = AppLatLng(a.latitude, a.longitude);
       _fromDevice = false;
       _needsPin = false;
       _address.text = a.address;
@@ -153,7 +154,7 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
       _apartment.text = a.apartment ?? '';
       _note.text = a.addressNote;
     });
-    if (_mapReady) _map.move(_center, _map.camera.zoom);
+    if (_map.isReady) _moveProgrammatically(_center);
   }
 
   void _useLegacy(String text) {
@@ -188,30 +189,22 @@ class _CustomerPickerPageState extends State<CustomerPickerPage> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Semantics(
-                    label: widget.title,
-                    child: FlutterMap(
-                      mapController: _map,
-                      options: MapOptions(
-                        initialCenter: _center,
-                        initialZoom: 15,
-                        onMapReady: () => _mapReady = true,
-                        onPositionChanged: (camera, hasGesture) {
-                          if (!hasGesture) return;
-                          _center = camera.center;
-                          _fromDevice = false;
-                          // The customer moved the pin: it is placed now.
-                          if (_needsPin) setState(() => _needsPin = false);
-                        },
-                      ),
-                      children: [
-                        TileLayer(
-                          tileProvider: CustomerMapTilesScope.of(context),
-                          urlTemplate: mapTileUrlTemplate,
-                          userAgentPackageName: mapTileUserAgent,
-                          errorTileCallback: (tile, error, stackTrace) {},
-                        ),
-                      ],
+                  child: Listener(
+                    onPointerDown: (_) => _programmaticTarget = null,
+                    child: AppMap(
+                      controller: _map,
+                      semanticLabel: widget.title,
+                      initialCenter: _center,
+                      initialZoom: 15,
+                      onMapReady: () {
+                        if (_map.center != _center) {
+                          _moveProgrammatically(_center);
+                        }
+                      },
+                      onCameraMove: (pos) =>
+                          _handleCameraPosition(pos, isIdle: false),
+                      onCameraIdle: (pos) =>
+                          _handleCameraPosition(pos, isIdle: true),
                     ),
                   ),
                 ),

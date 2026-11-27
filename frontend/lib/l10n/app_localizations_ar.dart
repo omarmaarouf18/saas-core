@@ -3867,4 +3867,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get authStaffAccountsNote =>
       'حسابات الموظفين بتعملها الشركة. اسأل مديرك على بيانات الدخول.';
+
+  @override
+  String get mapUnavailableTitle => 'الخريطة مش متاحة دلوقتي';
+
+  @override
+  String get mapUnavailableBody => 'تقدر تكمّل استخدام باقي الشاشة عادي.';
 }

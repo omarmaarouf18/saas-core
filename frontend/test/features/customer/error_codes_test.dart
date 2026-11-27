@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
 import 'package:frontend/core/api_error_codes.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/features/courier/courier_rules.dart';
 import 'package:frontend/features/customer/booking_page.dart';
 import 'package:frontend/features/customer/booking_rules.dart';
@@ -200,7 +200,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Choose the drop-off place'));
       await tester.pumpAndSettle();
-      await tester.drag(find.byType(FlutterMap), const Offset(-150, 120));
+      await tester.drag(find.byType(AppMap), const Offset(-150, 120));
       await tester.pumpAndSettle();
       await tester.enterText(
           find.byKey(const Key('cust_picker_address')), '15 Kasr El Nil St');

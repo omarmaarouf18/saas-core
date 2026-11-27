@@ -5108,5 +5108,13 @@
   "authStaffAccountsNote": "Staff accounts are created by your company. Ask your manager for your sign-in details.",
   "@authStaffAccountsNote": {
     "description": "SPLIT-APPS (ADR-0030): three apps from one codebase; role gating and per-app signup."
+  },
+  "mapUnavailableTitle": "Map unavailable",
+  "@mapUnavailableTitle": {
+    "description": "MAPS-SDK: shown in the map area when the Maps SDK API key is missing."
+  },
+  "mapUnavailableBody": "You can still use the rest of this screen.",
+  "@mapUnavailableBody": {
+    "description": "MAPS-SDK: short body under mapUnavailableTitle when space allows."
   }
 }

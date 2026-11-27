@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/features/customer/booking_page.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/picker_page.dart';
@@ -38,17 +38,15 @@ Future<void> _dropoff(WidgetTester tester,
     String? apartment}) async {
   await tester.tap(find.text('Choose the drop-off place'));
   await tester.pumpAndSettle();
-  await tester.drag(find.byType(FlutterMap), const Offset(-150, 120));
+  await tester.drag(find.byType(AppMap), const Offset(-150, 120));
   await tester.pumpAndSettle();
-  await tester.enterText(
-      find.byKey(const Key('cust_picker_address')), address);
+  await tester.enterText(find.byKey(const Key('cust_picker_address')), address);
   if (building != null) {
     await tester.enterText(
         find.byKey(const Key('cust_picker_building')), building);
   }
   if (floor != null) {
-    await tester.enterText(
-        find.byKey(const Key('cust_picker_floor')), floor);
+    await tester.enterText(find.byKey(const Key('cust_picker_floor')), floor);
   }
   if (apartment != null) {
     await tester.enterText(
@@ -212,8 +210,8 @@ void main() {
       (tester) async {
     final deps = CustomerTestDeps();
     // Start with pickup missing an address
-    const noAddrPickup = PickedPlace(
-        latitude: 30.05, longitude: 31.24, note: 'Gate 2');
+    const noAddrPickup =
+        PickedPlace(latitude: 30.05, longitude: 31.24, note: 'Gate 2');
     await _pump(tester, deps, pickup: noAddrPickup);
     await _dropoff(tester, address: '4 Tahrir St, Dokki');
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/picker_page.dart';
 
+import '../../helpers/fake_app_map.dart';
 import 'customer_harness.dart';
 
 /// Pumps a launcher that opens the picker and keeps its result.
@@ -12,6 +13,7 @@ Future<List<PickedPlace?>> _openPicker(
   CustomerTestDeps deps, {
   PickedPlace? initial,
   Locale locale = en,
+  bool hasMapsKey = true,
 }) async {
   final results = <PickedPlace?>[];
   await tester.pumpWidget(customerApp(
@@ -30,6 +32,7 @@ Future<List<PickedPlace?>> _openPicker(
       ),
     ),
     locale: locale,
+    hasMapsKey: hasMapsKey,
   ));
   await tester.tap(find.text('open'));
   await tester.pumpAndSettle();
@@ -44,7 +47,7 @@ void main() {
     final results = await _openPicker(tester, deps,
         initial: const PickedPlace(latitude: 30.1, longitude: 31.3));
     expect(deps.locator.calls, 0);
-    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(AppMap), findsOneWidget);
     expect(find.byKey(const Key('cust_picker_pin')), findsOneWidget);
     expect(find.text('Drop-off place'), findsOneWidget);
 
@@ -76,7 +79,7 @@ void main() {
     final deps = CustomerTestDeps();
     final results = await _openPicker(tester, deps,
         initial: const PickedPlace(latitude: 30.1, longitude: 31.3));
-    await tester.drag(find.byType(FlutterMap), const Offset(-120, 80));
+    await tester.drag(find.byType(AppMap), const Offset(-120, 80));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('cust_picker_confirm')));
     await tester.pumpAndSettle();
@@ -134,7 +137,48 @@ void main() {
       await _openPicker(tester, CustomerTestDeps(),
           initial: const PickedPlace(latitude: 30, longitude: 31),
           locale: locale);
+      expect(find.byType(FakeAppMap), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+      'missing key shows map unavailable while note and confirm keep working',
+      (tester) async {
+    usePhone(tester);
+    final deps = CustomerTestDeps();
+    final results = await _openPicker(tester, deps,
+        initial: const PickedPlace(latitude: 30.1, longitude: 31.3),
+        hasMapsKey: false);
+
+    expect(find.byType(FakeAppMap), findsNothing);
+    expect(find.byKey(const Key('app_map_unavailable')), findsOneWidget);
+    expect(find.text('Map unavailable'), findsOneWidget);
+
+    await tester.enterText(
+        find.byKey(const Key('cust_picker_note')), 'Next to the mosque');
+    await tester.tap(find.byKey(const Key('cust_picker_confirm')));
+    await tester.pumpAndSettle();
+
+    expect(results.single, isNotNull);
+    expect(results.single!.latitude, closeTo(30.1, 1e-9));
+    expect(results.single!.longitude, closeTo(31.3, 1e-9));
+    expect(results.single!.note, 'Next to the mosque');
+  });
+
+  testWidgets('missing key shows Arabic unavailable copy in RTL [ar]',
+      (tester) async {
+    usePhone(tester);
+    final deps = CustomerTestDeps();
+    await _openPicker(tester, deps,
+        initial: const PickedPlace(latitude: 30.1, longitude: 31.3),
+        locale: ar,
+        hasMapsKey: false);
+
+    final ctx = tester.element(find.byKey(const Key('app_map_unavailable')));
+    expect(Directionality.of(ctx), TextDirection.rtl);
+    expect(find.text('الخريطة مش متاحة دلوقتي'), findsOneWidget);
+    expect(find.byKey(const Key('cust_picker_confirm')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

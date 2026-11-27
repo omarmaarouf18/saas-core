@@ -6,16 +6,18 @@ import 'package:frontend/models/job.dart';
 import 'package:frontend/providers/employee_location_provider.dart';
 import 'package:frontend/ui/qd_ui.dart';
 
+import '../../helpers/fake_app_map.dart';
 import 'courier_harness.dart';
 
 String _money(num v) => QdMoney.format(courierEn(), v);
 
 Future<CourierTestDeps> _pump(WidgetTester tester, Job job,
-    {CourierTestDeps? deps}) async {
+    {CourierTestDeps? deps, bool hasMapsKey = true, Locale locale = en}) async {
   usePhone(tester);
   final d = deps ?? CourierTestDeps();
   d.jobs.seed([job]);
-  await pumpCourier(tester, d, const CourierTaskPage());
+  await pumpCourier(tester, d, const CourierTaskPage(),
+      locale: locale, hasMapsKey: hasMapsKey);
   await tester.pumpAndSettle();
   return d;
 }
@@ -346,6 +348,57 @@ void main() {
       await tester.tap(find.byKey(const Key('courier_running_job-b')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('courier_negotiation_none')), findsOneWidget);
+    });
+  });
+
+  group('CourierMap wrapper & key resilience', () {
+    testWidgets(
+        'renders CourierMap with FakeAppMap and pickup, dropoff and self markers',
+        (tester) async {
+      final deps = CourierTestDeps();
+      deps.location.lastKnownPosition = position(30.0500, 31.2400);
+      await _pump(tester, courierJob(subStatus: 'heading_to_pickup'),
+          deps: deps);
+
+      expect(find.byType(FakeAppMap), findsOneWidget);
+      expect(find.byKey(const Key('courier_map_pickup')), findsOneWidget);
+      expect(find.byKey(const Key('courier_map_dropoff')), findsOneWidget);
+      expect(find.byKey(const Key('courier_map_self')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('courier_map_recenter')));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('missing key shows map unavailable while pickup action works',
+        (tester) async {
+      final deps = await _pump(
+          tester, courierJob(subStatus: 'heading_to_pickup'),
+          hasMapsKey: false);
+
+      expect(find.byType(FakeAppMap), findsNothing);
+      expect(find.byKey(const Key('app_map_unavailable')), findsOneWidget);
+      expect(find.text('Map unavailable'), findsOneWidget);
+
+      deps.jobs.jobsAfterAction = [courierJob(subStatus: 'picked_up')];
+      await tester.tap(find.byKey(const Key('courier_action_pickup')));
+      await tester.pumpAndSettle();
+      expect(deps.jobs.calls.single.name, 'pickup');
+      expect(find.byKey(const Key('courier_action_deliver')), findsOneWidget);
+    });
+
+    testWidgets('renders active job markers in RTL [ar]', (tester) async {
+      final deps = CourierTestDeps();
+      deps.location.lastKnownPosition = position(30.0500, 31.2400);
+      await _pump(tester, courierJob(subStatus: 'picked_up'),
+          deps: deps, locale: ar);
+
+      final ctx = tester.element(find.byType(FakeAppMap));
+      expect(Directionality.of(ctx), TextDirection.rtl);
+      expect(find.byKey(const Key('courier_map_pickup')), findsOneWidget);
+      expect(find.byKey(const Key('courier_map_dropoff')), findsOneWidget);
+      expect(find.byKey(const Key('courier_map_self')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

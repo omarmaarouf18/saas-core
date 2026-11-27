@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
-import 'package:frontend/features/customer/picker_page.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/features/owner/owner_controller.dart';
 import 'package:frontend/features/owner/owner_nav.dart';
 import 'package:frontend/l10n/app_localizations.dart';
@@ -23,10 +23,10 @@ import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/ui/qd_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/fake_app_map.dart';
 import '../../helpers/fake_launcher.dart';
 import '../../helpers/fake_service_photos.dart';
 import 'package:frontend/providers/service_photo_store.dart';
-import '../customer/customer_harness.dart' show BlankTileProvider;
 
 export '../../helpers/fake_launcher.dart';
 
@@ -789,6 +789,7 @@ Widget ownerApp(
   Locale locale = const Locale('en'),
   bool withData = true,
   ThemeMode themeMode = ThemeMode.light,
+  bool hasMapsKey = true,
 }) {
   return MultiProvider(
     providers: [
@@ -806,8 +807,9 @@ Widget ownerApp(
     ],
     child: OwnerNavScope(
       nav: deps.nav,
-      child: CustomerMapTilesScope(
-        tileProvider: BlankTileProvider(),
+      child: AppMapScope(
+        hasApiKey: hasMapsKey,
+        builder: fakeAppMapBuilder,
         child: QdLauncherScope(
           launcher: deps.launcher,
           child: _withPhotos(
@@ -836,10 +838,11 @@ Widget _withPhotos(ServicePhotoStore? photos, Widget child) =>
 Future<void> pumpOwner(WidgetTester tester, OwnerTestDeps deps, Widget home,
     {Locale locale = const Locale('en'),
     bool refresh = true,
-    ThemeMode themeMode = ThemeMode.light}) async {
+    ThemeMode themeMode = ThemeMode.light,
+    bool hasMapsKey = true}) async {
   if (refresh) await deps.data.refresh();
-  await tester
-      .pumpWidget(ownerApp(deps, home, locale: locale, themeMode: themeMode));
+  await tester.pumpWidget(ownerApp(deps, home,
+      locale: locale, themeMode: themeMode, hasMapsKey: hasMapsKey));
   await tester.pumpAndSettle();
 }
 

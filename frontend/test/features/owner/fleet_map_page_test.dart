@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/owner/fleet_map_page.dart';
 import 'package:frontend/features/owner/owner_rules.dart';
 
+import '../../helpers/fake_app_map.dart';
 import 'owner_harness.dart';
 
 void main() {
@@ -47,8 +48,9 @@ void main() {
     }
 
     Future<void> pumpMap(WidgetTester tester, OwnerTestDeps deps,
-        {String? focus}) async {
-      await pumpOwner(tester, deps, OwnerFleetMapPage(focusEmployeeId: focus));
+        {String? focus, Locale locale = en, bool hasMapsKey = true}) async {
+      await pumpOwner(tester, deps, OwnerFleetMapPage(focusEmployeeId: focus),
+          locale: locale, hasMapsKey: hasMapsKey);
     }
 
     testWidgets('hydrates, subscribes to fleet:<ownerId>, names from roster',
@@ -57,6 +59,7 @@ void main() {
       final deps = fleetDeps();
       await pumpMap(tester, deps);
 
+      expect(find.byType(FakeAppMap), findsOneWidget);
       expect(deps.map.hydrateCalls, ['owner-jwt']);
       expect(deps.map.subscribeCalls, ['fleet:owner-1']);
       expect(deps.map.names, {'emp-1': 'Karim', 'emp-2': 'Sara'});
@@ -227,6 +230,39 @@ void main() {
       await pumpMap(tester, deps, focus: 'emp-zz9999');
       expect(find.textContaining('emp-zz'), findsOneWidget);
       expect(find.byKey(const Key('own_fleet_sheet_courier')), findsNothing);
+    });
+
+    testWidgets(
+        'missing key shows map unavailable while filters and summary work',
+        (tester) async {
+      usePhone(tester);
+      final deps = fleetDeps();
+      await pumpMap(tester, deps, hasMapsKey: false);
+
+      expect(find.byType(FakeAppMap), findsNothing);
+      expect(find.byKey(const Key('app_map_unavailable')), findsOneWidget);
+      expect(find.text('Map unavailable'), findsOneWidget);
+      expect(find.text('On the map: 2 · on a job: 1'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('own_fleet_filter_onJob')));
+      await tester.pumpAndSettle();
+      expect(find.text('On the map: 2 · on a job: 1'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('own_fleet_recenter')));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('renders markers and summary in RTL [ar]', (tester) async {
+      usePhone(tester);
+      final deps = fleetDeps();
+      await pumpMap(tester, deps, locale: ar);
+
+      final ctx = tester.element(find.byType(FakeAppMap));
+      expect(Directionality.of(ctx), TextDirection.rtl);
+      expect(find.byKey(const Key('own_fleet_marker_emp-1')), findsOneWidget);
+      expect(find.byKey(const Key('own_fleet_marker_emp-2')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

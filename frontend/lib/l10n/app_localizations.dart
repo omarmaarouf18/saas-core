@@ -6949,6 +6949,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Staff accounts are created by your company. Ask your manager for your sign-in details.'**
   String get authStaffAccountsNote;
+
+  /// MAPS-SDK: shown in the map area when the Maps SDK API key is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Map unavailable'**
+  String get mapUnavailableTitle;
+
+  /// MAPS-SDK: short body under mapUnavailableTitle when space allows.
+  ///
+  /// In en, this message translates to:
+  /// **'You can still use the rest of this screen.'**
+  String get mapUnavailableBody;
 }
 
 class _AppLocalizationsDelegate

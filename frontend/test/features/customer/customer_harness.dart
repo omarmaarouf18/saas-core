@@ -3,13 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/ui/qd_theme.dart';
 import 'package:frontend/features/customer/customer_location.dart';
 import 'package:frontend/features/customer/customer_nav.dart';
-import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/chat_message.dart';
 import 'package:frontend/models/employee_marker.dart';
@@ -28,6 +27,7 @@ import 'package:frontend/ui/qd_launch.dart';
 import 'package:frontend/ui/tokens.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/fake_app_map.dart';
 import '../../helpers/fake_launcher.dart';
 import '../../helpers/fake_service_photos.dart';
 import 'package:frontend/providers/service_photo_store.dart';
@@ -626,6 +626,7 @@ Widget customerApp(
   Widget home, {
   Locale locale = en,
   ThemeMode themeMode = ThemeMode.light,
+  bool hasMapsKey = true,
 }) {
   return MultiProvider(
     providers: [
@@ -639,8 +640,9 @@ Widget customerApp(
       ChangeNotifierProvider<ChatProvider>.value(value: deps.chat),
       ChangeNotifierProvider<MapTrackingProvider>.value(value: deps.map),
     ],
-    child: CustomerMapTilesScope(
-      tileProvider: BlankTileProvider(),
+    child: AppMapScope(
+      hasApiKey: hasMapsKey,
+      builder: fakeAppMapBuilder,
       child: CustomerLocatorScope(
         locator: deps.locator,
         child: CustomerNavScope(
@@ -669,87 +671,6 @@ Widget customerApp(
 
 Widget _withPhotos(ServicePhotoStore? photos, Widget child) =>
     photos == null ? child : ServicePhotoScope(store: photos, child: child);
-
-/// 1x1 transparent PNG.
-final Uint8List _blankPng = Uint8List.fromList(const [
-  0x89,
-  0x50,
-  0x4E,
-  0x47,
-  0x0D,
-  0x0A,
-  0x1A,
-  0x0A,
-  0x00,
-  0x00,
-  0x00,
-  0x0D,
-  0x49,
-  0x48,
-  0x44,
-  0x52,
-  0x00,
-  0x00,
-  0x00,
-  0x01,
-  0x00,
-  0x00,
-  0x00,
-  0x01,
-  0x08,
-  0x06,
-  0x00,
-  0x00,
-  0x00,
-  0x1F,
-  0x15,
-  0xC4,
-  0x89,
-  0x00,
-  0x00,
-  0x00,
-  0x0D,
-  0x49,
-  0x44,
-  0x41,
-  0x54,
-  0x78,
-  0x9C,
-  0x63,
-  0x60,
-  0x60,
-  0x60,
-  0x60,
-  0x00,
-  0x00,
-  0x00,
-  0x05,
-  0x00,
-  0x01,
-  0xA5,
-  0xF6,
-  0x45,
-  0x40,
-  0x00,
-  0x00,
-  0x00,
-  0x00,
-  0x49,
-  0x45,
-  0x4E,
-  0x44,
-  0xAE,
-  0x42,
-  0x60,
-  0x82,
-]);
-
-/// Map tiles that never touch the network: every tile is blank.
-class BlankTileProvider extends TileProvider {
-  @override
-  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) =>
-      MemoryImage(_blankPng);
-}
 
 /// 360x800 phone viewport at 1.0 DPR.
 void usePhone(WidgetTester tester) {

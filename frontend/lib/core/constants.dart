@@ -17,21 +17,6 @@ const Map<String, String> serviceCategoryLabels = {
   'shipping': 'Shipping',
 };
 
-/// Map tile URL template configurable via compile-time environment variable MAP_TILE_URL.
-/// Default: OpenStreetMap standard raster tiles.
-/// Can be overridden for production to point to Carto Voyager raster tiles:
-/// https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png
-const String mapTileUrlTemplate = String.fromEnvironment(
-  'MAP_TILE_URL',
-  defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-);
-
-/// Custom User-Agent header required by OpenStreetMap tile usage policy.
-const String mapTileUserAgent = String.fromEnvironment(
-  'MAP_TILE_USER_AGENT',
-  defaultValue: 'QuickDeliveryApp/1.0',
-);
-
 /// Optional WebSocket Origin header for browser-hosted web builds.
 /// Non-browser clients (dart:io WebSocket on Android/iOS) send no Origin header
 /// by default, which chat-service admits without CSRF gating.

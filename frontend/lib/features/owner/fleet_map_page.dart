@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants.dart';
+import '../../core/maps/app_map.dart';
 import '../../core/provider_connection_cleanup.dart';
 import '../../l10n/l10n.dart';
 import '../../models/employee_marker.dart';
@@ -12,7 +10,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/map_tracking_provider.dart';
 import '../../ui/qd_ui.dart';
 import '../customer/customer_location.dart';
-import '../customer/picker_page.dart';
 import 'employee_page.dart';
 import 'order_detail_page.dart';
 import 'owner_controller.dart';
@@ -43,8 +40,7 @@ class OwnerFleetMapPage extends StatefulWidget {
 
 class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
     with ProviderConnectionCleanup<OwnerFleetMapPage> {
-  final MapController _map = MapController();
-  bool _mapReady = false;
+  final AppMapController _map = AppMapController();
   FleetFilter _filter = FleetFilter.all;
   String? _selectedId;
   Map<String, String> _appliedNames = const {};
@@ -100,28 +96,27 @@ class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
     return context.l10n.ownCourierUnknown(shortIdIsolated(m.employeeId));
   }
 
-  LatLng _centerOf(List<EmployeeMarkerData> markers) {
+  AppLatLng _centerOf(List<EmployeeMarkerData> markers) {
     if (markers.isEmpty) {
-      return const LatLng(kDefaultLatitude, kDefaultLongitude);
+      return const AppLatLng(kDefaultLatitude, kDefaultLongitude);
     }
     var lat = 0.0, lon = 0.0;
     for (final m in markers) {
       lat += m.latitude;
       lon += m.longitude;
     }
-    return LatLng(lat / markers.length, lon / markers.length);
+    return AppLatLng(lat / markers.length, lon / markers.length);
   }
 
   void _zoom(double delta) {
-    if (!_mapReady) return;
-    final cam = _map.camera;
-    _map.move(cam.center, cam.zoom + delta);
+    if (!_map.isReady) return;
+    _map.zoomBy(delta);
   }
 
   void _select(EmployeeMarkerData m) {
     setState(() => _selectedId = m.employeeId);
-    if (_mapReady) {
-      _map.move(LatLng(m.latitude, m.longitude), _map.camera.zoom);
+    if (_map.isReady) {
+      _map.move(AppLatLng(m.latitude, m.longitude));
     }
   }
 
@@ -142,7 +137,7 @@ class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
         .toList();
     final selected = all.where((m) => m.employeeId == _selectedId).firstOrNull;
     final center = selected != null
-        ? LatLng(selected.latitude, selected.longitude)
+        ? AppLatLng(selected.latitude, selected.longitude)
         : _centerOf(shown.isNotEmpty ? shown : all);
 
     final Widget? notice;
@@ -191,31 +186,21 @@ class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Semantics(
-                    label: l10n.ownFleetMapLabel,
-                    container: true,
-                    child: FlutterMap(
-                      mapController: _map,
-                      options: MapOptions(
-                        initialCenter: center,
-                        initialZoom: 13,
-                        onMapReady: () => _mapReady = true,
-                      ),
-                      children: [
-                        TileLayer(
-                          tileProvider: CustomerMapTilesScope.of(context),
-                          urlTemplate: mapTileUrlTemplate,
-                          userAgentPackageName: mapTileUserAgent,
-                          errorTileCallback: (tile, error, stackTrace) {},
+                  child: AppMap(
+                    controller: _map,
+                    semanticLabel: l10n.ownFleetMapLabel,
+                    initialCenter: center,
+                    initialZoom: 13,
+                    padding: const EdgeInsets.only(bottom: 60),
+                    markers: [
+                      for (final m in shown)
+                        _marker(
+                          l10n,
+                          m,
+                          onJob: jobOf[m.employeeId] != null,
+                          selected: m.employeeId == _selectedId,
                         ),
-                        MarkerLayer(markers: [
-                          for (final m in shown)
-                            _marker(context, m,
-                                onJob: jobOf[m.employeeId] != null,
-                                selected: m.employeeId == _selectedId),
-                        ]),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
                 if (provider.isLoading && all.isEmpty)
@@ -303,7 +288,7 @@ class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
                         label: l10n.ordRecenter,
                         round: true,
                         onPressed: () {
-                          if (_mapReady) _map.move(center, 13);
+                          if (_map.isReady) _map.move(center, zoom: 13);
                         },
                       ),
                     ],
@@ -331,43 +316,25 @@ class _OwnerFleetMapPageState extends State<OwnerFleetMapPage>
     );
   }
 
-  Marker _marker(BuildContext context, EmployeeMarkerData m,
-      {required bool onJob, required bool selected}) {
-    final c = QdColors.of(context);
-    final size = selected ? 44.0 : 36.0;
+  AppMapMarker _marker(
+    AppLocalizations l10n,
+    EmployeeMarkerData m, {
+    required bool onJob,
+    required bool selected,
+  }) {
     final name = _name(m);
-    return Marker(
-      key: Key('own_fleet_marker_${m.employeeId}'),
-      point: LatLng(m.latitude, m.longitude),
-      width: size,
-      height: size,
-      child: Semantics(
-        button: true,
+    return AppMapMarker(
+      id: m.employeeId,
+      markerKey: Key('own_fleet_marker_${m.employeeId}'),
+      position: AppLatLng(m.latitude, m.longitude),
+      icon: AppMarkerIcon.fleetCourier(
+        initial: QdAvatarInitial.initialOf(name),
+        onJob: onJob,
         selected: selected,
-        label:
-            '$name, ${onJob ? context.l10n.ownStateOnJob : context.l10n.ownStateFree}',
-        excludeSemantics: true,
-        onTap: () => _select(m),
-        child: GestureDetector(
-          onTap: () => _select(m),
-          child: Container(
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: onJob ? c.navy : c.surface,
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: onJob ? c.gold : c.navy, width: selected ? 4 : 3),
-            ),
-            child: Text(
-              QdAvatarInitial.initialOf(name),
-              style: QdText.chip.copyWith(
-                  color: onJob ? c.onNavy : c.navy,
-                  fontSize: selected ? 15 : 13,
-                  height: 1.2),
-            ),
-          ),
-        ),
       ),
+      semanticLabel: '$name, ${onJob ? l10n.ownStateOnJob : l10n.ownStateFree}',
+      selected: selected,
+      onTap: () => _select(m),
     );
   }
 }
