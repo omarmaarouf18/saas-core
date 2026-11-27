@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:frontend/models/job.dart';
-
-import 'helpers/stub_tile_http.dart';
 
 class MockGeolocatorPlatformForEmployeeMap extends GeolocatorPlatform
     with MockPlatformInterfaceMixin {
@@ -74,17 +71,6 @@ Future<void> settleMapFrames(WidgetTester tester) async {
 }
 
 void main() {
-  HttpOverrides? previousOverrides;
-
-  setUp(() {
-    previousOverrides = HttpOverrides.current;
-    HttpOverrides.global = StubTileHttpOverrides();
-  });
-
-  tearDown(() {
-    HttpOverrides.global = previousOverrides;
-  });
-
   group('JobLocation.addressSummary', () {
     test('returns the typed note when present', () {
       final loc = JobLocation(
@@ -109,5 +95,4 @@ void main() {
       expect(loc.addressSummary(), '30.0000, 31.0000');
     });
   });
-
 }

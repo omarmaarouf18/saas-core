@@ -206,8 +206,15 @@ class _GoogleMapHostState extends State<_GoogleMapHost>
     implements AppMapHandle {
   final AppMarkerBitmapCache _iconCache = AppMarkerBitmapCache();
   gmf.GoogleMapController? _gmf;
-  late AppLatLng _center = widget.config.initialCenter;
-  late double _zoom = widget.config.initialZoom;
+  late AppLatLng _center;
+  late double _zoom;
+
+  @override
+  void initState() {
+    super.initState();
+    _center = widget.config.initialCenter;
+    _zoom = widget.config.initialZoom;
+  }
 
   @override
   AppLatLng get center => _center;

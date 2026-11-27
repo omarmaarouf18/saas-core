@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/api_client.dart';
+import 'package:frontend/core/maps/app_map.dart';
 import 'package:frontend/features/courier/courier_controller.dart';
 import 'package:frontend/features/courier/courier_nav.dart';
-import 'package:frontend/features/customer/picker_page.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/models/notification_model.dart';
@@ -20,8 +20,9 @@ import 'package:frontend/ui/qd_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/fake_app_map.dart';
 import '../../helpers/fake_launcher.dart';
-import '../customer/customer_harness.dart' show BlankTileProvider, en;
+import '../customer/customer_harness.dart' show en;
 
 export '../../helpers/fake_launcher.dart';
 
@@ -393,6 +394,7 @@ Widget courierApp(
   Locale locale = const Locale('en'),
   bool withController = true,
   ThemeMode themeMode = ThemeMode.light,
+  bool hasMapsKey = true,
 }) {
   return MultiProvider(
     providers: [
@@ -409,8 +411,9 @@ Widget courierApp(
     ],
     child: CourierNavScope(
       nav: deps.nav,
-      child: CustomerMapTilesScope(
-        tileProvider: BlankTileProvider(),
+      child: AppMapScope(
+        hasApiKey: hasMapsKey,
+        builder: fakeAppMapBuilder,
         child: QdLauncherScope(
           launcher: deps.launcher,
           child: MaterialApp(
@@ -431,9 +434,12 @@ Widget courierApp(
 
 /// Pumps [home] after one controller refresh, so the page shows loaded data.
 Future<void> pumpCourier(WidgetTester tester, CourierTestDeps deps, Widget home,
-    {Locale locale = const Locale('en'), bool refresh = true}) async {
+    {Locale locale = const Locale('en'),
+    bool refresh = true,
+    bool hasMapsKey = true}) async {
   if (refresh) await deps.controller.refresh();
-  await tester.pumpWidget(courierApp(deps, home, locale: locale));
+  await tester.pumpWidget(
+      courierApp(deps, home, locale: locale, hasMapsKey: hasMapsKey));
   await tester.pump();
 }
 

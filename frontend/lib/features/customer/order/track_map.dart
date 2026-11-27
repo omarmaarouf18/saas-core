@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/constants.dart';
+import '../../../core/maps/app_map.dart';
 import '../../../core/provider_connection_cleanup.dart';
 import '../../../l10n/l10n.dart';
 import '../../../models/job.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/map_tracking_provider.dart';
 import '../../../ui/qd_ui.dart';
-import '../picker_page.dart';
 
 /// Live courier map for the active order (A-Track top), on the existing
 /// [MapTrackingProvider], as the old CustomerJobMapScreen did: hydrate from
@@ -32,8 +29,7 @@ class OrderTrackMap extends StatefulWidget {
 
 class OrderTrackMapState extends State<OrderTrackMap>
     with ProviderConnectionCleanup<OrderTrackMap> {
-  final MapController _map = MapController();
-  bool _mapReady = false;
+  final AppMapController _map = AppMapController();
 
   @override
   void initState() {
@@ -49,6 +45,12 @@ class OrderTrackMapState extends State<OrderTrackMap>
     });
   }
 
+  @override
+  void dispose() {
+    _map.dispose();
+    super.dispose();
+  }
+
   /// Re-reads the courier position (pull to refresh).
   Future<void> rehydrate() async {
     final token = context.read<AuthProvider>().token;
@@ -58,44 +60,28 @@ class OrderTrackMapState extends State<OrderTrackMap>
         .hydrateCustomerJob(widget.job.id, token);
   }
 
-  LatLng _center(MapTrackingProvider p) {
+  AppLatLng _center(MapTrackingProvider p) {
     final markers = p.markersList;
     if (markers.isNotEmpty) {
-      return LatLng(markers.first.latitude, markers.first.longitude);
+      return AppLatLng(markers.first.latitude, markers.first.longitude);
     }
     final pickup = p.customerJobLocation ?? widget.job.location;
-    return LatLng(pickup.latitude, pickup.longitude);
+    return AppLatLng(pickup.latitude, pickup.longitude);
   }
 
   void _zoom(double delta) {
-    if (!_mapReady) return;
-    final cam = _map.camera;
-    _map.move(cam.center, cam.zoom + delta);
+    if (!_map.isReady) return;
+    _map.zoomBy(delta);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final c = QdColors.of(context);
     final p = context.watch<MapTrackingProvider>();
     final pickup = p.customerJobLocation ?? widget.job.location;
     final dropoff = p.customerJobDestination ?? widget.job.destination;
     final markers = p.markersList;
     final center = _center(p);
-
-    Marker stop(JobLocation l, {required bool isPickup}) => Marker(
-          point: LatLng(l.latitude, l.longitude),
-          width: 22,
-          height: 22,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isPickup ? c.surface : c.gold,
-              shape: isPickup ? BoxShape.circle : BoxShape.rectangle,
-              borderRadius: isPickup ? null : BorderRadius.circular(4),
-              border: Border.all(color: c.navy, width: isPickup ? 4 : 3),
-            ),
-          ),
-        );
 
     final Widget? notice;
     if (p.subscriptionError != null) {
@@ -129,42 +115,33 @@ class OrderTrackMapState extends State<OrderTrackMap>
       child: Stack(
         children: [
           Positioned.fill(
-            child: Semantics(
-              label: l10n.ordMapLabel,
-              container: true,
-              child: FlutterMap(
-                mapController: _map,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom: 14,
-                  onMapReady: () => _mapReady = true,
+            child: AppMap(
+              controller: _map,
+              semanticLabel: l10n.ordMapLabel,
+              initialCenter: center,
+              initialZoom: 14,
+              markers: [
+                AppMapMarker(
+                  id: 'pickup',
+                  markerKey: const Key('ord_map_pickup'),
+                  position: AppLatLng(pickup.latitude, pickup.longitude),
+                  icon: const AppMarkerIcon.pickupRing(),
                 ),
-                children: [
-                  TileLayer(
-                    tileProvider: CustomerMapTilesScope.of(context),
-                    urlTemplate: mapTileUrlTemplate,
-                    userAgentPackageName: mapTileUserAgent,
-                    errorTileCallback: (tile, error, stackTrace) {},
+                if (dropoff != null)
+                  AppMapMarker(
+                    id: 'dropoff',
+                    markerKey: const Key('ord_map_dropoff'),
+                    position: AppLatLng(dropoff.latitude, dropoff.longitude),
+                    icon: const AppMarkerIcon.dropoffSquare(),
                   ),
-                  MarkerLayer(markers: [
-                    stop(pickup, isPickup: true),
-                    if (dropoff != null) stop(dropoff, isPickup: false),
-                    for (final m in markers)
-                      Marker(
-                        key: Key('ord_map_courier_${m.employeeId}'),
-                        point: LatLng(m.latitude, m.longitude),
-                        width: 36,
-                        height: 36,
-                        child: Container(
-                          decoration: BoxDecoration(
-                              color: c.navy, shape: BoxShape.circle),
-                          child: Icon(Icons.two_wheeler,
-                              size: 18, color: c.onNavy),
-                        ),
-                      ),
-                  ]),
-                ],
-              ),
+                for (final m in markers)
+                  AppMapMarker(
+                    id: 'courier_${m.employeeId}',
+                    markerKey: Key('ord_map_courier_${m.employeeId}'),
+                    position: AppLatLng(m.latitude, m.longitude),
+                    icon: const AppMarkerIcon.courierPin(),
+                  ),
+              ],
             ),
           ),
           if (p.isLoading && markers.isEmpty)
@@ -205,7 +182,7 @@ class OrderTrackMapState extends State<OrderTrackMap>
                   label: l10n.ordRecenter,
                   round: true,
                   onPressed: () {
-                    if (_mapReady) _map.move(center, 15);
+                    if (_map.isReady) _map.move(center, zoom: 15);
                   },
                 ),
               ],

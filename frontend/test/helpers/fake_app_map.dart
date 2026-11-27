@@ -29,8 +29,8 @@ class FakeAppMap extends StatefulWidget {
 }
 
 class FakeAppMapState extends State<FakeAppMap> implements AppMapHandle {
-  late AppLatLng _center = widget.config.initialCenter;
-  late double _zoom = widget.config.initialZoom;
+  late AppLatLng _center;
+  late double _zoom;
   Size _viewportSize = const Size(360, 260);
   bool _initialBoundsApplied = false;
 
@@ -43,6 +43,8 @@ class FakeAppMapState extends State<FakeAppMap> implements AppMapHandle {
   @override
   void initState() {
     super.initState();
+    _center = widget.config.initialCenter;
+    _zoom = widget.config.initialZoom;
     widget.controller.attach(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

@@ -32,6 +32,7 @@ Future<void> pumpOrder(
   FakeCourierLookup? lookup,
   bool settle = true,
   ThemeMode themeMode = ThemeMode.light,
+  bool hasMapsKey = true,
 }) async {
   usePhone(tester);
   deps.marketplace.nextStatus ??= job;
@@ -43,6 +44,7 @@ Future<void> pumpOrder(
           jobId: job.id, initialJob: job, now: now ?? () => fixedNow),
       locale: locale,
       themeMode: themeMode,
+      hasMapsKey: hasMapsKey,
     ),
   ));
   if (settle) {

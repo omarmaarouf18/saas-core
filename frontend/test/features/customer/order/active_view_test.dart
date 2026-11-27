@@ -4,6 +4,7 @@ import 'package:frontend/features/customer/chat/chat_page.dart';
 import 'package:frontend/ui/qd_ui.dart';
 import 'package:frontend/features/account/support/new_complaint_sheet.dart';
 
+import '../../../helpers/fake_app_map.dart';
 import '../customer_harness.dart';
 import 'order_fixtures.dart';
 import 'order_harness.dart';
@@ -155,6 +156,39 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('ord_stale_banner')), findsOneWidget);
     expect(find.byKey(const Key('ord_view_active')), findsOneWidget);
+    await unmountOrder(tester, deps);
+  });
+
+  testWidgets('TrackMap renders FakeAppMap with pickup, dropoff and courier',
+      (tester) async {
+    final deps = CustomerTestDeps();
+    deps.map.setCourier(30.055, 31.23);
+    await pumpOrder(tester, deps, active);
+
+    expect(find.byType(FakeAppMap), findsOneWidget);
+    expect(find.byKey(const Key('ord_map_pickup')), findsOneWidget);
+    expect(find.byKey(const Key('ord_map_dropoff')), findsOneWidget);
+    expect(find.byKey(const Key('ord_map_courier_emp-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('ord_map_recenter')));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await unmountOrder(tester, deps);
+  });
+
+  testWidgets('missing key shows map unavailable while chat and timeline work',
+      (tester) async {
+    final deps = CustomerTestDeps();
+    await pumpOrder(tester, deps, active, hasMapsKey: false);
+
+    expect(find.byType(FakeAppMap), findsNothing);
+    expect(find.byKey(const Key('app_map_unavailable')), findsOneWidget);
+    expect(find.text('Map unavailable'), findsOneWidget);
+    expect(find.byKey(const Key('ord_timeline')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('ord_chat')));
+    await tester.pumpAndSettle();
+    expect(find.byType(CustomerChatPage), findsOneWidget);
     await unmountOrder(tester, deps);
   });
 }
